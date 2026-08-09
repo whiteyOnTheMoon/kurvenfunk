@@ -1,0 +1,20 @@
+{
+  "name": "@kurvenfunk/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint": "./eslint.config.js",
+    "./prettier": "./prettier.config.js",
+    "./typescript/base": "./tsconfig.base.json",
+    "./typescript/node": "./tsconfig.node.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.66.0"
+  }
+}
