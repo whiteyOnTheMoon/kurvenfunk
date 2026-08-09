@@ -88,6 +88,16 @@ services:
     networks:
       - backend
 
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - ./storage/meilisearch:/meili_data
+    networks:
+      - backend
+
 networks:
   frontend:
     driver: bridge
