@@ -9,6 +9,16 @@ services:
     volumes:
       - /srv/kurvenfunk/staging/redis:/data
 
+  keycloak:
+    command:
+      - start
+
+    environment:
+      KC_HOSTNAME: https://auth-staging.kurvenfunk.at
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+
 x-kurvenfunk-environment:
   name: staging
   env_file: .env.staging
