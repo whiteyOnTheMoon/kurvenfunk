@@ -286,6 +286,15 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/types:
+    devDependencies:
+      '@kurvenfunk/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
 packages:
 
   '@angular-devkit/core@19.2.24':
