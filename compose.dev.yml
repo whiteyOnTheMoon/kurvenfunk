@@ -9,6 +9,10 @@ services:
     volumes:
       - /srv/kurvenfunk/dev/redis:/data
 
+  keycloak:
+    ports:
+      - "127.0.0.1:3102:8080"
+
 x-kurvenfunk-environment:
   name: development
   env_file: .env.dev
