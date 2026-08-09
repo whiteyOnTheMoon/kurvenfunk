@@ -1,6 +1,9 @@
 name: kurvenfunk-staging
 
-services: {}
+services:
+  postgres:
+    volumes:
+      - /srv/kurvenfunk/staging/postgres:/var/lib/postgresql/data
 
 x-kurvenfunk-environment:
   name: staging
