@@ -12,12 +12,15 @@ services:
   keycloak:
     command:
       - start
-
     environment:
       KC_HOSTNAME: https://auth-staging.kurvenfunk.at
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
+
+  meilisearch:
+    volumes:
+      - /srv/kurvenfunk/staging/meilisearch:/meili_data
 
 x-kurvenfunk-environment:
   name: staging
