@@ -1,3 +1,5 @@
+name: kurvenfunk-dev
+
 services: {}
 
 x-kurvenfunk-environment:
