@@ -19,6 +19,22 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
 
+  meilisearch:
+    ports:
+      - "127.0.0.1:3104:7700"
+    volumes:
+      - /srv/kurvenfunk/prod/meilisearch:/meili_data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider 127.0.0.1:7700/health || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 x-kurvenfunk-environment:
   name: production
   env_file: .env.prod
