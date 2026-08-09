@@ -1,0 +1,5 @@
+services: {}
+
+x-kurvenfunk-environment:
+  name: development
+  env_file: .env.dev

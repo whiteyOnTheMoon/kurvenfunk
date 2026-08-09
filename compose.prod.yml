@@ -1,0 +1,5 @@
+services: {}
+
+x-kurvenfunk-environment:
+  name: production
+  env_file: .env.prod

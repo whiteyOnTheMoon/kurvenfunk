@@ -1,0 +1,5 @@
+services: {}
+
+x-kurvenfunk-environment:
+  name: staging
+  env_file: .env.staging
