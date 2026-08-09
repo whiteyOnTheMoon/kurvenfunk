@@ -3,11 +3,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TestJobService } from './jobs/test-job.service';
 import { TestProcessor } from './processors/test.processor';
+import { validateEnvironment } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateEnvironment,
     }),
 
     BullModule.forRootAsync({

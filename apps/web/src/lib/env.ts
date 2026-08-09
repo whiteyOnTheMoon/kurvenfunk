@@ -1,14 +1,39 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+const webEnvSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
 
-  NEXT_PUBLIC_APP_URL: z.url(),
-  NEXT_PUBLIC_API_URL: z.url(),
-});
+    WEB_URL: z.url(),
+    API_URL: z.url(),
+    AUTH_URL: z.url(),
+  })
+  .passthrough();
 
-export const env = envSchema.parse({
-  NODE_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-});
+export type WebEnvironment = z.infer<typeof webEnvSchema>;
+
+function validateEnvironment(): WebEnvironment {
+  const result = webEnvSchema.safeParse({
+    NODE_ENV: process.env.NODE_ENV,
+    WEB_URL: process.env.WEB_URL,
+    API_URL: process.env.API_URL,
+    AUTH_URL: process.env.AUTH_URL,
+  });
+
+  if (!result.success) {
+    const errors = result.error.issues
+      .map((issue) => {
+        const field = issue.path.join('.') || 'environment';
+        return `- ${field}: ${issue.message}`;
+      })
+      .join('\n');
+
+    throw new Error(`Web environment validation failed:\n${errors}`);
+  }
+
+  return result.data;
+}
+
+export const env = validateEnvironment();
