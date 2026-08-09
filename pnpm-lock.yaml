@@ -111,6 +111,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@kurvenfunk/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       next:
         specifier: 16.3.0
         version: 16.3.0(@babel/core@7.29.7(supports-color@8.1.1))(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -303,6 +306,22 @@ importers:
       '@kurvenfunk/config':
         specifier: workspace:*
         version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/ui:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+    devDependencies:
+      '@kurvenfunk/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.18
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
