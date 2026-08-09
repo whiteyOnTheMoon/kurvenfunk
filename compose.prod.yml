@@ -1,6 +1,9 @@
 name: kurvenfunk-prod
 
-services: {}
+services:
+  postgres:
+    volumes:
+      - /srv/kurvenfunk/prod/postgres:/var/lib/postgresql/data
 
 x-kurvenfunk-environment:
   name: production
