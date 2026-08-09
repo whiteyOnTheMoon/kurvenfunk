@@ -73,6 +73,7 @@ data/
 
 packages/database/prisma/dev.db
 packages/database/prisma/dev.db-journal
+packages/database/generated/
 
 
 # ------------------------------------------------------------

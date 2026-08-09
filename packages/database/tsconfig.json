@@ -1,0 +1,16 @@
+{
+  "extends": "@kurvenfunk/config/typescript/node",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "generated/**/*.ts",
+    "prisma.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
