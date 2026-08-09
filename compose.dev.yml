@@ -1,6 +1,9 @@
 name: kurvenfunk-dev
 
-services: {}
+services:
+  postgres:
+    volumes:
+      - /srv/kurvenfunk/dev/postgres:/var/lib/postgresql/data
 
 x-kurvenfunk-environment:
   name: development
