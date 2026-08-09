@@ -1,0 +1,17 @@
+{
+  "name": "@kurvenfunk/logger",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@kurvenfunk/config": "workspace:*",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.0.0"
+  }
+}

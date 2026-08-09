@@ -286,6 +286,18 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/logger:
+    devDependencies:
+      '@kurvenfunk/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/types:
     devDependencies:
       '@kurvenfunk/config':
