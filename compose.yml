@@ -22,6 +22,36 @@ services:
     networks:
       - backend
 
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$${REDIS_PASSWORD}" ping | grep PONG
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    networks:
+      - backend
+
 networks:
   frontend:
     driver: bridge
