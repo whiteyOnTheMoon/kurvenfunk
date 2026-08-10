@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@kurvenfunk/database": "workspace:*",
     "@kurvenfunk/logger": "workspace:*",
     "@kurvenfunk/types": "workspace:*",
     "@nestjs/bullmq": "^11.0.5",

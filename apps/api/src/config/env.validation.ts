@@ -23,6 +23,8 @@ const apiEnvSchema = z
       .default(6379),
 
     REDIS_PASSWORD: z.string().min(1),
+
+    DATABASE_URL: z.string().url(),
   })
   .passthrough();
 
