@@ -1,7 +1,14 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { HealthModule } from './modules/health/health.module';
+import { BullModule } from '@nestjs/bullmq';
+import {
+  type MiddlewareConsumer,
+  Module,
+  type NestModule,
+} from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validateEnvironment } from './config/env.validation';
+import { HealthModule } from './modules/health/health.module';
+import { RequestIdTestModule } from './modules/request-id-test/request-id-test.module';
 
 @Module({
   imports: [
@@ -9,7 +16,25 @@ import { validateEnvironment } from './config/env.validation';
       isGlobal: true,
       validate: validateEnvironment,
     }),
+
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', 'redis'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+          password:
+            configService.getOrThrow<string>('REDIS_PASSWORD'),
+        },
+      }),
+    }),
+
     HealthModule,
+    RequestIdTestModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

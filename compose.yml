@@ -54,6 +54,27 @@ services:
 
 
 
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - backend
+
   worker:
     build:
       context: .

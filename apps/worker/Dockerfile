@@ -9,11 +9,16 @@ RUN corepack enable \
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
 COPY apps/worker/package.json ./apps/worker/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/config/package.json ./packages/config/package.json
 
 RUN pnpm install --frozen-lockfile --filter worker...
 
 COPY apps/worker ./apps/worker
+COPY packages/types ./packages/types
+COPY packages/config ./packages/config
 
 RUN pnpm --filter worker build
 
@@ -30,12 +35,18 @@ RUN corepack enable \
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
 COPY apps/worker/package.json ./apps/worker/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/config/package.json ./packages/config/package.json
 
 RUN pnpm install \
     --frozen-lockfile \
     --prod \
     --filter worker...
+
+COPY packages/types ./packages/types
+COPY packages/config ./packages/config
 
 COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 

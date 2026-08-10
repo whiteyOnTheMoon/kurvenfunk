@@ -12,6 +12,17 @@ const apiEnvSchema = z
       .min(1)
       .max(65535)
       .default(3000),
+
+    REDIS_HOST: z.string().min(1).default('redis'),
+
+    REDIS_PORT: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(65535)
+      .default(6379),
+
+    REDIS_PASSWORD: z.string().min(1),
   })
   .passthrough();
 

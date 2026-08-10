@@ -9,6 +9,11 @@ services:
     volumes:
       - /srv/kurvenfunk/dev/redis:/data
 
+
+  api:
+    ports:
+      - "127.0.0.1:3101:3000"
+
   keycloak:
     ports:
       - "127.0.0.1:3102:8080"

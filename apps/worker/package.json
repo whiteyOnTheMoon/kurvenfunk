@@ -14,6 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@kurvenfunk/types": "workspace:*",
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
