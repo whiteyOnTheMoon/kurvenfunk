@@ -1,6 +1,7 @@
 import type {
   CreateLoggerOptions,
   LogEntry,
+  LogFormat,
   LogLevel,
   LogMetadata,
   LogOptions,
@@ -49,6 +50,7 @@ function sanitizeValue(value: unknown): unknown {
     return {
       name: value.name,
       message: value.message,
+      stack: value.stack,
     };
   }
 
@@ -90,20 +92,73 @@ export function createLogEntry(
   };
 }
 
-const defaultSink: LogSink = (entry) => {
-  console.log(JSON.stringify(entry));
-};
+function formatPretty(entry: LogEntry): string {
+  const parts = [
+    entry.timestamp,
+    entry.level.toUpperCase().padEnd(5),
+    `[${entry.service}]`,
+  ];
+
+  if (entry.requestId) {
+    parts.push(`[request:${entry.requestId}]`);
+  }
+
+  if (entry.userId) {
+    parts.push(`[user:${entry.userId}]`);
+  }
+
+  if (entry.event) {
+    parts.push(entry.event);
+  }
+
+  parts.push(entry.message);
+
+  if (entry.metadata && Object.keys(entry.metadata).length > 0) {
+    parts.push(JSON.stringify(entry.metadata));
+  }
+
+  return parts.join(' ');
+}
+
+function createConsoleSink(format: LogFormat): LogSink {
+  return (entry) => {
+    const output =
+      format === 'pretty'
+        ? formatPretty(entry)
+        : JSON.stringify(entry);
+
+    switch (entry.level) {
+      case 'error':
+        console.error(output);
+        break;
+      case 'warn':
+        console.warn(output);
+        break;
+      default:
+        console.log(output);
+    }
+  };
+}
+
+export function resolveLogFormat(
+  nodeEnv = process.env.NODE_ENV,
+): LogFormat {
+  return nodeEnv === 'development' ? 'pretty' : 'json';
+}
 
 export function createLogger({
   service,
-  sink = defaultSink,
+  format = resolveLogFormat(),
+  sink,
 }: CreateLoggerOptions): Logger {
+  const targetSink = sink ?? createConsoleSink(format);
+
   const write = (
     level: LogLevel,
     message: string,
     options?: LogOptions,
   ): void => {
-    sink(createLogEntry(service, level, message, options));
+    targetSink(createLogEntry(service, level, message, options));
   };
 
   return {

@@ -14,6 +14,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@kurvenfunk/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@kurvenfunk/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -163,6 +166,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@kurvenfunk/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@kurvenfunk/types':
         specifier: workspace:*
         version: link:../../packages/types

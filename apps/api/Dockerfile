@@ -13,13 +13,16 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/types/package.json ./packages/types/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
 
 RUN pnpm install --frozen-lockfile --filter api...
 
 COPY apps/api ./apps/api
 COPY packages/types ./packages/types
 COPY packages/config ./packages/config
+COPY packages/logger ./packages/logger
 
+RUN pnpm --filter @kurvenfunk/logger build
 RUN pnpm --filter api build
 
 
@@ -40,6 +43,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/types/package.json ./packages/types/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
 
 RUN pnpm install \
     --frozen-lockfile \
@@ -49,6 +53,7 @@ RUN pnpm install \
 COPY packages/types ./packages/types
 COPY packages/config ./packages/config
 
+COPY --from=build /app/packages/logger/dist ./packages/logger/dist
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 
 WORKDIR /app/apps/api

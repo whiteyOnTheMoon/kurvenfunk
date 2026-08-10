@@ -1,5 +1,7 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+export type LogFormat = 'pretty' | 'json';
+
 export type LogMetadata = Record<string, unknown>;
 
 export interface LogContext {
@@ -32,5 +34,6 @@ export type LogSink = (entry: LogEntry) => void;
 
 export interface CreateLoggerOptions {
   service: string;
+  format?: LogFormat;
   sink?: LogSink;
 }
