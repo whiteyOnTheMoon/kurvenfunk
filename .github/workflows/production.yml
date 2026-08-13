@@ -1,0 +1,70 @@
+name: Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY to confirm the PRODUCTION deployment'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    name: Deploy PRODUCTION
+
+    if: github.event.inputs.confirmation == 'DEPLOY'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Verify selected branch
+        env:
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "$SELECTED_REF" != "refs/heads/main" ]]; then
+            echo "ERROR: PRODUCTION deployments are only allowed from main."
+            echo "Selected ref: $SELECTED_REF"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+
+          install -m 700 -d ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_production
+          chmod 600 ~/.ssh/kurvenfunk_production
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy approved commit
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          ssh \
+            -i ~/.ssh/kurvenfunk_production \
+            -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk-production && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/production.sh"
