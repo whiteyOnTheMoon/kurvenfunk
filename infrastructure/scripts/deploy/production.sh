@@ -8,6 +8,9 @@ COMPOSE_PROJECT="kurvenfunk-prod"
 EXPECTED_COMMIT="${EXPECTED_COMMIT:-}"
 LOCK_FILE="/tmp/kurvenfunk-prod-deploy.lock"
 BACKUP_DIR="/srv/kurvenfunk/prod/backups/pre-deploy"
+RELEASE_DIR="/srv/kurvenfunk/prod/releases"
+CURRENT_RELEASE_FILE="$RELEASE_DIR/current"
+PREVIOUS_RELEASE_FILE="$RELEASE_DIR/previous"
 
 COMPOSE=(
   docker compose
@@ -244,6 +247,34 @@ echo "Keycloak realm: OK"
 echo
 echo "=== PRODUCTION Services ==="
 "${COMPOSE[@]}" ps
+
+echo
+echo "=== Update successful release state ==="
+
+mkdir -p "$RELEASE_DIR"
+chmod 750 "$RELEASE_DIR"
+
+OLD_CURRENT=""
+
+if [[ -f "$CURRENT_RELEASE_FILE" ]]; then
+  OLD_CURRENT="$(<"$CURRENT_RELEASE_FILE")"
+fi
+
+if [[ -n "$OLD_CURRENT" && "$OLD_CURRENT" != "$DEPLOYED_COMMIT" ]]; then
+  printf '%s\n' "$OLD_CURRENT" > "$PREVIOUS_RELEASE_FILE"
+  chmod 640 "$PREVIOUS_RELEASE_FILE"
+fi
+
+printf '%s\n' "$DEPLOYED_COMMIT" > "$CURRENT_RELEASE_FILE"
+chmod 640 "$CURRENT_RELEASE_FILE"
+
+echo "Current release:  $(<"$CURRENT_RELEASE_FILE")"
+
+if [[ -f "$PREVIOUS_RELEASE_FILE" ]]; then
+  echo "Previous release: $(<"$PREVIOUS_RELEASE_FILE")"
+else
+  echo "Previous release: <not set yet>"
+fi
 
 echo
 echo "=== Deployment complete ==="
