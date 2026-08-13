@@ -117,6 +117,21 @@ services:
     networks:
       - backend
 
+  migrate:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/migrate/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    profiles:
+      - deployment
+    restart: "no"
+
   worker:
     build:
       context: .
