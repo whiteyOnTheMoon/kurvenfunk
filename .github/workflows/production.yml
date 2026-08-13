@@ -67,4 +67,4 @@ jobs:
             -i ~/.ssh/kurvenfunk_production \
             -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" \
-            "cd ~/www/kurvenfunk-production && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/production.sh"
+            "cd ~/www/kurvenfunk-production && git fetch origin main && git checkout --detach '$EXPECTED_COMMIT' && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/production.sh"
