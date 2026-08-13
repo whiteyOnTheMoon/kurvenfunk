@@ -8,12 +8,7 @@ const workerEnvSchema = z
 
     REDIS_HOST: z.string().trim().min(1).default('redis'),
 
-    REDIS_PORT: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(65535)
-      .default(6379),
+    REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
 
     REDIS_PASSWORD: z.string().min(1),
 

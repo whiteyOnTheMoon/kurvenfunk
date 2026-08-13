@@ -11,10 +11,7 @@ const UUID_V4_PATTERN =
 function getRequestId(request: RequestWithId): string {
   const header = request.headers[REQUEST_ID_HEADER];
 
-  if (
-    typeof header === 'string' &&
-    UUID_V4_PATTERN.test(header)
-  ) {
+  if (typeof header === 'string' && UUID_V4_PATTERN.test(header)) {
     return header;
   }
 
@@ -23,11 +20,7 @@ function getRequestId(request: RequestWithId): string {
 
 @Injectable()
 export class RequestIdMiddleware implements NestMiddleware {
-  use(
-    request: RequestWithId,
-    response: Response,
-    next: NextFunction,
-  ): void {
+  use(request: RequestWithId, response: Response, next: NextFunction): void {
     const requestId = getRequestId(request);
 
     request.requestId = requestId;

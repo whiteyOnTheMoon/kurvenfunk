@@ -19,7 +19,7 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
-app.useGlobalInterceptors(new HttpLoggingInterceptor());
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   const port = process.env.PORT ?? 3000;
 

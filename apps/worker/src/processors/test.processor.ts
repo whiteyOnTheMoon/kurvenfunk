@@ -15,7 +15,7 @@ const logger = createLogger({
 
 @Processor(QUEUE_NAMES.TEST)
 export class TestProcessor extends WorkerHost {
-  async process(job: Job<TestJobPayload>): Promise<void> {
+  process(job: Job<TestJobPayload>): Promise<void> {
     const { requestId } = job.data.context;
     const startedAt = process.hrtime.bigint();
 
@@ -72,5 +72,7 @@ export class TestProcessor extends WorkerHost {
 
       throw error;
     }
+
+    return Promise.resolve();
   }
 }

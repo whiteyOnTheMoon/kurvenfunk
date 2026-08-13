@@ -1,8 +1,5 @@
 import { createPrismaClient } from '@kurvenfunk/database';
-import {
-  Injectable,
-  type OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -28,8 +25,7 @@ export class HealthService implements OnModuleDestroy {
     this.redis = new Redis({
       host: this.configService.get<string>('REDIS_HOST', 'redis'),
       port: this.configService.get<number>('REDIS_PORT', 6379),
-      password:
-        this.configService.getOrThrow<string>('REDIS_PASSWORD'),
+      password: this.configService.getOrThrow<string>('REDIS_PASSWORD'),
       connectTimeout: 1500,
       maxRetriesPerRequest: 1,
       retryStrategy: (times) => Math.min(times * 100, 1000),
@@ -43,15 +39,11 @@ export class HealthService implements OnModuleDestroy {
     ]);
 
     const checks: ReadinessChecks = {
-      postgres:
-        postgresResult.status === 'fulfilled' ? 'ok' : 'error',
-      redis:
-        redisResult.status === 'fulfilled' ? 'ok' : 'error',
+      postgres: postgresResult.status === 'fulfilled' ? 'ok' : 'error',
+      redis: redisResult.status === 'fulfilled' ? 'ok' : 'error',
     };
 
-    const ready =
-      checks.postgres === 'ok' &&
-      checks.redis === 'ok';
+    const ready = checks.postgres === 'ok' && checks.redis === 'ok';
 
     return {
       status: ready ? 'ok' : 'error',

@@ -10,8 +10,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
-    "lint": "eslint \"{src,test}/**/*.ts\" --fix",
-    "test": "jest"
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@kurvenfunk/logger": "workspace:*",

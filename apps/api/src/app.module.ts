@@ -27,8 +27,7 @@ import { RequestIdTestModule } from './modules/request-id-test/request-id-test.m
         connection: {
           host: configService.get<string>('REDIS_HOST', 'redis'),
           port: configService.get<number>('REDIS_PORT', 6379),
-          password:
-            configService.getOrThrow<string>('REDIS_PASSWORD'),
+          password: configService.getOrThrow<string>('REDIS_PASSWORD'),
         },
       }),
     }),
