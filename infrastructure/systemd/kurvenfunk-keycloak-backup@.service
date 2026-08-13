@@ -1,0 +1,12 @@
+[Unit]
+Description=Kurvenfunk Keycloak backup (%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ap
+Group=ap
+Environment=BACKUP_KIND=keycloak
+ExecStart=/srv/kurvenfunk/bin/keycloak-backup.sh %i
+ExecStartPost=/srv/kurvenfunk/bin/postgres-backup-rotation.sh %i --apply

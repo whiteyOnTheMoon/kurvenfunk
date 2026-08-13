@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kurvenfunk STAGING Keycloak backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 Europe/Vienna
+Persistent=true
+Unit=kurvenfunk-keycloak-backup@staging.service
+
+[Install]
+WantedBy=timers.target

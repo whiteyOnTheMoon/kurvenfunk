@@ -22,12 +22,23 @@ case "$MODE" in
     ;;
 esac
 
+BACKUP_KIND="${BACKUP_KIND:-postgres}"
+
+case "$BACKUP_KIND" in
+  postgres|keycloak)
+    ;;
+  *)
+    echo "ERROR: Unsupported backup kind: $BACKUP_KIND" >&2
+    exit 1
+    ;;
+esac
+
 case "$ENVIRONMENT" in
   staging)
-    DEFAULT_BACKUP_ROOT="/srv/kurvenfunk/staging/backups/postgres"
+    DEFAULT_BACKUP_ROOT="/srv/kurvenfunk/staging/backups/${BACKUP_KIND}"
     ;;
   production)
-    DEFAULT_BACKUP_ROOT="/srv/kurvenfunk/prod/backups/postgres"
+    DEFAULT_BACKUP_ROOT="/srv/kurvenfunk/prod/backups/${BACKUP_KIND}"
     ;;
   *)
     usage
@@ -122,7 +133,8 @@ for backup in "${BACKUPS[@]}"; do
   fi
 done
 
-echo "=== PostgreSQL Backup Rotation ==="
+echo "=== Backup Rotation ==="
+echo "Backup kind:       $BACKUP_KIND"
 echo "Environment:       $ENVIRONMENT"
 echo "Backup root:       $BACKUP_ROOT"
 echo "Mode:              $MODE"

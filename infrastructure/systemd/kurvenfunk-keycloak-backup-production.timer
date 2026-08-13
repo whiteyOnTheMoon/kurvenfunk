@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kurvenfunk PRODUCTION Keycloak backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Europe/Vienna
+Persistent=true
+Unit=kurvenfunk-keycloak-backup@production.service
+
+[Install]
+WantedBy=timers.target
