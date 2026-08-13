@@ -249,6 +249,22 @@ echo "=== PRODUCTION Services ==="
 "${COMPOSE[@]}" ps
 
 echo
+echo "=== Install stable rollback command ==="
+
+BIN_DIR="/srv/kurvenfunk/prod/bin"
+
+mkdir -p "$BIN_DIR"
+chmod 750 "$BIN_DIR"
+
+install \
+  -m 750 \
+  infrastructure/scripts/deploy/rollback.sh \
+  "$BIN_DIR/rollback.sh"
+
+echo "Rollback command installed:"
+echo "$BIN_DIR/rollback.sh"
+
+echo
 echo "=== Update successful release state ==="
 
 mkdir -p "$RELEASE_DIR"
