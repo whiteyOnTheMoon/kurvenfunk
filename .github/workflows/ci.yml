@@ -29,6 +29,7 @@ jobs:
       WEB_URL: https://ci.kurvenfunk.invalid
       API_URL: https://api-ci.kurvenfunk.invalid
       AUTH_URL: https://auth-ci.kurvenfunk.invalid
+      DATABASE_URL: postgresql://kurvenfunk:kurvenfunk@localhost:5432/kurvenfunk
 
     steps:
       - name: Checkout repository
@@ -48,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter=@kurvenfunk/database generate
 
       - name: Build shared packages
         run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
