@@ -10,6 +10,10 @@ services:
       - /srv/kurvenfunk/dev/redis:/data
 
 
+  web:
+    ports:
+      - "127.0.0.1:3100:3000"
+
   api:
     ports:
       - "127.0.0.1:3101:3000"
@@ -23,16 +27,6 @@ services:
       - "127.0.0.1:3103:7700"
     volumes:
       - /srv/kurvenfunk/dev/meilisearch:/meili_data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:7700/health || exit 1"
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   minio:
     image: minio/minio:latest

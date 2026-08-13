@@ -55,6 +55,36 @@ services:
 
 
 
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web/Dockerfile
+      args:
+        WEB_URL: ${WEB_URL}
+        API_URL: ${API_URL}
+        AUTH_URL: ${AUTH_URL}
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      WEB_URL: ${WEB_URL}
+      API_URL: ${API_URL}
+      AUTH_URL: ${AUTH_URL}
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - frontend
+      - backend
+
+
   api:
     build:
       context: .
@@ -67,9 +97,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
 
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -96,9 +128,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
 
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -169,10 +203,20 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:v1.15
+    restart: unless-stopped
+
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-    volumes:
-      - ./storage/meilisearch:/meili_data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:7700/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
     networks:
       - backend
 
