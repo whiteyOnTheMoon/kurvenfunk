@@ -1,5 +1,5 @@
 import { createLogger } from '@kurvenfunk/logger';
-import type { ContextualPayload } from '@kurvenfunk/types';
+import { QUEUE_NAMES, type ContextualPayload } from '@kurvenfunk/types';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 
@@ -13,7 +13,7 @@ const logger = createLogger({
   service: 'worker',
 });
 
-@Processor('test')
+@Processor(QUEUE_NAMES.TEST)
 export class TestProcessor extends WorkerHost {
   async process(job: Job<TestJobPayload>): Promise<void> {
     const { requestId } = job.data.context;
@@ -23,7 +23,7 @@ export class TestProcessor extends WorkerHost {
       requestId,
       event: 'queue.job.started',
       metadata: {
-        queue: 'test',
+        queue: QUEUE_NAMES.TEST,
         jobId: job.id,
         jobName: job.name,
       },
@@ -34,7 +34,7 @@ export class TestProcessor extends WorkerHost {
         requestId,
         event: 'test.job.processed',
         metadata: {
-          queue: 'test',
+          queue: QUEUE_NAMES.TEST,
           jobId: job.id,
           jobName: job.name,
           message: job.data.data.message,
@@ -48,7 +48,7 @@ export class TestProcessor extends WorkerHost {
         requestId,
         event: 'queue.job.completed',
         metadata: {
-          queue: 'test',
+          queue: QUEUE_NAMES.TEST,
           jobId: job.id,
           jobName: job.name,
           durationMs: Number(durationMs.toFixed(2)),
@@ -62,7 +62,7 @@ export class TestProcessor extends WorkerHost {
         requestId,
         event: 'queue.job.failed',
         metadata: {
-          queue: 'test',
+          queue: QUEUE_NAMES.TEST,
           jobId: job.id,
           jobName: job.name,
           durationMs: Number(durationMs.toFixed(2)),

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { createLogger } from '@kurvenfunk/logger';
-import type { ContextualPayload } from '@kurvenfunk/types';
+import { QUEUE_NAMES, type ContextualPayload } from '@kurvenfunk/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -19,7 +19,7 @@ const logger = createLogger({
 @Injectable()
 export class TestJobService implements OnModuleInit {
   constructor(
-    @InjectQueue('test')
+    @InjectQueue(QUEUE_NAMES.TEST)
     private readonly testQueue: Queue<TestJobPayload>,
     private readonly configService: ConfigService,
   ) {}
@@ -47,7 +47,7 @@ export class TestJobService implements OnModuleInit {
       requestId,
       event: 'queue.job.queued',
       metadata: {
-        queue: 'test',
+        queue: QUEUE_NAMES.TEST,
         jobId: job.id,
         jobName: job.name,
       },

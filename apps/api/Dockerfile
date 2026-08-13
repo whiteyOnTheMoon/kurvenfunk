@@ -27,6 +27,7 @@ COPY packages/database ./packages/database
 RUN DATABASE_URL=postgresql://build:build@localhost:5432/build \
     pnpm --filter @kurvenfunk/database generate
 RUN pnpm --filter @kurvenfunk/database build
+RUN pnpm --filter @kurvenfunk/types build
 RUN pnpm --filter @kurvenfunk/logger build
 RUN pnpm --filter api build
 
@@ -56,8 +57,8 @@ RUN pnpm install \
     --prod \
     --filter api...
 
-COPY packages/types ./packages/types
 COPY packages/config ./packages/config
+COPY --from=build /app/packages/types/dist ./packages/types/dist
 COPY --from=build /app/packages/database/package.json ./packages/database/package.json
 COPY --from=build /app/packages/database/dist ./packages/database/dist
 

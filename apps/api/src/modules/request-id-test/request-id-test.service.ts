@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import type { ContextualPayload } from '@kurvenfunk/types';
+import { QUEUE_NAMES, type ContextualPayload } from '@kurvenfunk/types';
 import type { Queue } from 'bullmq';
 
 interface TestJobData {
@@ -12,7 +12,7 @@ type TestJobPayload = ContextualPayload<TestJobData>;
 @Injectable()
 export class RequestIdTestService {
   constructor(
-    @InjectQueue('test')
+    @InjectQueue(QUEUE_NAMES.TEST)
     private readonly testQueue: Queue<TestJobPayload>,
   ) {}
 

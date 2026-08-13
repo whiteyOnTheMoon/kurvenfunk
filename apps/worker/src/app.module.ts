@@ -1,6 +1,11 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  APPLICATION_QUEUE_NAMES,
+  DEFAULT_JOB_OPTIONS,
+  QUEUE_NAMES,
+} from '@kurvenfunk/types';
 import { TestJobService } from './jobs/test-job.service';
 import { TestProcessor } from './processors/test.processor';
 import { validateEnvironment } from './config/env.validation';
@@ -24,8 +29,15 @@ import { validateEnvironment } from './config/env.validation';
     }),
 
     BullModule.registerQueue({
-      name: 'test',
+      name: QUEUE_NAMES.TEST,
     }),
+
+    BullModule.registerQueue(
+      ...APPLICATION_QUEUE_NAMES.map((name) => ({
+        name,
+        defaultJobOptions: DEFAULT_JOB_OPTIONS,
+      })),
+    ),
   ],
   providers: [TestProcessor, TestJobService],
 })

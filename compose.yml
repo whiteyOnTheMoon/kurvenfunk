@@ -105,7 +105,24 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/v1/health/live || exit 1
+        - >-
+          node --input-type=module -e "import Redis from 'ioredis';
+          const redis = new Redis({
+          host: process.env.REDIS_HOST || 'redis',
+          port: Number(process.env.REDIS_PORT || 6379),
+          password: process.env.REDIS_PASSWORD,
+          lazyConnect: true,
+          maxRetriesPerRequest: 1
+          });
+          try {
+          await redis.connect();
+          const result = await redis.ping();
+          await redis.quit();
+          process.exit(result === 'PONG' ? 0 : 1);
+          } catch {
+          redis.disconnect();
+          process.exit(1);
+          }"
       interval: 10s
       timeout: 5s
       retries: 5

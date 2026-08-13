@@ -5,6 +5,10 @@ import {
   type NestModule,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  APPLICATION_QUEUE_NAMES,
+  DEFAULT_JOB_OPTIONS,
+} from '@kurvenfunk/types';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validateEnvironment } from './config/env.validation';
 import { HealthModule } from './modules/health/health.module';
@@ -28,6 +32,13 @@ import { RequestIdTestModule } from './modules/request-id-test/request-id-test.m
         },
       }),
     }),
+
+    BullModule.registerQueue(
+      ...APPLICATION_QUEUE_NAMES.map((name) => ({
+        name,
+        defaultJobOptions: DEFAULT_JOB_OPTIONS,
+      })),
+    ),
 
     HealthModule,
     RequestIdTestModule,

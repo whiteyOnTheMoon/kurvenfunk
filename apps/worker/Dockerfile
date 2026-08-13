@@ -22,6 +22,7 @@ COPY packages/types ./packages/types
 COPY packages/config ./packages/config
 COPY packages/logger ./packages/logger
 
+RUN pnpm --filter @kurvenfunk/types build
 RUN pnpm --filter @kurvenfunk/logger build
 RUN pnpm --filter worker build
 
@@ -49,9 +50,9 @@ RUN pnpm install \
     --prod \
     --filter worker...
 
-COPY packages/types ./packages/types
 COPY packages/config ./packages/config
 
+COPY --from=build /app/packages/types/dist ./packages/types/dist
 COPY --from=build /app/packages/logger/dist ./packages/logger/dist
 COPY --from=build /app/apps/worker/dist ./apps/worker/dist
 
