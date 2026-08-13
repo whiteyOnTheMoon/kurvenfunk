@@ -5,8 +5,17 @@ set -Eeuo pipefail
 PROJECT_DIR="${PROJECT_DIR:-$HOME/www/kurvenfunk}"
 BRANCH="develop"
 COMPOSE_PROJECT="kurvenfunk-dev"
+EXPECTED_COMMIT="${EXPECTED_COMMIT:-}"
+LOCK_FILE="/tmp/kurvenfunk-dev-deploy.lock"
 
 cd "$PROJECT_DIR"
+
+exec 9>"$LOCK_FILE"
+
+if ! flock -n 9; then
+  echo "ERROR: Another DEV deployment is already running."
+  exit 1
+fi
 
 echo "=== Kurvenfunk DEV Deployment ==="
 echo "Directory: $PROJECT_DIR"
@@ -37,8 +46,19 @@ git fetch origin "$BRANCH"
 LOCAL_COMMIT="$(git rev-parse HEAD)"
 REMOTE_COMMIT="$(git rev-parse "origin/$BRANCH")"
 
-echo "Local:  $LOCAL_COMMIT"
-echo "Remote: $REMOTE_COMMIT"
+echo "Local:    $LOCAL_COMMIT"
+echo "Remote:   $REMOTE_COMMIT"
+
+if [[ -n "$EXPECTED_COMMIT" ]]; then
+  echo "Expected: $EXPECTED_COMMIT"
+
+  if [[ "$REMOTE_COMMIT" != "$EXPECTED_COMMIT" ]]; then
+    echo
+    echo "SKIP: origin/$BRANCH no longer points to the CI-tested commit."
+    echo "A newer commit is already present on $BRANCH."
+    exit 0
+  fi
+fi
 
 if [[ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]]; then
   echo
@@ -46,6 +66,15 @@ if [[ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]]; then
   git pull --ff-only origin "$BRANCH"
 else
   echo "Repository is already up to date."
+fi
+
+DEPLOYED_COMMIT="$(git rev-parse HEAD)"
+
+if [[ -n "$EXPECTED_COMMIT" && "$DEPLOYED_COMMIT" != "$EXPECTED_COMMIT" ]]; then
+  echo "ERROR: Checked out commit does not match expected CI commit."
+  echo "Expected: $EXPECTED_COMMIT"
+  echo "Actual:   $DEPLOYED_COMMIT"
+  exit 1
 fi
 
 echo
