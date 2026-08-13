@@ -14,15 +14,15 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   ci:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    concurrency:
+      group: ci-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
 
     env:
       NODE_ENV: production
@@ -67,3 +67,47 @@ jobs:
 
       - name: Build
         run: pnpm turbo build
+
+  deploy-dev:
+    name: Deploy DEV
+    needs:
+      - ci
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+
+          install -m 700 -d ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy tested commit
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          ssh \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/dev.sh"
