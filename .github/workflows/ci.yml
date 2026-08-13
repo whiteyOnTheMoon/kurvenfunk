@@ -111,3 +111,47 @@ jobs:
             -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/dev.sh"
+
+  deploy-staging:
+    name: Deploy STAGING
+    needs:
+      - ci
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+
+          install -m 700 -d ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_staging
+          chmod 600 ~/.ssh/kurvenfunk_staging
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy tested commit
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          ssh \
+            -i ~/.ssh/kurvenfunk_staging \
+            -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk-staging && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/staging.sh"
