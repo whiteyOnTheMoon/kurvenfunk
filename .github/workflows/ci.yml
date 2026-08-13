@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages
+        run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
+
       - name: Lint
         run: pnpm turbo lint
 
