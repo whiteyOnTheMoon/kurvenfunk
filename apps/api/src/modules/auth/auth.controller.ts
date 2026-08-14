@@ -12,6 +12,7 @@ export class AuthController {
       id: request.user?.kurvenfunkUserId,
       status: request.user?.kurvenfunkUserStatus,
       subject: request.user?.sub,
+      onboardingCompleted: request.user?.kurvenfunkOnboardingCompleted,
     };
   }
 }

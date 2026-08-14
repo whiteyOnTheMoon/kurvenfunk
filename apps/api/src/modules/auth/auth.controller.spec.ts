@@ -18,6 +18,7 @@ describe('AuthController', () => {
         sub: 'keycloak-user-123',
         kurvenfunkUserId: 'kurvenfunk-user-123',
         kurvenfunkUserStatus: 'LIMITED',
+        kurvenfunkOnboardingCompleted: false,
       },
     } as AuthenticatedRequest;
 
@@ -25,6 +26,7 @@ describe('AuthController', () => {
       id: 'kurvenfunk-user-123',
       status: 'LIMITED',
       subject: 'keycloak-user-123',
+      onboardingCompleted: false,
     });
   });
 });

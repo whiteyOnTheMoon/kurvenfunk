@@ -26,6 +26,7 @@ describe('UsersService', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'keycloak-subject-123',
       status: 'ACTIVE',
+      onboardingCompleted: false,
     });
 
     await expect(
@@ -34,6 +35,7 @@ describe('UsersService', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'keycloak-subject-123',
       status: 'ACTIVE',
+      onboardingCompleted: false,
     });
 
     expect(upsert).toHaveBeenCalledWith({
@@ -48,6 +50,7 @@ describe('UsersService', () => {
         id: true,
         keycloakSubject: true,
         status: true,
+        onboardingCompleted: true,
       },
     });
   });

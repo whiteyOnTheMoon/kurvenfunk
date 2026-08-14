@@ -5,6 +5,7 @@ export interface SyncedUser {
   id: string;
   keycloakSubject: string;
   status: 'ACTIVE' | 'LIMITED' | 'BANNED';
+  onboardingCompleted: boolean;
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class UsersService implements OnModuleDestroy {
         id: true,
         keycloakSubject: true,
         status: true,
+        onboardingCompleted: true,
       },
     });
   }

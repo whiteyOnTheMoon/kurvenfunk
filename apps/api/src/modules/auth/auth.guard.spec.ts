@@ -51,6 +51,7 @@ describe('AuthGuard', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'user-123',
       status: 'ACTIVE',
+      onboardingCompleted: false,
     });
   });
 
@@ -84,6 +85,7 @@ describe('AuthGuard', () => {
         preferred_username?: string;
         kurvenfunkUserId: string;
         kurvenfunkUserStatus: 'ACTIVE' | 'LIMITED' | 'BANNED';
+        kurvenfunkOnboardingCompleted: boolean;
       };
     };
 
@@ -101,6 +103,7 @@ describe('AuthGuard', () => {
       preferred_username: 'test-user',
       kurvenfunkUserId: 'kurvenfunk-user-123',
       kurvenfunkUserStatus: 'ACTIVE',
+      kurvenfunkOnboardingCompleted: false,
     });
   });
 
@@ -114,6 +117,7 @@ describe('AuthGuard', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'user-123',
       status: 'LIMITED',
+      onboardingCompleted: false,
     });
 
     await expect(
@@ -131,6 +135,7 @@ describe('AuthGuard', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'user-123',
       status: 'BANNED',
+      onboardingCompleted: false,
     });
 
     await expect(

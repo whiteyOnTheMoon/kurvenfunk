@@ -46,6 +46,7 @@ export class AuthGuard implements CanActivate {
       sub: payload.sub,
       kurvenfunkUserId: user.id,
       kurvenfunkUserStatus: user.status,
+      kurvenfunkOnboardingCompleted: user.onboardingCompleted,
     };
 
     return true;

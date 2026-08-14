@@ -23,6 +23,7 @@ interface CurrentUser {
   id: string;
   status: UserStatus;
   subject: string;
+  onboardingCompleted: boolean;
 }
 
 interface AuthContextValue {

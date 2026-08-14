@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { AuthProvider } from '../features/auth/auth-provider';
+import { OnboardingGate } from '../features/onboarding/onboarding-gate';
 import { env } from '../lib/env';
 import './globals.css';
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <AuthProvider apiUrl={env.API_URL} authUrl={env.AUTH_URL}>
-          {children}
+          <OnboardingGate>{children}</OnboardingGate>
         </AuthProvider>
       </body>
     </html>
