@@ -39,7 +39,7 @@ echo "Configuring e-mail registration..."
     -s verifyEmail=true \
     -s loginWithEmailAllowed=true \
     -s duplicateEmailsAllowed=false \
-    -s resetPasswordAllowed=false
+    -s resetPasswordAllowed=true
 
 echo "Configuring DEV SMTP..."
 
