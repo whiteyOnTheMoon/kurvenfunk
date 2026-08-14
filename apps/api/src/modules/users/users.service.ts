@@ -4,6 +4,7 @@ import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 export interface SyncedUser {
   id: string;
   keycloakSubject: string;
+  status: 'ACTIVE' | 'LIMITED' | 'BANNED';
 }
 
 @Injectable()
@@ -22,6 +23,7 @@ export class UsersService implements OnModuleDestroy {
       select: {
         id: true,
         keycloakSubject: true,
+        status: true,
       },
     });
   }

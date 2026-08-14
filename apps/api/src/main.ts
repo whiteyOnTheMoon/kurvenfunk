@@ -8,6 +8,13 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  app.enableCors({
+    origin: configService.getOrThrow<string>('WEB_URL'),
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Request-Id'],
+  });
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -16,7 +23,6 @@ async function bootstrap() {
     new ResponseInterceptor(),
   );
 
-  const configService = app.get(ConfigService);
   const swaggerEnabled = configService.get<boolean>('SWAGGER_ENABLED', false);
 
   if (swaggerEnabled) {

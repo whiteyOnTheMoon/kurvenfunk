@@ -15,6 +15,7 @@ const apiEnvSchema = z
     REDIS_PASSWORD: z.string().min(1),
 
     DATABASE_URL: z.string().url(),
+    WEB_URL: z.string().url(),
     KEYCLOAK_ISSUER: z.string().url(),
     KEYCLOAK_JWKS_URL: z.string().url(),
     KEYCLOAK_AUDIENCE: z.string().min(1),

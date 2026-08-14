@@ -25,6 +25,7 @@ describe('UsersService', () => {
     upsert.mockResolvedValue({
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'keycloak-subject-123',
+      status: 'ACTIVE',
     });
 
     await expect(
@@ -32,6 +33,7 @@ describe('UsersService', () => {
     ).resolves.toEqual({
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'keycloak-subject-123',
+      status: 'ACTIVE',
     });
 
     expect(upsert).toHaveBeenCalledWith({
@@ -45,6 +47,7 @@ describe('UsersService', () => {
       select: {
         id: true,
         keycloakSubject: true,
+        status: true,
       },
     });
   });

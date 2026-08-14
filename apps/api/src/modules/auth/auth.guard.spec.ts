@@ -1,4 +1,8 @@
-import { type ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  type ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
 jest.mock('./keycloak-jwt.service', () => ({
@@ -46,6 +50,7 @@ describe('AuthGuard', () => {
     syncKeycloakUser.mockResolvedValue({
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'user-123',
+      status: 'ACTIVE',
     });
   });
 
@@ -58,7 +63,6 @@ describe('AuthGuard', () => {
     const context = createContext('Bearer valid-token');
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
-
     expect(verifyAccessToken).toHaveBeenCalledWith('valid-token');
     expect(syncKeycloakUser).toHaveBeenCalledWith('user-123');
   });
@@ -79,6 +83,7 @@ describe('AuthGuard', () => {
         sub: string;
         preferred_username?: string;
         kurvenfunkUserId: string;
+        kurvenfunkUserStatus: 'ACTIVE' | 'LIMITED' | 'BANNED';
       };
     };
 
@@ -95,7 +100,42 @@ describe('AuthGuard', () => {
       email_verified: true,
       preferred_username: 'test-user',
       kurvenfunkUserId: 'kurvenfunk-user-123',
+      kurvenfunkUserStatus: 'ACTIVE',
     });
+  });
+
+  it('allows a LIMITED user to authenticate', async () => {
+    verifyAccessToken.mockResolvedValue({
+      sub: 'user-123',
+      email_verified: true,
+    });
+
+    syncKeycloakUser.mockResolvedValue({
+      id: 'kurvenfunk-user-123',
+      keycloakSubject: 'user-123',
+      status: 'LIMITED',
+    });
+
+    await expect(
+      guard.canActivate(createContext('Bearer valid-token')),
+    ).resolves.toBe(true);
+  });
+
+  it('rejects a BANNED user', async () => {
+    verifyAccessToken.mockResolvedValue({
+      sub: 'user-123',
+      email_verified: true,
+    });
+
+    syncKeycloakUser.mockResolvedValue({
+      id: 'kurvenfunk-user-123',
+      keycloakSubject: 'user-123',
+      status: 'BANNED',
+    });
+
+    await expect(
+      guard.canActivate(createContext('Bearer valid-token')),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('rejects a missing authorization header', async () => {
