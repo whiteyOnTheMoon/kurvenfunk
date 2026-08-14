@@ -23,6 +23,7 @@
     "@kurvenfunk/database": "workspace:*",
     "@kurvenfunk/logger": "workspace:*",
     "@kurvenfunk/types": "workspace:*",
+    "@kurvenfunk/validation": "workspace:*",
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
