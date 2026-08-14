@@ -98,6 +98,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       DATABASE_URL: ${DATABASE_URL}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
 
     depends_on:
       postgres:

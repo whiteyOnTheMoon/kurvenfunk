@@ -15,6 +15,10 @@ const apiEnvSchema = z
     REDIS_PASSWORD: z.string().min(1),
 
     DATABASE_URL: z.string().url(),
+    SWAGGER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
   })
   .passthrough();
 
