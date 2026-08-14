@@ -39,6 +39,9 @@ services:
       - "127.0.0.1:3101:3000"
 
   keycloak:
+    environment:
+      KC_HOSTNAME: https://auth-dev.kurvenfunk.at
+      KC_PROXY_HEADERS: xforwarded
     ports:
       - "127.0.0.1:3102:8080"
 
