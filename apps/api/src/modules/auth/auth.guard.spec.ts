@@ -5,17 +5,27 @@ jest.mock('./keycloak-jwt.service', () => ({
   KeycloakJwtService: class KeycloakJwtService {},
 }));
 
+jest.mock('../users/users.service', () => ({
+  UsersService: class UsersService {},
+}));
+
+import { UsersService } from '../users/users.service';
 import { AuthGuard } from './auth.guard';
 import type { KeycloakJwtService } from './keycloak-jwt.service';
 
 describe('AuthGuard', () => {
   const verifyAccessToken = jest.fn();
+  const syncKeycloakUser = jest.fn();
 
   const keycloakJwtService = {
     verifyAccessToken,
   } as unknown as KeycloakJwtService;
 
-  const guard = new AuthGuard(keycloakJwtService);
+  const usersService = {
+    syncKeycloakUser,
+  } as unknown as UsersService;
+
+  const guard = new AuthGuard(keycloakJwtService, usersService);
 
   function createContext(authorization?: string): ExecutionContext {
     const request = {
@@ -31,6 +41,12 @@ describe('AuthGuard', () => {
 
   beforeEach(() => {
     verifyAccessToken.mockReset();
+    syncKeycloakUser.mockReset();
+
+    syncKeycloakUser.mockResolvedValue({
+      id: 'kurvenfunk-user-123',
+      keycloakSubject: 'user-123',
+    });
   });
 
   it('accepts a valid bearer token', async () => {
@@ -43,9 +59,10 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(context)).resolves.toBe(true);
 
     expect(verifyAccessToken).toHaveBeenCalledWith('valid-token');
+    expect(syncKeycloakUser).toHaveBeenCalledWith('user-123');
   });
 
-  it('attaches verified claims to the request', async () => {
+  it('attaches verified claims and the Kurvenfunk user id to the request', async () => {
     verifyAccessToken.mockResolvedValue({
       sub: 'user-123',
       preferred_username: 'test-user',
@@ -59,6 +76,7 @@ describe('AuthGuard', () => {
       user?: {
         sub: string;
         preferred_username?: string;
+        kurvenfunkUserId: string;
       };
     };
 
@@ -73,6 +91,7 @@ describe('AuthGuard', () => {
     expect(request.user).toEqual({
       sub: 'user-123',
       preferred_username: 'test-user',
+      kurvenfunkUserId: 'kurvenfunk-user-123',
     });
   });
 
@@ -82,6 +101,7 @@ describe('AuthGuard', () => {
     );
 
     expect(verifyAccessToken).not.toHaveBeenCalled();
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 
   it('rejects a non-bearer authorization header', async () => {
@@ -90,6 +110,7 @@ describe('AuthGuard', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     expect(verifyAccessToken).not.toHaveBeenCalled();
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 
   it('rejects malformed bearer headers', async () => {
@@ -98,6 +119,7 @@ describe('AuthGuard', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     expect(verifyAccessToken).not.toHaveBeenCalled();
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 
   it('propagates invalid token rejection', async () => {
@@ -108,6 +130,8 @@ describe('AuthGuard', () => {
     await expect(
       guard.canActivate(createContext('Bearer invalid-token')),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 
   it('rejects a verified token without a subject', async () => {
@@ -116,5 +140,7 @@ describe('AuthGuard', () => {
     await expect(
       guard.canActivate(createContext('Bearer valid-token')),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 });
