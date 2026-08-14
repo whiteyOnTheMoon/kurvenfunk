@@ -77,6 +77,21 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: "500"
+      MP_DATABASE: /data/mailpit.db
+      MP_LABEL: Kurvenfunk DEV
+    volumes:
+      - /srv/kurvenfunk/dev/mailpit:/data
+    ports:
+      - "127.0.0.1:3107:8025"
+    networks:
+      - backend
+
 x-kurvenfunk-environment:
   name: development
   env_file: .env.dev
