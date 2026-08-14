@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useAuth } from '../../features/auth/auth-provider';
 
 export function LoginClient() {
-  const { authenticated, error, initialized, login, user } = useAuth();
+  const {
+    authenticated,
+    error,
+    initialized,
+    login,
+    loginWithGoogle,
+    user,
+  } = useAuth();
 
   if (!initialized) {
     return <p>Checking login status…</p>;
@@ -46,6 +53,9 @@ export function LoginClient() {
 
       <button type="button" onClick={() => void login()}>
         Login with email
+      </button>
+      <button type="button" onClick={() => void loginWithGoogle()}>
+        Continue with Google
       </button>
     </main>
   );

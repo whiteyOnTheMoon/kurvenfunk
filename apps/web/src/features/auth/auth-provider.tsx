@@ -29,6 +29,7 @@ interface AuthContextValue {
   authenticated: boolean;
   initialized: boolean;
   login: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   token?: string;
   user?: CurrentUser;
@@ -186,6 +187,15 @@ export function AuthProvider({
     });
   }, [authUrl]);
 
+  const loginWithGoogle = useCallback(async () => {
+    const client = getKeycloak(authUrl);
+
+    await client.login({
+      redirectUri: `${window.location.origin}/login`,
+      idpHint: 'google',
+    });
+  }, [authUrl]);
+
   const logout = useCallback(async () => {
     const client = getKeycloak(authUrl);
 
@@ -199,12 +209,22 @@ export function AuthProvider({
       authenticated,
       initialized,
       login,
+      loginWithGoogle,
       logout,
       token,
       user,
       error,
     }),
-    [authenticated, initialized, login, logout, token, user, error],
+    [
+      authenticated,
+      initialized,
+      login,
+      loginWithGoogle,
+      logout,
+      token,
+      user,
+      error,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
