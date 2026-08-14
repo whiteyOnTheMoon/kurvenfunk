@@ -35,7 +35,7 @@ enum UserRole {
 model User {
   id                  String        @id @default(uuid()) @db.Uuid
   keycloakSubject     String        @unique
-  nickname            String?       @unique
+  nickname            String?
   status              UserStatus    @default(ACTIVE)
   fanPreference       FanPreference @default(UNSET)
   favoriteClubId      String?       @db.Uuid
