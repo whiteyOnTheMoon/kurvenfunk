@@ -199,6 +199,11 @@ export function AuthProvider({
   const logout = useCallback(async () => {
     const client = getKeycloak(authUrl);
 
+    setAuthenticated(false);
+    setToken(undefined);
+    setUser(undefined);
+    setError(undefined);
+
     await client.logout({
       redirectUri: `${window.location.origin}/`,
     });

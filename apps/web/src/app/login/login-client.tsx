@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-
 import { useAuth } from '../../features/auth/auth-provider';
 
 export function LoginClient() {
@@ -11,6 +10,7 @@ export function LoginClient() {
     initialized,
     login,
     loginWithGoogle,
+    logout,
     user,
   } = useAuth();
 
@@ -41,7 +41,12 @@ export function LoginClient() {
       <main>
         <h1>Login successful</h1>
         <p>Status: {user.status}</p>
-        <Link href="/">Continue to Kurvenfunk</Link>
+        <p>
+          <Link href="/">Continue to Kurvenfunk</Link>
+        </p>
+        <button type="button" onClick={() => void logout()}>
+          Logout
+        </button>
       </main>
     );
   }
@@ -50,7 +55,6 @@ export function LoginClient() {
     <main>
       <h1>Login</h1>
       <p>Sign in with your email address and password.</p>
-
       <button type="button" onClick={() => void login()}>
         Login with email
       </button>
