@@ -25,6 +25,10 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Token subject is missing');
     }
 
+    if (payload.email_verified !== true) {
+      throw new UnauthorizedException('Email address is not verified');
+    }
+
     const user = await this.usersService.syncKeycloakUser(payload.sub);
 
     request.user = {

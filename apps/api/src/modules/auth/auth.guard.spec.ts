@@ -52,6 +52,7 @@ describe('AuthGuard', () => {
   it('accepts a valid bearer token', async () => {
     verifyAccessToken.mockResolvedValue({
       sub: 'user-123',
+      email_verified: true,
     });
 
     const context = createContext('Bearer valid-token');
@@ -65,6 +66,7 @@ describe('AuthGuard', () => {
   it('attaches verified claims and the Kurvenfunk user id to the request', async () => {
     verifyAccessToken.mockResolvedValue({
       sub: 'user-123',
+      email_verified: true,
       preferred_username: 'test-user',
     });
 
@@ -90,6 +92,7 @@ describe('AuthGuard', () => {
 
     expect(request.user).toEqual({
       sub: 'user-123',
+      email_verified: true,
       preferred_username: 'test-user',
       kurvenfunkUserId: 'kurvenfunk-user-123',
     });
@@ -130,6 +133,31 @@ describe('AuthGuard', () => {
     await expect(
       guard.canActivate(createContext('Bearer invalid-token')),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a token for an unverified email address', async () => {
+    verifyAccessToken.mockResolvedValue({
+      sub: 'user-123',
+      email_verified: false,
+    });
+
+    await expect(
+      guard.canActivate(createContext('Bearer valid-token')),
+    ).rejects.toThrow('Email address is not verified');
+
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a token without an email verification claim', async () => {
+    verifyAccessToken.mockResolvedValue({
+      sub: 'user-123',
+    });
+
+    await expect(
+      guard.canActivate(createContext('Bearer valid-token')),
+    ).rejects.toThrow('Email address is not verified');
 
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
