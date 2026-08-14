@@ -20,28 +20,18 @@ describe('nickname validation', () => {
   it('rejects nicknames shorter than the minimum length', () => {
     assert.throws(
       () => nicknameSchema.parse('ab'),
-      new RegExp(
-        `Nickname must be at least ${NICKNAME_MIN_LENGTH} characters long`,
-      ),
+      new RegExp(`Nickname must be at least ${NICKNAME_MIN_LENGTH} characters long`),
     );
   });
 
   it('rejects nicknames longer than the maximum length', () => {
     assert.throws(
       () => nicknameSchema.parse('a'.repeat(NICKNAME_MAX_LENGTH + 1)),
-      new RegExp(
-        `Nickname must be at most ${NICKNAME_MAX_LENGTH} characters long`,
-      ),
+      new RegExp(`Nickname must be at most ${NICKNAME_MAX_LENGTH} characters long`),
     );
   });
 
-  for (const nickname of [
-    'rapid fan',
-    'rapid.fan',
-    'rapid@fan',
-    'rapid!',
-    'stürmer',
-  ]) {
+  for (const nickname of ['rapid fan', 'rapid.fan', 'rapid@fan', 'rapid!', 'stürmer']) {
     it(`rejects invalid characters in ${nickname}`, () => {
       assert.throws(
         () => nicknameSchema.parse(nickname),
@@ -50,19 +40,9 @@ describe('nickname validation', () => {
     });
   }
 
-  for (const nickname of [
-    'admin',
-    'ADMIN',
-    'Moderator',
-    'KURVENFUNK',
-    'Support',
-    'SYSTEM',
-  ]) {
+  for (const nickname of ['admin', 'ADMIN', 'Moderator', 'KURVENFUNK', 'Support', 'SYSTEM']) {
     it(`rejects reserved nickname ${nickname} case-insensitively`, () => {
-      assert.throws(
-        () => nicknameSchema.parse(nickname),
-        /Nickname is reserved/,
-      );
+      assert.throws(() => nicknameSchema.parse(nickname), /Nickname is reserved/);
     });
   }
 

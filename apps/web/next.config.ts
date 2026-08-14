@@ -1,9 +1,9 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-import "./src/lib/env";
+import './src/lib/env';
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: 'standalone',
 };
 
 export default nextConfig;

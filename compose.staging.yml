@@ -35,8 +35,8 @@ services:
     environment:
       KC_HOSTNAME: https://auth-staging.kurvenfunk.at
       KC_PROXY_HEADERS: xforwarded
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
 
   meilisearch:
     volumes:
@@ -54,11 +54,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1"
-        ]
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5

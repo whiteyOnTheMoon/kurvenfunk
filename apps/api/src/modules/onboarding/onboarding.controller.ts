@@ -1,8 +1,5 @@
 import { Body, Controller, Patch, Req, UseGuards } from '@nestjs/common';
-import {
-  selectNicknameSchema,
-  type SelectNicknameInput,
-} from '@kurvenfunk/validation';
+import { selectNicknameSchema, type SelectNicknameInput } from '@kurvenfunk/validation';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
@@ -20,9 +17,6 @@ export class OnboardingController {
     @Body(new ZodValidationPipe(selectNicknameSchema))
     input: SelectNicknameInput,
   ) {
-    return this.onboardingService.selectNickname(
-      request.user!.kurvenfunkUserId,
-      input.nickname,
-    );
+    return this.onboardingService.selectNickname(request.user!.kurvenfunkUserId, input.nickname);
   }
 }

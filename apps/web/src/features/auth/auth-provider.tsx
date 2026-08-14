@@ -54,10 +54,7 @@ function getKeycloak(authUrl: string): Keycloak {
   return keycloak;
 }
 
-async function fetchCurrentUser(
-  apiUrl: string,
-  token: string,
-): Promise<CurrentUser> {
+async function fetchCurrentUser(apiUrl: string, token: string): Promise<CurrentUser> {
   const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -76,10 +73,7 @@ async function fetchCurrentUser(
       throw new Error('ACCOUNT_BANNED');
     }
 
-    if (
-      response.status === 401 &&
-      body?.message === 'Email address is not verified'
-    ) {
+    if (response.status === 401 && body?.message === 'Email address is not verified') {
       throw new Error('EMAIL_NOT_VERIFIED');
     }
 
@@ -97,11 +91,7 @@ async function fetchCurrentUser(
   return body.data;
 }
 
-export function AuthProvider({
-  apiUrl,
-  authUrl,
-  children,
-}: AuthProviderProps) {
+export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
   const [initialized, setInitialized] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [token, setToken] = useState<string>();
@@ -148,10 +138,7 @@ export function AuthProvider({
             return;
           }
 
-          const message =
-            authError instanceof Error
-              ? authError.message
-              : 'AUTHENTICATION_FAILED';
+          const message = authError instanceof Error ? authError.message : 'AUTHENTICATION_FAILED';
 
           setAuthenticated(false);
           setToken(undefined);
@@ -221,16 +208,7 @@ export function AuthProvider({
       user,
       error,
     }),
-    [
-      authenticated,
-      initialized,
-      login,
-      loginWithGoogle,
-      logout,
-      token,
-      user,
-      error,
-    ],
+    [authenticated, initialized, login, loginWithGoogle, logout, token, user, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

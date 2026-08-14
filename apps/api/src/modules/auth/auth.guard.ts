@@ -62,9 +62,7 @@ export class AuthGuard implements CanActivate {
     const match = authorization.match(/^Bearer\s+(\S+)$/i);
 
     if (!match?.[1]) {
-      throw new UnauthorizedException(
-        'Authorization header must use Bearer token',
-      );
+      throw new UnauthorizedException('Authorization header must use Bearer token');
     }
 
     return match[1];

@@ -43,9 +43,7 @@ describe('OnboardingService', () => {
       nickname: 'RapidFan',
     });
 
-    await expect(
-      service.selectNickname('user-123', 'RapidFan'),
-    ).resolves.toEqual({
+    await expect(service.selectNickname('user-123', 'RapidFan')).resolves.toEqual({
       id: 'user-123',
       nickname: 'RapidFan',
     });
@@ -91,9 +89,7 @@ describe('OnboardingService', () => {
     const error = new Error('database unavailable');
     update.mockRejectedValue(error);
 
-    await expect(service.selectNickname('user-123', 'RapidFan')).rejects.toBe(
-      error,
-    );
+    await expect(service.selectNickname('user-123', 'RapidFan')).rejects.toBe(error);
   });
 
   it('disconnects the database client on module destroy', async () => {

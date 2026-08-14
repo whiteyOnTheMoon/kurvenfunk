@@ -1,13 +1,5 @@
-import {
-  createPrismaClient,
-  Prisma,
-  type DatabaseClient,
-} from '@kurvenfunk/database';
-import {
-  ConflictException,
-  Injectable,
-  type OnModuleDestroy,
-} from '@nestjs/common';
+import { createPrismaClient, Prisma, type DatabaseClient } from '@kurvenfunk/database';
+import { ConflictException, Injectable, type OnModuleDestroy } from '@nestjs/common';
 
 export interface NicknameSelection {
   id: string;
@@ -18,10 +10,7 @@ export interface NicknameSelection {
 export class OnboardingService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
 
-  async selectNickname(
-    userId: string,
-    nickname: string,
-  ): Promise<NicknameSelection> {
+  async selectNickname(userId: string, nickname: string): Promise<NicknameSelection> {
     try {
       return (await this.database.user.update({
         where: {
@@ -36,10 +25,7 @@ export class OnboardingService implements OnModuleDestroy {
         },
       })) as NicknameSelection;
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException({
           code: 'NICKNAME_TAKEN',
           message: 'Nickname is already taken',

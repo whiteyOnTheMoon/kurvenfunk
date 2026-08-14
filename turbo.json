@@ -2,39 +2,22 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "dist/**",
-        "build/**"
-      ],
-      "env": [
-        "WEB_URL",
-        "API_URL",
-        "AUTH_URL",
-        "NODE_ENV"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**", "build/**"],
+      "env": ["WEB_URL", "API_URL", "AUTH_URL", "NODE_ENV"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ]
+      "dependsOn": ["^typecheck"]
     },
     "test": {
-      "dependsOn": [
-        "^test"
-      ]
+      "dependsOn": ["^test"]
     }
   }
 }

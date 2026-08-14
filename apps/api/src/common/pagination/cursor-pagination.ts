@@ -5,12 +5,7 @@ export const MAX_PAGE_SIZE = 100;
 
 export const cursorPaginationQuerySchema = z.strictObject({
   cursor: z.string().trim().min(1).optional(),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(MAX_PAGE_SIZE)
-    .default(DEFAULT_PAGE_SIZE),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 
 export type CursorPaginationQuery = z.infer<typeof cursorPaginationQuerySchema>;
@@ -34,8 +29,7 @@ export function createCursorPaginatedResult<T>(
   const pageItems = hasNextPage ? items.slice(0, limit) : items;
 
   const lastItem = pageItems.at(-1);
-  const nextCursor =
-    hasNextPage && lastItem !== undefined ? getCursor(lastItem) : null;
+  const nextCursor = hasNextPage && lastItem !== undefined ? getCursor(lastItem) : null;
 
   return {
     items: pageItems,

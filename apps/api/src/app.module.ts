@@ -1,14 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
-import {
-  type MiddlewareConsumer,
-  Module,
-  type NestModule,
-} from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {
-  APPLICATION_QUEUE_NAMES,
-  DEFAULT_JOB_OPTIONS,
-} from '@kurvenfunk/types';
+import { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS } from '@kurvenfunk/types';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validateEnvironment } from './config/env.validation';
 import { AdminModule } from './modules/admin/admin.module';

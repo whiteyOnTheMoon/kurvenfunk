@@ -29,7 +29,7 @@ services:
     command:
       - redis-server
       - --appendonly
-      - "yes"
+      - 'yes'
       - --requirepass
       - ${REDIS_PASSWORD}
       - --maxmemory
@@ -51,9 +51,6 @@ services:
 
     networks:
       - backend
-
-
-
 
   web:
     build:
@@ -83,7 +80,6 @@ services:
     networks:
       - frontend
       - backend
-
 
   api:
     build:
@@ -135,7 +131,7 @@ services:
       - backend
     profiles:
       - deployment
-    restart: "no"
+    restart: 'no'
 
   worker:
     build:
@@ -201,8 +197,8 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
 
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
 
     depends_on:
       postgres:
@@ -219,7 +215,6 @@ services:
 
     networks:
       - backend
-
 
   meilisearch:
     image: getmeili/meilisearch:v1.15

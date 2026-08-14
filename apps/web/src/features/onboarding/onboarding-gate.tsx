@@ -15,10 +15,7 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   const router = useRouter();
 
   const requiresOnboarding =
-    initialized &&
-    authenticated &&
-    user !== undefined &&
-    !user.onboardingCompleted;
+    initialized && authenticated && user !== undefined && !user.onboardingCompleted;
 
   useEffect(() => {
     if (requiresOnboarding && pathname !== '/onboarding') {

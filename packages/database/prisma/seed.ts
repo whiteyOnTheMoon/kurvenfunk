@@ -1,4 +1,4 @@
-import { createPrismaClient } from "../src/client.js";
+import { createPrismaClient } from '../src/client.js';
 
 const prisma = createPrismaClient();
 
@@ -7,287 +7,287 @@ const clubs = [
   // ADMIRAL Bundesliga 2026/27
   // ---------------------------------------------------------------------------
   {
-    name: "LASK",
-    shortName: "LASK",
-    slug: "lask",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#CCCCCC",
-    aliases: ["ASK", "Linzer ASK", "LASK Linz"],
+    name: 'LASK',
+    shortName: 'LASK',
+    slug: 'lask',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#CCCCCC',
+    aliases: ['ASK', 'Linzer ASK', 'LASK Linz'],
   },
   {
-    name: "SK Sturm Graz",
-    shortName: "Sturm Graz",
-    slug: "sk-sturm-graz",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#808080",
-    aliases: ["STU", "Sturm", "Sturm Graz", "SK Puntigamer Sturm Graz"],
+    name: 'SK Sturm Graz',
+    shortName: 'Sturm Graz',
+    slug: 'sk-sturm-graz',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#808080',
+    aliases: ['STU', 'Sturm', 'Sturm Graz', 'SK Puntigamer Sturm Graz'],
   },
   {
-    name: "FC Red Bull Salzburg",
-    shortName: "Salzburg",
-    slug: "fc-red-bull-salzburg",
-    primaryColor: "#D71920",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#001E50",
-    aliases: ["RBS", "Red Bull Salzburg", "RB Salzburg", "Salzburg"],
+    name: 'FC Red Bull Salzburg',
+    shortName: 'Salzburg',
+    slug: 'fc-red-bull-salzburg',
+    primaryColor: '#D71920',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#001E50',
+    aliases: ['RBS', 'Red Bull Salzburg', 'RB Salzburg', 'Salzburg'],
   },
   {
-    name: "FK Austria Wien",
-    shortName: "Austria Wien",
-    slug: "fk-austria-wien",
-    primaryColor: "#5B2C83",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D4AF37",
-    aliases: ["FAK", "Austria", "Austria Wien", "Veilchen"],
+    name: 'FK Austria Wien',
+    shortName: 'Austria Wien',
+    slug: 'fk-austria-wien',
+    primaryColor: '#5B2C83',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D4AF37',
+    aliases: ['FAK', 'Austria', 'Austria Wien', 'Veilchen'],
   },
   {
-    name: "SK Rapid Wien",
-    shortName: "Rapid Wien",
-    slug: "sk-rapid-wien",
-    primaryColor: "#007A3D",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D4AF37",
-    aliases: ["SCR", "SK Rapid", "Rapid", "Rapid Wien"],
+    name: 'SK Rapid Wien',
+    shortName: 'Rapid Wien',
+    slug: 'sk-rapid-wien',
+    primaryColor: '#007A3D',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D4AF37',
+    aliases: ['SCR', 'SK Rapid', 'Rapid', 'Rapid Wien'],
   },
   {
-    name: "TSV Hartberg",
-    shortName: "Hartberg",
-    slug: "tsv-hartberg",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#00AEEF",
-    aliases: ["HTB", "Hartberg", "TSV Egger Glas Hartberg"],
+    name: 'TSV Hartberg',
+    shortName: 'Hartberg',
+    slug: 'tsv-hartberg',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#00AEEF',
+    aliases: ['HTB', 'Hartberg', 'TSV Egger Glas Hartberg'],
   },
   {
-    name: "SV Ried",
-    shortName: "Ried",
-    slug: "sv-ried",
-    primaryColor: "#009640",
-    secondaryColor: "#000000",
-    accentColor: "#FFFFFF",
-    aliases: ["SVR", "Ried", "SV Oberbank Ried"],
+    name: 'SV Ried',
+    shortName: 'Ried',
+    slug: 'sv-ried',
+    primaryColor: '#009640',
+    secondaryColor: '#000000',
+    accentColor: '#FFFFFF',
+    aliases: ['SVR', 'Ried', 'SV Oberbank Ried'],
   },
   {
-    name: "Wolfsberger AC",
-    shortName: "WAC",
-    slug: "wolfsberger-ac",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D71920",
-    aliases: ["WAC", "Wolfsberg", "RZ Pellets WAC"],
+    name: 'Wolfsberger AC',
+    shortName: 'WAC',
+    slug: 'wolfsberger-ac',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D71920',
+    aliases: ['WAC', 'Wolfsberg', 'RZ Pellets WAC'],
   },
   {
-    name: "SCR Altach",
-    shortName: "Altach",
-    slug: "scr-altach",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#F4C430",
-    aliases: ["ALT", "Altach", "Rheindorf Altach"],
+    name: 'SCR Altach',
+    shortName: 'Altach',
+    slug: 'scr-altach',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#F4C430',
+    aliases: ['ALT', 'Altach', 'Rheindorf Altach'],
   },
   {
-    name: "Grazer AK 1902",
-    shortName: "GAK",
-    slug: "grazer-ak-1902",
-    primaryColor: "#D71920",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["GAK", "Grazer AK", "GAK 1902"],
+    name: 'Grazer AK 1902',
+    shortName: 'GAK',
+    slug: 'grazer-ak-1902',
+    primaryColor: '#D71920',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['GAK', 'Grazer AK', 'GAK 1902'],
   },
   {
-    name: "WSG Tirol",
-    shortName: "WSG Tirol",
-    slug: "wsg-tirol",
-    primaryColor: "#00843D",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["WSG", "WSG", "WSG Wattens", "Wattens"],
+    name: 'WSG Tirol',
+    shortName: 'WSG Tirol',
+    slug: 'wsg-tirol',
+    primaryColor: '#00843D',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['WSG', 'WSG', 'WSG Wattens', 'Wattens'],
   },
   {
-    name: "SC Austria Lustenau",
-    shortName: "Austria Lustenau",
-    slug: "sc-austria-lustenau",
-    primaryColor: "#00843D",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["ALU", "Austria Lustenau", "Lustenau"],
+    name: 'SC Austria Lustenau',
+    shortName: 'Austria Lustenau',
+    slug: 'sc-austria-lustenau',
+    primaryColor: '#00843D',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['ALU', 'Austria Lustenau', 'Lustenau'],
   },
 
   // ---------------------------------------------------------------------------
   // ADMIRAL 2. Liga 2026/27
   // ---------------------------------------------------------------------------
   {
-    name: "FC Blau-Weiß Linz",
-    shortName: "Blau-Weiß Linz",
-    slug: "fc-blau-weiss-linz",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#003E7E",
-    aliases: ["BWL", "Blau Weiß Linz", "Blau-Weiß Linz", "BW Linz"],
+    name: 'FC Blau-Weiß Linz',
+    shortName: 'Blau-Weiß Linz',
+    slug: 'fc-blau-weiss-linz',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#003E7E',
+    aliases: ['BWL', 'Blau Weiß Linz', 'Blau-Weiß Linz', 'BW Linz'],
   },
   {
-    name: "SKN St. Pölten",
-    shortName: "SKN St. Pölten",
-    slug: "skn-st-poelten",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFD700",
-    accentColor: "#FFFFFF",
-    aliases: ["SKN", "St. Pölten", "SKN St Pölten"],
+    name: 'SKN St. Pölten',
+    shortName: 'SKN St. Pölten',
+    slug: 'skn-st-poelten',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFD700',
+    accentColor: '#FFFFFF',
+    aliases: ['SKN', 'St. Pölten', 'SKN St Pölten'],
   },
   {
-    name: "Admira Wacker",
-    shortName: "Admira",
-    slug: "admira-wacker",
-    primaryColor: "#D71920",
-    secondaryColor: "#000000",
-    accentColor: "#FFFFFF",
-    aliases: ["ADM", "Admira", "FC Admira Wacker", "FC Admira"],
+    name: 'Admira Wacker',
+    shortName: 'Admira',
+    slug: 'admira-wacker',
+    primaryColor: '#D71920',
+    secondaryColor: '#000000',
+    accentColor: '#FFFFFF',
+    aliases: ['ADM', 'Admira', 'FC Admira Wacker', 'FC Admira'],
   },
   {
-    name: "FAC Wien",
-    shortName: "FAC",
-    slug: "fac-wien",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["FAC", "Floridsdorfer AC", "FAC WIEN"],
+    name: 'FAC Wien',
+    shortName: 'FAC',
+    slug: 'fac-wien',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['FAC', 'Floridsdorfer AC', 'FAC WIEN'],
   },
   {
-    name: "FC Liefering",
-    shortName: "Liefering",
-    slug: "fc-liefering",
-    primaryColor: "#D71920",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#001E50",
-    aliases: ["FCL", "Liefering"],
+    name: 'FC Liefering',
+    shortName: 'Liefering',
+    slug: 'fc-liefering',
+    primaryColor: '#D71920',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#001E50',
+    aliases: ['FCL', 'Liefering'],
   },
   {
-    name: "SKU Amstetten",
-    shortName: "Amstetten",
-    slug: "sku-amstetten",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["SKU", "Amstetten", "SKU Ertl Glas Amstetten"],
+    name: 'SKU Amstetten',
+    shortName: 'Amstetten',
+    slug: 'sku-amstetten',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['SKU', 'Amstetten', 'SKU Ertl Glas Amstetten'],
   },
   {
-    name: "First Vienna FC 1894",
-    shortName: "First Vienna",
-    slug: "first-vienna-fc-1894",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFD700",
-    accentColor: "#FFFFFF",
-    aliases: ["VIE", "First Vienna", "Vienna"],
+    name: 'First Vienna FC 1894',
+    shortName: 'First Vienna',
+    slug: 'first-vienna-fc-1894',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFD700',
+    accentColor: '#FFFFFF',
+    aliases: ['VIE', 'First Vienna', 'Vienna'],
   },
   {
-    name: "Young Violets Austria Wien",
-    shortName: "Young Violets",
-    slug: "young-violets-austria-wien",
-    primaryColor: "#5B2C83",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D4AF37",
-    aliases: ["AUS", "Young Violets", "Austria Wien II"],
+    name: 'Young Violets Austria Wien',
+    shortName: 'Young Violets',
+    slug: 'young-violets-austria-wien',
+    primaryColor: '#5B2C83',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D4AF37',
+    aliases: ['AUS', 'Young Violets', 'Austria Wien II'],
   },
   {
-    name: "SV Austria Salzburg",
-    shortName: "Austria Salzburg",
-    slug: "sv-austria-salzburg",
-    primaryColor: "#5B2C83",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["SBG", "Austria Salzburg", "SVAS"],
+    name: 'SV Austria Salzburg',
+    shortName: 'Austria Salzburg',
+    slug: 'sv-austria-salzburg',
+    primaryColor: '#5B2C83',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['SBG', 'Austria Salzburg', 'SVAS'],
   },
   {
-    name: "FC Hertha Wels",
-    shortName: "Hertha Wels",
-    slug: "fc-hertha-wels",
-    primaryColor: "#0057B8",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["FCH", "Hertha Wels", "Wels"],
+    name: 'FC Hertha Wels',
+    shortName: 'Hertha Wels',
+    slug: 'fc-hertha-wels',
+    primaryColor: '#0057B8',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['FCH', 'Hertha Wels', 'Wels'],
   },
   {
-    name: "SK Rapid II",
-    shortName: "Rapid II",
-    slug: "sk-rapid-ii",
-    primaryColor: "#007A3D",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D4AF37",
-    aliases: ["RAP", "Rapid II", "SK Rapid Wien II"],
+    name: 'SK Rapid II',
+    shortName: 'Rapid II',
+    slug: 'sk-rapid-ii',
+    primaryColor: '#007A3D',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D4AF37',
+    aliases: ['RAP', 'Rapid II', 'SK Rapid Wien II'],
   },
   {
-    name: "KSV 1919",
-    shortName: "KSV",
-    slug: "ksv-1919",
-    primaryColor: "#D71920",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#000000",
-    aliases: ["KSV", "Kapfenberger SV", "Kapfenberg"],
+    name: 'KSV 1919',
+    shortName: 'KSV',
+    slug: 'ksv-1919',
+    primaryColor: '#D71920',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#000000',
+    aliases: ['KSV', 'Kapfenberger SV', 'Kapfenberg'],
   },
   {
-    name: "SK Sturm Graz II",
-    shortName: "Sturm Graz II",
-    slug: "sk-sturm-graz-ii",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#808080",
-    aliases: ["STU II", "Sturm II", "Sturm Graz II"],
+    name: 'SK Sturm Graz II',
+    shortName: 'Sturm Graz II',
+    slug: 'sk-sturm-graz-ii',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#808080',
+    aliases: ['STU II', 'Sturm II', 'Sturm Graz II'],
   },
   {
-    name: "Schwarz-Weiß Bregenz",
-    shortName: "SW Bregenz",
-    slug: "schwarz-weiss-bregenz",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#808080",
-    aliases: ["SWB", "SW Bregenz", "Schwarz Weiss Bregenz"],
+    name: 'Schwarz-Weiß Bregenz',
+    shortName: 'SW Bregenz',
+    slug: 'schwarz-weiss-bregenz',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#808080',
+    aliases: ['SWB', 'SW Bregenz', 'Schwarz Weiss Bregenz'],
   },
   {
-    name: "ASK Voitsberg",
-    shortName: "Voitsberg",
-    slug: "ask-voitsberg",
-    primaryColor: "#000000",
-    secondaryColor: "#FFFFFF",
-    accentColor: "#D71920",
-    aliases: ["VOI", "Voitsberg"],
+    name: 'ASK Voitsberg',
+    shortName: 'Voitsberg',
+    slug: 'ask-voitsberg',
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    accentColor: '#D71920',
+    aliases: ['VOI', 'Voitsberg'],
   },
   {
-    name: "FC Wacker Innsbruck",
-    shortName: "Wacker Innsbruck",
-    slug: "fc-wacker-innsbruck",
-    primaryColor: "#00843D",
-    secondaryColor: "#000000",
-    accentColor: "#FFFFFF",
-    aliases: ["FCW", "Wacker Innsbruck", "Wacker", "FC Wacker"],
+    name: 'FC Wacker Innsbruck',
+    shortName: 'Wacker Innsbruck',
+    slug: 'fc-wacker-innsbruck',
+    primaryColor: '#00843D',
+    secondaryColor: '#000000',
+    accentColor: '#FFFFFF',
+    aliases: ['FCW', 'Wacker Innsbruck', 'Wacker', 'FC Wacker'],
   },
 ] as const;
 
 function normalizeAlias(value: string) {
   return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/ß/g, "ss")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
 
 function aliasType(alias: string, shortName: string | null) {
   if (shortName && alias === shortName) {
-    return "SHORT_NAME" as const;
+    return 'SHORT_NAME' as const;
   }
 
   if (/^[A-Z0-9]{2,6}(?: II)?$/.test(alias)) {
-    return "ABBREVIATION" as const;
+    return 'ABBREVIATION' as const;
   }
 
-  return "ALTERNATIVE" as const;
+  return 'ALTERNATIVE' as const;
 }
 
 async function seedClubs() {
-  console.log("Seeding clubs...");
+  console.log('Seeding clubs...');
 
   const result = new Map<string, { id: string; slug: string }>();
 
@@ -317,10 +317,7 @@ async function seedClubs() {
 
     result.set(club.slug, club);
 
-    const aliases = new Set<string>([
-      clubData.shortName,
-      ...clubData.aliases,
-    ]);
+    const aliases = new Set<string>([clubData.shortName, ...clubData.aliases]);
 
     for (const alias of aliases) {
       const normalizedAlias = normalizeAlias(alias);
@@ -355,12 +352,12 @@ async function seedCompetition(params: {
   name: string;
   shortName: string;
   slug: string;
-  type: "LEAGUE" | "CUP";
+  type: 'LEAGUE' | 'CUP';
   seasonStart: string;
   seasonEnd: string;
   stageName: string;
   stageSlug: string;
-  stageType: "REGULAR" | "KNOCKOUT";
+  stageType: 'REGULAR' | 'KNOCKOUT';
 }) {
   const competition = await prisma.competition.upsert({
     where: {
@@ -370,7 +367,7 @@ async function seedCompetition(params: {
       name: params.name,
       shortName: params.shortName,
       type: params.type,
-      countryCode: "AT",
+      countryCode: 'AT',
       active: true,
     },
     create: {
@@ -378,7 +375,7 @@ async function seedCompetition(params: {
       shortName: params.shortName,
       slug: params.slug,
       type: params.type,
-      countryCode: "AT",
+      countryCode: 'AT',
       active: true,
     },
   });
@@ -387,23 +384,23 @@ async function seedCompetition(params: {
     where: {
       competitionId_slug: {
         competitionId: competition.id,
-        slug: "2026-27",
+        slug: '2026-27',
       },
     },
     update: {
-      name: "2026/27",
+      name: '2026/27',
       startDate: new Date(params.seasonStart),
       endDate: new Date(params.seasonEnd),
-      status: "ACTIVE",
+      status: 'ACTIVE',
       active: true,
     },
     create: {
       competitionId: competition.id,
-      name: "2026/27",
-      slug: "2026-27",
+      name: '2026/27',
+      slug: '2026-27',
       startDate: new Date(params.seasonStart),
       endDate: new Date(params.seasonEnd),
-      status: "ACTIVE",
+      status: 'ACTIVE',
       active: true,
     },
   });
@@ -437,42 +434,42 @@ async function seedCompetition(params: {
 }
 
 async function seedCompetitions() {
-  console.log("Seeding competitions, seasons and stages...");
+  console.log('Seeding competitions, seasons and stages...');
 
   const bundesliga = await seedCompetition({
-    name: "Österreichische Bundesliga",
-    shortName: "Bundesliga",
-    slug: "austrian-bundesliga",
-    type: "LEAGUE",
-    seasonStart: "2026-07-01T00:00:00.000Z",
-    seasonEnd: "2027-06-30T00:00:00.000Z",
-    stageName: "Grunddurchgang",
-    stageSlug: "grunddurchgang",
-    stageType: "REGULAR",
+    name: 'Österreichische Bundesliga',
+    shortName: 'Bundesliga',
+    slug: 'austrian-bundesliga',
+    type: 'LEAGUE',
+    seasonStart: '2026-07-01T00:00:00.000Z',
+    seasonEnd: '2027-06-30T00:00:00.000Z',
+    stageName: 'Grunddurchgang',
+    stageSlug: 'grunddurchgang',
+    stageType: 'REGULAR',
   });
 
   const zweiteLiga = await seedCompetition({
-    name: "2. Liga",
-    shortName: "2. Liga",
-    slug: "austrian-2-liga",
-    type: "LEAGUE",
-    seasonStart: "2026-07-01T00:00:00.000Z",
-    seasonEnd: "2027-06-30T00:00:00.000Z",
-    stageName: "Grunddurchgang",
-    stageSlug: "grunddurchgang",
-    stageType: "REGULAR",
+    name: '2. Liga',
+    shortName: '2. Liga',
+    slug: 'austrian-2-liga',
+    type: 'LEAGUE',
+    seasonStart: '2026-07-01T00:00:00.000Z',
+    seasonEnd: '2027-06-30T00:00:00.000Z',
+    stageName: 'Grunddurchgang',
+    stageSlug: 'grunddurchgang',
+    stageType: 'REGULAR',
   });
 
   const oefbCup = await seedCompetition({
-    name: "ÖFB Cup",
-    shortName: "ÖFB Cup",
-    slug: "oefb-cup",
-    type: "CUP",
-    seasonStart: "2026-07-24T00:00:00.000Z",
-    seasonEnd: "2027-05-01T00:00:00.000Z",
-    stageName: "K.-o.-Phase",
-    stageSlug: "knockout",
-    stageType: "KNOCKOUT",
+    name: 'ÖFB Cup',
+    shortName: 'ÖFB Cup',
+    slug: 'oefb-cup',
+    type: 'CUP',
+    seasonStart: '2026-07-24T00:00:00.000Z',
+    seasonEnd: '2027-05-01T00:00:00.000Z',
+    stageName: 'K.-o.-Phase',
+    stageSlug: 'knockout',
+    stageType: 'KNOCKOUT',
   });
 
   return {
@@ -490,7 +487,7 @@ async function upsertMatch(params: {
   stageId: string;
   kickoff: string;
   matchday: number | null;
-  status: "SCHEDULED" | "FINISHED";
+  status: 'SCHEDULED' | 'FINISHED';
   homeScore?: number;
   awayScore?: number;
 }) {
@@ -537,7 +534,7 @@ async function seedMatches(
   seededClubs: Map<string, { id: string; slug: string }>,
   competitions: Awaited<ReturnType<typeof seedCompetitions>>,
 ) {
-  console.log("Seeding test matches...");
+  console.log('Seeding test matches...');
 
   const clubId = (slug: string) => {
     const club = seededClubs.get(slug);
@@ -554,14 +551,14 @@ async function seedMatches(
   // Bundesliga test fixtures
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("lask"),
-      awayClubId: clubId("grazer-ak-1902"),
+      homeClubId: clubId('lask'),
+      awayClubId: clubId('grazer-ak-1902'),
       competitionId: competitions.bundesliga.competition.id,
       seasonId: competitions.bundesliga.season.id,
       stageId: competitions.bundesliga.stage.id,
-      kickoff: "2026-07-31T17:30:00.000Z",
+      kickoff: '2026-07-31T17:30:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 2,
       awayScore: 0,
     }),
@@ -569,41 +566,41 @@ async function seedMatches(
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("sk-rapid-wien"),
-      awayClubId: clubId("fk-austria-wien"),
+      homeClubId: clubId('sk-rapid-wien'),
+      awayClubId: clubId('fk-austria-wien'),
       competitionId: competitions.bundesliga.competition.id,
       seasonId: competitions.bundesliga.season.id,
       stageId: competitions.bundesliga.stage.id,
-      kickoff: "2026-08-23T15:00:00.000Z",
+      kickoff: '2026-08-23T15:00:00.000Z',
       matchday: 4,
-      status: "SCHEDULED",
+      status: 'SCHEDULED',
     }),
   );
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("sk-sturm-graz"),
-      awayClubId: clubId("fc-red-bull-salzburg"),
+      homeClubId: clubId('sk-sturm-graz'),
+      awayClubId: clubId('fc-red-bull-salzburg'),
       competitionId: competitions.bundesliga.competition.id,
       seasonId: competitions.bundesliga.season.id,
       stageId: competitions.bundesliga.stage.id,
-      kickoff: "2026-09-12T15:00:00.000Z",
+      kickoff: '2026-09-12T15:00:00.000Z',
       matchday: 6,
-      status: "SCHEDULED",
+      status: 'SCHEDULED',
     }),
   );
 
   // 2. Liga test fixtures
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("admira-wacker"),
-      awayClubId: clubId("sk-rapid-ii"),
+      homeClubId: clubId('admira-wacker'),
+      awayClubId: clubId('sk-rapid-ii'),
       competitionId: competitions.zweiteLiga.competition.id,
       seasonId: competitions.zweiteLiga.season.id,
       stageId: competitions.zweiteLiga.stage.id,
-      kickoff: "2026-07-31T16:30:00.000Z",
+      kickoff: '2026-07-31T16:30:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 2,
       awayScore: 1,
     }),
@@ -611,14 +608,14 @@ async function seedMatches(
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("young-violets-austria-wien"),
-      awayClubId: clubId("fc-blau-weiss-linz"),
+      homeClubId: clubId('young-violets-austria-wien'),
+      awayClubId: clubId('fc-blau-weiss-linz'),
       competitionId: competitions.zweiteLiga.competition.id,
       seasonId: competitions.zweiteLiga.season.id,
       stageId: competitions.zweiteLiga.stage.id,
-      kickoff: "2026-07-31T16:30:00.000Z",
+      kickoff: '2026-07-31T16:30:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 1,
       awayScore: 3,
     }),
@@ -626,14 +623,14 @@ async function seedMatches(
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("first-vienna-fc-1894"),
-      awayClubId: clubId("sk-sturm-graz-ii"),
+      homeClubId: clubId('first-vienna-fc-1894'),
+      awayClubId: clubId('sk-sturm-graz-ii'),
       competitionId: competitions.zweiteLiga.competition.id,
       seasonId: competitions.zweiteLiga.season.id,
       stageId: competitions.zweiteLiga.stage.id,
-      kickoff: "2026-08-01T15:30:00.000Z",
+      kickoff: '2026-08-01T15:30:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 4,
       awayScore: 0,
     }),
@@ -644,14 +641,14 @@ async function seedMatches(
   // representation of the official cup draw.
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("fc-wacker-innsbruck"),
-      awayClubId: clubId("sk-rapid-wien"),
+      homeClubId: clubId('fc-wacker-innsbruck'),
+      awayClubId: clubId('sk-rapid-wien'),
       competitionId: competitions.oefbCup.competition.id,
       seasonId: competitions.oefbCup.season.id,
       stageId: competitions.oefbCup.stage.id,
-      kickoff: "2026-07-25T16:00:00.000Z",
+      kickoff: '2026-07-25T16:00:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 1,
       awayScore: 3,
     }),
@@ -659,14 +656,14 @@ async function seedMatches(
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("sv-austria-salzburg"),
-      awayClubId: clubId("sk-sturm-graz"),
+      homeClubId: clubId('sv-austria-salzburg'),
+      awayClubId: clubId('sk-sturm-graz'),
       competitionId: competitions.oefbCup.competition.id,
       seasonId: competitions.oefbCup.season.id,
       stageId: competitions.oefbCup.stage.id,
-      kickoff: "2026-07-25T18:00:00.000Z",
+      kickoff: '2026-07-25T18:00:00.000Z',
       matchday: 1,
-      status: "FINISHED",
+      status: 'FINISHED',
       homeScore: 0,
       awayScore: 2,
     }),
@@ -674,48 +671,46 @@ async function seedMatches(
 
   matches.push(
     await upsertMatch({
-      homeClubId: clubId("ksv-1919"),
-      awayClubId: clubId("lask"),
+      homeClubId: clubId('ksv-1919'),
+      awayClubId: clubId('lask'),
       competitionId: competitions.oefbCup.competition.id,
       seasonId: competitions.oefbCup.season.id,
       stageId: competitions.oefbCup.stage.id,
-      kickoff: "2026-09-05T16:00:00.000Z",
+      kickoff: '2026-09-05T16:00:00.000Z',
       matchday: 2,
-      status: "SCHEDULED",
+      status: 'SCHEDULED',
     }),
   );
 
   return matches;
 }
 
-async function seedUsers(
-  seededClubs: Map<string, { id: string; slug: string }>,
-) {
-  console.log("Seeding test users...");
+async function seedUsers(seededClubs: Map<string, { id: string; slug: string }>) {
+  console.log('Seeding test users...');
 
-  const rapid = seededClubs.get("sk-rapid-wien");
-  const austria = seededClubs.get("fk-austria-wien");
+  const rapid = seededClubs.get('sk-rapid-wien');
+  const austria = seededClubs.get('fk-austria-wien');
 
   if (!rapid || !austria) {
-    throw new Error("Required seed clubs for users are missing.");
+    throw new Error('Required seed clubs for users are missing.');
   }
 
   const neutralUser = await prisma.user.upsert({
     where: {
-      keycloakSubject: "seed-neutral-user",
+      keycloakSubject: 'seed-neutral-user',
     },
     update: {
-      nickname: "seed_neutral",
-      status: "ACTIVE",
-      fanPreference: "NEUTRAL",
+      nickname: 'seed_neutral',
+      status: 'ACTIVE',
+      fanPreference: 'NEUTRAL',
       favoriteClubId: null,
       onboardingCompleted: true,
     },
     create: {
-      keycloakSubject: "seed-neutral-user",
-      nickname: "seed_neutral",
-      status: "ACTIVE",
-      fanPreference: "NEUTRAL",
+      keycloakSubject: 'seed-neutral-user',
+      nickname: 'seed_neutral',
+      status: 'ACTIVE',
+      fanPreference: 'NEUTRAL',
       favoriteClubId: null,
       onboardingCompleted: true,
     },
@@ -723,20 +718,20 @@ async function seedUsers(
 
   const rapidUser = await prisma.user.upsert({
     where: {
-      keycloakSubject: "seed-rapid-user",
+      keycloakSubject: 'seed-rapid-user',
     },
     update: {
-      nickname: "seed_rapidfan",
-      status: "ACTIVE",
-      fanPreference: "CLUB",
+      nickname: 'seed_rapidfan',
+      status: 'ACTIVE',
+      fanPreference: 'CLUB',
       favoriteClubId: rapid.id,
       onboardingCompleted: true,
     },
     create: {
-      keycloakSubject: "seed-rapid-user",
-      nickname: "seed_rapidfan",
-      status: "ACTIVE",
-      fanPreference: "CLUB",
+      keycloakSubject: 'seed-rapid-user',
+      nickname: 'seed_rapidfan',
+      status: 'ACTIVE',
+      fanPreference: 'CLUB',
       favoriteClubId: rapid.id,
       onboardingCompleted: true,
     },
@@ -744,20 +739,20 @@ async function seedUsers(
 
   const editorUser = await prisma.user.upsert({
     where: {
-      keycloakSubject: "seed-editor-user",
+      keycloakSubject: 'seed-editor-user',
     },
     update: {
-      nickname: "seed_editor",
-      status: "ACTIVE",
-      fanPreference: "CLUB",
+      nickname: 'seed_editor',
+      status: 'ACTIVE',
+      fanPreference: 'CLUB',
       favoriteClubId: austria.id,
       onboardingCompleted: true,
     },
     create: {
-      keycloakSubject: "seed-editor-user",
-      nickname: "seed_editor",
-      status: "ACTIVE",
-      fanPreference: "CLUB",
+      keycloakSubject: 'seed-editor-user',
+      nickname: 'seed_editor',
+      status: 'ACTIVE',
+      fanPreference: 'CLUB',
       favoriteClubId: austria.id,
       onboardingCompleted: true,
     },
@@ -768,13 +763,13 @@ async function seedUsers(
       where: {
         userId_role: {
           userId: user.id,
-          role: "USER",
+          role: 'USER',
         },
       },
       update: {},
       create: {
         userId: user.id,
-        role: "USER",
+        role: 'USER',
       },
     });
   }
@@ -783,13 +778,13 @@ async function seedUsers(
     where: {
       userId_role: {
         userId: editorUser.id,
-        role: "EDITOR",
+        role: 'EDITOR',
       },
     },
     update: {},
     create: {
       userId: editorUser.id,
-      role: "EDITOR",
+      role: 'EDITOR',
     },
   });
 
@@ -798,13 +793,13 @@ async function seedUsers(
       userId: neutralUser.id,
     },
     update: {
-      displayName: "Seed Neutral",
-      bio: "Neutral Kurvenfunk development user.",
+      displayName: 'Seed Neutral',
+      bio: 'Neutral Kurvenfunk development user.',
     },
     create: {
       userId: neutralUser.id,
-      displayName: "Seed Neutral",
-      bio: "Neutral Kurvenfunk development user.",
+      displayName: 'Seed Neutral',
+      bio: 'Neutral Kurvenfunk development user.',
     },
   });
 
@@ -813,13 +808,13 @@ async function seedUsers(
       userId: rapidUser.id,
     },
     update: {
-      displayName: "Seed Rapid Fan",
-      bio: "Rapid Kurvenfunk development user.",
+      displayName: 'Seed Rapid Fan',
+      bio: 'Rapid Kurvenfunk development user.',
     },
     create: {
       userId: rapidUser.id,
-      displayName: "Seed Rapid Fan",
-      bio: "Rapid Kurvenfunk development user.",
+      displayName: 'Seed Rapid Fan',
+      bio: 'Rapid Kurvenfunk development user.',
     },
   });
 
@@ -828,13 +823,13 @@ async function seedUsers(
       userId: editorUser.id,
     },
     update: {
-      displayName: "Seed Editor",
-      bio: "Kurvenfunk development editor.",
+      displayName: 'Seed Editor',
+      bio: 'Kurvenfunk development editor.',
     },
     create: {
       userId: editorUser.id,
-      displayName: "Seed Editor",
-      bio: "Kurvenfunk development editor.",
+      displayName: 'Seed Editor',
+      bio: 'Kurvenfunk development editor.',
     },
   });
 
@@ -848,7 +843,7 @@ async function seedUsers(
 async function seedArticleSource() {
   const existing = await prisma.articleSource.findFirst({
     where: {
-      name: "Kurvenfunk Seed",
+      name: 'Kurvenfunk Seed',
     },
   });
 
@@ -865,7 +860,7 @@ async function seedArticleSource() {
 
   return prisma.articleSource.create({
     data: {
-      name: "Kurvenfunk Seed",
+      name: 'Kurvenfunk Seed',
       active: true,
     },
   });
@@ -876,61 +871,61 @@ async function seedArticles(
   competitions: Awaited<ReturnType<typeof seedCompetitions>>,
   users: Awaited<ReturnType<typeof seedUsers>>,
 ) {
-  console.log("Seeding test articles...");
+  console.log('Seeding test articles...');
 
   const source = await seedArticleSource();
 
   const category = await prisma.category.upsert({
     where: {
-      slug: "seed-football",
+      slug: 'seed-football',
     },
     update: {
-      name: "Seed Football",
+      name: 'Seed Football',
       active: true,
     },
     create: {
-      name: "Seed Football",
-      slug: "seed-football",
+      name: 'Seed Football',
+      slug: 'seed-football',
       active: true,
     },
   });
 
   const tag = await prisma.tag.upsert({
     where: {
-      slug: "seed-data",
+      slug: 'seed-data',
     },
     update: {
-      name: "Seed Data",
+      name: 'Seed Data',
       active: true,
     },
     create: {
-      name: "Seed Data",
-      slug: "seed-data",
+      name: 'Seed Data',
+      slug: 'seed-data',
       active: true,
     },
   });
 
   const articleDefinitions = [
     {
-      slug: "seed-bundesliga-2026-27",
-      title: "Bundesliga 2026/27: Kurvenfunk Seed Article",
-      lead: "Development article for testing Bundesliga views and personalization.",
+      slug: 'seed-bundesliga-2026-27',
+      title: 'Bundesliga 2026/27: Kurvenfunk Seed Article',
+      lead: 'Development article for testing Bundesliga views and personalization.',
       competitionId: competitions.bundesliga.competition.id,
-      clubSlugs: ["sk-rapid-wien", "fk-austria-wien"],
+      clubSlugs: ['sk-rapid-wien', 'fk-austria-wien'],
     },
     {
-      slug: "seed-2-liga-2026-27",
-      title: "2. Liga 2026/27: Kurvenfunk Seed Article",
-      lead: "Development article for testing 2. Liga views and club matching.",
+      slug: 'seed-2-liga-2026-27',
+      title: '2. Liga 2026/27: Kurvenfunk Seed Article',
+      lead: 'Development article for testing 2. Liga views and club matching.',
       competitionId: competitions.zweiteLiga.competition.id,
-      clubSlugs: ["fc-blau-weiss-linz", "fc-wacker-innsbruck"],
+      clubSlugs: ['fc-blau-weiss-linz', 'fc-wacker-innsbruck'],
     },
     {
-      slug: "seed-oefb-cup-2026-27",
-      title: "ÖFB Cup 2026/27: Kurvenfunk Seed Article",
-      lead: "Development article for testing cup content and competition assignments.",
+      slug: 'seed-oefb-cup-2026-27',
+      title: 'ÖFB Cup 2026/27: Kurvenfunk Seed Article',
+      lead: 'Development article for testing cup content and competition assignments.',
       competitionId: competitions.oefbCup.competition.id,
-      clubSlugs: ["sk-sturm-graz", "sk-rapid-wien"],
+      clubSlugs: ['sk-sturm-graz', 'sk-rapid-wien'],
     },
   ] as const;
 
@@ -943,24 +938,24 @@ async function seedArticles(
         title: definition.title,
         lead: definition.lead,
         content: {
-          type: "doc",
+          type: 'doc',
           content: [
             {
-              type: "paragraph",
+              type: 'paragraph',
               content: [
                 {
-                  type: "text",
-                  text: "This is deterministic Kurvenfunk development seed content.",
+                  type: 'text',
+                  text: 'This is deterministic Kurvenfunk development seed content.',
                 },
               ],
             },
           ],
         },
-        status: "PUBLISHED",
+        status: 'PUBLISHED',
         authorId: users.editorUser.id,
         sourceId: source.id,
         competitionId: definition.competitionId,
-        publishedAt: new Date("2026-08-01T10:00:00.000Z"),
+        publishedAt: new Date('2026-08-01T10:00:00.000Z'),
         archivedAt: null,
         deletedAt: null,
       },
@@ -969,24 +964,24 @@ async function seedArticles(
         slug: definition.slug,
         lead: definition.lead,
         content: {
-          type: "doc",
+          type: 'doc',
           content: [
             {
-              type: "paragraph",
+              type: 'paragraph',
               content: [
                 {
-                  type: "text",
-                  text: "This is deterministic Kurvenfunk development seed content.",
+                  type: 'text',
+                  text: 'This is deterministic Kurvenfunk development seed content.',
                 },
               ],
             },
           ],
         },
-        status: "PUBLISHED",
+        status: 'PUBLISHED',
         authorId: users.editorUser.id,
         sourceId: source.id,
         competitionId: definition.competitionId,
-        publishedAt: new Date("2026-08-01T10:00:00.000Z"),
+        publishedAt: new Date('2026-08-01T10:00:00.000Z'),
       },
     });
 
@@ -1072,16 +1067,16 @@ async function printSummary() {
     prisma.competition.count({
       where: {
         slug: {
-          in: ["austrian-bundesliga", "austrian-2-liga", "oefb-cup"],
+          in: ['austrian-bundesliga', 'austrian-2-liga', 'oefb-cup'],
         },
       },
     }),
     prisma.season.count({
       where: {
-        slug: "2026-27",
+        slug: '2026-27',
         competition: {
           slug: {
-            in: ["austrian-bundesliga", "austrian-2-liga", "oefb-cup"],
+            in: ['austrian-bundesliga', 'austrian-2-liga', 'oefb-cup'],
           },
         },
       },
@@ -1089,10 +1084,10 @@ async function printSummary() {
     prisma.stage.count({
       where: {
         season: {
-          slug: "2026-27",
+          slug: '2026-27',
           competition: {
             slug: {
-              in: ["austrian-bundesliga", "austrian-2-liga", "oefb-cup"],
+              in: ['austrian-bundesliga', 'austrian-2-liga', 'oefb-cup'],
             },
           },
         },
@@ -1101,21 +1096,17 @@ async function printSummary() {
     prisma.user.count({
       where: {
         keycloakSubject: {
-          in: [
-            "seed-neutral-user",
-            "seed-rapid-user",
-            "seed-editor-user",
-          ],
+          in: ['seed-neutral-user', 'seed-rapid-user', 'seed-editor-user'],
         },
       },
     }),
     prisma.match.count({
       where: {
         season: {
-          slug: "2026-27",
+          slug: '2026-27',
           competition: {
             slug: {
-              in: ["austrian-bundesliga", "austrian-2-liga", "oefb-cup"],
+              in: ['austrian-bundesliga', 'austrian-2-liga', 'oefb-cup'],
             },
           },
         },
@@ -1124,18 +1115,14 @@ async function printSummary() {
     prisma.article.count({
       where: {
         slug: {
-          in: [
-            "seed-bundesliga-2026-27",
-            "seed-2-liga-2026-27",
-            "seed-oefb-cup-2026-27",
-          ],
+          in: ['seed-bundesliga-2026-27', 'seed-2-liga-2026-27', 'seed-oefb-cup-2026-27'],
         },
       },
     }),
   ]);
 
-  console.log("");
-  console.log("Kurvenfunk seed completed.");
+  console.log('');
+  console.log('Kurvenfunk seed completed.');
   console.log(`Clubs:        ${clubCount}`);
   console.log(`Club aliases: ${aliasCount}`);
   console.log(`Competitions: ${competitionCount}`);
@@ -1147,8 +1134,8 @@ async function printSummary() {
 }
 
 async function main() {
-  console.log("Starting Kurvenfunk database seed...");
-  console.log("");
+  console.log('Starting Kurvenfunk database seed...');
+  console.log('');
 
   const seededClubs = await seedClubs();
   const competitions = await seedCompetitions();
@@ -1164,7 +1151,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (error) => {
-    console.error("Kurvenfunk database seed failed.");
+    console.error('Kurvenfunk database seed failed.');
     console.error(error);
     await prisma.$disconnect();
     process.exit(1);

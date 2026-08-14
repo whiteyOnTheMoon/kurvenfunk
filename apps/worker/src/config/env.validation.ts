@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 const workerEnvSchema = z
   .object({
-    NODE_ENV: z
-      .enum(['development', 'test', 'production'])
-      .default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
     REDIS_HOST: z.string().trim().min(1).default('redis'),
 
@@ -21,9 +19,7 @@ const workerEnvSchema = z
 
 export type WorkerEnvironment = z.infer<typeof workerEnvSchema>;
 
-export function validateEnvironment(
-  config: Record<string, unknown>,
-): WorkerEnvironment {
+export function validateEnvironment(config: Record<string, unknown>): WorkerEnvironment {
   const result = workerEnvSchema.safeParse(config);
 
   if (!result.success) {

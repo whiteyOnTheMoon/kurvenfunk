@@ -10,8 +10,7 @@ export const QUEUE_NAMES = {
   SANCTIONS: 'sanctions',
 } as const;
 
-export type QueueName =
-  (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
+export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 
 export const APPLICATION_QUEUE_NAMES = [
   QUEUE_NAMES.NEWS_IMPORT,

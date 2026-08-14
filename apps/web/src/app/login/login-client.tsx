@@ -4,15 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../../features/auth/auth-provider';
 
 export function LoginClient() {
-  const {
-    authenticated,
-    error,
-    initialized,
-    login,
-    loginWithGoogle,
-    logout,
-    user,
-  } = useAuth();
+  const { authenticated, error, initialized, login, loginWithGoogle, logout, user } = useAuth();
 
   if (!initialized) {
     return <p>Checking login status…</p>;

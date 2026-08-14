@@ -29,9 +29,7 @@ describe('UsersService', () => {
       onboardingCompleted: false,
     });
 
-    await expect(
-      service.syncKeycloakUser('keycloak-subject-123'),
-    ).resolves.toEqual({
+    await expect(service.syncKeycloakUser('keycloak-subject-123')).resolves.toEqual({
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'keycloak-subject-123',
       status: 'ACTIVE',

@@ -18,10 +18,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(
-    new HttpLoggingInterceptor(),
-    new ResponseInterceptor(),
-  );
+  app.useGlobalInterceptors(new HttpLoggingInterceptor(), new ResponseInterceptor());
 
   const swaggerEnabled = configService.get<boolean>('SWAGGER_ENABLED', false);
 

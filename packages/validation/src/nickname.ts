@@ -14,22 +14,12 @@ export const RESERVED_NICKNAMES = [
 export const nicknameSchema = z
   .string()
   .trim()
-  .min(
-    NICKNAME_MIN_LENGTH,
-    `Nickname must be at least ${NICKNAME_MIN_LENGTH} characters long`,
-  )
-  .max(
-    NICKNAME_MAX_LENGTH,
-    `Nickname must be at most ${NICKNAME_MAX_LENGTH} characters long`,
-  )
-  .regex(
-    /^[A-Za-z0-9_-]+$/,
-    'Nickname may only contain letters, numbers, underscores and hyphens',
-  )
+  .min(NICKNAME_MIN_LENGTH, `Nickname must be at least ${NICKNAME_MIN_LENGTH} characters long`)
+  .max(NICKNAME_MAX_LENGTH, `Nickname must be at most ${NICKNAME_MAX_LENGTH} characters long`)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Nickname may only contain letters, numbers, underscores and hyphens')
   .refine(
-    (nickname) => !RESERVED_NICKNAMES.includes(
-      nickname.toLowerCase() as (typeof RESERVED_NICKNAMES)[number],
-    ),
+    (nickname) =>
+      !RESERVED_NICKNAMES.includes(nickname.toLowerCase() as (typeof RESERVED_NICKNAMES)[number]),
     {
       message: 'Nickname is reserved',
     },

@@ -67,7 +67,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
           setError(
             Array.isArray(message)
               ? message.join(' ')
-              : message ?? 'Please choose a valid nickname.',
+              : (message ?? 'Please choose a valid nickname.'),
           );
           return;
         }
@@ -103,8 +103,8 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
     <section>
       <h2>Choose your nickname</h2>
       <p>
-        Your nickname must contain 3–24 characters. Letters, numbers,
-        underscores and hyphens are allowed.
+        Your nickname must contain 3–24 characters. Letters, numbers, underscores and hyphens are
+        allowed.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -130,9 +130,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
 
       {error ? <p role="alert">{error}</p> : null}
 
-      {savedNickname ? (
-        <p>Your nickname is now {savedNickname}.</p>
-      ) : null}
+      {savedNickname ? <p>Your nickname is now {savedNickname}.</p> : null}
     </section>
   );
 }

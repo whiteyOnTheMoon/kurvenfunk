@@ -62,9 +62,7 @@ describe('cursor pagination', () => {
     const items = [{ id: '1' }, { id: '2' }, { id: '3' }];
 
     it('returns all items when there is no next page', () => {
-      expect(
-        createCursorPaginatedResult(items.slice(0, 2), 2, (item) => item.id),
-      ).toEqual({
+      expect(createCursorPaginatedResult(items.slice(0, 2), 2, (item) => item.id)).toEqual({
         items: [{ id: '1' }, { id: '2' }],
         pagination: {
           nextCursor: null,
@@ -84,9 +82,7 @@ describe('cursor pagination', () => {
     });
 
     it('returns an empty page without a cursor', () => {
-      expect(
-        createCursorPaginatedResult([], 20, (item: { id: string }) => item.id),
-      ).toEqual({
+      expect(createCursorPaginatedResult([], 20, (item: { id: string }) => item.id)).toEqual({
         items: [],
         pagination: {
           nextCursor: null,

@@ -1,8 +1,4 @@
-import {
-  createSortingQuerySchema,
-  SORT_ORDERS,
-  sortOrderSchema,
-} from './api-sorting';
+import { createSortingQuerySchema, SORT_ORDERS, sortOrderSchema } from './api-sorting';
 
 describe('API sorting', () => {
   it('accepts valid sort orders', () => {

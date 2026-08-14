@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   ci:
-    name: Lint, Typecheck, Test & Build
+    name: Format, Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -50,11 +50,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check formatting
+        run: pnpm format:check
+
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
 
       - name: Build shared packages
-        run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
+        run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database --filter=@kurvenfunk/validation
 
       - name: Lint
         run: pnpm turbo lint

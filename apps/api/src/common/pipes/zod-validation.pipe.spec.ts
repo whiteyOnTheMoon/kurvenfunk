@@ -52,12 +52,8 @@ describe('ZodValidationPipe', () => {
       };
 
       expect(response.code).toBe('VALIDATION_ERROR');
-      expect(
-        response.message.some((message) => message.startsWith('name:')),
-      ).toBe(true);
-      expect(
-        response.message.some((message) => message.startsWith('age:')),
-      ).toBe(true);
+      expect(response.message.some((message) => message.startsWith('name:'))).toBe(true);
+      expect(response.message.some((message) => message.startsWith('age:'))).toBe(true);
     }
   });
 

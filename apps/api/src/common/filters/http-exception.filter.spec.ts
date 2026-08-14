@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import type { ArgumentsHost } from '@nestjs/common';
 import type { Response } from 'express';
 import { HttpExceptionFilter } from './http-exception.filter';

@@ -1,9 +1,4 @@
-export {
-  entityIdSchema,
-  nonEmptyStringSchema,
-  slugSchema,
-  timestampSchema,
-} from './common.js';
+export { entityIdSchema, nonEmptyStringSchema, slugSchema, timestampSchema } from './common.js';
 export {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,

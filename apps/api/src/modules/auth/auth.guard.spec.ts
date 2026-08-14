@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  type ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, type ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
 
 jest.mock('./keycloak-jwt.service', () => ({
@@ -120,9 +116,7 @@ describe('AuthGuard', () => {
       onboardingCompleted: false,
     });
 
-    await expect(
-      guard.canActivate(createContext('Bearer valid-token')),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(createContext('Bearer valid-token'))).resolves.toBe(true);
   });
 
   it('rejects a BANNED user', async () => {
@@ -138,13 +132,20 @@ describe('AuthGuard', () => {
       onboardingCompleted: false,
     });
 
-    await expect(
-      guard.canActivate(createContext('Bearer valid-token')),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(guard.canActivate(createContext('Bearer valid-token'))).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('rejects a missing authorization header', async () => {
-    await expect(guard.canActivate(createContext())).rejects.toBeInstanceOf(
+    await expect(guard.canActivate(createContext())).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(verifyAccessToken).not.toHaveBeenCalled();
+    expect(syncKeycloakUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-bearer authorization header', async () => {
+    await expect(guard.canActivate(createContext('Basic credentials'))).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
 
@@ -152,19 +153,10 @@ describe('AuthGuard', () => {
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
 
-  it('rejects a non-bearer authorization header', async () => {
-    await expect(
-      guard.canActivate(createContext('Basic credentials')),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-
-    expect(verifyAccessToken).not.toHaveBeenCalled();
-    expect(syncKeycloakUser).not.toHaveBeenCalled();
-  });
-
   it('rejects malformed bearer headers', async () => {
-    await expect(
-      guard.canActivate(createContext('Bearer token extra')),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(createContext('Bearer token extra'))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
 
     expect(verifyAccessToken).not.toHaveBeenCalled();
     expect(syncKeycloakUser).not.toHaveBeenCalled();
@@ -175,9 +167,9 @@ describe('AuthGuard', () => {
       new UnauthorizedException('Invalid or expired access token'),
     );
 
-    await expect(
-      guard.canActivate(createContext('Bearer invalid-token')),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(createContext('Bearer invalid-token'))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
 
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
@@ -188,9 +180,9 @@ describe('AuthGuard', () => {
       email_verified: false,
     });
 
-    await expect(
-      guard.canActivate(createContext('Bearer valid-token')),
-    ).rejects.toThrow('Email address is not verified');
+    await expect(guard.canActivate(createContext('Bearer valid-token'))).rejects.toThrow(
+      'Email address is not verified',
+    );
 
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
@@ -200,9 +192,9 @@ describe('AuthGuard', () => {
       sub: 'user-123',
     });
 
-    await expect(
-      guard.canActivate(createContext('Bearer valid-token')),
-    ).rejects.toThrow('Email address is not verified');
+    await expect(guard.canActivate(createContext('Bearer valid-token'))).rejects.toThrow(
+      'Email address is not verified',
+    );
 
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
@@ -210,9 +202,9 @@ describe('AuthGuard', () => {
   it('rejects a verified token without a subject', async () => {
     verifyAccessToken.mockResolvedValue({});
 
-    await expect(
-      guard.canActivate(createContext('Bearer valid-token')),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(createContext('Bearer valid-token'))).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
 
     expect(syncKeycloakUser).not.toHaveBeenCalled();
   });
