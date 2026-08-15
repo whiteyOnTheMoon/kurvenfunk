@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { nicknameSchema } from './nickname.js';
+import { nicknameSchema } from './nickname.ts';
 
 export const clubFanPreferenceSchema = z.object({
   fanPreference: z.literal('CLUB'),
