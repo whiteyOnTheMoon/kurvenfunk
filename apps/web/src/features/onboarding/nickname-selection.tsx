@@ -1,16 +1,12 @@
 'use client';
 
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
 
 interface NicknameSelectionProps {
   apiUrl: string;
-}
-
-interface ApiErrorResponse {
-  code?: string;
-  message?: string | string[];
+  onNicknameChange?: (nickname: string | undefined) => void;
 }
 
 interface NicknameAvailabilityResponse {
@@ -49,12 +45,10 @@ function getLocalNicknameError(nickname: string): string | undefined {
   return undefined;
 }
 
-export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
+export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectionProps) {
   const { token } = useAuth();
+
   const [nickname, setNickname] = useState('');
-  const [error, setError] = useState<string>();
-  const [savedNickname, setSavedNickname] = useState<string>();
-  const [submitting, setSubmitting] = useState(false);
   const [availabilityState, setAvailabilityState] = useState<AvailabilityState>('idle');
   const [availabilityMessage, setAvailabilityMessage] = useState<string>();
 
@@ -83,7 +77,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
         );
 
         const body = (await response.json().catch(() => undefined)) as
-          NicknameAvailabilityResponse | ApiErrorResponse | undefined;
+          NicknameAvailabilityResponse | undefined;
 
         if (!response.ok) {
           if (controller.signal.aborted) {
@@ -95,17 +89,16 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
           return;
         }
 
-        const result = body as NicknameAvailabilityResponse | undefined;
-
-        if (!result?.data || result.data.nickname !== trimmedNickname) {
+        if (!body?.data || body.data.nickname !== trimmedNickname) {
           setAvailabilityState('error');
           setAvailabilityMessage('Availability could not be checked.');
           return;
         }
 
-        if (result.data.available) {
+        if (body.data.available) {
           setAvailabilityState('available');
           setAvailabilityMessage('This nickname is available.');
+          onNicknameChange?.(body.data.nickname);
         } else {
           setAvailabilityState('unavailable');
           setAvailabilityMessage('This nickname is already taken.');
@@ -124,90 +117,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [apiUrl, nickname, token]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!token || submitting || availabilityState !== 'available') {
-      return;
-    }
-
-    setSubmitting(true);
-    setError(undefined);
-    setSavedNickname(undefined);
-
-    try {
-      const response = await fetch(`${apiUrl}/api/v1/onboarding/nickname`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nickname,
-        }),
-      });
-
-      const body = (await response.json().catch(() => undefined)) as
-        | {
-            data?: {
-              id: string;
-              nickname: string;
-            };
-          }
-        | ApiErrorResponse
-        | undefined;
-
-      if (!response.ok) {
-        const apiError = body as ApiErrorResponse | undefined;
-
-        if (apiError?.code === 'NICKNAME_TAKEN') {
-          setAvailabilityState('unavailable');
-          setAvailabilityMessage('This nickname is already taken.');
-          setError('This nickname is already taken.');
-          return;
-        }
-
-        if (apiError?.code === 'VALIDATION_ERROR') {
-          const message = apiError.message;
-
-          setError(
-            Array.isArray(message)
-              ? message.join(' ')
-              : (message ?? 'Please choose a valid nickname.'),
-          );
-          return;
-        }
-
-        setError('The nickname could not be saved.');
-        return;
-      }
-
-      const result = body as
-        | {
-            data?: {
-              id: string;
-              nickname: string;
-            };
-          }
-        | undefined;
-
-      if (!result?.data?.nickname) {
-        setError('The nickname could not be saved.');
-        return;
-      }
-
-      setNickname(result.data.nickname);
-      setSavedNickname(result.data.nickname);
-    } catch {
-      setError('The nickname could not be saved.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const canSubmit = Boolean(token) && !submitting && availabilityState === 'available';
+  }, [apiUrl, nickname, onNicknameChange, token]);
 
   return (
     <section>
@@ -218,7 +128,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
         allowed.
       </p>
 
-      <form onSubmit={handleSubmit}>
+      <div>
         <label htmlFor="nickname">Nickname</label>
 
         <input
@@ -238,8 +148,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
             const localError = trimmedNickname ? getLocalNicknameError(trimmedNickname) : undefined;
 
             setNickname(nextNickname);
-            setError(undefined);
-            setSavedNickname(undefined);
+            onNicknameChange?.(undefined);
 
             if (!trimmedNickname) {
               setAvailabilityState('idle');
@@ -255,7 +164,6 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
               setAvailabilityMessage(undefined);
             }
           }}
-          disabled={submitting}
           required
         />
 
@@ -272,15 +180,7 @@ export function NicknameSelection({ apiUrl }: NicknameSelectionProps) {
         >
           {availabilityMessage}
         </p>
-
-        <button type="submit" disabled={!canSubmit}>
-          {submitting ? 'Saving…' : 'Save nickname'}
-        </button>
-      </form>
-
-      {error ? <p role="alert">{error}</p> : null}
-
-      {savedNickname ? <p>Your nickname is now {savedNickname}.</p> : null}
+      </div>
     </section>
   );
 }

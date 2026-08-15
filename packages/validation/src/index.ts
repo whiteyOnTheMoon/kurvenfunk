@@ -9,7 +9,9 @@ export {
 } from './nickname.js';
 export {
   clubFanPreferenceSchema,
+  completeOnboardingSchema,
   fanPreferenceSelectionSchema,
   neutralFanPreferenceSchema,
+  type CompleteOnboardingInput,
   type FanPreferenceSelection,
 } from './fan-preference.js';

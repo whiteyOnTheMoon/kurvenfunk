@@ -32,6 +32,7 @@ interface AuthContextValue {
   login: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   token?: string;
   user?: CurrentUser;
   error?: string;
@@ -197,6 +198,21 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     });
   }, [authUrl]);
 
+  const refreshUser = useCallback(async () => {
+    const client = getKeycloak(authUrl);
+
+    if (!client.token) {
+      throw new Error('AUTHENTICATION_REQUIRED');
+    }
+
+    const currentUser = await fetchCurrentUser(apiUrl, client.token);
+
+    setAuthenticated(true);
+    setToken(client.token);
+    setUser(currentUser);
+    setError(undefined);
+  }, [apiUrl, authUrl]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       authenticated,
@@ -204,11 +220,12 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       login,
       loginWithGoogle,
       logout,
+      refreshUser,
       token,
       user,
       error,
     }),
-    [authenticated, initialized, login, loginWithGoogle, logout, token, user, error],
+    [authenticated, initialized, login, loginWithGoogle, logout, refreshUser, token, user, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import {
+  completeOnboardingSchema,
   nicknameSchema,
   selectNicknameSchema,
+  type CompleteOnboardingInput,
   type SelectNicknameInput,
 } from '@kurvenfunk/validation';
 
@@ -35,5 +37,15 @@ export class OnboardingController {
     input: SelectNicknameInput,
   ) {
     return this.onboardingService.selectNickname(request.user!.kurvenfunkUserId, input.nickname);
+  }
+
+  @Patch('complete')
+  @UseGuards(AuthGuard)
+  completeOnboarding(
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(completeOnboardingSchema))
+    input: CompleteOnboardingInput,
+  ) {
+    return this.onboardingService.completeOnboarding(request.user!.kurvenfunkUserId, input);
   }
 }

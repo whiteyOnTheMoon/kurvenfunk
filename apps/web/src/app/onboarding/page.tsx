@@ -1,5 +1,4 @@
-import { ClubSelection } from '../../features/onboarding/club-selection';
-import { NicknameSelection } from '../../features/onboarding/nickname-selection';
+import { OnboardingCompletion } from '../../features/onboarding/onboarding-completion';
 import { env } from '../../lib/env';
 
 export default function OnboardingPage() {
@@ -8,8 +7,7 @@ export default function OnboardingPage() {
       <h1>Welcome to Kurvenfunk</h1>
       <p>Your account setup is not complete yet.</p>
 
-      <NicknameSelection apiUrl={env.API_URL} />
-      <ClubSelection apiUrl={env.API_URL} />
+      <OnboardingCompletion apiUrl={env.API_URL} />
     </main>
   );
 }

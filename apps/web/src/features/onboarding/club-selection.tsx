@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 interface ClubSelectionProps {
   apiUrl: string;
+  onSelectionChange?: (selection: FanPreferenceSelection) => void;
 }
 
 interface Club {
@@ -37,7 +38,7 @@ function getClubInitials(club: Club): string {
     .join('');
 }
 
-export function ClubSelection({ apiUrl }: ClubSelectionProps) {
+export function ClubSelection({ apiUrl, onSelectionChange }: ClubSelectionProps) {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [selection, setSelection] = useState<Selection>();
   const [loading, setLoading] = useState(true);
@@ -115,12 +116,15 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
                 name="club-preference"
                 value={club.id}
                 checked={checked}
-                onChange={() =>
-                  setSelection({
+                onChange={() => {
+                  const nextSelection: FanPreferenceSelection = {
                     fanPreference: 'CLUB',
                     favoriteClubId: club.id,
-                  })
-                }
+                  };
+
+                  setSelection(nextSelection);
+                  onSelectionChange?.(nextSelection);
+                }}
               />
 
               {club.logo?.externalUrl ? (
@@ -145,12 +149,15 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
             name="club-preference"
             value="neutral"
             checked={selection?.fanPreference === 'NEUTRAL'}
-            onChange={() =>
-              setSelection({
+            onChange={() => {
+              const nextSelection: FanPreferenceSelection = {
                 fanPreference: 'NEUTRAL',
                 favoriteClubId: null,
-              })
-            }
+              };
+
+              setSelection(nextSelection);
+              onSelectionChange?.(nextSelection);
+            }}
           />
 
           <span aria-hidden="true">KF</span>

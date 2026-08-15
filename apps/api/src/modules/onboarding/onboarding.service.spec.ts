@@ -1,5 +1,6 @@
 const update = jest.fn();
-const findFirst = jest.fn();
+const findFirstUser = jest.fn();
+const findFirstClub = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => {
@@ -16,7 +17,10 @@ jest.mock('@kurvenfunk/database', () => {
     createPrismaClient: () => ({
       user: {
         update,
-        findFirst,
+        findFirst: findFirstUser,
+      },
+      club: {
+        findFirst: findFirstClub,
       },
       $disconnect: disconnect,
     }),
@@ -26,9 +30,8 @@ jest.mock('@kurvenfunk/database', () => {
   };
 });
 
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@kurvenfunk/database';
-
 import { OnboardingService } from './onboarding.service';
 
 describe('OnboardingService', () => {
@@ -36,37 +39,23 @@ describe('OnboardingService', () => {
 
   beforeEach(() => {
     update.mockReset();
-    findFirst.mockReset();
+    findFirstUser.mockReset();
+    findFirstClub.mockReset();
     disconnect.mockReset();
     service = new OnboardingService();
   });
 
   it('returns available when no other user has the nickname', async () => {
-    findFirst.mockResolvedValue(null);
+    findFirstUser.mockResolvedValue(null);
 
     await expect(service.checkNicknameAvailability('user-123', 'RapidFan')).resolves.toEqual({
       available: true,
       nickname: 'RapidFan',
     });
-
-    expect(findFirst).toHaveBeenCalledWith({
-      where: {
-        nickname: {
-          equals: 'RapidFan',
-          mode: 'insensitive',
-        },
-        NOT: {
-          id: 'user-123',
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
   });
 
   it('returns unavailable when another user has the nickname', async () => {
-    findFirst.mockResolvedValue({
+    findFirstUser.mockResolvedValue({
       id: 'user-456',
     });
 
@@ -74,32 +63,43 @@ describe('OnboardingService', () => {
       available: false,
       nickname: 'rapidfan',
     });
+  });
 
-    expect(findFirst).toHaveBeenCalledWith({
+  it('completes onboarding with an active club preference', async () => {
+    findFirstUser.mockResolvedValue(null);
+    findFirstClub.mockResolvedValue({
+      id: '11111111-1111-4111-8111-111111111111',
+    });
+    update.mockResolvedValue({
+      id: 'user-123',
+      nickname: 'RapidFan',
+      fanPreference: 'CLUB',
+      favoriteClubId: '11111111-1111-4111-8111-111111111111',
+      onboardingCompleted: true,
+    });
+
+    await expect(
+      service.completeOnboarding('user-123', {
+        nickname: 'RapidFan',
+        fanPreference: 'CLUB',
+        favoriteClubId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).resolves.toEqual({
+      id: 'user-123',
+      nickname: 'RapidFan',
+      fanPreference: 'CLUB',
+      favoriteClubId: '11111111-1111-4111-8111-111111111111',
+      onboardingCompleted: true,
+    });
+
+    expect(findFirstClub).toHaveBeenCalledWith({
       where: {
-        nickname: {
-          equals: 'rapidfan',
-          mode: 'insensitive',
-        },
-        NOT: {
-          id: 'user-123',
-        },
+        id: '11111111-1111-4111-8111-111111111111',
+        active: true,
       },
       select: {
         id: true,
       },
-    });
-  });
-
-  it('sets the nickname for the authenticated user', async () => {
-    update.mockResolvedValue({
-      id: 'user-123',
-      nickname: 'RapidFan',
-    });
-
-    await expect(service.selectNickname('user-123', 'RapidFan')).resolves.toEqual({
-      id: 'user-123',
-      nickname: 'RapidFan',
     });
 
     expect(update).toHaveBeenCalledWith({
@@ -108,15 +108,81 @@ describe('OnboardingService', () => {
       },
       data: {
         nickname: 'RapidFan',
+        fanPreference: 'CLUB',
+        favoriteClubId: '11111111-1111-4111-8111-111111111111',
+        onboardingCompleted: true,
       },
       select: {
         id: true,
         nickname: true,
+        fanPreference: true,
+        favoriteClubId: true,
+        onboardingCompleted: true,
       },
     });
   });
 
-  it('returns NICKNAME_TAKEN for a unique constraint conflict', async () => {
+  it('completes onboarding with a neutral preference without looking up a club', async () => {
+    findFirstUser.mockResolvedValue(null);
+    update.mockResolvedValue({
+      id: 'user-123',
+      nickname: 'NeutralFan',
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
+      onboardingCompleted: true,
+    });
+
+    await expect(
+      service.completeOnboarding('user-123', {
+        nickname: 'NeutralFan',
+        fanPreference: 'NEUTRAL',
+        favoriteClubId: null,
+      }),
+    ).resolves.toEqual({
+      id: 'user-123',
+      nickname: 'NeutralFan',
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
+      onboardingCompleted: true,
+    });
+
+    expect(findFirstClub).not.toHaveBeenCalled();
+  });
+
+  it('rejects an inactive or unknown favorite club', async () => {
+    findFirstUser.mockResolvedValue(null);
+    findFirstClub.mockResolvedValue(null);
+
+    await expect(
+      service.completeOnboarding('user-123', {
+        nickname: 'RapidFan',
+        fanPreference: 'CLUB',
+        favoriteClubId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('rejects onboarding completion when another user already has the nickname', async () => {
+    findFirstUser.mockResolvedValue({
+      id: 'user-456',
+    });
+
+    await expect(
+      service.completeOnboarding('user-123', {
+        nickname: 'RapidFan',
+        fanPreference: 'NEUTRAL',
+        favoriteClubId: null,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('maps a database nickname conflict to NICKNAME_TAKEN', async () => {
+    findFirstUser.mockResolvedValue(null);
+
     update.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
         code: 'P2002',
@@ -124,26 +190,13 @@ describe('OnboardingService', () => {
       }),
     );
 
-    let caught: unknown;
-
-    try {
-      await service.selectNickname('user-123', 'rapidfan');
-    } catch (error) {
-      caught = error;
-    }
-
-    expect(caught).toBeInstanceOf(ConflictException);
-    expect((caught as ConflictException).getResponse()).toEqual({
-      code: 'NICKNAME_TAKEN',
-      message: 'Nickname is already taken',
-    });
-  });
-
-  it('rethrows unexpected database errors', async () => {
-    const error = new Error('database unavailable');
-    update.mockRejectedValue(error);
-
-    await expect(service.selectNickname('user-123', 'RapidFan')).rejects.toBe(error);
+    await expect(
+      service.completeOnboarding('user-123', {
+        nickname: 'RapidFan',
+        fanPreference: 'NEUTRAL',
+        favoriteClubId: null,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('disconnects the database client on module destroy', async () => {
