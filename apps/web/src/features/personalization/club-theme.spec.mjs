@@ -160,3 +160,43 @@ test('converts theme to CSS custom properties', () => {
     '--kf-club-on-accent': '#000000',
   });
 });
+
+test('resolves the default Kurvenfunk theme', async () => {
+  const { resolveDefaultKurvenfunkTheme } = await import('./club-theme.ts');
+
+  assert.deepEqual(resolveDefaultKurvenfunkTheme(), {
+    color1: '#171717',
+    color1Rgba: 'rgba(23, 23, 23, 1)',
+    color2: null,
+    color2Rgba: null,
+    color3: null,
+    color3Rgba: null,
+    accent: '#D71920',
+    accentRgba: 'rgba(215, 25, 32, 1)',
+    onColor1: '#FFFFFF',
+    onColor2: null,
+    onColor3: null,
+    onAccent: '#FFFFFF',
+    logo: null,
+  });
+});
+
+test('converts the default Kurvenfunk theme to CSS properties', async () => {
+  const { clubThemeToCssProperties, resolveDefaultKurvenfunkTheme } =
+    await import('./club-theme.ts');
+
+  assert.deepEqual(clubThemeToCssProperties(resolveDefaultKurvenfunkTheme()), {
+    '--kf-club-color-1': '#171717',
+    '--kf-club-color-1-rgba': 'rgba(23, 23, 23, 1)',
+    '--kf-club-color-2': 'transparent',
+    '--kf-club-color-2-rgba': 'rgba(0, 0, 0, 0)',
+    '--kf-club-color-3': 'transparent',
+    '--kf-club-color-3-rgba': 'rgba(0, 0, 0, 0)',
+    '--kf-club-accent': '#D71920',
+    '--kf-club-accent-rgba': 'rgba(215, 25, 32, 1)',
+    '--kf-club-on-color-1': '#FFFFFF',
+    '--kf-club-on-color-2': 'currentColor',
+    '--kf-club-on-color-3': 'currentColor',
+    '--kf-club-on-accent': '#FFFFFF',
+  });
+});

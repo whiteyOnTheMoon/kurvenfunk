@@ -1,19 +1,6 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-
-  --kf-club-color-1: #171717;
-  --kf-club-color-1-rgba: rgba(23, 23, 23, 1);
-  --kf-club-color-2: transparent;
-  --kf-club-color-2-rgba: rgba(0, 0, 0, 0);
-  --kf-club-color-3: transparent;
-  --kf-club-color-3-rgba: rgba(0, 0, 0, 0);
-  --kf-club-accent: #d71920;
-  --kf-club-accent-rgba: rgba(215, 25, 32, 1);
-  --kf-club-on-color-1: #ffffff;
-  --kf-club-on-color-2: currentColor;
-  --kf-club-on-color-3: currentColor;
-  --kf-club-on-accent: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {

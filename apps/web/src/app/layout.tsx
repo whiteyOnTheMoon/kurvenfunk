@@ -1,9 +1,15 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import type { CSSProperties } from 'react';
 
 import { AuthProvider } from '../features/auth/auth-provider';
 import { OnboardingGate } from '../features/onboarding/onboarding-gate';
+import {
+  clubThemeToCssProperties,
+  resolveDefaultKurvenfunkTheme,
+} from '../features/personalization/club-theme';
 import { env } from '../lib/env';
+
 import './globals.css';
 
 const geistSans = Geist({
@@ -21,9 +27,17 @@ export const metadata: Metadata = {
   description: 'Austrian football news and community',
 };
 
+const defaultKurvenfunkThemeStyle = clubThemeToCssProperties(
+  resolveDefaultKurvenfunkTheme(),
+) as CSSProperties;
+
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      style={defaultKurvenfunkThemeStyle}
+    >
       <body>
         <AuthProvider apiUrl={env.API_URL} authUrl={env.AUTH_URL}>
           <OnboardingGate>{children}</OnboardingGate>
