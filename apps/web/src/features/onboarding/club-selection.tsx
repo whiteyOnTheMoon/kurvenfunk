@@ -1,5 +1,6 @@
 'use client';
 
+import type { FanPreferenceSelection } from '@kurvenfunk/validation';
 import { useEffect, useState } from 'react';
 
 interface ClubSelectionProps {
@@ -25,7 +26,7 @@ interface ClubsResponse {
   data?: Club[];
 }
 
-type Selection = { type: 'club'; clubId: string } | { type: 'neutral' } | undefined;
+type Selection = FanPreferenceSelection | undefined;
 
 function getClubInitials(club: Club): string {
   return (club.shortName ?? club.name)
@@ -104,7 +105,8 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
         <legend>Club preference</legend>
 
         {clubs.map((club) => {
-          const checked = selection?.type === 'club' && selection.clubId === club.id;
+          const checked =
+            selection?.fanPreference === 'CLUB' && selection.favoriteClubId === club.id;
 
           return (
             <label key={club.id}>
@@ -115,8 +117,8 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
                 checked={checked}
                 onChange={() =>
                   setSelection({
-                    type: 'club',
-                    clubId: club.id,
+                    fanPreference: 'CLUB',
+                    favoriteClubId: club.id,
                   })
                 }
               />
@@ -142,8 +144,13 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
             type="radio"
             name="club-preference"
             value="neutral"
-            checked={selection?.type === 'neutral'}
-            onChange={() => setSelection({ type: 'neutral' })}
+            checked={selection?.fanPreference === 'NEUTRAL'}
+            onChange={() =>
+              setSelection({
+                fanPreference: 'NEUTRAL',
+                favoriteClubId: null,
+              })
+            }
           />
 
           <span aria-hidden="true">KF</span>
@@ -151,13 +158,13 @@ export function ClubSelection({ apiUrl }: ClubSelectionProps) {
         </label>
       </fieldset>
 
-      {selection?.type === 'club' ? (
+      {selection?.fanPreference === 'CLUB' ? (
         <p aria-live="polite">
-          Selected: {clubs.find((club) => club.id === selection.clubId)?.name}
+          Selected: {clubs.find((club) => club.id === selection.favoriteClubId)?.name}
         </p>
       ) : null}
 
-      {selection?.type === 'neutral' ? <p aria-live="polite">Selected: Neutral</p> : null}
+      {selection?.fanPreference === 'NEUTRAL' ? <p aria-live="polite">Selected: Neutral</p> : null}
     </section>
   );
 }

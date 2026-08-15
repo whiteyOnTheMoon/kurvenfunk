@@ -138,6 +138,9 @@ importers:
       '@kurvenfunk/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@kurvenfunk/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       keycloak-js:
         specifier: ^26.2.4
         version: 26.2.4

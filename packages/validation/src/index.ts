@@ -7,3 +7,9 @@ export {
   selectNicknameSchema,
   type SelectNicknameInput,
 } from './nickname.js';
+export {
+  clubFanPreferenceSchema,
+  fanPreferenceSelectionSchema,
+  neutralFanPreferenceSchema,
+  type FanPreferenceSelection,
+} from './fan-preference.js';
