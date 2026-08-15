@@ -1,3 +1,4 @@
+import { ClubSelection } from '../../features/onboarding/club-selection';
 import { NicknameSelection } from '../../features/onboarding/nickname-selection';
 import { env } from '../../lib/env';
 
@@ -8,6 +9,7 @@ export default function OnboardingPage() {
       <p>Your account setup is not complete yet.</p>
 
       <NicknameSelection apiUrl={env.API_URL} />
+      <ClubSelection apiUrl={env.API_URL} />
     </main>
   );
 }
