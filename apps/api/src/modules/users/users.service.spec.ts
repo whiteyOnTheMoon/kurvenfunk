@@ -48,6 +48,8 @@ describe('UsersService', () => {
         id: true,
         keycloakSubject: true,
         status: true,
+        fanPreference: true,
+        favoriteClubId: true,
         onboardingCompleted: true,
       },
     });

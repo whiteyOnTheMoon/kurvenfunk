@@ -23,6 +23,8 @@ interface CurrentUser {
   id: string;
   status: UserStatus;
   subject: string;
+  fanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
+  favoriteClubId: string | null;
   onboardingCompleted: boolean;
 }
 

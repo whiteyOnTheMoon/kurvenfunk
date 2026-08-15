@@ -5,6 +5,8 @@ export interface SyncedUser {
   id: string;
   keycloakSubject: string;
   status: 'ACTIVE' | 'LIMITED' | 'BANNED';
+  fanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
+  favoriteClubId: string | null;
   onboardingCompleted: boolean;
 }
 
@@ -25,6 +27,8 @@ export class UsersService implements OnModuleDestroy {
         id: true,
         keycloakSubject: true,
         status: true,
+        fanPreference: true,
+        favoriteClubId: true,
         onboardingCompleted: true,
       },
     });

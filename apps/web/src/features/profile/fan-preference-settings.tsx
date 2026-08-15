@@ -22,7 +22,7 @@ interface ApiErrorResponse {
 }
 
 export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
-  const { token } = useAuth();
+  const { token, refreshUser } = useAuth();
   const [currentSelection, setCurrentSelection] = useState<FanPreferenceSelection>();
   const [selection, setSelection] = useState<FanPreferenceSelection>();
   const [loading, setLoading] = useState(true);
@@ -146,6 +146,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
 
       setCurrentSelection(savedSelection);
       setSelection(savedSelection);
+      await refreshUser();
       setSuccess('Your club preference has been saved.');
     } catch {
       setError('Your club preference could not be saved.');

@@ -47,3 +47,31 @@ a {
     color-scheme: dark;
   }
 }
+
+/*
+ * Personalized club branding.
+ *
+ * Club colors are deliberately limited to selected accents so the
+ * application remains recognizably Kurvenfunk. The complete design-token
+ * system is introduced separately in Phase 15.
+ */
+html[data-kf-theme='club'] button:not(:disabled) {
+  color: var(--kf-club-on-accent);
+  background: var(--kf-club-accent);
+  border-color: var(--kf-club-accent);
+}
+
+html[data-kf-theme='club'] [aria-current='page'] {
+  color: var(--kf-club-accent);
+  border-color: var(--kf-club-accent);
+}
+
+html[data-kf-theme='club'] .kf-club-accent {
+  color: var(--kf-club-accent);
+}
+
+html[data-kf-theme='club'] .kf-club-badge {
+  color: var(--kf-club-on-color-1);
+  background: var(--kf-club-color-1);
+  border-color: var(--kf-club-color-1);
+}

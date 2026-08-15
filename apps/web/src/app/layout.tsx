@@ -8,6 +8,7 @@ import {
   clubThemeToCssProperties,
   resolveDefaultKurvenfunkTheme,
 } from '../features/personalization/club-theme';
+import { PersonalizedClubTheme } from '../features/personalization/personalized-club-theme';
 import { env } from '../lib/env';
 
 import './globals.css';
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body>
         <AuthProvider apiUrl={env.API_URL} authUrl={env.AUTH_URL}>
+          <PersonalizedClubTheme apiUrl={env.API_URL} />
           <OnboardingGate>{children}</OnboardingGate>
         </AuthProvider>
       </body>

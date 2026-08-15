@@ -5,6 +5,8 @@ export interface AuthenticatedUser extends JWTPayload {
   sub: string;
   kurvenfunkUserId: string;
   kurvenfunkUserStatus: 'ACTIVE' | 'LIMITED' | 'BANNED';
+  kurvenfunkFanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
+  kurvenfunkFavoriteClubId: string | null;
   kurvenfunkOnboardingCompleted: boolean;
 }
 

@@ -12,6 +12,8 @@ export class AuthController {
       id: request.user?.kurvenfunkUserId,
       status: request.user?.kurvenfunkUserStatus,
       subject: request.user?.sub,
+      fanPreference: request.user?.kurvenfunkFanPreference,
+      favoriteClubId: request.user?.kurvenfunkFavoriteClubId,
       onboardingCompleted: request.user?.kurvenfunkOnboardingCompleted,
     };
   }

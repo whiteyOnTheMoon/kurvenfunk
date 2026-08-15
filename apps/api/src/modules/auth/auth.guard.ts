@@ -46,6 +46,8 @@ export class AuthGuard implements CanActivate {
       sub: payload.sub,
       kurvenfunkUserId: user.id,
       kurvenfunkUserStatus: user.status,
+      kurvenfunkFanPreference: user.fanPreference,
+      kurvenfunkFavoriteClubId: user.favoriteClubId,
       kurvenfunkOnboardingCompleted: user.onboardingCompleted,
     };
 

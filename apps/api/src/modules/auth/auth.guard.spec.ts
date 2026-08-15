@@ -47,6 +47,8 @@ describe('AuthGuard', () => {
       id: 'kurvenfunk-user-123',
       keycloakSubject: 'user-123',
       status: 'ACTIVE',
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
       onboardingCompleted: false,
     });
   });
@@ -81,6 +83,8 @@ describe('AuthGuard', () => {
         preferred_username?: string;
         kurvenfunkUserId: string;
         kurvenfunkUserStatus: 'ACTIVE' | 'LIMITED' | 'BANNED';
+        kurvenfunkFanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
+        kurvenfunkFavoriteClubId: string | null;
         kurvenfunkOnboardingCompleted: boolean;
       };
     };
@@ -99,6 +103,8 @@ describe('AuthGuard', () => {
       preferred_username: 'test-user',
       kurvenfunkUserId: 'kurvenfunk-user-123',
       kurvenfunkUserStatus: 'ACTIVE',
+      kurvenfunkFanPreference: 'NEUTRAL',
+      kurvenfunkFavoriteClubId: null,
       kurvenfunkOnboardingCompleted: false,
     });
   });

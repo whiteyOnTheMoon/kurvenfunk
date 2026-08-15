@@ -18,6 +18,8 @@ describe('AuthController', () => {
         sub: 'keycloak-user-123',
         kurvenfunkUserId: 'kurvenfunk-user-123',
         kurvenfunkUserStatus: 'LIMITED',
+        kurvenfunkFanPreference: 'CLUB',
+        kurvenfunkFavoriteClubId: '11111111-1111-4111-8111-111111111111',
         kurvenfunkOnboardingCompleted: false,
       },
     } as AuthenticatedRequest;
@@ -26,6 +28,8 @@ describe('AuthController', () => {
       id: 'kurvenfunk-user-123',
       status: 'LIMITED',
       subject: 'keycloak-user-123',
+      fanPreference: 'CLUB',
+      favoriteClubId: '11111111-1111-4111-8111-111111111111',
       onboardingCompleted: false,
     });
   });
