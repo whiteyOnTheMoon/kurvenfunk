@@ -1,10 +1,18 @@
 const findMany = jest.fn<Promise<unknown[]>, [unknown]>();
+const findCompetition = jest.fn();
+const findClub = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: () => ({
     article: {
       findMany,
+    },
+    competition: {
+      findUniqueOrThrow: findCompetition,
+    },
+    club: {
+      findUnique: findClub,
     },
     $disconnect: disconnect,
   }),
@@ -31,6 +39,8 @@ describe('ArticlesService', () => {
 
   beforeEach(() => {
     findMany.mockReset();
+    findCompetition.mockReset();
+    findClub.mockReset();
     disconnect.mockReset();
     service = new ArticlesService();
   });
@@ -220,31 +230,17 @@ describe('ArticlesService', () => {
 
   it('ranks neutral news as top, recent, then competition without club priority', async () => {
     findMany
-      .mockResolvedValueOnce([
-        article('top-1', '2026-08-14T15:00:00.000Z', competitionId),
-      ])
-      .mockResolvedValueOnce([
-        article('recent-1', '2026-08-14T14:00:00.000Z'),
-      ])
-      .mockResolvedValueOnce([
-        article('league-1', '2026-08-14T13:00:00.000Z', competitionId),
-      ]);
+      .mockResolvedValueOnce([article('top-1', '2026-08-14T15:00:00.000Z', competitionId)])
+      .mockResolvedValueOnce([article('recent-1', '2026-08-14T14:00:00.000Z')])
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T13:00:00.000Z', competitionId)]);
 
     const result = await service.getNeutralNews({
       competitionId,
       limit: 3,
     });
 
-    expect(result.map((item) => item.id)).toEqual([
-      'top-1',
-      'recent-1',
-      'league-1',
-    ]);
-    expect(result.map((item) => item.priority)).toEqual([
-      'TOP_NEWS',
-      'RECENT',
-      'COMPETITION',
-    ]);
+    expect(result.map((item) => item.id)).toEqual(['top-1', 'recent-1', 'league-1']);
+    expect(result.map((item) => item.priority)).toEqual(['TOP_NEWS', 'RECENT', 'COMPETITION']);
 
     const topCall = findMany.mock.calls[0]?.[0] as {
       where: Record<string, unknown>;
@@ -287,12 +283,8 @@ describe('ArticlesService', () => {
         article('top-4', '2026-08-14T15:00:00.000Z'),
         article('top-5', '2026-08-14T14:00:00.000Z'),
       ])
-      .mockResolvedValueOnce([
-        article('recent-1', '2026-08-14T13:00:00.000Z'),
-      ])
-      .mockResolvedValueOnce([
-        article('league-1', '2026-08-14T12:00:00.000Z', competitionId),
-      ]);
+      .mockResolvedValueOnce([article('recent-1', '2026-08-14T13:00:00.000Z')])
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T12:00:00.000Z', competitionId)]);
 
     const result = await service.getNeutralNews({
       competitionId,
@@ -316,21 +308,14 @@ describe('ArticlesService', () => {
         article('recent-2', '2026-08-14T14:00:00.000Z'),
         article('recent-3', '2026-08-14T13:00:00.000Z'),
       ])
-      .mockResolvedValueOnce([
-        article('league-1', '2026-08-14T12:00:00.000Z', competitionId),
-      ]);
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T12:00:00.000Z', competitionId)]);
 
     const result = await service.getNeutralNews({
       competitionId,
       limit: 4,
     });
 
-    expect(result.map((item) => item.id)).toEqual([
-      'recent-1',
-      'recent-2',
-      'recent-3',
-      'league-1',
-    ]);
+    expect(result.map((item) => item.id)).toEqual(['recent-1', 'recent-2', 'recent-3', 'league-1']);
     expect(result.map((item) => item.priority)).toEqual([
       'RECENT',
       'RECENT',
@@ -372,6 +357,189 @@ describe('ArticlesService', () => {
       });
       expect(query.take).toBe(10);
     }
+  });
+
+  it('builds a club startpage for a fan with a valid favorite club', async () => {
+    findCompetition.mockResolvedValue({
+      id: competitionId,
+      name: 'Österreichische Bundesliga',
+      shortName: 'Bundesliga',
+      slug: 'austrian-bundesliga',
+    });
+
+    findClub.mockResolvedValue({
+      id: favoriteClubId,
+      name: 'SK Rapid Wien',
+      shortName: 'Rapid',
+      slug: 'sk-rapid-wien',
+    });
+
+    findMany
+      .mockResolvedValueOnce([article('club-1', '2026-08-14T15:00:00.000Z', competitionId)])
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T14:00:00.000Z', competitionId)])
+      .mockResolvedValueOnce([article('general-1', '2026-08-14T13:00:00.000Z')]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'CLUB',
+      favoriteClubId,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 3,
+    });
+
+    expect(findCompetition).toHaveBeenCalledWith({
+      where: {
+        slug: 'austrian-bundesliga',
+      },
+      select: {
+        id: true,
+        name: true,
+        shortName: true,
+        slug: true,
+      },
+    });
+
+    expect(findClub).toHaveBeenCalledWith({
+      where: {
+        id: favoriteClubId,
+      },
+      select: {
+        id: true,
+        name: true,
+        shortName: true,
+        slug: true,
+      },
+    });
+
+    expect(result.variant).toBe('CLUB');
+    expect(result.favoriteClub).toEqual({
+      id: favoriteClubId,
+      name: 'SK Rapid Wien',
+      shortName: 'Rapid',
+      slug: 'sk-rapid-wien',
+    });
+    expect(result.competition.slug).toBe('austrian-bundesliga');
+    expect(result.articles.map((item) => item.priority)).toEqual([
+      'FAVORITE_CLUB',
+      'COMPETITION',
+      'GENERAL',
+    ]);
+  });
+
+  it('builds a neutral startpage for a neutral user', async () => {
+    findCompetition.mockResolvedValue({
+      id: competitionId,
+      name: 'Österreichische Bundesliga',
+      shortName: 'Bundesliga',
+      slug: 'austrian-bundesliga',
+    });
+
+    findMany
+      .mockResolvedValueOnce([article('top-1', '2026-08-14T15:00:00.000Z', competitionId)])
+      .mockResolvedValueOnce([article('recent-1', '2026-08-14T14:00:00.000Z')])
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T13:00:00.000Z', competitionId)]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 3,
+    });
+
+    expect(findClub).not.toHaveBeenCalled();
+    expect(result.variant).toBe('NEUTRAL');
+    expect(result.favoriteClub).toBeNull();
+    expect(result.articles.map((item) => item.priority)).toEqual([
+      'TOP_NEWS',
+      'RECENT',
+      'COMPETITION',
+    ]);
+  });
+
+  it('treats an unset fan preference as neutral', async () => {
+    findCompetition.mockResolvedValue({
+      id: competitionId,
+      name: 'Österreichische Bundesliga',
+      shortName: 'Bundesliga',
+      slug: 'austrian-bundesliga',
+    });
+
+    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'UNSET',
+      favoriteClubId: null,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 5,
+    });
+
+    expect(findClub).not.toHaveBeenCalled();
+    expect(result.variant).toBe('NEUTRAL');
+    expect(result.favoriteClub).toBeNull();
+  });
+
+  it('falls back to the neutral startpage when the favorite club no longer exists', async () => {
+    findCompetition.mockResolvedValue({
+      id: competitionId,
+      name: 'Österreichische Bundesliga',
+      shortName: 'Bundesliga',
+      slug: 'austrian-bundesliga',
+    });
+
+    findClub.mockResolvedValue(null);
+
+    findMany
+      .mockResolvedValueOnce([article('top-1', '2026-08-14T15:00:00.000Z', competitionId)])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([article('league-1', '2026-08-14T13:00:00.000Z', competitionId)]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'CLUB',
+      favoriteClubId,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 3,
+    });
+
+    expect(findClub).toHaveBeenCalledTimes(1);
+    expect(result.variant).toBe('NEUTRAL');
+    expect(result.favoriteClub).toBeNull();
+    expect(result.articles.every((item) => item.priority !== 'FAVORITE_CLUB')).toBe(true);
+  });
+
+  it('passes the requested startpage limit through to the ranking query', async () => {
+    findCompetition.mockResolvedValue({
+      id: competitionId,
+      name: 'Österreichische Bundesliga',
+      shortName: 'Bundesliga',
+      slug: 'austrian-bundesliga',
+    });
+
+    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await service.getStartpageNews({
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 7,
+    });
+
+    expect(findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        take: 7,
+      }),
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        take: 7,
+      }),
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        take: 7,
+      }),
+    );
   });
 
   it('disconnects the database client on module destroy', async () => {

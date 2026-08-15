@@ -1,12 +1,7 @@
 import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 
-export type NewsPriority =
-  | 'FAVORITE_CLUB'
-  | 'COMPETITION'
-  | 'GENERAL'
-  | 'TOP_NEWS'
-  | 'RECENT';
+export type NewsPriority = 'FAVORITE_CLUB' | 'COMPETITION' | 'GENERAL' | 'TOP_NEWS' | 'RECENT';
 
 export interface PrioritizedArticle {
   id: string;
@@ -29,6 +24,30 @@ export interface NeutralNewsOptions {
   limit?: number;
 }
 
+export interface StartpageNewsOptions {
+  fanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
+  favoriteClubId: string | null;
+  competitionSlug: string;
+  limit?: number;
+}
+
+export interface StartpageNews {
+  variant: 'CLUB' | 'NEUTRAL';
+  favoriteClub: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    slug: string;
+  } | null;
+  competition: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    slug: string;
+  };
+  articles: PrioritizedArticle[];
+}
+
 const DEFAULT_NEWS_LIMIT = 20;
 const MAX_NEWS_LIMIT = 100;
 
@@ -48,6 +67,61 @@ type SelectedArticle = Prisma.ArticleGetPayload<{
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
+
+  async getStartpageNews(options: StartpageNewsOptions): Promise<StartpageNews> {
+    const competition = await this.database.competition.findUniqueOrThrow({
+      where: {
+        slug: options.competitionSlug,
+      },
+      select: {
+        id: true,
+        name: true,
+        shortName: true,
+        slug: true,
+      },
+    });
+
+    if (options.fanPreference === 'CLUB' && options.favoriteClubId) {
+      const favoriteClub = await this.database.club.findUnique({
+        where: {
+          id: options.favoriteClubId,
+        },
+        select: {
+          id: true,
+          name: true,
+          shortName: true,
+          slug: true,
+        },
+      });
+
+      if (favoriteClub) {
+        const articles = await this.getPrioritizedNews({
+          favoriteClubId: favoriteClub.id,
+          competitionId: competition.id,
+          limit: options.limit,
+        });
+
+        return {
+          variant: 'CLUB',
+          favoriteClub,
+          competition,
+          articles,
+        };
+      }
+    }
+
+    const articles = await this.getNeutralNews({
+      competitionId: competition.id,
+      limit: options.limit,
+    });
+
+    return {
+      variant: 'NEUTRAL',
+      favoriteClub: null,
+      competition,
+      articles,
+    };
+  }
 
   async getPrioritizedNews(options: PrioritizedNewsOptions): Promise<PrioritizedArticle[]> {
     const limit = this.normalizeLimit(options.limit);
