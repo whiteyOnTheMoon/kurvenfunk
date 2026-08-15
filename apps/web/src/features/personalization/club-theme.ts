@@ -55,12 +55,16 @@ export type ClubThemeCssProperties = Record<
   | '--kf-club-on-color-1'
   | '--kf-club-on-color-2'
   | '--kf-club-on-color-3'
-  | '--kf-club-on-accent',
+  | '--kf-club-on-accent'
+  | '--kf-club-emphasis-light'
+  | '--kf-club-emphasis-light-on'
+  | '--kf-club-emphasis-dark'
+  | '--kf-club-emphasis-dark-on',
   string
 >;
 
-const DEFAULT_COLOR_1 = '#171717';
-const DEFAULT_COLOR_1_RGBA = 'rgba(23, 23, 23, 1)';
+const DEFAULT_COLOR_1 = '#0F1113';
+const DEFAULT_COLOR_1_RGBA = 'rgba(15, 17, 19, 1)';
 
 const DEFAULT_ACCENT = '#A8E63E';
 const DEFAULT_ACCENT_RGBA = 'rgba(168, 230, 62, 1)';
@@ -157,6 +161,24 @@ export function getReadableTextColor(backgroundColor: string): string {
   return blackContrast >= whiteContrast ? BLACK : WHITE;
 }
 
+function getThemeEmphasisColor(theme: ClubTheme, surfaceColor: string): string {
+  const candidates = [theme.color1, theme.color2, theme.accent, theme.color3].filter(
+    (color): color is string => Boolean(color),
+  );
+
+  const preferred = candidates.find((color) => getContrastRatio(color, surfaceColor) >= 3);
+
+  if (preferred) {
+    return preferred;
+  }
+
+  return candidates.reduce((best, candidate) =>
+    getContrastRatio(candidate, surfaceColor) > getContrastRatio(best, surfaceColor)
+      ? candidate
+      : best,
+  );
+}
+
 export function resolveClubTheme(input: ClubThemeInput): ClubTheme {
   const color1 = normalizeHexColor(input.color1Hex, DEFAULT_COLOR_1) ?? DEFAULT_COLOR_1;
   const color1Rgba =
@@ -200,6 +222,9 @@ export function resolveClubTheme(input: ClubThemeInput): ClubTheme {
 }
 
 export function clubThemeToCssProperties(theme: ClubTheme): ClubThemeCssProperties {
+  const emphasisLight = getThemeEmphasisColor(theme, '#FFFFFF');
+  const emphasisDark = getThemeEmphasisColor(theme, '#171A1D');
+
   return {
     '--kf-club-color-1': theme.color1,
     '--kf-club-color-1-rgba': theme.color1Rgba,
@@ -213,5 +238,9 @@ export function clubThemeToCssProperties(theme: ClubTheme): ClubThemeCssProperti
     '--kf-club-on-color-2': theme.onColor2 ?? 'currentColor',
     '--kf-club-on-color-3': theme.onColor3 ?? 'currentColor',
     '--kf-club-on-accent': theme.onAccent,
+    '--kf-club-emphasis-light': emphasisLight,
+    '--kf-club-emphasis-light-on': getReadableTextColor(emphasisLight),
+    '--kf-club-emphasis-dark': emphasisDark,
+    '--kf-club-emphasis-dark-on': getReadableTextColor(emphasisDark),
   };
 }

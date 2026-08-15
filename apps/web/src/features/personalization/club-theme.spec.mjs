@@ -86,10 +86,10 @@ test('uses safe fallbacks for invalid required values', () => {
     logo: null,
   });
 
-  assert.equal(theme.color1, '#171717');
-  assert.equal(theme.color1Rgba, 'rgba(23, 23, 23, 1)');
-  assert.equal(theme.accent, '#171717');
-  assert.equal(theme.accentRgba, 'rgba(23, 23, 23, 1)');
+  assert.equal(theme.color1, '#0F1113');
+  assert.equal(theme.color1Rgba, 'rgba(15, 17, 19, 1)');
+  assert.equal(theme.accent, '#0F1113');
+  assert.equal(theme.accentRgba, 'rgba(15, 17, 19, 1)');
 });
 
 test('chooses a readable black or white foreground', () => {
@@ -158,6 +158,10 @@ test('converts theme to CSS custom properties', () => {
     '--kf-club-on-color-2': '#000000',
     '--kf-club-on-color-3': 'currentColor',
     '--kf-club-on-accent': '#000000',
+    '--kf-club-emphasis-light': '#007A3D',
+    '--kf-club-emphasis-light-on': '#FFFFFF',
+    '--kf-club-emphasis-dark': '#007A3D',
+    '--kf-club-emphasis-dark-on': '#FFFFFF',
   });
 });
 
@@ -165,8 +169,8 @@ test('resolves the default Kurvenfunk theme', async () => {
   const { resolveDefaultKurvenfunkTheme } = await import('./club-theme.ts');
 
   assert.deepEqual(resolveDefaultKurvenfunkTheme(), {
-    color1: '#171717',
-    color1Rgba: 'rgba(23, 23, 23, 1)',
+    color1: '#0F1113',
+    color1Rgba: 'rgba(15, 17, 19, 1)',
     color2: null,
     color2Rgba: null,
     color3: null,
@@ -186,8 +190,8 @@ test('converts the default Kurvenfunk theme to CSS properties', async () => {
     await import('./club-theme.ts');
 
   assert.deepEqual(clubThemeToCssProperties(resolveDefaultKurvenfunkTheme()), {
-    '--kf-club-color-1': '#171717',
-    '--kf-club-color-1-rgba': 'rgba(23, 23, 23, 1)',
+    '--kf-club-color-1': '#0F1113',
+    '--kf-club-color-1-rgba': 'rgba(15, 17, 19, 1)',
     '--kf-club-color-2': 'transparent',
     '--kf-club-color-2-rgba': 'rgba(0, 0, 0, 0)',
     '--kf-club-color-3': 'transparent',
@@ -198,5 +202,9 @@ test('converts the default Kurvenfunk theme to CSS properties', async () => {
     '--kf-club-on-color-2': 'currentColor',
     '--kf-club-on-color-3': 'currentColor',
     '--kf-club-on-accent': '#0F1113',
+    '--kf-club-emphasis-light': '#0F1113',
+    '--kf-club-emphasis-light-on': '#FFFFFF',
+    '--kf-club-emphasis-dark': '#A8E63E',
+    '--kf-club-emphasis-dark-on': '#000000',
   });
 });

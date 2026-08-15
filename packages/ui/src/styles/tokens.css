@@ -157,6 +157,15 @@
   --kf-accent-muted: color-mix(in srgb, var(--kf-accent) 12%, transparent);
   --kf-accent-hover: color-mix(in srgb, var(--kf-accent) 86%, black);
 
+  /*
+   * High-contrast theme emphasis.
+   *
+   * Prefers club color 1, but the theme resolver can fall back to another
+   * club color when color 1 would disappear against the current surface.
+   */
+  --kf-theme-emphasis: var(--kf-club-emphasis-light, var(--kf-color-ink));
+  --kf-theme-emphasis-on: var(--kf-club-emphasis-light-on, var(--kf-color-white));
+
   --kf-focus-ring: var(--kf-accent);
   --kf-link: var(--kf-accent);
   --kf-link-hover: var(--kf-accent-hover);
@@ -187,6 +196,9 @@
 
     --kf-border: #303438;
     --kf-border-strong: #454a4f;
+
+    --kf-theme-emphasis: var(--kf-club-emphasis-dark, var(--kf-color-brand));
+    --kf-theme-emphasis-on: var(--kf-club-emphasis-dark-on, var(--kf-color-brand-on));
 
     color-scheme: dark;
   }

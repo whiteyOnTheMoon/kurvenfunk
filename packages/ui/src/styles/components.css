@@ -160,12 +160,14 @@
   padding: 0;
   border: 0;
   border-radius: var(--kf-radius-full);
-  background: var(--kf-color-neutral-300);
+  background: var(--kf-theme-emphasis);
+  opacity: 0.58;
   cursor: pointer;
 }
 
 .kf-switch[data-checked='true'] {
-  background: var(--kf-accent);
+  background: var(--kf-theme-emphasis);
+  opacity: 1;
 }
 
 .kf-switch::after {
@@ -189,6 +191,9 @@
   border-radius: var(--kf-radius-lg);
   background: var(--kf-surface);
   padding: var(--kf-space-5);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 8%),
+    0 6px 20px rgb(0 0 0 / 6%);
 }
 
 .kf-badge {
@@ -241,7 +246,7 @@
 }
 
 .kf-alert--info {
-  border-color: var(--kf-status-info);
+  border-color: var(--kf-theme-emphasis);
 }
 
 .kf-skeleton {
@@ -476,11 +481,11 @@
 }
 
 .kf-toast--info {
-  border-left-color: var(--kf-status-info);
+  border-left-color: var(--kf-accent);
 }
 
 .kf-toast--success {
-  border-left-color: var(--kf-status-success);
+  border-left-color: var(--kf-theme-emphasis);
 }
 
 .kf-toast--warning {
@@ -498,4 +503,12 @@
 
 .kf-toast__title {
   color: var(--kf-text);
+}
+
+/* Native highlighted text follows the active club/product theme. */
+mark {
+  padding-inline: 0.18em;
+  border-radius: var(--kf-radius-sm);
+  background: var(--kf-theme-emphasis);
+  color: var(--kf-theme-emphasis-on);
 }

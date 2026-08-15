@@ -44,7 +44,7 @@ const THEMES: ThemeDefinition[] = [
   {
     name: 'Kurvenfunk / Neutral',
     slug: null,
-    color1Hex: '#171717',
+    color1Hex: '#0F1113',
     color2Hex: null,
     color3Hex: null,
     accentColorHex: '#D71920',
