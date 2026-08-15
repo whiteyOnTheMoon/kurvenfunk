@@ -11,6 +11,7 @@ import {
 import { PersonalizedClubTheme } from '../features/personalization/personalized-club-theme';
 import { env } from '../lib/env';
 
+import '@kurvenfunk/ui/tokens.css';
 import './globals.css';
 
 const geistSans = Geist({
