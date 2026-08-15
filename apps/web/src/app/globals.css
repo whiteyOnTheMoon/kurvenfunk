@@ -1,6 +1,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --kf-club-primary: #171717;
+  --kf-club-secondary: #ffffff;
+  --kf-club-accent: #d71920;
+  --kf-club-on-primary: #ffffff;
+  --kf-club-on-secondary: #000000;
+  --kf-club-on-accent: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
