@@ -171,12 +171,12 @@ test('resolves the default Kurvenfunk theme', async () => {
     color2Rgba: null,
     color3: null,
     color3Rgba: null,
-    accent: '#D71920',
-    accentRgba: 'rgba(215, 25, 32, 1)',
+    accent: '#A8E63E',
+    accentRgba: 'rgba(168, 230, 62, 1)',
     onColor1: '#FFFFFF',
     onColor2: null,
     onColor3: null,
-    onAccent: '#FFFFFF',
+    onAccent: '#0F1113',
     logo: null,
   });
 });
@@ -192,11 +192,11 @@ test('converts the default Kurvenfunk theme to CSS properties', async () => {
     '--kf-club-color-2-rgba': 'rgba(0, 0, 0, 0)',
     '--kf-club-color-3': 'transparent',
     '--kf-club-color-3-rgba': 'rgba(0, 0, 0, 0)',
-    '--kf-club-accent': '#D71920',
-    '--kf-club-accent-rgba': 'rgba(215, 25, 32, 1)',
+    '--kf-club-accent': '#A8E63E',
+    '--kf-club-accent-rgba': 'rgba(168, 230, 62, 1)',
     '--kf-club-on-color-1': '#FFFFFF',
     '--kf-club-on-color-2': 'currentColor',
     '--kf-club-on-color-3': 'currentColor',
-    '--kf-club-on-accent': '#FFFFFF',
+    '--kf-club-on-accent': '#0F1113',
   });
 });
