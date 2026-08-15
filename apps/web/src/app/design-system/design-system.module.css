@@ -1,0 +1,271 @@
+.page {
+  min-height: 100vh;
+  background: var(--kf-background);
+  color: var(--kf-text);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--kf-border);
+  background: color-mix(in srgb, var(--kf-background) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.headerInner,
+.main {
+  width: min(100% - 2rem, 78rem);
+  margin-inline: auto;
+}
+
+.headerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kf-space-4);
+  padding-block: var(--kf-space-4);
+}
+
+.brand {
+  display: grid;
+  gap: var(--kf-space-1);
+}
+
+.brandTitle {
+  margin: 0;
+  font-size: var(--kf-font-size-xl);
+}
+
+.brandText {
+  margin: 0;
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-sm);
+}
+
+.main {
+  display: grid;
+  gap: var(--kf-space-10);
+  padding-block: var(--kf-space-8) var(--kf-space-20);
+}
+
+.themeBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--kf-space-4);
+  align-items: end;
+}
+
+.themePreview {
+  display: flex;
+  align-items: center;
+  gap: var(--kf-space-3);
+}
+
+.themeLogo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kf-space-2);
+}
+
+.swatch {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--kf-border-strong);
+  border-radius: var(--kf-radius-sm);
+}
+
+.section {
+  display: grid;
+  gap: var(--kf-space-5);
+}
+
+.sectionHeader {
+  display: grid;
+  gap: var(--kf-space-2);
+  padding-bottom: var(--kf-space-3);
+  border-bottom: 1px solid var(--kf-border);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: var(--kf-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--kf-space-4);
+}
+
+.stack {
+  display: grid;
+  gap: var(--kf-space-4);
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kf-space-3);
+}
+
+.demo {
+  display: grid;
+  gap: var(--kf-space-4);
+  padding: var(--kf-space-5);
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+}
+
+.demoTitle {
+  margin: 0;
+  font-size: var(--kf-font-size-md);
+}
+
+.prose {
+  max-width: 50rem;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin-block: 1.25em 0.5em;
+  line-height: var(--kf-line-height-tight);
+}
+
+.prose h1 {
+  font-size: var(--kf-font-size-5xl);
+}
+
+.prose h2 {
+  font-size: var(--kf-font-size-4xl);
+}
+
+.prose h3 {
+  font-size: var(--kf-font-size-3xl);
+}
+
+.prose h4 {
+  font-size: var(--kf-font-size-2xl);
+}
+
+.prose h5 {
+  font-size: var(--kf-font-size-xl);
+}
+
+.prose h6 {
+  font-size: var(--kf-font-size-lg);
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose dl,
+.prose blockquote,
+.prose pre {
+  margin-block: var(--kf-space-4);
+}
+
+.prose p,
+.prose li,
+.prose dd {
+  line-height: var(--kf-line-height-relaxed);
+}
+
+.prose a {
+  color: var(--kf-link);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+.prose a:hover {
+  color: var(--kf-link-hover);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: var(--kf-space-6);
+}
+
+.prose li + li {
+  margin-top: var(--kf-space-1);
+}
+
+.prose blockquote {
+  margin-inline: 0;
+  padding-left: var(--kf-space-4);
+  border-left: 4px solid var(--kf-accent);
+  color: var(--kf-text-muted);
+}
+
+.prose code,
+.prose kbd {
+  font-family: var(--kf-font-family-mono);
+}
+
+.prose code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--kf-radius-sm);
+  background: var(--kf-background-muted);
+}
+
+.prose pre {
+  overflow: auto;
+  padding: var(--kf-space-4);
+  border-radius: var(--kf-radius-md);
+  background: var(--kf-color-neutral-900);
+  color: var(--kf-color-neutral-0);
+}
+
+.prose pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.prose kbd {
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--kf-border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--kf-radius-sm);
+  background: var(--kf-surface);
+}
+
+.skeletonRow {
+  display: grid;
+  gap: var(--kf-space-3);
+}
+
+.toastStack {
+  display: grid;
+  gap: var(--kf-space-3);
+}
+
+@media (max-width: 48rem) {
+  .themeBar {
+    grid-template-columns: 1fr;
+  }
+
+  .prose h1 {
+    font-size: var(--kf-font-size-4xl);
+  }
+
+  .prose h2 {
+    font-size: var(--kf-font-size-3xl);
+  }
+}
