@@ -218,6 +218,162 @@ describe('ArticlesService', () => {
     );
   });
 
+  it('ranks neutral news as top, recent, then competition without club priority', async () => {
+    findMany
+      .mockResolvedValueOnce([
+        article('top-1', '2026-08-14T15:00:00.000Z', competitionId),
+      ])
+      .mockResolvedValueOnce([
+        article('recent-1', '2026-08-14T14:00:00.000Z'),
+      ])
+      .mockResolvedValueOnce([
+        article('league-1', '2026-08-14T13:00:00.000Z', competitionId),
+      ]);
+
+    const result = await service.getNeutralNews({
+      competitionId,
+      limit: 3,
+    });
+
+    expect(result.map((item) => item.id)).toEqual([
+      'top-1',
+      'recent-1',
+      'league-1',
+    ]);
+    expect(result.map((item) => item.priority)).toEqual([
+      'TOP_NEWS',
+      'RECENT',
+      'COMPETITION',
+    ]);
+
+    const topCall = findMany.mock.calls[0]?.[0] as {
+      where: Record<string, unknown>;
+    };
+    const recentCall = findMany.mock.calls[1]?.[0] as {
+      where: Record<string, unknown>;
+    };
+    const competitionCall = findMany.mock.calls[2]?.[0] as {
+      where: Record<string, unknown>;
+    };
+
+    expect(topCall.where).toEqual(
+      expect.objectContaining({
+        isTopNews: true,
+      }),
+    );
+    expect(recentCall.where).toEqual(
+      expect.objectContaining({
+        isTopNews: false,
+      }),
+    );
+    expect(competitionCall.where).toEqual(
+      expect.objectContaining({
+        isTopNews: false,
+        competitionId,
+      }),
+    );
+
+    expect(topCall.where).not.toHaveProperty('clubs');
+    expect(recentCall.where).not.toHaveProperty('clubs');
+    expect(competitionCall.where).not.toHaveProperty('clubs');
+  });
+
+  it('keeps recent and competition news in a neutral feed when enough top news exists', async () => {
+    findMany
+      .mockResolvedValueOnce([
+        article('top-1', '2026-08-14T18:00:00.000Z', competitionId),
+        article('top-2', '2026-08-14T17:00:00.000Z'),
+        article('top-3', '2026-08-14T16:00:00.000Z'),
+        article('top-4', '2026-08-14T15:00:00.000Z'),
+        article('top-5', '2026-08-14T14:00:00.000Z'),
+      ])
+      .mockResolvedValueOnce([
+        article('recent-1', '2026-08-14T13:00:00.000Z'),
+      ])
+      .mockResolvedValueOnce([
+        article('league-1', '2026-08-14T12:00:00.000Z', competitionId),
+      ]);
+
+    const result = await service.getNeutralNews({
+      competitionId,
+      limit: 5,
+    });
+
+    expect(result.map((item) => item.id)).toEqual([
+      'top-1',
+      'top-2',
+      'top-3',
+      'recent-1',
+      'league-1',
+    ]);
+  });
+
+  it('backfills a neutral feed when no top news is available', async () => {
+    findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        article('recent-1', '2026-08-14T15:00:00.000Z'),
+        article('recent-2', '2026-08-14T14:00:00.000Z'),
+        article('recent-3', '2026-08-14T13:00:00.000Z'),
+      ])
+      .mockResolvedValueOnce([
+        article('league-1', '2026-08-14T12:00:00.000Z', competitionId),
+      ]);
+
+    const result = await service.getNeutralNews({
+      competitionId,
+      limit: 4,
+    });
+
+    expect(result.map((item) => item.id)).toEqual([
+      'recent-1',
+      'recent-2',
+      'recent-3',
+      'league-1',
+    ]);
+    expect(result.map((item) => item.priority)).toEqual([
+      'RECENT',
+      'RECENT',
+      'RECENT',
+      'COMPETITION',
+    ]);
+  });
+
+  it('uses only published, non-deleted and already published articles for neutral news', async () => {
+    findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await service.getNeutralNews({
+      competitionId,
+      limit: 10,
+    });
+
+    for (const call of findMany.mock.calls) {
+      const query = call[0] as {
+        where: {
+          status: string;
+          deletedAt: null;
+          publishedAt: {
+            not: null;
+            lte: Date;
+          };
+        };
+        orderBy: {
+          publishedAt: string;
+        };
+        take: number;
+      };
+
+      expect(query.where.status).toBe('PUBLISHED');
+      expect(query.where.deletedAt).toBeNull();
+      expect(query.where.publishedAt.not).toBeNull();
+      expect(query.where.publishedAt.lte).toBeInstanceOf(Date);
+      expect(query.orderBy).toEqual({
+        publishedAt: 'desc',
+      });
+      expect(query.take).toBe(10);
+    }
+  });
+
   it('disconnects the database client on module destroy', async () => {
     disconnect.mockResolvedValue(undefined);
 

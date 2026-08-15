@@ -450,6 +450,7 @@ model Article {
   lead               String?
   content            Json
   status             ArticleStatus @default(DRAFT)
+  isTopNews          Boolean       @default(false)
   authorId           String?       @db.Uuid
   externalAuthorName String?
   sourceId           String?       @db.Uuid

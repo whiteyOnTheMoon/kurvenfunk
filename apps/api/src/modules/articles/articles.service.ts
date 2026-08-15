@@ -1,7 +1,12 @@
 import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 
-export type NewsPriority = 'FAVORITE_CLUB' | 'COMPETITION' | 'GENERAL';
+export type NewsPriority =
+  | 'FAVORITE_CLUB'
+  | 'COMPETITION'
+  | 'GENERAL'
+  | 'TOP_NEWS'
+  | 'RECENT';
 
 export interface PrioritizedArticle {
   id: string;
@@ -15,6 +20,11 @@ export interface PrioritizedArticle {
 
 export interface PrioritizedNewsOptions {
   favoriteClubId: string;
+  competitionId: string;
+  limit?: number;
+}
+
+export interface NeutralNewsOptions {
   competitionId: string;
   limit?: number;
 }
@@ -119,6 +129,69 @@ export class ArticlesService implements OnModuleDestroy {
     );
   }
 
+  async getNeutralNews(options: NeutralNewsOptions): Promise<PrioritizedArticle[]> {
+    const limit = this.normalizeLimit(options.limit);
+    const now = new Date();
+
+    const baseWhere = {
+      status: 'PUBLISHED',
+      publishedAt: {
+        not: null,
+        lte: now,
+      },
+      deletedAt: null,
+    } satisfies Prisma.ArticleWhereInput;
+
+    const [topArticles, recentArticles, competitionArticles] = await Promise.all([
+      this.database.article.findMany({
+        where: {
+          ...baseWhere,
+          isTopNews: true,
+        },
+        select: articleSelect,
+        orderBy: {
+          publishedAt: 'desc',
+        },
+        take: limit,
+      }),
+      this.database.article.findMany({
+        where: {
+          ...baseWhere,
+          isTopNews: false,
+          OR: [
+            {
+              competitionId: null,
+            },
+            {
+              competitionId: {
+                not: options.competitionId,
+              },
+            },
+          ],
+        },
+        select: articleSelect,
+        orderBy: {
+          publishedAt: 'desc',
+        },
+        take: limit,
+      }),
+      this.database.article.findMany({
+        where: {
+          ...baseWhere,
+          isTopNews: false,
+          competitionId: options.competitionId,
+        },
+        select: articleSelect,
+        orderBy: {
+          publishedAt: 'desc',
+        },
+        take: limit,
+      }),
+    ]);
+
+    return this.buildNeutralFeed(topArticles, recentArticles, competitionArticles, limit);
+  }
+
   private buildPrioritizedFeed(
     favoriteClubArticles: SelectedArticle[],
     competitionArticles: SelectedArticle[],
@@ -167,6 +240,56 @@ export class ArticlesService implements OnModuleDestroy {
       ...this.withPriority(favoriteClubArticles.slice(0, favoriteCount), 'FAVORITE_CLUB'),
       ...this.withPriority(competitionArticles.slice(0, competitionCount), 'COMPETITION'),
       ...this.withPriority(generalArticles.slice(0, generalCount), 'GENERAL'),
+    ];
+  }
+
+  private buildNeutralFeed(
+    topArticles: SelectedArticle[],
+    recentArticles: SelectedArticle[],
+    competitionArticles: SelectedArticle[],
+    limit: number,
+  ): PrioritizedArticle[] {
+    const reserveRecent = limit >= 2 && recentArticles.length > 0 ? 1 : 0;
+    const reserveCompetition =
+      limit >= 3 && competitionArticles.length > 0
+        ? 1
+        : limit >= 2 && reserveRecent === 0 && competitionArticles.length > 0
+          ? 1
+          : 0;
+
+    let topCount = Math.min(
+      topArticles.length,
+      Math.max(0, limit - reserveRecent - reserveCompetition),
+    );
+    let recentCount = reserveRecent;
+    let competitionCount = reserveCompetition;
+
+    let remaining = limit - topCount - recentCount - competitionCount;
+
+    if (remaining > 0) {
+      const additionalTop = Math.min(remaining, topArticles.length - topCount);
+      topCount += additionalTop;
+      remaining -= additionalTop;
+    }
+
+    if (remaining > 0) {
+      const additionalRecent = Math.min(remaining, recentArticles.length - recentCount);
+      recentCount += additionalRecent;
+      remaining -= additionalRecent;
+    }
+
+    if (remaining > 0) {
+      const additionalCompetition = Math.min(
+        remaining,
+        competitionArticles.length - competitionCount,
+      );
+      competitionCount += additionalCompetition;
+    }
+
+    return [
+      ...this.withPriority(topArticles.slice(0, topCount), 'TOP_NEWS'),
+      ...this.withPriority(recentArticles.slice(0, recentCount), 'RECENT'),
+      ...this.withPriority(competitionArticles.slice(0, competitionCount), 'COMPETITION'),
     ];
   }
 

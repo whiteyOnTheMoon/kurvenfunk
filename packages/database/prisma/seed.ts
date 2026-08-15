@@ -979,6 +979,7 @@ async function seedArticles(
         authorId: users.editorUser.id,
         sourceId: source.id,
         competitionId: definition.competitionId,
+        isTopNews: definition.slug === 'seed-bundesliga-2026-27',
         publishedAt: new Date('2026-08-01T10:00:00.000Z'),
         archivedAt: null,
         deletedAt: null,
@@ -1005,6 +1006,7 @@ async function seedArticles(
         authorId: users.editorUser.id,
         sourceId: source.id,
         competitionId: definition.competitionId,
+        isTopNews: definition.slug === 'seed-bundesliga-2026-27',
         publishedAt: new Date('2026-08-01T10:00:00.000Z'),
       },
     });
