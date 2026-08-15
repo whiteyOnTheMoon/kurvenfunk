@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 
 interface ClubSelectionProps {
   apiUrl: string;
+  initialSelection?: FanPreferenceSelection;
+  inputName?: string;
   onSelectionChange?: (selection: FanPreferenceSelection) => void;
 }
 
@@ -38,9 +40,14 @@ function getClubInitials(club: Club): string {
     .join('');
 }
 
-export function ClubSelection({ apiUrl, onSelectionChange }: ClubSelectionProps) {
+export function ClubSelection({
+  apiUrl,
+  initialSelection,
+  inputName = 'club-preference',
+  onSelectionChange,
+}: ClubSelectionProps) {
   const [clubs, setClubs] = useState<Club[]>([]);
-  const [selection, setSelection] = useState<Selection>();
+  const [selection, setSelection] = useState<Selection>(initialSelection);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -113,7 +120,7 @@ export function ClubSelection({ apiUrl, onSelectionChange }: ClubSelectionProps)
             <label key={club.id}>
               <input
                 type="radio"
-                name="club-preference"
+                name={inputName}
                 value={club.id}
                 checked={checked}
                 onChange={() => {
@@ -146,7 +153,7 @@ export function ClubSelection({ apiUrl, onSelectionChange }: ClubSelectionProps)
         <label>
           <input
             type="radio"
-            name="club-preference"
+            name={inputName}
             value="neutral"
             checked={selection?.fanPreference === 'NEUTRAL'}
             onChange={() => {
