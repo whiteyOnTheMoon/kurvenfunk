@@ -25,9 +25,9 @@ describe('ClubsController', () => {
         name: 'SK Rapid Wien',
         shortName: 'Rapid Wien',
         slug: 'sk-rapid-wien',
-        primaryColor: '#007A3D',
-        secondaryColor: '#FFFFFF',
-        accentColor: '#D4AF37',
+        color1Hex: '#007A3D',
+        color2Hex: '#FFFFFF',
+        accentColorHex: '#D4AF37',
         logo: null,
       },
     ];

@@ -134,18 +134,23 @@ enum ClubAliasType {
 }
 
 model Club {
-  id             String   @id @default(uuid()) @db.Uuid
-  name           String
-  shortName      String?
-  slug           String   @unique
-  logoMediaId    String?  @db.Uuid
-  primaryColor   String?
-  secondaryColor String?
-  accentColor    String?
-  website        String?
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  shortName       String?
+  slug            String   @unique
+  logoMediaId     String?  @db.Uuid
+  color1Hex       String
+  color1Rgba      String
+  color2Hex       String?
+  color2Rgba      String?
+  color3Hex       String?
+  color3Rgba      String?
+  accentColorHex  String?
+  accentColorRgba String?
+  website         String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   logoMedia Media? @relation("ClubLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
 

@@ -6,9 +6,14 @@ export interface ClubListItem {
   name: string;
   shortName: string | null;
   slug: string;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  accentColor: string | null;
+  color1Hex: string;
+  color1Rgba: string;
+  color2Hex: string | null;
+  color2Rgba: string | null;
+  color3Hex: string | null;
+  color3Rgba: string | null;
+  accentColorHex: string | null;
+  accentColorRgba: string | null;
   logo: {
     externalUrl: string | null;
     storageKey: string | null;
@@ -33,9 +38,14 @@ export class ClubsService implements OnModuleDestroy {
         name: true,
         shortName: true,
         slug: true,
-        primaryColor: true,
-        secondaryColor: true,
-        accentColor: true,
+        color1Hex: true,
+        color1Rgba: true,
+        color2Hex: true,
+        color2Rgba: true,
+        color3Hex: true,
+        color3Rgba: true,
+        accentColorHex: true,
+        accentColorRgba: true,
         logoMedia: {
           select: {
             externalUrl: true,
