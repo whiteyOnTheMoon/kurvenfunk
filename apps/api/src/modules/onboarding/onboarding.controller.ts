@@ -1,5 +1,9 @@
-import { Body, Controller, Patch, Req, UseGuards } from '@nestjs/common';
-import { selectNicknameSchema, type SelectNicknameInput } from '@kurvenfunk/validation';
+import { Body, Controller, Get, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  nicknameSchema,
+  selectNicknameSchema,
+  type SelectNicknameInput,
+} from '@kurvenfunk/validation';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
@@ -9,6 +13,19 @@ import { OnboardingService } from './onboarding.service';
 @Controller('onboarding')
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
+
+  @Get('nickname/availability')
+  @UseGuards(AuthGuard)
+  checkNicknameAvailability(
+    @Req() request: AuthenticatedRequest,
+    @Query('nickname', new ZodValidationPipe(nicknameSchema))
+    nickname: string,
+  ) {
+    return this.onboardingService.checkNicknameAvailability(
+      request.user!.kurvenfunkUserId,
+      nickname,
+    );
+  }
 
   @Patch('nickname')
   @UseGuards(AuthGuard)

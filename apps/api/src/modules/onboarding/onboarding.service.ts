@@ -6,9 +6,36 @@ export interface NicknameSelection {
   nickname: string;
 }
 
+export interface NicknameAvailability {
+  available: boolean;
+  nickname: string;
+}
+
 @Injectable()
 export class OnboardingService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
+
+  async checkNicknameAvailability(userId: string, nickname: string): Promise<NicknameAvailability> {
+    const existingUser = await this.database.user.findFirst({
+      where: {
+        nickname: {
+          equals: nickname,
+          mode: 'insensitive',
+        },
+        NOT: {
+          id: userId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      available: existingUser === null,
+      nickname,
+    };
+  }
 
   async selectNickname(userId: string, nickname: string): Promise<NicknameSelection> {
     try {

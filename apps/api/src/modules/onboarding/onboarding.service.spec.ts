@@ -1,4 +1,5 @@
 const update = jest.fn();
+const findFirst = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => {
@@ -15,6 +16,7 @@ jest.mock('@kurvenfunk/database', () => {
     createPrismaClient: () => ({
       user: {
         update,
+        findFirst,
       },
       $disconnect: disconnect,
     }),
@@ -26,6 +28,7 @@ jest.mock('@kurvenfunk/database', () => {
 
 import { ConflictException } from '@nestjs/common';
 import { Prisma } from '@kurvenfunk/database';
+
 import { OnboardingService } from './onboarding.service';
 
 describe('OnboardingService', () => {
@@ -33,8 +36,59 @@ describe('OnboardingService', () => {
 
   beforeEach(() => {
     update.mockReset();
+    findFirst.mockReset();
     disconnect.mockReset();
     service = new OnboardingService();
+  });
+
+  it('returns available when no other user has the nickname', async () => {
+    findFirst.mockResolvedValue(null);
+
+    await expect(service.checkNicknameAvailability('user-123', 'RapidFan')).resolves.toEqual({
+      available: true,
+      nickname: 'RapidFan',
+    });
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        nickname: {
+          equals: 'RapidFan',
+          mode: 'insensitive',
+        },
+        NOT: {
+          id: 'user-123',
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  });
+
+  it('returns unavailable when another user has the nickname', async () => {
+    findFirst.mockResolvedValue({
+      id: 'user-456',
+    });
+
+    await expect(service.checkNicknameAvailability('user-123', 'rapidfan')).resolves.toEqual({
+      available: false,
+      nickname: 'rapidfan',
+    });
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        nickname: {
+          equals: 'rapidfan',
+          mode: 'insensitive',
+        },
+        NOT: {
+          id: 'user-123',
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
   });
 
   it('sets the nickname for the authenticated user', async () => {
