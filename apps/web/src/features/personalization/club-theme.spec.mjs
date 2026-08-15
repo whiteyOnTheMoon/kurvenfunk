@@ -14,6 +14,7 @@ test('resolves all persisted club colors', () => {
       color3Rgba: 'rgba(0, 0, 0, 1)',
       accentColorHex: '#D4AF37',
       accentColorRgba: 'rgba(212, 175, 55, 1)',
+      logo: null,
     }),
     {
       color1: '#007A3D',
@@ -28,6 +29,7 @@ test('resolves all persisted club colors', () => {
       onColor2: '#000000',
       onColor3: '#FFFFFF',
       onAccent: '#000000',
+      logo: null,
     },
   );
 });
@@ -42,6 +44,7 @@ test('keeps optional color 2 and color 3 empty', () => {
     color3Rgba: null,
     accentColorHex: null,
     accentColorRgba: null,
+    logo: null,
   });
 
   assert.equal(theme.color2, null);
@@ -62,6 +65,7 @@ test('normalizes lowercase hex values', () => {
     color3Rgba: null,
     accentColorHex: '#d4af37',
     accentColorRgba: 'rgba(212, 175, 55, 1)',
+    logo: null,
   });
 
   assert.equal(theme.color1, '#5B2C83');
@@ -79,6 +83,7 @@ test('uses safe fallbacks for invalid required values', () => {
     color3Rgba: null,
     accentColorHex: null,
     accentColorRgba: null,
+    logo: null,
   });
 
   assert.equal(theme.color1, '#171717');
@@ -94,6 +99,39 @@ test('chooses a readable black or white foreground', () => {
   assert.equal(getReadableTextColor('#000080'), '#FFFFFF');
 });
 
+test('passes club logo metadata through the resolved theme', () => {
+  const theme = resolveClubTheme({
+    color1Hex: '#007A3D',
+    color1Rgba: 'rgba(0, 122, 61, 1)',
+    color2Hex: '#FFFFFF',
+    color2Rgba: 'rgba(255, 255, 255, 1)',
+    color3Hex: null,
+    color3Rgba: null,
+    accentColorHex: '#D4AF37',
+    accentColorRgba: 'rgba(212, 175, 55, 1)',
+    logo: {
+      externalUrl: 'https://media.example.test/clubs/sk-rapid-wien/logo.svg',
+      storageKey: 'clubs/sk-rapid-wien/logo.svg',
+      altText: 'SK Rapid Wien logo',
+      mimeType: 'image/svg+xml',
+      source: 'SK Rapid Wien',
+      sourceUrl: 'https://example.test/media',
+      copyright: '© SK Rapid Wien',
+    },
+  });
+
+  assert.deepEqual(theme.logo, {
+    url: 'https://media.example.test/clubs/sk-rapid-wien/logo.svg',
+    externalUrl: 'https://media.example.test/clubs/sk-rapid-wien/logo.svg',
+    storageKey: 'clubs/sk-rapid-wien/logo.svg',
+    altText: 'SK Rapid Wien logo',
+    mimeType: 'image/svg+xml',
+    source: 'SK Rapid Wien',
+    sourceUrl: 'https://example.test/media',
+    copyright: '© SK Rapid Wien',
+  });
+});
+
 test('converts theme to CSS custom properties', () => {
   const theme = resolveClubTheme({
     color1Hex: '#007A3D',
@@ -104,6 +142,7 @@ test('converts theme to CSS custom properties', () => {
     color3Rgba: null,
     accentColorHex: '#D4AF37',
     accentColorRgba: 'rgba(212, 175, 55, 1)',
+    logo: null,
   });
 
   assert.deepEqual(clubThemeToCssProperties(theme), {

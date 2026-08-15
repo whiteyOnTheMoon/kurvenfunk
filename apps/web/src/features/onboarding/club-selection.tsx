@@ -27,6 +27,10 @@ interface Club {
     externalUrl: string | null;
     storageKey: string | null;
     altText: string | null;
+    mimeType: string;
+    source: string | null;
+    sourceUrl: string | null;
+    copyright: string | null;
   } | null;
 }
 

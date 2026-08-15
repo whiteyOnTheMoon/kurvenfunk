@@ -7,6 +7,15 @@ export interface ClubThemeInput {
   color3Rgba: string | null;
   accentColorHex: string | null;
   accentColorRgba: string | null;
+  logo: {
+    externalUrl: string | null;
+    storageKey: string | null;
+    altText: string | null;
+    mimeType: string;
+    source: string | null;
+    sourceUrl: string | null;
+    copyright: string | null;
+  } | null;
 }
 
 export interface ClubTheme {
@@ -22,6 +31,16 @@ export interface ClubTheme {
   onColor2: string | null;
   onColor3: string | null;
   onAccent: string;
+  logo: {
+    url: string | null;
+    externalUrl: string | null;
+    storageKey: string | null;
+    altText: string | null;
+    mimeType: string;
+    source: string | null;
+    sourceUrl: string | null;
+    copyright: string | null;
+  } | null;
 }
 
 export type ClubThemeCssProperties = Record<
@@ -140,6 +159,18 @@ export function resolveClubTheme(input: ClubThemeInput): ClubTheme {
     onColor2: color2 ? getReadableTextColor(color2) : null,
     onColor3: color3 ? getReadableTextColor(color3) : null,
     onAccent: getReadableTextColor(accent),
+    logo: input.logo
+      ? {
+          url: input.logo.externalUrl,
+          externalUrl: input.logo.externalUrl,
+          storageKey: input.logo.storageKey,
+          altText: input.logo.altText,
+          mimeType: input.logo.mimeType,
+          source: input.logo.source,
+          sourceUrl: input.logo.sourceUrl,
+          copyright: input.logo.copyright,
+        }
+      : null,
   };
 }
 

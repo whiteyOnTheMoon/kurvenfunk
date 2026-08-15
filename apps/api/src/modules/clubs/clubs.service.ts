@@ -18,6 +18,10 @@ export interface ClubListItem {
     externalUrl: string | null;
     storageKey: string | null;
     altText: string | null;
+    mimeType: string;
+    source: string | null;
+    sourceUrl: string | null;
+    copyright: string | null;
   } | null;
 }
 
@@ -51,6 +55,10 @@ export class ClubsService implements OnModuleDestroy {
             externalUrl: true,
             storageKey: true,
             altText: true,
+            mimeType: true,
+            source: true,
+            sourceUrl: true,
+            copyright: true,
           },
         },
       },
