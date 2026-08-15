@@ -8,9 +8,15 @@
  */
 
 :root {
-  /* Brand */
-  --kf-color-brand: #d71920;
-  --kf-color-brand-on: #ffffff;
+  /* Kurvenfunk product palette */
+  --kf-color-brand: #a8e63e;
+  --kf-color-brand-on: #0f1113;
+
+  --kf-color-ink: #0f1113;
+  --kf-color-charcoal: #2a2d31;
+  --kf-color-muted-gray: #6b7177;
+  --kf-color-light-gray: #e6e8ea;
+  --kf-color-white: #ffffff;
 
   /* Neutral palette */
   --kf-color-neutral-0: #ffffff;
@@ -127,20 +133,20 @@
   --kf-club-tertiary-on: var(--kf-club-on-color-3, currentColor);
 
   /* Semantic colors */
-  --kf-background: var(--kf-color-neutral-0);
-  --kf-background-subtle: var(--kf-color-neutral-50);
-  --kf-background-muted: var(--kf-color-neutral-100);
+  --kf-background: var(--kf-color-white);
+  --kf-background-subtle: #f8f9f9;
+  --kf-background-muted: var(--kf-color-light-gray);
 
-  --kf-surface: var(--kf-color-neutral-0);
-  --kf-surface-muted: var(--kf-color-neutral-100);
+  --kf-surface: var(--kf-color-white);
+  --kf-surface-muted: #f3f4f4;
 
-  --kf-text: var(--kf-color-neutral-900);
-  --kf-text-muted: var(--kf-color-neutral-600);
-  --kf-text-subtle: var(--kf-color-neutral-500);
-  --kf-text-inverse: var(--kf-color-neutral-0);
+  --kf-text: var(--kf-color-ink);
+  --kf-text-muted: var(--kf-color-muted-gray);
+  --kf-text-subtle: #8a8f94;
+  --kf-text-inverse: var(--kf-color-white);
 
-  --kf-border: var(--kf-color-neutral-200);
-  --kf-border-strong: var(--kf-color-neutral-300);
+  --kf-border: var(--kf-color-light-gray);
+  --kf-border-strong: #c9cdd0;
 
   /*
    * The semantic accent automatically follows the active club theme.
@@ -167,20 +173,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --kf-background: var(--kf-color-neutral-950);
-    --kf-background-subtle: var(--kf-color-neutral-900);
-    --kf-background-muted: var(--kf-color-neutral-800);
+    --kf-background: var(--kf-color-ink);
+    --kf-background-subtle: #15181b;
+    --kf-background-muted: var(--kf-color-charcoal);
 
-    --kf-surface: var(--kf-color-neutral-900);
-    --kf-surface-muted: var(--kf-color-neutral-800);
+    --kf-surface: #171a1d;
+    --kf-surface-muted: var(--kf-color-charcoal);
 
-    --kf-text: #ededed;
-    --kf-text-muted: var(--kf-color-neutral-400);
-    --kf-text-subtle: var(--kf-color-neutral-500);
-    --kf-text-inverse: var(--kf-color-neutral-950);
+    --kf-text: var(--kf-color-white);
+    --kf-text-muted: #aeb3b7;
+    --kf-text-subtle: var(--kf-color-muted-gray);
+    --kf-text-inverse: var(--kf-color-ink);
 
-    --kf-border: var(--kf-color-neutral-800);
-    --kf-border-strong: var(--kf-color-neutral-700);
+    --kf-border: #303438;
+    --kf-border-strong: #454a4f;
 
     color-scheme: dark;
   }

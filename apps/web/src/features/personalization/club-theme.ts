@@ -62,8 +62,8 @@ export type ClubThemeCssProperties = Record<
 const DEFAULT_COLOR_1 = '#171717';
 const DEFAULT_COLOR_1_RGBA = 'rgba(23, 23, 23, 1)';
 
-const DEFAULT_ACCENT = '#D71920';
-const DEFAULT_ACCENT_RGBA = 'rgba(215, 25, 32, 1)';
+const DEFAULT_ACCENT = '#A8E63E';
+const DEFAULT_ACCENT_RGBA = 'rgba(168, 230, 62, 1)';
 
 export const DEFAULT_KURVENFUNK_THEME: ClubTheme = {
   color1: DEFAULT_COLOR_1,
@@ -77,7 +77,7 @@ export const DEFAULT_KURVENFUNK_THEME: ClubTheme = {
   onColor1: '#FFFFFF',
   onColor2: null,
   onColor3: null,
-  onAccent: '#FFFFFF',
+  onAccent: '#0F1113',
   logo: null,
 };
 
