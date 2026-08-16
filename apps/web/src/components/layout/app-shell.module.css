@@ -334,18 +334,27 @@
     display: grid;
     width: min(100% - 24px, 1180px);
     margin-inline: auto;
-    padding-block: var(--kf-space-2) var(--kf-space-4);
+    padding-block: var(--kf-space-2);
   }
 
   .mobileNavigation .navigationLink {
-    min-height: 3rem;
-    padding-inline: var(--kf-space-3);
+    min-height: 2.5rem;
+    padding-inline: var(--kf-space-2);
     border-radius: var(--kf-radius-md);
   }
 
   .mobileNavigation .navigationLink[aria-current='page'] {
-    background: var(--kf-accent-muted);
     color: var(--kf-link);
+    background: transparent;
+  }
+
+  .mobileNavigation .navigationLink[aria-current='page']::before {
+    width: 3px;
+    height: 1.25rem;
+    margin-right: var(--kf-space-2);
+    border-radius: var(--kf-radius-full);
+    background: var(--kf-accent);
+    content: '';
   }
 
   .userMenuLabel,

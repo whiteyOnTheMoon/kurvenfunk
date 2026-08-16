@@ -1,13 +1,11 @@
 .page {
-  min-height: 100vh;
-  background: var(--kf-background-muted);
+  width: 100%;
   color: var(--kf-text);
   font-family: var(--kf-font-family-sans);
 }
 
 .container {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
+  width: 100%;
   padding: 56px 0 80px;
 }
 
@@ -169,7 +167,6 @@
 
 @media (max-width: 640px) {
   .container {
-    width: min(100% - 24px, 1180px);
     padding-top: 24px;
   }
 
