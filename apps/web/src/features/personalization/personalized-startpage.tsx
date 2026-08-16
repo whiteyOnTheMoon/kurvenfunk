@@ -156,28 +156,28 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
   if (!initialized || loading) {
     return (
-      <main className={styles.page}>
+      <div className={styles.page}>
         <div className={styles.container}>
           <p className={styles.status}>Kurvenfunk wird geladen …</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (error || !startpage) {
     return (
-      <main className={styles.page}>
+      <div className={styles.page}>
         <div className={styles.container}>
           <h1>Kurvenfunk</h1>
           <p className={styles.error}>{error ?? 'Die Startseite ist derzeit nicht verfügbar.'}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (startpage.variant === 'CLUB' && startpage.favoriteClub) {
     return (
-      <main className={styles.page}>
+      <div className={styles.page}>
         <div className={styles.container}>
           <header className={styles.hero}>
             <span className={`${styles.badge} kf-club-badge`}>Mein Verein</span>
@@ -239,12 +239,12 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
             description="Aktuelle Community-Diskussionen werden mit dem Community-Modul ergänzt."
           />
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <div className={styles.container}>
         <header className={styles.hero}>
           <span className={styles.badge}>Kurvenfunk</span>
@@ -291,6 +291,6 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
           description="Aktuelle Community-Diskussionen werden mit dem Community-Modul ergänzt."
         />
       </div>
-    </main>
+    </div>
   );
 }
