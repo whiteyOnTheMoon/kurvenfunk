@@ -167,8 +167,13 @@
   --kf-theme-emphasis-on: var(--kf-club-emphasis-light-on, var(--kf-color-white));
 
   --kf-focus-ring: var(--kf-accent);
-  --kf-link: var(--kf-accent);
-  --kf-link-hover: var(--kf-accent-hover);
+
+  /*
+   * Links remain visually tied to club color1.
+   * The resolver adjusts color1 only when required to reach WCAG AA.
+   */
+  --kf-link: var(--kf-club-link-light, var(--kf-color-ink));
+  --kf-link-hover: color-mix(in srgb, var(--kf-link) 82%, black);
 
   --kf-status-success: var(--kf-color-success);
   --kf-status-success-on: var(--kf-color-success-on);
@@ -199,6 +204,9 @@
 
     --kf-theme-emphasis: var(--kf-club-emphasis-dark, var(--kf-color-brand));
     --kf-theme-emphasis-on: var(--kf-club-emphasis-dark-on, var(--kf-color-brand-on));
+
+    --kf-link: var(--kf-club-link-dark, var(--kf-color-brand));
+    --kf-link-hover: color-mix(in srgb, var(--kf-link) 84%, white);
 
     color-scheme: dark;
   }

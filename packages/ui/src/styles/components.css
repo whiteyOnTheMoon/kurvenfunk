@@ -51,6 +51,21 @@
   background: var(--kf-accent-hover);
 }
 
+.kf-button--emphasis {
+  color: var(--kf-theme-emphasis-on);
+  background: var(--kf-theme-emphasis);
+}
+
+.kf-button--emphasis:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--kf-theme-emphasis) 86%, black);
+}
+
+@media (prefers-color-scheme: dark) {
+  .kf-button--emphasis:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--kf-theme-emphasis) 88%, white);
+  }
+}
+
 .kf-button--secondary {
   color: var(--kf-text);
   background: var(--kf-surface-muted);

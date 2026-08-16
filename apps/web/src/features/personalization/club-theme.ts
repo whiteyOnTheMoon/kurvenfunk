@@ -59,7 +59,9 @@ export type ClubThemeCssProperties = Record<
   | '--kf-club-emphasis-light'
   | '--kf-club-emphasis-light-on'
   | '--kf-club-emphasis-dark'
-  | '--kf-club-emphasis-dark-on',
+  | '--kf-club-emphasis-dark-on'
+  | '--kf-club-link-light'
+  | '--kf-club-link-dark',
   string
 >;
 
@@ -152,6 +154,52 @@ function getContrastRatio(first: string, second: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function rgbToHex(red: number, green: number, blue: number): string {
+  return `#${[red, green, blue]
+    .map((channel) => Math.round(channel).toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()}`;
+}
+
+function mixHexColors(first: string, second: string, amount: number): string {
+  const firstRgb = hexToRgb(first);
+  const secondRgb = hexToRgb(second);
+
+  return rgbToHex(
+    firstRgb[0] + (secondRgb[0] - firstRgb[0]) * amount,
+    firstRgb[1] + (secondRgb[1] - firstRgb[1]) * amount,
+    firstRgb[2] + (secondRgb[2] - firstRgb[2]) * amount,
+  );
+}
+
+/**
+ * Keep color1 whenever it already reaches WCAG AA for normal text.
+ * Otherwise move it only as far toward black/white as necessary.
+ */
+function getAccessibleThemeTextColor(
+  color: string,
+  surfaceColor: string,
+  minimumContrast = 4.5,
+): string {
+  if (getContrastRatio(color, surfaceColor) >= minimumContrast) {
+    return color;
+  }
+
+  const towardBlack = getContrastRatio(BLACK, surfaceColor);
+  const towardWhite = getContrastRatio(WHITE, surfaceColor);
+  const target = towardBlack >= towardWhite ? BLACK : WHITE;
+
+  for (let step = 1; step <= 100; step += 1) {
+    const candidate = mixHexColors(color, target, step / 100);
+
+    if (getContrastRatio(candidate, surfaceColor) >= minimumContrast) {
+      return candidate;
+    }
+  }
+
+  return target;
+}
+
 export function getReadableTextColor(backgroundColor: string): string {
   const normalized = normalizeHexColor(backgroundColor, DEFAULT_COLOR_1) ?? DEFAULT_COLOR_1;
 
@@ -225,6 +273,9 @@ export function clubThemeToCssProperties(theme: ClubTheme): ClubThemeCssProperti
   const emphasisLight = getThemeEmphasisColor(theme, '#FFFFFF');
   const emphasisDark = getThemeEmphasisColor(theme, '#171A1D');
 
+  const linkLight = getAccessibleThemeTextColor(theme.color1, '#FFFFFF');
+  const linkDark = getAccessibleThemeTextColor(theme.color1, '#171A1D');
+
   return {
     '--kf-club-color-1': theme.color1,
     '--kf-club-color-1-rgba': theme.color1Rgba,
@@ -242,5 +293,7 @@ export function clubThemeToCssProperties(theme: ClubTheme): ClubThemeCssProperti
     '--kf-club-emphasis-light-on': getReadableTextColor(emphasisLight),
     '--kf-club-emphasis-dark': emphasisDark,
     '--kf-club-emphasis-dark-on': getReadableTextColor(emphasisDark),
+    '--kf-club-link-light': linkLight,
+    '--kf-club-link-dark': linkDark,
   };
 }

@@ -47,7 +47,7 @@ const THEMES: ThemeDefinition[] = [
     color1Hex: '#0F1113',
     color2Hex: null,
     color3Hex: null,
-    accentColorHex: '#D71920',
+    accentColorHex: '#A8E63E',
   },
   {
     name: 'LASK',
@@ -697,7 +697,7 @@ export function DesignSystemClient() {
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
               Nein
             </Button>
-            <Button variant="danger" onClick={() => setDialogOpen(false)}>
+            <Button variant="emphasis" onClick={() => setDialogOpen(false)}>
               Bestätigen
             </Button>
           </>

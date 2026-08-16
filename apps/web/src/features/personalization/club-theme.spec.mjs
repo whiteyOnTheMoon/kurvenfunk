@@ -162,6 +162,8 @@ test('converts theme to CSS custom properties', () => {
     '--kf-club-emphasis-light-on': '#FFFFFF',
     '--kf-club-emphasis-dark': '#007A3D',
     '--kf-club-emphasis-dark-on': '#FFFFFF',
+    '--kf-club-link-light': '#007A3D',
+    '--kf-club-link-dark': '#309362',
   });
 });
 
@@ -206,5 +208,7 @@ test('converts the default Kurvenfunk theme to CSS properties', async () => {
     '--kf-club-emphasis-light-on': '#FFFFFF',
     '--kf-club-emphasis-dark': '#A8E63E',
     '--kf-club-emphasis-dark-on': '#000000',
+    '--kf-club-link-light': '#0F1113',
+    '--kf-club-link-dark': '#828384',
   });
 });
