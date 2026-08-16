@@ -22,13 +22,7 @@ function isCurrentPath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function Navigation({
-  mobile = false,
-  onNavigate,
-}: {
-  mobile?: boolean;
-  onNavigate?: () => void;
-}) {
+function Navigation({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -64,11 +58,7 @@ function UserMenu() {
 
   if (!authenticated || !user) {
     return (
-      <button
-        type="button"
-        className={styles.loginButton}
-        onClick={() => void login()}
-      >
+      <button type="button" className={styles.loginButton} onClick={() => void login()}>
         Anmelden
       </button>
     );
@@ -102,11 +92,7 @@ function UserMenu() {
           Profileinstellungen
         </Link>
 
-        <button
-          type="button"
-          className={styles.userMenuItem}
-          onClick={() => void logout()}
-        >
+        <button type="button" className={styles.userMenuItem} onClick={() => void logout()}>
           Abmelden
         </button>
       </div>
@@ -168,11 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {mobileOpen ? (
-          <div
-            id="mobile-navigation"
-            className={styles.mobileMenu}
-            ref={mobileMenuRef}
-          >
+          <div id="mobile-navigation" className={styles.mobileMenu} ref={mobileMenuRef}>
             <Navigation mobile onNavigate={() => setMobileOpen(false)} />
           </div>
         ) : null}
@@ -198,9 +180,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/forum">Forum</Link>
           </nav>
 
-          <span className={styles.footerCopyright}>
-            © {new Date().getFullYear()} Kurvenfunk
-          </span>
+          <span className={styles.footerCopyright}>© {new Date().getFullYear()} Kurvenfunk</span>
         </div>
       </footer>
     </div>
