@@ -81,15 +81,7 @@ function NewsGrid({ articles }: { articles: MockArticle[] }) {
   );
 }
 
-function TeamRow({
-  name,
-  logo,
-  score,
-}: {
-  name: string;
-  logo: string;
-  score?: number;
-}) {
+function TeamRow({ name, logo, score }: { name: string; logo: string; score?: number }) {
   return (
     <div className={styles.teamRow}>
       <div className={styles.teamIdentity}>
@@ -112,16 +104,8 @@ function MatchCard({ match, compact = false }: { match: MockMatch; compact?: boo
       <div className={styles.matchDate}>{match.date}</div>
 
       <div className={styles.teams}>
-        <TeamRow
-          name={match.home.shortName}
-          logo={match.home.logo}
-          score={match.homeScore}
-        />
-        <TeamRow
-          name={match.away.shortName}
-          logo={match.away.logo}
-          score={match.awayScore}
-        />
+        <TeamRow name={match.home.shortName} logo={match.home.logo} score={match.homeScore} />
+        <TeamRow name={match.away.shortName} logo={match.away.logo} score={match.awayScore} />
       </div>
 
       {match.status ? <div className={styles.matchStatus}>{match.status}</div> : null}
@@ -180,13 +164,7 @@ function Discussions() {
   );
 }
 
-function SectionHeading({
-  title,
-  meta,
-}: {
-  title: string;
-  meta?: string;
-}) {
+function SectionHeading({ title, meta }: { title: string; meta?: string }) {
   return (
     <div className={styles.sectionHeading}>
       <h2>{title}</h2>
@@ -256,8 +234,6 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     return () => controller.abort();
   }, [apiUrl, authenticated, initialized, token, user?.fanPreference, user?.favoriteClubId]);
 
-
-
   if (!initialized || loading) {
     return (
       <div className={styles.page}>
@@ -291,7 +267,8 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
               <span className={`${styles.badge} kf-club-badge`}>Mein Verein</span>
               <h1>{favoriteClub.name}</h1>
               <p>
-                Alles Wichtige zu deinem Verein und die wichtigsten Themen aus der {competitionName}.
+                Alles Wichtige zu deinem Verein und die wichtigsten Themen aus der {competitionName}
+                .
               </p>
             </div>
 
@@ -351,7 +328,6 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
               <Discussions />
             </div>
           </section>
-
         </div>
       </div>
     );
@@ -398,7 +374,6 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
             <Discussions />
           </div>
         </section>
-
       </div>
     </div>
   );

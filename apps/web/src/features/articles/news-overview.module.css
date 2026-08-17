@@ -87,12 +87,11 @@
 
 .newsCardFeatured {
   border-color: color-mix(in srgb, var(--kf-accent) 35%, var(--kf-border));
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--kf-accent) 8%, var(--kf-surface)),
-      var(--kf-surface) 55%
-    );
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--kf-accent) 8%, var(--kf-surface)),
+    var(--kf-surface) 55%
+  );
 }
 
 .newsCardMeta {

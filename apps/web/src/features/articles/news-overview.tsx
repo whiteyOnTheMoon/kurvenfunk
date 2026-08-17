@@ -143,9 +143,7 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
 
       const payload = (await response.json()) as ArticleResponse;
 
-      setArticles((current) =>
-        append ? [...current, ...payload.data.items] : payload.data.items,
-      );
+      setArticles((current) => (append ? [...current, ...payload.data.items] : payload.data.items));
       setNextCursor(payload.data.pagination.nextCursor);
       setHasNextPage(payload.data.pagination.hasNextPage);
     },
@@ -206,7 +204,9 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'News konnten nicht geladen werden.');
+        setError(
+          loadError instanceof Error ? loadError.message : 'News konnten nicht geladen werden.',
+        );
         setArticles([]);
         setNextCursor(null);
         setHasNextPage(false);
@@ -236,7 +236,11 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
         append: true,
       });
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Weitere News konnten nicht geladen werden.');
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Weitere News konnten nicht geladen werden.',
+      );
     } finally {
       setIsLoadingMore(false);
     }

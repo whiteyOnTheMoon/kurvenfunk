@@ -17,12 +17,11 @@
   gap: var(--kf-space-8);
   padding: clamp(28px, 5vw, 56px);
   overflow: hidden;
-  background:
-    linear-gradient(
-      135deg,
-      var(--kf-surface) 0%,
-      color-mix(in srgb, var(--kf-surface) 88%, var(--kf-accent)) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    var(--kf-surface) 0%,
+    color-mix(in srgb, var(--kf-surface) 88%, var(--kf-accent)) 100%
+  );
   border: var(--kf-border-width-1) solid var(--kf-border);
   border-radius: var(--kf-radius-xl);
 }
@@ -122,12 +121,11 @@
 }
 
 .newsCardFeatured {
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--kf-accent) 8%, var(--kf-surface)),
-      var(--kf-surface) 55%
-    );
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--kf-accent) 8%, var(--kf-surface)),
+    var(--kf-surface) 55%
+  );
   border-color: color-mix(in srgb, var(--kf-accent) 35%, var(--kf-border));
 }
 
