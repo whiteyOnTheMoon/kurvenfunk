@@ -1,7 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
+import {
+  clubLastMatch,
+  clubNews,
+  clubNextMatch,
+  clubs,
+  currentMatches,
+  discussions,
+  leagueNews,
+  neutralTopNews,
+  standings,
+  type MockArticle,
+  type MockMatch,
+} from './startpage-mock-data';
 import styles from './personalized-startpage.module.css';
 
 type NewsPriority = 'FAVORITE_CLUB' | 'COMPETITION' | 'GENERAL' | 'TOP_NEWS' | 'RECENT';
@@ -41,42 +55,143 @@ interface ApiResponse {
   data?: StartpageResponse;
 }
 
-function ArticleList({
-  articles,
-  emptyMessage,
-}: {
-  articles: StartpageArticle[];
-  emptyMessage: string;
-}) {
-  if (articles.length === 0) {
-    return <p className={styles.empty}>{emptyMessage}</p>;
-  }
-
+function ArticleCard({ article, featured = false }: { article: MockArticle; featured?: boolean }) {
   return (
-    <div className={styles.articleGrid}>
+    <article className={`${styles.newsCard} ${featured ? styles.newsCardFeatured : ''}`}>
+      <div className={styles.newsCardMeta}>
+        <span>{article.category}</span>
+        <span>{article.time}</span>
+      </div>
+
+      <h3>{article.title}</h3>
+      <p>{article.lead}</p>
+
+      <span className={styles.readMore}>Weiterlesen →</span>
+    </article>
+  );
+}
+
+function NewsGrid({ articles }: { articles: MockArticle[] }) {
+  return (
+    <div className={styles.newsGrid}>
       {articles.map((article) => (
-        <article className={styles.articleCard} key={article.id}>
-          <div className={styles.articleMeta}>
-            {new Intl.DateTimeFormat('de-AT', {
-              dateStyle: 'medium',
-            }).format(new Date(article.publishedAt))}
+        <ArticleCard key={article.id} article={article} featured={article.featured} />
+      ))}
+    </div>
+  );
+}
+
+function TeamRow({
+  name,
+  logo,
+  score,
+}: {
+  name: string;
+  logo: string;
+  score?: number;
+}) {
+  return (
+    <div className={styles.teamRow}>
+      <div className={styles.teamIdentity}>
+        <Image src={logo} alt="" width={30} height={30} className={styles.clubLogo} />
+        <span>{name}</span>
+      </div>
+      {score !== undefined ? <strong className={styles.score}>{score}</strong> : null}
+    </div>
+  );
+}
+
+function MatchCard({ match, compact = false }: { match: MockMatch; compact?: boolean }) {
+  return (
+    <article className={`${styles.matchCard} ${compact ? styles.matchCardCompact : ''}`}>
+      <div className={styles.matchMeta}>
+        <span>{match.competition}</span>
+        <span>{match.matchday}</span>
+      </div>
+
+      <div className={styles.matchDate}>{match.date}</div>
+
+      <div className={styles.teams}>
+        <TeamRow
+          name={match.home.shortName}
+          logo={match.home.logo}
+          score={match.homeScore}
+        />
+        <TeamRow
+          name={match.away.shortName}
+          logo={match.away.logo}
+          score={match.awayScore}
+        />
+      </div>
+
+      {match.status ? <div className={styles.matchStatus}>{match.status}</div> : null}
+    </article>
+  );
+}
+
+function StandingsTable({ highlightClub }: { highlightClub?: string }) {
+  return (
+    <div className={styles.tableCard}>
+      <div className={styles.tableHeader}>
+        <span>#</span>
+        <span>Verein</span>
+        <span>Sp.</span>
+        <span>Diff.</span>
+        <span>Pkt.</span>
+      </div>
+
+      {standings.map((row) => (
+        <div
+          className={`${styles.tableRow} ${
+            row.club.slug === highlightClub ? styles.tableRowHighlighted : ''
+          }`}
+          key={row.club.slug}
+        >
+          <span>{row.position}</span>
+
+          <div className={styles.tableClub}>
+            <Image src={row.club.logo} alt="" width={24} height={24} className={styles.clubLogo} />
+            <span>{row.club.shortName}</span>
           </div>
 
-          <h3>{article.title}</h3>
+          <span>{row.played}</span>
+          <span>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</span>
+          <strong>{row.points}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-          {article.lead ? <p>{article.lead}</p> : null}
+function Discussions() {
+  return (
+    <div className={styles.discussionList}>
+      {discussions.map((discussion) => (
+        <article className={styles.discussionCard} key={discussion.id}>
+          <span className={styles.discussionContext}>{discussion.context}</span>
+          <h3>{discussion.title}</h3>
+          <div className={styles.discussionMeta}>
+            <span>{discussion.replies} Antworten</span>
+            <span>{discussion.lastActivity}</span>
+          </div>
         </article>
       ))}
     </div>
   );
 }
 
-function PendingFeature({ title, description }: { title: string; description: string }) {
+function SectionHeading({
+  title,
+  meta,
+}: {
+  title: string;
+  meta?: string;
+}) {
   return (
-    <section className={styles.pendingCard}>
+    <div className={styles.sectionHeading}>
       <h2>{title}</h2>
-      <p>{description}</p>
-    </section>
+      {meta ? <span>{meta}</span> : null}
+    </div>
   );
 }
 
@@ -141,18 +256,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     return () => controller.abort();
   }, [apiUrl, authenticated, initialized, token, user?.fanPreference, user?.favoriteClubId]);
 
-  const articleGroups = useMemo(() => {
-    const articles = startpage?.articles ?? [];
 
-    return {
-      club: articles.filter((article) => article.priority === 'FAVORITE_CLUB'),
-      league: articles.filter((article) => article.priority === 'COMPETITION'),
-      general: articles.filter((article) => article.priority === 'GENERAL'),
-      top: articles.filter(
-        (article) => article.priority === 'TOP_NEWS' || article.priority === 'RECENT',
-      ),
-    };
-  }, [startpage]);
 
   if (!initialized || loading) {
     return (
@@ -175,69 +279,79 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     );
   }
 
+  const competitionName = startpage.competition.shortName ?? startpage.competition.name;
+
   if (startpage.variant === 'CLUB' && startpage.favoriteClub) {
+    const favoriteClub = startpage.favoriteClub;
     return (
       <div className={styles.page}>
         <div className={styles.container}>
-          <header className={styles.hero}>
-            <span className={`${styles.badge} kf-club-badge`}>Mein Verein</span>
-            <h1>{startpage.favoriteClub.name}</h1>
-            <p>
-              Deine personalisierte Kurvenfunk-Startseite mit Vereinsnews und den wichtigsten Themen
-              aus der {startpage.competition.shortName ?? startpage.competition.name}.
-            </p>
-          </header>
-
-          <section className={styles.section}>
-            <div className={styles.sectionHeading}>
-              <h2>Vereinsnews</h2>
-              <span className="kf-club-accent">{startpage.favoriteClub.shortName}</span>
+          <section className={`${styles.hero} ${styles.clubHero}`}>
+            <div>
+              <span className={`${styles.badge} kf-club-badge`}>Mein Verein</span>
+              <h1>{favoriteClub.name}</h1>
+              <p>
+                Alles Wichtige zu deinem Verein und die wichtigsten Themen aus der {competitionName}.
+              </p>
             </div>
-            <ArticleList
-              articles={articleGroups.club}
-              emptyMessage="Derzeit gibt es keine aktuellen Vereinsnews."
+
+            <Image
+              src={`/clubs/${favoriteClub.slug}.svg`}
+              alt={favoriteClub.name}
+              width={112}
+              height={112}
+              className={styles.heroLogo}
             />
           </section>
 
-          <div className={styles.sportsGrid}>
-            <PendingFeature
-              title="Nächstes Spiel"
-              description="Wird mit der Sportdaten-Anbindung ergänzt."
-            />
-            <PendingFeature
-              title="Letztes Ergebnis"
-              description="Wird mit der Sportdaten-Anbindung ergänzt."
-            />
-            <PendingFeature
-              title="Tabellenposition"
-              description="Wird mit der Tabellen-Anbindung ergänzt."
-            />
-          </div>
-
           <section className={styles.section}>
-            <div className={styles.sectionHeading}>
-              <h2>Liga News</h2>
-              <span>{startpage.competition.shortName ?? startpage.competition.name}</span>
-            </div>
-            <ArticleList
-              articles={articleGroups.league}
-              emptyMessage="Derzeit gibt es keine weiteren Liga-News."
-            />
+            <SectionHeading title="Vereinsnews" meta={favoriteClub.shortName ?? undefined} />
+            <NewsGrid articles={clubNews} />
           </section>
 
-          {articleGroups.general.length > 0 ? (
-            <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <h2>Weitere News</h2>
+          <section className={styles.section}>
+            <SectionHeading title="Mein Verein" meta="Bundesliga" />
+
+            <div className={styles.clubOverviewGrid}>
+              <div>
+                <div className={styles.cardLabel}>Nächstes Spiel</div>
+                <MatchCard match={clubNextMatch} />
               </div>
-              <ArticleList articles={articleGroups.general} emptyMessage="" />
-            </section>
-          ) : null}
 
-          <PendingFeature
-            title="Diskussionen"
-            description="Aktuelle Community-Diskussionen werden mit dem Community-Modul ergänzt."
-          />
+              <div>
+                <div className={styles.cardLabel}>Letztes Ergebnis</div>
+                <MatchCard match={clubLastMatch} />
+              </div>
+
+              <div>
+                <div className={styles.cardLabel}>Tabellenposition</div>
+                <div className={styles.positionCard}>
+                  <span className={styles.positionNumber}>1.</span>
+                  <span>Platz</span>
+                  <strong>9 Punkte</strong>
+                  <small>nach 3 Spielen</small>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <SectionHeading title="Liga News" meta={competitionName} />
+            <NewsGrid articles={leagueNews} />
+          </section>
+
+          <section className={styles.twoColumnSection}>
+            <div>
+              <SectionHeading title="Tabelle" meta="Top 6" />
+              <StandingsTable highlightClub={clubs.sturm.slug} />
+            </div>
+
+            <div>
+              <SectionHeading title="Diskussionen" meta="Community" />
+              <Discussions />
+            </div>
+          </section>
+
         </div>
       </div>
     );
@@ -246,50 +360,45 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <header className={styles.hero}>
-          <span className={styles.badge}>Kurvenfunk</span>
-          <h1>Österreichischer Fußball</h1>
-          <p>
-            Top News und aktuelle Themen aus der{' '}
-            {startpage.competition.shortName ?? startpage.competition.name}.
-          </p>
-        </header>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHeading}>
-            <h2>Top News</h2>
+        <section className={styles.hero}>
+          <div>
+            <span className={styles.badge}>Kurvenfunk</span>
+            <h1>Österreichischer Fußball.</h1>
+            <p>News, Spiele und Diskussionen aus der {competitionName} auf einen Blick.</p>
           </div>
-          <ArticleList
-            articles={articleGroups.top}
-            emptyMessage="Derzeit gibt es keine aktuellen Top News."
-          />
         </section>
 
-        <PendingFeature
-          title="Aktuelle Spiele"
-          description="Aktuelle Spiele werden mit der Sportdaten-Anbindung ergänzt."
-        />
-
         <section className={styles.section}>
-          <div className={styles.sectionHeading}>
-            <h2>Liga News</h2>
-            <span>{startpage.competition.shortName ?? startpage.competition.name}</span>
-          </div>
-          <ArticleList
-            articles={articleGroups.league}
-            emptyMessage="Derzeit gibt es keine weiteren Liga-News."
-          />
+          <SectionHeading title="Top News" meta="Aktuell" />
+          <NewsGrid articles={neutralTopNews} />
         </section>
 
-        <PendingFeature
-          title="Tabelle"
-          description="Die aktuelle Tabelle wird mit der Tabellen-Anbindung ergänzt."
-        />
+        <section className={styles.section}>
+          <SectionHeading title="Aktuelle Spiele" meta="4. Spieltag" />
+          <div className={styles.matchesGrid}>
+            {currentMatches.map((match) => (
+              <MatchCard key={match.id} match={match} compact />
+            ))}
+          </div>
+        </section>
 
-        <PendingFeature
-          title="Diskussionen"
-          description="Aktuelle Community-Diskussionen werden mit dem Community-Modul ergänzt."
-        />
+        <section className={styles.section}>
+          <SectionHeading title="Liga News" meta={competitionName} />
+          <NewsGrid articles={leagueNews} />
+        </section>
+
+        <section className={styles.twoColumnSection}>
+          <div>
+            <SectionHeading title="Tabelle" meta="Top 6" />
+            <StandingsTable />
+          </div>
+
+          <div>
+            <SectionHeading title="Diskussionen" meta="Community" />
+            <Discussions />
+          </div>
+        </section>
+
       </div>
     </div>
   );
