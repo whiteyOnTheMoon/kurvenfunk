@@ -88,8 +88,7 @@
   justify-content: space-between;
   gap: var(--kf-space-5);
   padding: var(--kf-space-7);
-  border: var(--kf-border-width-1) solid
-    color-mix(in srgb, var(--kf-accent) 28%, var(--kf-border));
+  border: var(--kf-border-width-1) solid color-mix(in srgb, var(--kf-accent) 28%, var(--kf-border));
   background:
     radial-gradient(
       circle at 80% 20%,
