@@ -107,16 +107,8 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchArticles = useCallback(
-    async ({
-      cursor,
-      append,
-      signal,
-    }: {
-      cursor?: string;
-      append: boolean;
-      signal?: AbortSignal;
-    }) => {
+  const requestArticles = useCallback(
+    async ({ cursor, signal }: { cursor?: string; signal?: AbortSignal }) => {
       const params = new URLSearchParams({
         limit: '12',
       });
@@ -143,9 +135,7 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
 
       const payload = (await response.json()) as ArticleResponse;
 
-      setArticles((current) => (append ? [...current, ...payload.data.items] : payload.data.items));
-      setNextCursor(payload.data.pagination.nextCursor);
-      setHasNextPage(payload.data.pagination.hasNextPage);
+      return payload.data;
     },
     [apiUrl, clubFilter, competitionFilter],
   );
@@ -192,14 +182,20 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
   useEffect(() => {
     const controller = new AbortController();
 
-    setIsLoading(true);
-    setError(null);
+    async function loadArticles() {
+      try {
+        const data = await requestArticles({
+          signal: controller.signal,
+        });
 
-    void fetchArticles({
-      append: false,
-      signal: controller.signal,
-    })
-      .catch((loadError: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setArticles(data.items);
+        setNextCursor(data.pagination.nextCursor);
+        setHasNextPage(data.pagination.hasNextPage);
+      } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === 'AbortError') {
           return;
         }
@@ -210,17 +206,19 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
         setArticles([]);
         setNextCursor(null);
         setHasNextPage(false);
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false);
         }
-      });
+      }
+    }
+
+    void loadArticles();
 
     return () => {
       controller.abort();
     };
-  }, [fetchArticles]);
+  }, [requestArticles]);
 
   async function loadMore() {
     if (!nextCursor || isLoadingMore) {
@@ -231,10 +229,13 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
     setError(null);
 
     try {
-      await fetchArticles({
+      const data = await requestArticles({
         cursor: nextCursor,
-        append: true,
       });
+
+      setArticles((current) => [...current, ...data.items]);
+      setNextCursor(data.pagination.nextCursor);
+      setHasNextPage(data.pagination.hasNextPage);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -259,7 +260,14 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
       <section className={styles.filters} aria-label="News filtern">
         <label>
           <span>Verein</span>
-          <Select value={clubFilter} onChange={(event) => setClubFilter(event.target.value)}>
+          <Select
+            value={clubFilter}
+            onChange={(event) => {
+              setIsLoading(true);
+              setError(null);
+              setClubFilter(event.target.value);
+            }}
+          >
             <option value="">Alle Vereine</option>
             {clubs.map((club) => (
               <option key={club.id} value={club.slug}>
@@ -273,7 +281,11 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
           <span>Wettbewerb</span>
           <Select
             value={competitionFilter}
-            onChange={(event) => setCompetitionFilter(event.target.value)}
+            onChange={(event) => {
+              setIsLoading(true);
+              setError(null);
+              setCompetitionFilter(event.target.value);
+            }}
           >
             <option value="">Alle Wettbewerbe</option>
             {competitions.map((competition) => (
@@ -288,6 +300,8 @@ export function NewsOverview({ apiUrl }: NewsOverviewProps) {
           <Button
             variant="ghost"
             onClick={() => {
+              setIsLoading(true);
+              setError(null);
               setClubFilter('');
               setCompetitionFilter('');
             }}
