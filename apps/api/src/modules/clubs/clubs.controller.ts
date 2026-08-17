@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 
 import { ClubsService } from './clubs.service';
 
@@ -9,5 +9,10 @@ export class ClubsController {
   @Get()
   findActive() {
     return this.clubsService.findActive();
+  }
+
+  @Get(':slug')
+  findActiveBySlug(@Param('slug') slug: string) {
+    return this.clubsService.findActiveBySlug(slug);
   }
 }

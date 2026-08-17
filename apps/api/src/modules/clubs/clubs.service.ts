@@ -1,5 +1,5 @@
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, NotFoundException, type OnModuleDestroy } from '@nestjs/common';
 
 export interface ClubListItem {
   id: string;
@@ -25,6 +25,36 @@ export interface ClubListItem {
   } | null;
 }
 
+export interface ClubDetail extends ClubListItem {
+  website: string | null;
+}
+
+const clubListSelect = {
+  id: true,
+  name: true,
+  shortName: true,
+  slug: true,
+  color1Hex: true,
+  color1Rgba: true,
+  color2Hex: true,
+  color2Rgba: true,
+  color3Hex: true,
+  color3Rgba: true,
+  accentColorHex: true,
+  accentColorRgba: true,
+  logoMedia: {
+    select: {
+      externalUrl: true,
+      storageKey: true,
+      altText: true,
+      mimeType: true,
+      source: true,
+      sourceUrl: true,
+      copyright: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class ClubsService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
@@ -37,37 +67,40 @@ export class ClubsService implements OnModuleDestroy {
       orderBy: {
         name: 'asc',
       },
-      select: {
-        id: true,
-        name: true,
-        shortName: true,
-        slug: true,
-        color1Hex: true,
-        color1Rgba: true,
-        color2Hex: true,
-        color2Rgba: true,
-        color3Hex: true,
-        color3Rgba: true,
-        accentColorHex: true,
-        accentColorRgba: true,
-        logoMedia: {
-          select: {
-            externalUrl: true,
-            storageKey: true,
-            altText: true,
-            mimeType: true,
-            source: true,
-            sourceUrl: true,
-            copyright: true,
-          },
-        },
-      },
+      select: clubListSelect,
     });
 
     return clubs.map(({ logoMedia, ...club }) => ({
       ...club,
       logo: logoMedia,
     }));
+  }
+
+  async findActiveBySlug(slug: string): Promise<ClubDetail> {
+    const club = await this.database.club.findFirst({
+      where: {
+        slug,
+        active: true,
+      },
+      select: {
+        ...clubListSelect,
+        website: true,
+      },
+    });
+
+    if (!club) {
+      throw new NotFoundException({
+        code: 'CLUB_NOT_FOUND',
+        message: 'Verein wurde nicht gefunden.',
+      });
+    }
+
+    const { logoMedia, ...data } = club;
+
+    return {
+      ...data,
+      logo: logoMedia,
+    };
   }
 
   async onModuleDestroy(): Promise<void> {
