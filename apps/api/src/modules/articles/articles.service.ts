@@ -1,5 +1,9 @@
 import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import {
+  createCursorPaginatedResult,
+  type CursorPaginatedResult,
+} from '../../common/pagination/cursor-pagination';
 
 export type NewsPriority = 'FAVORITE_CLUB' | 'COMPETITION' | 'GENERAL' | 'TOP_NEWS' | 'RECENT';
 
@@ -29,6 +33,34 @@ export interface StartpageNewsOptions {
   favoriteClubId: string | null;
   competitionSlug: string;
   limit?: number;
+}
+
+export interface ArticleListOptions {
+  cursor?: string;
+  limit: number;
+  clubSlug?: string;
+  competitionSlug?: string;
+}
+
+export interface ArticleListItem {
+  id: string;
+  title: string;
+  slug: string;
+  lead: string | null;
+  publishedAt: Date;
+  isTopNews: boolean;
+  competition: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    slug: string;
+  } | null;
+  clubs: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    slug: string;
+  }[];
 }
 
 export interface StartpageNews {
@@ -67,6 +99,103 @@ type SelectedArticle = Prisma.ArticleGetPayload<{
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
+
+  async findPublished(
+    options: ArticleListOptions,
+  ): Promise<CursorPaginatedResult<ArticleListItem>> {
+    const now = new Date();
+
+    const articles = await this.database.article.findMany({
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: {
+          not: null,
+          lte: now,
+        },
+        deletedAt: null,
+        ...(options.clubSlug
+          ? {
+              clubs: {
+                some: {
+                  club: {
+                    slug: options.clubSlug,
+                    active: true,
+                  },
+                },
+              },
+            }
+          : {}),
+        ...(options.competitionSlug
+          ? {
+              competition: {
+                slug: options.competitionSlug,
+              },
+            }
+          : {}),
+      },
+      ...(options.cursor
+        ? {
+            cursor: {
+              id: options.cursor,
+            },
+            skip: 1,
+          }
+        : {}),
+      orderBy: [
+        {
+          publishedAt: 'desc',
+        },
+        {
+          id: 'desc',
+        },
+      ],
+      take: options.limit + 1,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        lead: true,
+        publishedAt: true,
+        isTopNews: true,
+        competition: {
+          select: {
+            id: true,
+            name: true,
+            shortName: true,
+            slug: true,
+          },
+        },
+        clubs: {
+          select: {
+            club: {
+              select: {
+                id: true,
+                name: true,
+                shortName: true,
+                slug: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const items = articles.flatMap(({ clubs, publishedAt, ...article }) => {
+      if (publishedAt === null) {
+        return [];
+      }
+
+      return [
+        {
+          ...article,
+          publishedAt,
+          clubs: clubs.map(({ club }) => club),
+        },
+      ];
+    });
+
+    return createCursorPaginatedResult(items, options.limit, (article) => article.id);
+  }
 
   async getStartpageNews(options: StartpageNewsOptions): Promise<StartpageNews> {
     const competition = await this.database.competition.findUniqueOrThrow({
