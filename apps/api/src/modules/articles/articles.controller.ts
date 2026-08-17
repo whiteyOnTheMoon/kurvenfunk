@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { cursorPaginationQuerySchema } from '../../common/pagination/cursor-pagination';
@@ -31,6 +31,11 @@ export class ArticlesController {
       clubSlug: query.club,
       competitionSlug: query.competition,
     });
+  }
+
+  @Get('by-slug/:slug')
+  findPublishedBySlug(@Param('slug') slug: string) {
+    return this.articlesService.findPublishedBySlug(slug);
   }
 
   @Get('startpage/neutral')

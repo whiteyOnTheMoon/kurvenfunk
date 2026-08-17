@@ -197,6 +197,98 @@ export class ArticlesService implements OnModuleDestroy {
     return createCursorPaginatedResult(items, options.limit, (article) => article.id);
   }
 
+  async findPublishedBySlug(slug: string) {
+    const now = new Date();
+
+    return this.database.article.findFirst({
+      where: {
+        slug,
+        status: 'PUBLISHED',
+        publishedAt: {
+          not: null,
+          lte: now,
+        },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        lead: true,
+        content: true,
+        publishedAt: true,
+        originalUrl: true,
+        author: {
+          select: {
+            id: true,
+            nickname: true,
+          },
+        },
+        source: {
+          select: {
+            id: true,
+            name: true,
+            website: true,
+          },
+        },
+        leadMedia: {
+          select: {
+            id: true,
+            externalUrl: true,
+            storageKey: true,
+            altText: true,
+            copyright: true,
+            source: true,
+            sourceUrl: true,
+            width: true,
+            height: true,
+          },
+        },
+        competition: {
+          select: {
+            id: true,
+            name: true,
+            shortName: true,
+            slug: true,
+          },
+        },
+        clubs: {
+          select: {
+            club: {
+              select: {
+                id: true,
+                name: true,
+                shortName: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            comments: {
+              where: {
+                status: 'VISIBLE',
+                deletedAt: null,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async getStartpageNews(options: StartpageNewsOptions): Promise<StartpageNews> {
     const competition = await this.database.competition.findUniqueOrThrow({
       where: {

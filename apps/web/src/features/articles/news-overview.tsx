@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, EmptyState, Select, Skeleton } from '@kurvenfunk/ui';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 import styles from './news-overview.module.css';
@@ -87,7 +88,9 @@ function ArticleCard({ article }: { article: Article }) {
         </div>
       ) : null}
 
-      <span className={styles.readMore}>Weiterlesen →</span>
+      <Link href={`/artikel/${article.slug}`} className={styles.readMore}>
+        Weiterlesen →
+      </Link>
     </article>
   );
 }
