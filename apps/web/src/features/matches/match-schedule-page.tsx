@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
+import { ListPageLoadingState } from '../loading/loading-states';
 import styles from './match-schedule-page.module.css';
 
 type MatchStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'ABANDONED';
@@ -223,6 +224,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
 
   const [data, setData] = useState<MatchScheduleData>(mockData);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [usingMockData, setUsingMockData] = useState(true);
   const [favoriteClubSlug, setFavoriteClubSlug] = useState<string | null>(null);
   const [selectedMatchday, setSelectedMatchday] = useState<number | null>(null);
@@ -283,6 +285,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
       } finally {
         if (active) {
           setLoading(false);
+          setInitialLoading(false);
         }
       }
     }
@@ -365,6 +368,10 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
       : isCup
         ? `${selectedMatchday}. Runde`
         : `${selectedMatchday}. Spieltag`;
+
+  if (initialLoading) {
+    return <ListPageLoadingState rows={6} />;
+  }
 
   return (
     <main className={styles.page}>

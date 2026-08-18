@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
+import { ListPageLoadingState } from '../loading/loading-states';
 import { clubs } from '../personalization/startpage-mock-data';
 import styles from './standings-page.module.css';
 
@@ -287,6 +288,7 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
   const { initialized, user } = useAuth();
   const [data, setData] = useState<StandingsData>(mockData);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [usingMockData, setUsingMockData] = useState(true);
   const [favoriteClubSlug, setFavoriteClubSlug] = useState<string | null>(null);
 
@@ -314,6 +316,7 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
       } finally {
         if (active) {
           setLoading(false);
+          setInitialLoading(false);
         }
       }
     }
@@ -364,6 +367,10 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
       active = false;
     };
   }, [apiUrl, favoriteClubId]);
+
+  if (initialLoading) {
+    return <ListPageLoadingState rows={12} />;
+  }
 
   return (
     <main className={styles.page}>

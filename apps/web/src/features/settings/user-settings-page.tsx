@@ -5,6 +5,7 @@ import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from '@kurvenfunk/validation'
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
+import { SettingsLoadingState } from '../loading/loading-states';
 import { FanPreferenceSettings } from '../profile/fan-preference-settings';
 import styles from './user-settings-page.module.css';
 
@@ -182,13 +183,7 @@ export function UserSettingsPage({ apiUrl }: UserSettingsPageProps) {
   }
 
   if (!initialized || (authenticated && loadingProfile)) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.stateCard}>Einstellungen werden geladen …</div>
-        </div>
-      </main>
-    );
+    return <SettingsLoadingState />;
   }
 
   if (!authenticated) {

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
+import { StartpageLoadingState } from '../loading/loading-states';
 import {
   clubLastMatch,
   clubNews,
@@ -235,13 +236,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
   }, [apiUrl, authenticated, initialized, token, user?.fanPreference, user?.favoriteClubId]);
 
   if (!initialized || loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.container}>
-          <p className={styles.status}>Kurvenfunk wird geladen …</p>
-        </div>
-      </div>
-    );
+    return <StartpageLoadingState />;
   }
 
   if (error || !startpage) {

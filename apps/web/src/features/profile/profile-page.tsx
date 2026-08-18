@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
+import { ProfileLoadingState } from '../loading/loading-states';
 import styles from './profile-page.module.css';
 
 interface ProfileData {
@@ -141,15 +142,7 @@ export function ProfilePage({ apiUrl }: ProfilePageProps) {
   }, [profile]);
 
   if (!initialized || loading) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.loadingCard} aria-live="polite">
-            Profil wird geladen …
-          </div>
-        </div>
-      </main>
-    );
+    return <ProfileLoadingState />;
   }
 
   if (!authenticated) {
