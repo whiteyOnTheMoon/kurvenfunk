@@ -5,6 +5,12 @@ jest.mock('@kurvenfunk/validation', () => ({
       data: value,
     }),
   },
+  updateProfileSchema: {
+    safeParse: (value: unknown) => ({
+      success: true,
+      data: value,
+    }),
+  },
 }));
 
 jest.mock('./profiles.service', () => ({
@@ -25,11 +31,13 @@ import type { ProfilesService } from './profiles.service';
 
 describe('ProfilesController', () => {
   const getCurrentProfile = jest.fn();
+  const updateCurrentProfile = jest.fn();
   const getFanPreference = jest.fn();
   const updateFanPreference = jest.fn();
 
   const service = {
     getCurrentProfile,
+    updateCurrentProfile,
     getFanPreference,
     updateFanPreference,
   } as unknown as ProfilesService;
@@ -47,6 +55,7 @@ describe('ProfilesController', () => {
 
   beforeEach(() => {
     getCurrentProfile.mockReset();
+    updateCurrentProfile.mockReset();
     getFanPreference.mockReset();
     updateFanPreference.mockReset();
   });
@@ -74,6 +83,19 @@ describe('ProfilesController', () => {
     await expect(controller.getCurrentProfile(request)).resolves.toEqual(profile);
 
     expect(getCurrentProfile).toHaveBeenCalledWith('user-123');
+  });
+
+  it('updates the current profile for the authenticated user', async () => {
+    const input = {
+      displayName: 'Kurvenfan',
+      bio: 'Fußball und Kurve.',
+    };
+
+    updateCurrentProfile.mockResolvedValue(input);
+
+    await expect(controller.updateCurrentProfile(request, input)).resolves.toEqual(input);
+
+    expect(updateCurrentProfile).toHaveBeenCalledWith('user-123', input);
   });
 
   it('returns the current fan preference for the authenticated user', async () => {

@@ -106,8 +106,8 @@ function UserMenu() {
           Mein Profil
         </Link>
 
-        <Link href="/settings/profile" className={styles.userMenuItem} onClick={closeMenu}>
-          Profileinstellungen
+        <Link href="/einstellungen" className={styles.userMenuItem} onClick={closeMenu}>
+          Einstellungen
         </Link>
 
         <button

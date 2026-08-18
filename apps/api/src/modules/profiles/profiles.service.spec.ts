@@ -1,6 +1,7 @@
 const findUniqueOrThrow = jest.fn();
 const update = jest.fn();
 const findFirstClub = jest.fn();
+const upsertProfile = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -11,6 +12,9 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     club: {
       findFirst: findFirstClub,
+    },
+    profile: {
+      upsert: upsertProfile,
     },
     $disconnect: disconnect,
   }),
@@ -26,6 +30,7 @@ describe('ProfilesService', () => {
     findUniqueOrThrow.mockReset();
     update.mockReset();
     findFirstClub.mockReset();
+    upsertProfile.mockReset();
     disconnect.mockReset();
 
     service = new ProfilesService();
@@ -162,6 +167,42 @@ describe('ProfilesService', () => {
         threads: 0,
         posts: 0,
         reactions: 0,
+      },
+    });
+  });
+
+  it('updates the current profile', async () => {
+    upsertProfile.mockResolvedValue({
+      displayName: 'Kurvenfan',
+      bio: 'Fußball und Kurve.',
+    });
+
+    await expect(
+      service.updateCurrentProfile('user-123', {
+        displayName: 'Kurvenfan',
+        bio: 'Fußball und Kurve.',
+      }),
+    ).resolves.toEqual({
+      displayName: 'Kurvenfan',
+      bio: 'Fußball und Kurve.',
+    });
+
+    expect(upsertProfile).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-123',
+      },
+      create: {
+        userId: 'user-123',
+        displayName: 'Kurvenfan',
+        bio: 'Fußball und Kurve.',
+      },
+      update: {
+        displayName: 'Kurvenfan',
+        bio: 'Fußball und Kurve.',
+      },
+      select: {
+        displayName: true,
+        bio: true,
       },
     });
   });

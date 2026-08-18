@@ -15,3 +15,10 @@ export {
   type CompleteOnboardingInput,
   type FanPreferenceSelection,
 } from './fan-preference.js';
+
+export {
+  BIO_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+  updateProfileSchema,
+  type UpdateProfileInput,
+} from './profile.ts';

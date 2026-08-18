@@ -215,7 +215,7 @@ export function ProfilePage({ apiUrl }: ProfilePageProps) {
             </div>
           </div>
 
-          <Link href="/settings/profile" className={styles.settingsLink}>
+          <Link href="/einstellungen" className={styles.settingsLink}>
             Profil bearbeiten
           </Link>
         </section>
@@ -312,7 +312,7 @@ export function ProfilePage({ apiUrl }: ProfilePageProps) {
               <p className={styles.sideText}>
                 Profilinformationen und Lieblingsverein kannst du in deinen Einstellungen verwalten.
               </p>
-              <Link href="/settings/profile" className={styles.secondaryLink}>
+              <Link href="/einstellungen" className={styles.secondaryLink}>
                 Zu den Einstellungen
               </Link>
             </section>

@@ -50,7 +50,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
           FanPreferenceResponse | undefined;
 
         if (!response.ok || !body?.data) {
-          setError('Your current club preference could not be loaded.');
+          setError('Dein aktueller Lieblingsverein konnte nicht geladen werden.');
           return;
         }
 
@@ -79,7 +79,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
           return;
         }
 
-        setError('Your current club preference could not be loaded.');
+        setError('Dein aktueller Lieblingsverein konnte nicht geladen werden.');
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -118,18 +118,18 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
         const apiError = body as ApiErrorResponse | undefined;
 
         if (apiError?.code === 'INVALID_FAVORITE_CLUB') {
-          setError('The selected club is no longer available.');
+          setError('Der ausgewählte Verein ist nicht mehr verfügbar.');
           return;
         }
 
-        setError('Your club preference could not be saved.');
+        setError('Dein Lieblingsverein konnte nicht gespeichert werden.');
         return;
       }
 
       const result = body as FanPreferenceResponse | undefined;
 
       if (!result?.data) {
-        setError('Your club preference could not be saved.');
+        setError('Dein Lieblingsverein konnte nicht gespeichert werden.');
         return;
       }
 
@@ -147,20 +147,20 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
       setCurrentSelection(savedSelection);
       setSelection(savedSelection);
       await refreshUser();
-      setSuccess('Your club preference has been saved.');
+      setSuccess('Dein Lieblingsverein wurde gespeichert.');
     } catch {
-      setError('Your club preference could not be saved.');
+      setError('Dein Lieblingsverein konnte nicht gespeichert werden.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (!token) {
-    return <p role="alert">You must be logged in to change your club preference.</p>;
+    return <p role="alert">Du musst angemeldet sein, um deinen Lieblingsverein zu ändern.</p>;
   }
 
   if (loading) {
-    return <p>Loading your club preference…</p>;
+    return <p>Lieblingsverein wird geladen …</p>;
   }
 
   return (
@@ -181,7 +181,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
           disabled={!selection || submitting}
           onClick={() => void savePreference()}
         >
-          {submitting ? 'Saving…' : 'Save club preference'}
+          {submitting ? 'Wird gespeichert …' : 'Auswahl speichern'}
         </button>
 
         {error ? <p role="alert">{error}</p> : null}

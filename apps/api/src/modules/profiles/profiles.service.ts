@@ -1,5 +1,5 @@
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import type { FanPreferenceSelection } from '@kurvenfunk/validation';
+import type { FanPreferenceSelection, UpdateProfileInput } from '@kurvenfunk/validation';
 import { BadRequestException, Injectable, type OnModuleDestroy } from '@nestjs/common';
 
 export interface UserFanPreference {
@@ -95,6 +95,30 @@ export class ProfilesService implements OnModuleDestroy {
         reactions: user._count.reactions,
       },
     };
+  }
+
+  async updateCurrentProfile(
+    userId: string,
+    input: UpdateProfileInput,
+  ): Promise<{ displayName: string | null; bio: string | null }> {
+    return this.database.profile.upsert({
+      where: {
+        userId,
+      },
+      create: {
+        userId,
+        displayName: input.displayName,
+        bio: input.bio,
+      },
+      update: {
+        displayName: input.displayName,
+        bio: input.bio,
+      },
+      select: {
+        displayName: true,
+        bio: true,
+      },
+    });
   }
 
   async getFanPreference(userId: string): Promise<UserFanPreference> {

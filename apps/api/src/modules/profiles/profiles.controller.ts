@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
-import { fanPreferenceSelectionSchema, type FanPreferenceSelection } from '@kurvenfunk/validation';
+import {
+  fanPreferenceSelectionSchema,
+  updateProfileSchema,
+  type FanPreferenceSelection,
+  type UpdateProfileInput,
+} from '@kurvenfunk/validation';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
 import type { AuthenticatedRequest } from '../auth/auth.types';
@@ -13,6 +18,16 @@ export class ProfilesController {
   @UseGuards(AuthGuard)
   getCurrentProfile(@Req() request: AuthenticatedRequest) {
     return this.profilesService.getCurrentProfile(request.user!.kurvenfunkUserId);
+  }
+
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  updateCurrentProfile(
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(updateProfileSchema))
+    input: UpdateProfileInput,
+  ) {
+    return this.profilesService.updateCurrentProfile(request.user!.kurvenfunkUserId, input);
   }
 
   @Get('me/fan-preference')
