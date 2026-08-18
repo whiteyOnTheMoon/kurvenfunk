@@ -88,6 +88,10 @@ function UserMenu() {
           </span>
         </div>
 
+        <Link href="/profil" className={styles.userMenuItem}>
+          Mein Profil
+        </Link>
+
         <Link href="/settings/profile" className={styles.userMenuItem}>
           Profileinstellungen
         </Link>

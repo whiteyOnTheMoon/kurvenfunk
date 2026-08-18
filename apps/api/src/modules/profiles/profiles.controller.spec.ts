@@ -24,10 +24,12 @@ import { ProfilesController } from './profiles.controller';
 import type { ProfilesService } from './profiles.service';
 
 describe('ProfilesController', () => {
+  const getCurrentProfile = jest.fn();
   const getFanPreference = jest.fn();
   const updateFanPreference = jest.fn();
 
   const service = {
+    getCurrentProfile,
     getFanPreference,
     updateFanPreference,
   } as unknown as ProfilesService;
@@ -44,8 +46,34 @@ describe('ProfilesController', () => {
   } as AuthenticatedRequest;
 
   beforeEach(() => {
+    getCurrentProfile.mockReset();
     getFanPreference.mockReset();
     updateFanPreference.mockReset();
+  });
+
+  it('returns the current profile for the authenticated user', async () => {
+    const profile = {
+      id: 'user-123',
+      nickname: 'Kurvenfan',
+      displayName: null,
+      bio: null,
+      createdAt: new Date('2026-08-01T12:00:00.000Z'),
+      fanPreference: 'NEUTRAL' as const,
+      favoriteClub: null,
+      avatar: null,
+      community: {
+        comments: 0,
+        threads: 0,
+        posts: 0,
+        reactions: 0,
+      },
+    };
+
+    getCurrentProfile.mockResolvedValue(profile);
+
+    await expect(controller.getCurrentProfile(request)).resolves.toEqual(profile);
+
+    expect(getCurrentProfile).toHaveBeenCalledWith('user-123');
   });
 
   it('returns the current fan preference for the authenticated user', async () => {

@@ -31,6 +31,141 @@ describe('ProfilesService', () => {
     service = new ProfilesService();
   });
 
+  it('returns the current profile with club, avatar and community activity', async () => {
+    const createdAt = new Date('2026-08-01T12:00:00.000Z');
+
+    findUniqueOrThrow.mockResolvedValue({
+      id: 'user-123',
+      nickname: 'Kurvenfan',
+      createdAt,
+      fanPreference: 'CLUB',
+      favoriteClub: {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'SK Sturm Graz',
+        shortName: 'Sturm',
+        slug: 'sk-sturm-graz',
+      },
+      profile: {
+        displayName: 'Kurvenfan',
+        bio: 'Fußball, Auswärtsfahrten und Kurve.',
+        avatarMedia: {
+          id: 'media-123',
+          url: 'https://example.test/avatar.jpg',
+          altText: 'Profilbild von Kurvenfan',
+        },
+      },
+      _count: {
+        comments: 12,
+        forumThreads: 3,
+        forumPosts: 27,
+        reactions: 41,
+      },
+    });
+
+    await expect(service.getCurrentProfile('user-123')).resolves.toEqual({
+      id: 'user-123',
+      nickname: 'Kurvenfan',
+      displayName: 'Kurvenfan',
+      bio: 'Fußball, Auswärtsfahrten und Kurve.',
+      createdAt,
+      fanPreference: 'CLUB',
+      favoriteClub: {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'SK Sturm Graz',
+        shortName: 'Sturm',
+        slug: 'sk-sturm-graz',
+      },
+      avatar: {
+        id: 'media-123',
+        url: 'https://example.test/avatar.jpg',
+        altText: 'Profilbild von Kurvenfan',
+      },
+      community: {
+        comments: 12,
+        threads: 3,
+        posts: 27,
+        reactions: 41,
+      },
+    });
+
+    expect(findUniqueOrThrow).toHaveBeenCalledWith({
+      where: {
+        id: 'user-123',
+      },
+      select: {
+        id: true,
+        nickname: true,
+        createdAt: true,
+        fanPreference: true,
+        favoriteClub: {
+          select: {
+            id: true,
+            name: true,
+            shortName: true,
+            slug: true,
+          },
+        },
+        profile: {
+          select: {
+            displayName: true,
+            bio: true,
+            avatarMedia: {
+              select: {
+                id: true,
+                url: true,
+                altText: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            forumThreads: true,
+            forumPosts: true,
+            reactions: true,
+          },
+        },
+      },
+    });
+  });
+
+  it('returns safe profile fallbacks when no profile or favorite club exists', async () => {
+    const createdAt = new Date('2026-08-01T12:00:00.000Z');
+
+    findUniqueOrThrow.mockResolvedValue({
+      id: 'user-123',
+      nickname: 'NeutralFan',
+      createdAt,
+      fanPreference: 'NEUTRAL',
+      favoriteClub: null,
+      profile: null,
+      _count: {
+        comments: 0,
+        forumThreads: 0,
+        forumPosts: 0,
+        reactions: 0,
+      },
+    });
+
+    await expect(service.getCurrentProfile('user-123')).resolves.toEqual({
+      id: 'user-123',
+      nickname: 'NeutralFan',
+      displayName: null,
+      bio: null,
+      createdAt,
+      fanPreference: 'NEUTRAL',
+      favoriteClub: null,
+      avatar: null,
+      community: {
+        comments: 0,
+        threads: 0,
+        posts: 0,
+        reactions: 0,
+      },
+    });
+  });
+
   it('returns the current fan preference', async () => {
     findUniqueOrThrow.mockResolvedValue({
       fanPreference: 'CLUB',

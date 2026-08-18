@@ -9,6 +9,12 @@ import { ProfilesService } from './profiles.service';
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
+  @Get('me')
+  @UseGuards(AuthGuard)
+  getCurrentProfile(@Req() request: AuthenticatedRequest) {
+    return this.profilesService.getCurrentProfile(request.user!.kurvenfunkUserId);
+  }
+
   @Get('me/fan-preference')
   @UseGuards(AuthGuard)
   getFanPreference(@Req() request: AuthenticatedRequest) {
