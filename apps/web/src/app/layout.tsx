@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { CSSProperties } from 'react';
 
-import { AppShell } from '../components/layout/app-shell';
+import { RouteShell } from '../components/layout/route-shell';
 import { AuthProvider } from '../features/auth/auth-provider';
 import { OnboardingGate } from '../features/onboarding/onboarding-gate';
 import {
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <AuthProvider apiUrl={env.API_URL} authUrl={env.AUTH_URL}>
           <PersonalizedClubTheme apiUrl={env.API_URL} />
           <OnboardingGate>
-            <AppShell>{children}</AppShell>
+            <RouteShell>{children}</RouteShell>
           </OnboardingGate>
         </AuthProvider>
       </body>
