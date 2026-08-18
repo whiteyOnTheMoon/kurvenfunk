@@ -22,7 +22,7 @@ interface ProfileData {
   } | null;
   avatar: {
     id: string;
-    url: string;
+    externalUrl: string | null;
     altText: string | null;
   } | null;
   community: {
@@ -188,9 +188,9 @@ export function ProfilePage({ apiUrl }: ProfilePageProps) {
         <section className={styles.hero}>
           <div className={styles.identity}>
             <div className={styles.avatar}>
-              {profile.avatar?.url ? (
+              {profile.avatar?.externalUrl ? (
                 <Image
-                  src={profile.avatar.url}
+                  src={profile.avatar.externalUrl}
                   alt={profile.avatar.altText ?? `Profilbild von ${title}`}
                   fill
                   sizes="112px"

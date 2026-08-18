@@ -22,7 +22,7 @@ export interface CurrentProfile {
   } | null;
   avatar: {
     id: string;
-    url: string;
+    externalUrl: string | null;
     altText: string | null;
   } | null;
   community: {
@@ -62,7 +62,7 @@ export class ProfilesService implements OnModuleDestroy {
             avatarMedia: {
               select: {
                 id: true,
-                url: true,
+                externalUrl: true,
                 altText: true,
               },
             },

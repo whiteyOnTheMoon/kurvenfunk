@@ -50,7 +50,7 @@ describe('ProfilesService', () => {
         bio: 'Fußball, Auswärtsfahrten und Kurve.',
         avatarMedia: {
           id: 'media-123',
-          url: 'https://example.test/avatar.jpg',
+          externalUrl: 'https://example.test/avatar.jpg',
           altText: 'Profilbild von Kurvenfan',
         },
       },
@@ -77,7 +77,7 @@ describe('ProfilesService', () => {
       },
       avatar: {
         id: 'media-123',
-        url: 'https://example.test/avatar.jpg',
+        externalUrl: 'https://example.test/avatar.jpg',
         altText: 'Profilbild von Kurvenfan',
       },
       community: {
@@ -112,7 +112,7 @@ describe('ProfilesService', () => {
             avatarMedia: {
               select: {
                 id: true,
-                url: true,
+                externalUrl: true,
                 altText: true,
               },
             },

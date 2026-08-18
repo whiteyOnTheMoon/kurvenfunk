@@ -51,6 +51,20 @@ function Navigation({ mobile = false, onNavigate }: { mobile?: boolean; onNaviga
 
 function UserMenu() {
   const { authenticated, initialized, login, logout, user } = useAuth();
+  const pathname = usePathname();
+  const menuRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (menuRef.current) {
+      menuRef.current.open = false;
+    }
+  }, [pathname]);
+
+  function closeMenu() {
+    if (menuRef.current) {
+      menuRef.current.open = false;
+    }
+  }
 
   if (!initialized) {
     return <div className={styles.userPlaceholder} aria-hidden="true" />;
@@ -65,7 +79,7 @@ function UserMenu() {
   }
 
   return (
-    <details className={styles.userMenu}>
+    <details ref={menuRef} className={styles.userMenu}>
       <summary className={styles.userMenuTrigger}>
         <span className={styles.userAvatar} aria-hidden="true">
           {user.fanPreference === 'CLUB' ? '⚽' : 'KF'}
@@ -88,15 +102,22 @@ function UserMenu() {
           </span>
         </div>
 
-        <Link href="/profil" className={styles.userMenuItem}>
+        <Link href="/profil" className={styles.userMenuItem} onClick={closeMenu}>
           Mein Profil
         </Link>
 
-        <Link href="/settings/profile" className={styles.userMenuItem}>
+        <Link href="/settings/profile" className={styles.userMenuItem} onClick={closeMenu}>
           Profileinstellungen
         </Link>
 
-        <button type="button" className={styles.userMenuItem} onClick={() => void logout()}>
+        <button
+          type="button"
+          className={styles.userMenuItem}
+          onClick={() => {
+            closeMenu();
+            void logout();
+          }}
+        >
           Abmelden
         </button>
       </div>
