@@ -3,7 +3,7 @@
 import type { FanPreferenceSelection } from '@kurvenfunk/validation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
-import { ClubSelection } from '../onboarding/club-selection';
+import { ClubCombobox } from './club-combobox';
 
 interface FanPreferenceSettingsProps {
   apiUrl: string;
@@ -165,10 +165,9 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
 
   return (
     <>
-      <ClubSelection
+      <ClubCombobox
         apiUrl={apiUrl}
-        initialSelection={currentSelection}
-        inputName="profile-club-preference"
+        selection={selection ?? currentSelection}
         onSelectionChange={(nextSelection) => {
           setSelection(nextSelection);
           setSuccess(undefined);
