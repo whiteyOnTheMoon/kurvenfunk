@@ -8,6 +8,7 @@ export interface AuthenticatedUser extends JWTPayload {
   kurvenfunkFanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
   kurvenfunkFavoriteClubId: string | null;
   kurvenfunkOnboardingCompleted: boolean;
+  kurvenfunkRoles: ('USER' | 'TRUSTED_USER' | 'MODERATOR' | 'EDITOR' | 'ADMIN' | 'SUPERADMIN')[];
 }
 
 export interface AuthenticatedRequest extends Request {

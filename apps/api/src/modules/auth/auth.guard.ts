@@ -49,6 +49,7 @@ export class AuthGuard implements CanActivate {
       kurvenfunkFanPreference: user.fanPreference,
       kurvenfunkFavoriteClubId: user.favoriteClubId,
       kurvenfunkOnboardingCompleted: user.onboardingCompleted,
+      kurvenfunkRoles: user.roles,
     };
 
     return true;

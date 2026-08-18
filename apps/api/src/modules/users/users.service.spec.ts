@@ -27,6 +27,7 @@ describe('UsersService', () => {
       keycloakSubject: 'keycloak-subject-123',
       status: 'ACTIVE',
       onboardingCompleted: false,
+      roleAssignments: [],
     });
 
     await expect(service.syncKeycloakUser('keycloak-subject-123')).resolves.toEqual({
@@ -34,6 +35,7 @@ describe('UsersService', () => {
       keycloakSubject: 'keycloak-subject-123',
       status: 'ACTIVE',
       onboardingCompleted: false,
+      roles: [],
     });
 
     expect(upsert).toHaveBeenCalledWith({
@@ -51,6 +53,23 @@ describe('UsersService', () => {
         fanPreference: true,
         favoriteClubId: true,
         onboardingCompleted: true,
+        roleAssignments: {
+          where: {
+            OR: [
+              {
+                expiresAt: null,
+              },
+              {
+                expiresAt: {
+                  gt: expect.any(Date) as Date,
+                },
+              },
+            ],
+          },
+          select: {
+            role: true,
+          },
+        },
       },
     });
   });

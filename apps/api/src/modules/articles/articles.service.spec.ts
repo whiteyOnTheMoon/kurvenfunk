@@ -1,4 +1,8 @@
 const findMany = jest.fn<Promise<unknown[]>, [unknown]>();
+const findUniqueArticle = jest.fn<Promise<unknown>, [unknown]>();
+const findFirstArticle = jest.fn<Promise<unknown>, [unknown]>();
+const createArticle = jest.fn<Promise<unknown>, [unknown]>();
+const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
 const findClub = jest.fn();
 const disconnect = jest.fn();
@@ -7,6 +11,10 @@ jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: () => ({
     article: {
       findMany,
+      findUnique: findUniqueArticle,
+      findFirst: findFirstArticle,
+      create: createArticle,
+      update: updateArticle,
     },
     competition: {
       findUniqueOrThrow: findCompetition,
@@ -39,6 +47,10 @@ describe('ArticlesService', () => {
 
   beforeEach(() => {
     findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
     findCompetition.mockReset();
     findClub.mockReset();
     disconnect.mockReset();
@@ -540,6 +552,247 @@ describe('ArticlesService', () => {
         take: 7,
       }),
     );
+  });
+
+  describe('article CRUD', () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
+    const authorId = '22222222-2222-4222-8222-222222222222';
+
+    const draftArticle = {
+      id: articleId,
+      title: 'Test article',
+      slug: 'test-article',
+      lead: 'Test lead',
+      content: { type: 'doc', content: [] },
+      status: 'DRAFT',
+      isTopNews: false,
+      authorId,
+      externalAuthorName: null,
+      sourceId: null,
+      originalUrl: null,
+      competitionId: null,
+      matchId: null,
+      leadMediaId: null,
+      scheduledAt: null,
+      publishedAt: null,
+      archivedAt: null,
+      deletedAt: null,
+      createdAt: new Date('2026-08-18T12:00:00.000Z'),
+      updatedAt: new Date('2026-08-18T12:00:00.000Z'),
+    };
+
+    it('creates a draft article for the authenticated author', async () => {
+      findUniqueArticle.mockResolvedValue(null);
+      createArticle.mockResolvedValue(draftArticle);
+
+      await expect(
+        service.create(
+          {
+            title: 'Test article',
+            slug: 'test-article',
+            lead: 'Test lead',
+            content: { type: 'doc', content: [] },
+          },
+          authorId,
+        ),
+      ).resolves.toEqual(draftArticle);
+
+      expect(findUniqueArticle).toHaveBeenCalledWith({
+        where: {
+          slug: 'test-article',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      expect(createArticle).toHaveBeenCalledWith({
+        data: {
+          title: 'Test article',
+          slug: 'test-article',
+          lead: 'Test lead',
+          content: { type: 'doc', content: [] },
+          isTopNews: false,
+          authorId,
+        },
+      });
+    });
+
+    it('rejects creation when the slug is already in use', async () => {
+      findUniqueArticle.mockResolvedValue({
+        id: 'existing-article',
+      });
+
+      await expect(
+        service.create(
+          {
+            title: 'Test article',
+            slug: 'test-article',
+            content: {},
+          },
+          authorId,
+        ),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_SLUG_TAKEN',
+          message: 'Article slug is already in use',
+        },
+      });
+
+      expect(createArticle).not.toHaveBeenCalled();
+    });
+
+    it('reads an article for editorial use regardless of publication state', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+
+      await expect(service.findEditorialById(articleId)).resolves.toEqual(draftArticle);
+
+      expect(findUniqueArticle).toHaveBeenCalledWith({
+        where: {
+          id: articleId,
+        },
+      });
+    });
+
+    it('returns ARTICLE_NOT_FOUND for a missing editorial article', async () => {
+      findUniqueArticle.mockResolvedValue(null);
+
+      await expect(service.findEditorialById(articleId)).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_NOT_FOUND',
+          message: 'Article not found',
+        },
+      });
+    });
+
+    it('updates an existing article', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        title: 'Updated article',
+      });
+
+      await service.update(articleId, {
+        title: 'Updated article',
+      });
+
+      expect(findFirstArticle).not.toHaveBeenCalled();
+      expect(updateArticle).toHaveBeenCalledWith({
+        where: {
+          id: articleId,
+        },
+        data: {
+          title: 'Updated article',
+        },
+      });
+    });
+
+    it('rejects an update when the new slug belongs to another article', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstArticle.mockResolvedValue({
+        id: 'other-article',
+      });
+
+      await expect(
+        service.update(articleId, {
+          slug: 'already-used',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_SLUG_TAKEN',
+          message: 'Article slug is already in use',
+        },
+      });
+
+      expect(updateArticle).not.toHaveBeenCalled();
+    });
+
+    it('archives an article', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        status: 'ARCHIVED',
+      });
+
+      await service.archive(articleId);
+
+      expect(updateArticle).toHaveBeenCalledTimes(1);
+
+      const call = updateArticle.mock.calls[0]?.[0] as {
+        where: { id: string };
+        data: { status: string; archivedAt: Date };
+      };
+
+      expect(call.where).toEqual({
+        id: articleId,
+      });
+      expect(call.data.status).toBe('ARCHIVED');
+      expect(call.data.archivedAt).toBeInstanceOf(Date);
+    });
+
+    it('soft deletes an article', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        deletedAt: new Date(),
+      });
+
+      await service.softDelete(articleId);
+
+      const call = updateArticle.mock.calls[0]?.[0] as {
+        where: { id: string };
+        data: { deletedAt: Date };
+      };
+
+      expect(call.where).toEqual({
+        id: articleId,
+      });
+      expect(call.data.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it('restores a soft-deleted non-archived article without changing its status', async () => {
+      findUniqueArticle.mockResolvedValue({
+        ...draftArticle,
+        deletedAt: new Date(),
+      });
+
+      updateArticle.mockResolvedValue(draftArticle);
+
+      await service.restore(articleId);
+
+      expect(updateArticle).toHaveBeenCalledWith({
+        where: {
+          id: articleId,
+        },
+        data: {
+          deletedAt: null,
+        },
+      });
+    });
+
+    it('restores an archived article as a draft and clears archivedAt', async () => {
+      findUniqueArticle.mockResolvedValue({
+        ...draftArticle,
+        status: 'ARCHIVED',
+        archivedAt: new Date(),
+        deletedAt: new Date(),
+      });
+
+      updateArticle.mockResolvedValue(draftArticle);
+
+      await service.restore(articleId);
+
+      expect(updateArticle).toHaveBeenCalledWith({
+        where: {
+          id: articleId,
+        },
+        data: {
+          deletedAt: null,
+          status: 'DRAFT',
+          archivedAt: null,
+        },
+      });
+    });
   });
 
   it('disconnects the database client on module destroy', async () => {

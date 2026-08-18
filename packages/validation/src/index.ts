@@ -22,3 +22,10 @@ export {
   updateProfileSchema,
   type UpdateProfileInput,
 } from './profile.ts';
+
+export {
+  createArticleSchema,
+  updateArticleSchema,
+  type CreateArticleInput,
+  type UpdateArticleInput,
+} from './article.js';

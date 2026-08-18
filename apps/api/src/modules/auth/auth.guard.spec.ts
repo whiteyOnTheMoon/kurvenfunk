@@ -50,6 +50,7 @@ describe('AuthGuard', () => {
       fanPreference: 'NEUTRAL',
       favoriteClubId: null,
       onboardingCompleted: false,
+      roles: ['EDITOR'],
     });
   });
 
@@ -86,6 +87,9 @@ describe('AuthGuard', () => {
         kurvenfunkFanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
         kurvenfunkFavoriteClubId: string | null;
         kurvenfunkOnboardingCompleted: boolean;
+        kurvenfunkRoles: (
+          'USER' | 'TRUSTED_USER' | 'MODERATOR' | 'EDITOR' | 'ADMIN' | 'SUPERADMIN'
+        )[];
       };
     };
 
@@ -106,6 +110,7 @@ describe('AuthGuard', () => {
       kurvenfunkFanPreference: 'NEUTRAL',
       kurvenfunkFavoriteClubId: null,
       kurvenfunkOnboardingCompleted: false,
+      kurvenfunkRoles: ['EDITOR'],
     });
   });
 

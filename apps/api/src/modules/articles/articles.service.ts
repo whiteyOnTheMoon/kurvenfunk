@@ -1,5 +1,11 @@
-import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { createPrismaClient, type DatabaseClient, Prisma } from '@kurvenfunk/database';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  type OnModuleDestroy,
+} from '@nestjs/common';
+import type { CreateArticleInput, UpdateArticleInput } from '@kurvenfunk/validation';
 import {
   createCursorPaginatedResult,
   type CursorPaginatedResult,
@@ -99,6 +105,139 @@ type SelectedArticle = Prisma.ArticleGetPayload<{
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
+
+  async create(input: CreateArticleInput, authorId: string) {
+    const existing = await this.database.article.findUnique({
+      where: {
+        slug: input.slug,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException({
+        code: 'ARTICLE_SLUG_TAKEN',
+        message: 'Article slug is already in use',
+      });
+    }
+
+    return this.database.article.create({
+      data: {
+        title: input.title,
+        slug: input.slug,
+        lead: input.lead,
+        content: input.content === null ? Prisma.JsonNull : input.content,
+        isTopNews: input.isTopNews ?? false,
+        authorId,
+      },
+    });
+  }
+
+  async findEditorialById(id: string) {
+    const article = await this.database.article.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!article) {
+      throw new NotFoundException({
+        code: 'ARTICLE_NOT_FOUND',
+        message: 'Article not found',
+      });
+    }
+
+    return article;
+  }
+
+  async update(id: string, input: UpdateArticleInput) {
+    await this.findEditorialById(id);
+
+    if (input.slug) {
+      const existing = await this.database.article.findFirst({
+        where: {
+          slug: input.slug,
+          id: {
+            not: id,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException({
+          code: 'ARTICLE_SLUG_TAKEN',
+          message: 'Article slug is already in use',
+        });
+      }
+    }
+
+    const { content, ...data } = input;
+
+    return this.database.article.update({
+      where: {
+        id,
+      },
+      data: {
+        ...data,
+        ...(content !== undefined
+          ? {
+              content: content === null ? Prisma.JsonNull : content,
+            }
+          : {}),
+      },
+    });
+  }
+
+  async archive(id: string) {
+    await this.findEditorialById(id);
+
+    return this.database.article.update({
+      where: {
+        id,
+      },
+      data: {
+        status: 'ARCHIVED',
+        archivedAt: new Date(),
+      },
+    });
+  }
+
+  async softDelete(id: string) {
+    await this.findEditorialById(id);
+
+    return this.database.article.update({
+      where: {
+        id,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
+
+  async restore(id: string) {
+    const article = await this.findEditorialById(id);
+
+    return this.database.article.update({
+      where: {
+        id,
+      },
+      data: {
+        deletedAt: null,
+        ...(article.status === 'ARCHIVED'
+          ? {
+              status: 'DRAFT',
+              archivedAt: null,
+            }
+          : {}),
+      },
+    });
+  }
 
   async findPublished(
     options: ArticleListOptions,
