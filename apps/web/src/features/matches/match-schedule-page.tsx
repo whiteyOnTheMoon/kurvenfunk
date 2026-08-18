@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import { EmptyState } from '@kurvenfunk/ui';
+
 import { useAuth } from '../auth/auth-provider';
 import { ListPageLoadingState } from '../loading/loading-states';
 import styles from './match-schedule-page.module.css';
@@ -571,9 +573,9 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
             </div>
           </>
         ) : (
-          <div className={styles.emptyState}>
-            Für diesen Wettbewerb sind derzeit keine Spiele vorhanden.
-          </div>
+          <EmptyState title="Keine Spiele vorhanden">
+            <p>Für diesen Wettbewerb sind derzeit keine Spiele vorhanden.</p>
+          </EmptyState>
         )}
       </section>
     </main>

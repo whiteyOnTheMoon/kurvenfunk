@@ -246,15 +246,6 @@
   white-space: nowrap;
 }
 
-.emptyState {
-  padding: var(--kf-space-10);
-  background: var(--kf-color-surface);
-  color: var(--kf-color-text-muted);
-  text-align: center;
-  border: 1px solid var(--kf-color-border);
-  border-radius: var(--kf-radius-lg);
-}
-
 @media (max-width: 760px) {
   .page {
     width: min(100% - 1rem, 1180px);

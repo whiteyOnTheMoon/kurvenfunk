@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { EmptyState } from '@kurvenfunk/ui';
+
 import { getClubPageMockData } from './club-detail-mock-data';
 import styles from './club-detail.module.css';
 
@@ -140,19 +142,25 @@ export function ClubDetail({ club }: ClubDetailProps) {
           <Link href={`/news?club=${club.slug}`}>Alle News →</Link>
         </div>
 
-        <div className={styles.newsGrid}>
-          {news.map((article) => (
-            <article className={styles.newsCard} key={article.id}>
-              <div className={styles.newsMeta}>
-                <span>{article.category}</span>
-                <span>{article.time}</span>
-              </div>
-              <h3>{article.title}</h3>
-              <p>{article.lead}</p>
-              <span className={styles.readMore}>Weiterlesen →</span>
-            </article>
-          ))}
-        </div>
+        {news.length > 0 ? (
+          <div className={styles.newsGrid}>
+            {news.map((article) => (
+              <article className={styles.newsCard} key={article.id}>
+                <div className={styles.newsMeta}>
+                  <span>{article.category}</span>
+                  <span>{article.time}</span>
+                </div>
+                <h3>{article.title}</h3>
+                <p>{article.lead}</p>
+                <span className={styles.readMore}>Weiterlesen →</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Keine Vereinsnews">
+            <p>Für {clubName} sind derzeit keine News vorhanden.</p>
+          </EmptyState>
+        )}
       </section>
 
       <section className={styles.section} id="spiele">
@@ -191,9 +199,9 @@ export function ClubDetail({ club }: ClubDetailProps) {
               ))}
           </div>
         ) : (
-          <div className={styles.emptyCard}>
-            Spieldaten für {clubName} werden mit der Sportdaten-Anbindung ergänzt.
-          </div>
+          <EmptyState title="Keine Spiele vorhanden">
+            <p>Für {clubName} sind derzeit keine Spieldaten vorhanden.</p>
+          </EmptyState>
         )}
       </section>
 
@@ -205,35 +213,43 @@ export function ClubDetail({ club }: ClubDetailProps) {
           </div>
         </div>
 
-        <div className={styles.table}>
-          <div className={styles.tableHeader}>
-            <span>#</span>
-            <span>Verein</span>
-            <span>Sp.</span>
-            <span>Diff.</span>
-            <span>Pkt.</span>
-          </div>
-
-          {standings.map((row) => (
-            <div
-              key={row.club.slug}
-              className={`${styles.tableRow} ${
-                row.club.slug === club.slug ? styles.tableRowHighlighted : ''
-              }`}
-            >
-              <span>{row.position}</span>
-
-              <div className={styles.tableClub}>
-                <Image src={row.club.logo} alt="" width={26} height={26} />
-                <span>{row.club.shortName}</span>
-              </div>
-
-              <span>{row.played}</span>
-              <span>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</span>
-              <strong>{row.points}</strong>
+        {standings.length > 0 ? (
+          <div className={styles.table}>
+            <div className={styles.tableHeader}>
+              <span>#</span>
+              <span>Verein</span>
+              <span>Sp.</span>
+              <span>Diff.</span>
+              <span>Pkt.</span>
             </div>
-          ))}
-        </div>
+
+            {standings.map((row) => (
+              <div
+                key={row.club.slug}
+                className={`${styles.tableRow} ${
+                  row.club.slug === club.slug ? styles.tableRowHighlighted : ''
+                }`}
+              >
+                <span>{row.position}</span>
+
+                <div className={styles.tableClub}>
+                  <Image src={row.club.logo} alt="" width={26} height={26} />
+                  <span>{row.club.shortName}</span>
+                </div>
+
+                <span>{row.played}</span>
+                <span>
+                  {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                </span>
+                <strong>{row.points}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Keine Tabellendaten">
+            <p>Für diesen Verein sind derzeit keine Tabellendaten verfügbar.</p>
+          </EmptyState>
+        )}
       </section>
 
       <section className={styles.section} id="forum">
@@ -244,18 +260,24 @@ export function ClubDetail({ club }: ClubDetailProps) {
           </div>
         </div>
 
-        <div className={styles.forumList}>
-          {discussions.map((discussion) => (
-            <article className={styles.forumCard} key={discussion.id}>
-              <span>{discussion.context}</span>
-              <h3>{discussion.title}</h3>
-              <div>
-                <span>{discussion.replies} Antworten</span>
-                <span>{discussion.lastActivity}</span>
-              </div>
-            </article>
-          ))}
-        </div>
+        {discussions.length > 0 ? (
+          <div className={styles.forumList}>
+            {discussions.map((discussion) => (
+              <article className={styles.forumCard} key={discussion.id}>
+                <span>{discussion.context}</span>
+                <h3>{discussion.title}</h3>
+                <div>
+                  <span>{discussion.replies} Antworten</span>
+                  <span>{discussion.lastActivity}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Noch keine Diskussionen">
+            <p>Für {clubName} gibt es derzeit noch keine Diskussionen.</p>
+          </EmptyState>
+        )}
       </section>
     </main>
   );

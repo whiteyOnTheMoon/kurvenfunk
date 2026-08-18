@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { EmptyState } from '@kurvenfunk/ui';
+
 import styles from './match-detail.module.css';
 
 export interface MatchDetailData {
@@ -192,9 +194,9 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
               })}
             </div>
           ) : (
-            <div className={styles.emptyCard}>
-              Zu diesem Spiel sind derzeit noch keine News verknüpft.
-            </div>
+            <EmptyState title="Keine News zum Spiel">
+              <p>Zu diesem Spiel sind derzeit noch keine News verknüpft.</p>
+            </EmptyState>
           )}
         </section>
 
