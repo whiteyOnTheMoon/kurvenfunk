@@ -1,11 +1,17 @@
 import { createPrismaClient, type DatabaseClient, Prisma } from '@kurvenfunk/database';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import type { CreateArticleInput, UpdateArticleInput } from '@kurvenfunk/validation';
+import type {
+  ArticlePublicationStatus,
+  ArticlePublicationWorkflowInput,
+  CreateArticleInput,
+  UpdateArticleInput,
+} from '@kurvenfunk/validation';
 import {
   createCursorPaginatedResult,
   type CursorPaginatedResult,
@@ -102,6 +108,17 @@ type SelectedArticle = Prisma.ArticleGetPayload<{
   select: typeof articleSelect;
 }>;
 
+const ARTICLE_PUBLICATION_TRANSITIONS: Record<
+  ArticlePublicationStatus,
+  ReadonlySet<ArticlePublicationStatus>
+> = {
+  DRAFT: new Set(['REVIEW', 'ARCHIVED']),
+  REVIEW: new Set(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']),
+  SCHEDULED: new Set(['DRAFT', 'REVIEW', 'PUBLISHED', 'ARCHIVED']),
+  PUBLISHED: new Set(['ARCHIVED']),
+  ARCHIVED: new Set(['DRAFT']),
+};
+
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
@@ -193,17 +210,94 @@ export class ArticlesService implements OnModuleDestroy {
     });
   }
 
-  async archive(id: string) {
-    await this.findEditorialById(id);
+  async changePublicationStatus(id: string, input: ArticlePublicationWorkflowInput) {
+    const article = await this.findEditorialById(id);
+
+    if (article.deletedAt) {
+      throw new ConflictException({
+        code: 'ARTICLE_DELETED',
+        message: 'Deleted articles cannot change publication status',
+      });
+    }
+
+    const currentStatus = article.status;
+    const targetStatus = input.status;
+
+    if (!ARTICLE_PUBLICATION_TRANSITIONS[currentStatus].has(targetStatus)) {
+      throw new ConflictException({
+        code: 'ARTICLE_PUBLICATION_TRANSITION_INVALID',
+        message: `Cannot change article publication status from ${currentStatus} to ${targetStatus}`,
+      });
+    }
+
+    const now = new Date();
+
+    if (targetStatus === 'SCHEDULED') {
+      const scheduledAt = new Date(input.scheduledAt!);
+
+      if (scheduledAt <= now) {
+        throw new BadRequestException({
+          code: 'ARTICLE_SCHEDULED_AT_INVALID',
+          message: 'scheduledAt must be in the future',
+        });
+      }
+
+      return this.database.article.update({
+        where: {
+          id,
+        },
+        data: {
+          status: 'SCHEDULED',
+          scheduledAt,
+          publishedAt: null,
+          archivedAt: null,
+        },
+      });
+    }
+
+    if (targetStatus === 'PUBLISHED') {
+      return this.database.article.update({
+        where: {
+          id,
+        },
+        data: {
+          status: 'PUBLISHED',
+          scheduledAt: null,
+          publishedAt: now,
+          archivedAt: null,
+        },
+      });
+    }
+
+    if (targetStatus === 'ARCHIVED') {
+      return this.database.article.update({
+        where: {
+          id,
+        },
+        data: {
+          status: 'ARCHIVED',
+          scheduledAt: null,
+          archivedAt: now,
+        },
+      });
+    }
 
     return this.database.article.update({
       where: {
         id,
       },
       data: {
-        status: 'ARCHIVED',
-        archivedAt: new Date(),
+        status: targetStatus,
+        scheduledAt: null,
+        publishedAt: null,
+        archivedAt: null,
       },
+    });
+  }
+
+  async archive(id: string) {
+    return this.changePublicationStatus(id, {
+      status: 'ARCHIVED',
     });
   }
 

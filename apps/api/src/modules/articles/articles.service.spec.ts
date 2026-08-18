@@ -707,6 +707,192 @@ describe('ArticlesService', () => {
       expect(updateArticle).not.toHaveBeenCalled();
     });
 
+    describe('publication workflow', () => {
+      it('moves a draft article to review', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'DRAFT',
+          deletedAt: null,
+        });
+        updateArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'REVIEW',
+        });
+
+        await service.changePublicationStatus('article-1', {
+          status: 'REVIEW',
+        });
+
+        expect(updateArticle).toHaveBeenCalledWith({
+          where: {
+            id: 'article-1',
+          },
+          data: {
+            status: 'REVIEW',
+            scheduledAt: null,
+            publishedAt: null,
+            archivedAt: null,
+          },
+        });
+      });
+
+      it('schedules a review article for a future publication date', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'REVIEW',
+          deletedAt: null,
+        });
+        updateArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'SCHEDULED',
+        });
+
+        const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+        await service.changePublicationStatus('article-1', {
+          status: 'SCHEDULED',
+          scheduledAt,
+        });
+
+        expect(updateArticle).toHaveBeenCalledWith({
+          where: {
+            id: 'article-1',
+          },
+          data: {
+            status: 'SCHEDULED',
+            scheduledAt: new Date(scheduledAt),
+            publishedAt: null,
+            archivedAt: null,
+          },
+        });
+      });
+
+      it('rejects scheduling in the past', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'REVIEW',
+          deletedAt: null,
+        });
+
+        await expect(
+          service.changePublicationStatus('article-1', {
+            status: 'SCHEDULED',
+            scheduledAt: '2020-01-01T00:00:00.000Z',
+          }),
+        ).rejects.toMatchObject({
+          response: {
+            code: 'ARTICLE_SCHEDULED_AT_INVALID',
+            message: 'scheduledAt must be in the future',
+          },
+        });
+
+        expect(updateArticle).not.toHaveBeenCalled();
+      });
+
+      it('publishes a review article immediately', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'REVIEW',
+          deletedAt: null,
+        });
+        updateArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'PUBLISHED',
+        });
+
+        const before = new Date();
+
+        await service.changePublicationStatus('article-1', {
+          status: 'PUBLISHED',
+        });
+
+        const call = updateArticle.mock.calls[0]?.[0] as {
+          data: {
+            status: string;
+            scheduledAt: null;
+            publishedAt: Date;
+            archivedAt: null;
+          };
+        };
+
+        expect(call.data.status).toBe('PUBLISHED');
+        expect(call.data.scheduledAt).toBeNull();
+        expect(call.data.publishedAt).toBeInstanceOf(Date);
+        expect(call.data.publishedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+        expect(call.data.archivedAt).toBeNull();
+      });
+
+      it('rejects an invalid publication transition', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'DRAFT',
+          deletedAt: null,
+        });
+
+        await expect(
+          service.changePublicationStatus('article-1', {
+            status: 'PUBLISHED',
+          }),
+        ).rejects.toMatchObject({
+          response: {
+            code: 'ARTICLE_PUBLICATION_TRANSITION_INVALID',
+            message: 'Cannot change article publication status from DRAFT to PUBLISHED',
+          },
+        });
+
+        expect(updateArticle).not.toHaveBeenCalled();
+      });
+
+      it('rejects publication changes for deleted articles', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'DRAFT',
+          deletedAt: new Date(),
+        });
+
+        await expect(
+          service.changePublicationStatus('article-1', {
+            status: 'REVIEW',
+          }),
+        ).rejects.toMatchObject({
+          response: {
+            code: 'ARTICLE_DELETED',
+            message: 'Deleted articles cannot change publication status',
+          },
+        });
+
+        expect(updateArticle).not.toHaveBeenCalled();
+      });
+
+      it('moves an archived article back to draft and clears workflow dates', async () => {
+        findUniqueArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'ARCHIVED',
+          deletedAt: null,
+        });
+        updateArticle.mockResolvedValue({
+          id: 'article-1',
+          status: 'DRAFT',
+        });
+
+        await service.changePublicationStatus('article-1', {
+          status: 'DRAFT',
+        });
+
+        expect(updateArticle).toHaveBeenCalledWith({
+          where: {
+            id: 'article-1',
+          },
+          data: {
+            status: 'DRAFT',
+            scheduledAt: null,
+            publishedAt: null,
+            archivedAt: null,
+          },
+        });
+      });
+    });
+
     it('archives an article', async () => {
       findUniqueArticle.mockResolvedValue(draftArticle);
       updateArticle.mockResolvedValue({

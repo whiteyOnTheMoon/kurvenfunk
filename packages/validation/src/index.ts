@@ -26,6 +26,10 @@ export {
 export {
   createArticleSchema,
   updateArticleSchema,
+  articlePublicationStatusSchema,
+  articlePublicationWorkflowSchema,
   type CreateArticleInput,
   type UpdateArticleInput,
+  type ArticlePublicationStatus,
+  type ArticlePublicationWorkflowInput,
 } from './article.js';

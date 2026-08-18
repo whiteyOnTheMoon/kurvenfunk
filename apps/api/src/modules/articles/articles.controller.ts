@@ -12,8 +12,10 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 import {
+  articlePublicationWorkflowSchema,
   createArticleSchema,
   updateArticleSchema,
+  type ArticlePublicationWorkflowInput,
   type CreateArticleInput,
   type UpdateArticleInput,
 } from '@kurvenfunk/validation';
@@ -60,6 +62,16 @@ export class ArticlesController {
     @Body(new ZodValidationPipe(updateArticleSchema)) input: UpdateArticleInput,
   ) {
     return this.articlesService.update(id, input);
+  }
+
+  @Patch(':id/publication')
+  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  changePublicationStatus(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(articlePublicationWorkflowSchema))
+    input: ArticlePublicationWorkflowInput,
+  ) {
+    return this.articlesService.changePublicationStatus(id, input);
   }
 
   @Post(':id/archive')
