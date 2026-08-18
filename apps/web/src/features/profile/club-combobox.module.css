@@ -190,3 +190,8 @@
     max-height: calc(60vh - 68px);
   }
 }
+
+.trigger:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}

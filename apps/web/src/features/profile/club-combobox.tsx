@@ -8,6 +8,7 @@ import styles from './club-combobox.module.css';
 interface ClubComboboxProps {
   apiUrl: string;
   selection?: FanPreferenceSelection;
+  disabled?: boolean;
   onSelectionChange: (selection: FanPreferenceSelection) => void;
 }
 
@@ -112,7 +113,12 @@ function ClubLogo({ club }: { club: Club }) {
   );
 }
 
-export function ClubCombobox({ apiUrl, selection, onSelectionChange }: ClubComboboxProps) {
+export function ClubCombobox({
+  apiUrl,
+  selection,
+  disabled = false,
+  onSelectionChange,
+}: ClubComboboxProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -232,6 +238,7 @@ export function ClubCombobox({ apiUrl, selection, onSelectionChange }: ClubCombo
         className={styles.trigger}
         aria-haspopup="listbox"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => setOpen((value) => !value)}
       >
         <span className={styles.triggerSelection}>

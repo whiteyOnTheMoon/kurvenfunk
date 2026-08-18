@@ -92,11 +92,12 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
     return () => controller.abort();
   }, [apiUrl, token]);
 
-  async function savePreference() {
-    if (!token || !selection || submitting) {
+  async function savePreference(nextSelection: FanPreferenceSelection) {
+    if (!token || submitting) {
       return;
     }
 
+    setSelection(nextSelection);
     setSubmitting(true);
     setError(undefined);
     setSuccess(undefined);
@@ -108,7 +109,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(selection),
+        body: JSON.stringify(nextSelection),
       });
 
       const body = (await response.json().catch(() => undefined)) as
@@ -116,6 +117,8 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
 
       if (!response.ok) {
         const apiError = body as ApiErrorResponse | undefined;
+
+        setSelection(currentSelection);
 
         if (apiError?.code === 'INVALID_FAVORITE_CLUB') {
           setError('Der ausgewählte Verein ist nicht mehr verfügbar.');
@@ -129,6 +132,7 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
       const result = body as FanPreferenceResponse | undefined;
 
       if (!result?.data) {
+        setSelection(currentSelection);
         setError('Dein Lieblingsverein konnte nicht gespeichert werden.');
         return;
       }
@@ -147,8 +151,9 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
       setCurrentSelection(savedSelection);
       setSelection(savedSelection);
       await refreshUser();
-      setSuccess('Dein Lieblingsverein wurde gespeichert.');
+      setSuccess('Gespeichert');
     } catch {
+      setSelection(currentSelection);
       setError('Dein Lieblingsverein konnte nicht gespeichert werden.');
     } finally {
       setSubmitting(false);
@@ -168,24 +173,16 @@ export function FanPreferenceSettings({ apiUrl }: FanPreferenceSettingsProps) {
       <ClubCombobox
         apiUrl={apiUrl}
         selection={selection ?? currentSelection}
+        disabled={submitting}
         onSelectionChange={(nextSelection) => {
-          setSelection(nextSelection);
           setSuccess(undefined);
+          void savePreference(nextSelection);
         }}
       />
 
-      <section>
-        <button
-          type="button"
-          disabled={!selection || submitting}
-          onClick={() => void savePreference()}
-        >
-          {submitting ? 'Wird gespeichert …' : 'Auswahl speichern'}
-        </button>
-
-        {error ? <p role="alert">{error}</p> : null}
-        {success ? <p role="status">{success}</p> : null}
-      </section>
+      {submitting ? <p role="status">Wird gespeichert …</p> : null}
+      {error ? <p role="alert">{error}</p> : null}
+      {success ? <p role="status">{success}</p> : null}
     </>
   );
 }
