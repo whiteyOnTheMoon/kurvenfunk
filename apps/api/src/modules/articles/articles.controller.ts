@@ -49,6 +49,12 @@ export class ArticlesController {
     return this.articlesService.create(input, request.user!.kurvenfunkUserId);
   }
 
+  @Get('editorial')
+  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  findEditorialList() {
+    return this.articlesService.findEditorialList();
+  }
+
   @Get('editorial/:id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
   findEditorial(@Param('id') id: string) {

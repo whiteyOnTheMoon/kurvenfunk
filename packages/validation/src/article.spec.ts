@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createArticleSchema, updateArticleSchema } from './article.ts';
-import { articlePublicationWorkflowSchema } from './article.ts';
+import {
+  articleContentSchema,
+  articlePublicationWorkflowSchema,
+  createArticleSchema,
+  updateArticleSchema,
+} from './article.ts';
 
 describe('article validation', () => {
   it('accepts a valid article draft', () => {
@@ -21,14 +25,14 @@ describe('article validation', () => {
     assert.equal(result.slug, 'test-article');
   });
 
-  it('accepts JSON null as article content', () => {
-    const result = createArticleSchema.parse({
+  it('rejects JSON null as article content', () => {
+    const result = createArticleSchema.safeParse({
       title: 'Test article',
       slug: 'test-article',
       content: null,
     });
 
-    assert.equal(result.content, null);
+    assert.equal(result.success, false);
   });
 
   it('rejects an invalid slug', () => {
@@ -90,6 +94,80 @@ describe('article publication workflow validation', () => {
   it('rejects unknown publication states', () => {
     const result = articlePublicationWorkflowSchema.safeParse({
       status: 'UNKNOWN',
+    });
+
+    assert.equal(result.success, false);
+  });
+});
+
+describe('articleContentSchema', () => {
+  it('accepts structured article editor content', () => {
+    const result = articleContentSchema.safeParse({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: 'Matchbericht' }],
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Kurvenfunk berichtet ' },
+            {
+              type: 'text',
+              text: 'live',
+              marks: [{ type: 'bold' }],
+            },
+          ],
+        },
+        {
+          type: 'blockquote',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Ein starkes Spiel.' }],
+            },
+          ],
+        },
+        {
+          type: 'image',
+          attrs: {
+            src: 'https://example.test/match.jpg',
+            alt: 'Spielszene',
+          },
+        },
+      ],
+    });
+
+    assert.equal(result.success, true);
+  });
+
+  it('rejects unsupported editor nodes', () => {
+    const result = articleContentSchema.safeParse({
+      type: 'doc',
+      content: [
+        {
+          type: 'script',
+          content: [{ type: 'text', text: 'alert(1)' }],
+        },
+      ],
+    });
+
+    assert.equal(result.success, false);
+  });
+
+  it('rejects unsafe image URLs', () => {
+    const result = articleContentSchema.safeParse({
+      type: 'doc',
+      content: [
+        {
+          type: 'image',
+          attrs: {
+            src: 'javascript:alert(1)',
+          },
+        },
+      ],
     });
 
     assert.equal(result.success, false);

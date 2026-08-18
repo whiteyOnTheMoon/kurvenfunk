@@ -119,6 +119,10 @@ const ARTICLE_PUBLICATION_TRANSITIONS: Record<
   ARCHIVED: new Set(['DRAFT']),
 };
 
+function toPrismaJson(value: CreateArticleInput['content']): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
+
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
@@ -145,9 +149,35 @@ export class ArticlesService implements OnModuleDestroy {
         title: input.title,
         slug: input.slug,
         lead: input.lead,
-        content: input.content === null ? Prisma.JsonNull : input.content,
+        content: toPrismaJson(input.content),
         isTopNews: input.isTopNews ?? false,
         authorId,
+      },
+    });
+  }
+
+  async findEditorialList() {
+    return this.database.article.findMany({
+      where: {
+        deletedAt: null,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        updatedAt: true,
+        publishedAt: true,
+        scheduledAt: true,
+        author: {
+          select: {
+            id: true,
+            nickname: true,
+          },
+        },
       },
     });
   }
@@ -203,7 +233,7 @@ export class ArticlesService implements OnModuleDestroy {
         ...data,
         ...(content !== undefined
           ? {
-              content: content === null ? Prisma.JsonNull : content,
+              content: toPrismaJson(content),
             }
           : {}),
       },

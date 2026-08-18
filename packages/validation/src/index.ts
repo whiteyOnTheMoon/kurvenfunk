@@ -24,6 +24,7 @@ export {
 } from './profile.ts';
 
 export {
+  articleContentSchema,
   createArticleSchema,
   updateArticleSchema,
   articlePublicationStatusSchema,
