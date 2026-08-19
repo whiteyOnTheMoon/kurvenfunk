@@ -31,6 +31,18 @@ interface ArticleCategoryAssignment {
   category: EditorialCategory;
 }
 
+interface EditorialTag {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
+interface ArticleTagAssignment {
+  tagId: string;
+  tag: EditorialTag;
+}
+
 interface EditorialArticle {
   id: string;
   title: string;
@@ -41,6 +53,7 @@ interface EditorialArticle {
   scheduledAt?: string | null;
   publishedAt?: string | null;
   categories?: ArticleCategoryAssignment[];
+  tags?: ArticleTagAssignment[];
 }
 
 const EMPTY_DOCUMENT: JSONContent = {
@@ -77,6 +90,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [categories, setCategories] = useState<EditorialCategory[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [tags, setTags] = useState<EditorialTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [loadingTags, setLoadingTags] = useState(true);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [savedArticle, setSavedArticle] = useState<EditorialArticle>();
@@ -156,6 +172,53 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   }, [apiUrl, authenticated, initialized, token]);
 
   useEffect(() => {
+    if (!initialized || !authenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadTags() {
+      setLoadingTags(true);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/v1/tags`);
+
+        const payload = (await response.json().catch(() => null)) as {
+          data?: EditorialTag[];
+          error?: {
+            message?: string;
+          };
+        } | null;
+
+        if (!response.ok || !payload?.data) {
+          throw new Error(payload?.error?.message ?? 'Tags konnten nicht geladen werden.');
+        }
+
+        if (!cancelled) {
+          setTags(payload.data.filter((tag) => tag.active));
+        }
+      } catch (tagError) {
+        if (!cancelled) {
+          setError(
+            tagError instanceof Error ? tagError.message : 'Tags konnten nicht geladen werden.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingTags(false);
+        }
+      }
+    }
+
+    void loadTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, initialized, token]);
+
+  useEffect(() => {
     if (!articleId || !initialized || !authenticated || !token || !editor) {
       return;
     }
@@ -202,6 +265,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSelectedCategoryIds(
           article.categories?.map((assignment) => assignment.categoryId) ?? [],
         );
+        setSelectedTagIds(article.tags?.map((assignment) => assignment.tagId) ?? []);
         setSavedArticle(article);
         setScheduledAt(
           article.scheduledAt ? new Date(article.scheduledAt).toISOString().slice(0, 16) : '',
@@ -240,6 +304,12 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       current.includes(categoryId)
         ? current.filter((id) => id !== categoryId)
         : [...current, categoryId],
+    );
+  }
+
+  function toggleTag(tagId: string) {
+    setSelectedTagIds((current) =>
+      current.includes(tagId) ? current.filter((id) => id !== tagId) : [...current, tagId],
     );
   }
 
@@ -335,6 +405,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             lead: trimmedLead || null,
             content: editor.getJSON(),
             categoryIds: selectedCategoryIds,
+            tagIds: selectedTagIds,
           }),
         },
       );
@@ -802,6 +873,42 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
                 ? 'Keine Kategorie ausgewählt.'
                 : `${selectedCategoryIds.length} ${
                     selectedCategoryIds.length === 1 ? 'Kategorie' : 'Kategorien'
+                  } ausgewählt.`}
+            </p>
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Tags</span>
+
+            {loadingTags ? (
+              <p>Tags werden geladen …</p>
+            ) : tags.length === 0 ? (
+              <p>Keine aktiven Tags vorhanden.</p>
+            ) : (
+              <div className={styles.categoryList}>
+                {tags.map((tag) => {
+                  const checked = selectedTagIds.includes(tag.id);
+
+                  return (
+                    <label key={tag.id} className={styles.categoryOption}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={saving || changingStatus}
+                        onChange={() => toggleTag(tag.id)}
+                      />
+                      <span>{tag.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            <p>
+              {selectedTagIds.length === 0
+                ? 'Keine Tags ausgewählt.'
+                : `${selectedTagIds.length} ${
+                    selectedTagIds.length === 1 ? 'Tag' : 'Tags'
                   } ausgewählt.`}
             </p>
           </section>

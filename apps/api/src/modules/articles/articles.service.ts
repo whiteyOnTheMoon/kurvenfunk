@@ -152,6 +152,33 @@ export class ArticlesService implements OnModuleDestroy {
     }
   }
 
+  private async validateTagIds(tagIds: string[]) {
+    if (tagIds.length === 0) {
+      return;
+    }
+
+    const uniqueTagIds = [...new Set(tagIds)];
+
+    const tags = await this.database.tag.findMany({
+      where: {
+        id: {
+          in: uniqueTagIds,
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (tags.length !== uniqueTagIds.length) {
+      throw new BadRequestException({
+        code: 'ARTICLE_TAG_INVALID',
+        message: 'One or more article tags are invalid or inactive',
+      });
+    }
+  }
+
   private readonly database: DatabaseClient = createPrismaClient();
 
   async create(input: CreateArticleInput, authorId: string) {
@@ -172,7 +199,10 @@ export class ArticlesService implements OnModuleDestroy {
     }
 
     const categoryIds = [...new Set(input.categoryIds)];
+    const tagIds = [...new Set(input.tagIds)];
+
     await this.validateCategoryIds(categoryIds);
+    await this.validateTagIds(tagIds);
 
     return this.database.article.create({
       data: {
@@ -187,11 +217,21 @@ export class ArticlesService implements OnModuleDestroy {
             categoryId,
           })),
         },
+        tags: {
+          create: tagIds.map((tagId) => ({
+            tagId,
+          })),
+        },
       },
       include: {
         categories: {
           include: {
             category: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: true,
           },
         },
       },
@@ -235,6 +275,11 @@ export class ArticlesService implements OnModuleDestroy {
             category: true,
           },
         },
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
       },
     });
 
@@ -272,10 +317,14 @@ export class ArticlesService implements OnModuleDestroy {
       }
     }
 
-    const { content, categoryIds, ...data } = input;
+    const { content, categoryIds, tagIds, ...data } = input;
 
     if (categoryIds !== undefined) {
       await this.validateCategoryIds(categoryIds);
+    }
+
+    if (tagIds !== undefined) {
+      await this.validateTagIds(tagIds);
     }
 
     return this.database.article.update({
@@ -299,11 +348,26 @@ export class ArticlesService implements OnModuleDestroy {
               },
             }
           : {}),
+        ...(tagIds !== undefined
+          ? {
+              tags: {
+                deleteMany: {},
+                create: [...new Set(tagIds)].map((tagId) => ({
+                  tagId,
+                })),
+              },
+            }
+          : {}),
       },
       include: {
         categories: {
           include: {
             category: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: true,
           },
         },
       },

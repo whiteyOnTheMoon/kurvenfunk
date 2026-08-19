@@ -207,3 +207,37 @@ describe('article category assignment validation', () => {
     });
   });
 });
+
+describe('article tag assignment validation', () => {
+  it('does not inject tagIds into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts tag ids on article updates', () => {
+    const tagId = '44444444-4444-4444-8444-444444444444';
+
+    const result = updateArticleSchema.parse({
+      tagIds: [tagId],
+    });
+
+    assert.deepEqual(result, {
+      tagIds: [tagId],
+    });
+  });
+
+  it('accepts removing all tags explicitly', () => {
+    const result = updateArticleSchema.parse({
+      tagIds: [],
+    });
+
+    assert.deepEqual(result, {
+      tagIds: [],
+    });
+  });
+});

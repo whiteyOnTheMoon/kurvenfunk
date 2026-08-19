@@ -41,3 +41,9 @@ export {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from './category.js';
+export {
+  createTagSchema,
+  updateTagSchema,
+  type CreateTagInput,
+  type UpdateTagInput,
+} from './tag.js';

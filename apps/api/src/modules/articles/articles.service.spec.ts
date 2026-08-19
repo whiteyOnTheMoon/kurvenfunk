@@ -6,6 +6,7 @@ const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
 const findClub = jest.fn();
 const findManyCategory = jest.fn();
+const findManyTag = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -25,6 +26,9 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     category: {
       findMany: findManyCategory,
+    },
+    tag: {
+      findMany: findManyTag,
     },
     $disconnect: disconnect,
   }),
@@ -58,6 +62,7 @@ describe('ArticlesService', () => {
     findCompetition.mockReset();
     findClub.mockReset();
     findManyCategory.mockReset();
+    findManyTag.mockReset();
     disconnect.mockReset();
     service = new ArticlesService();
   });
@@ -622,11 +627,19 @@ describe('ArticlesService', () => {
           categories: {
             create: [],
           },
+          tags: {
+            create: [],
+          },
         },
         include: {
           categories: {
             include: {
               category: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
             },
           },
         },
@@ -672,6 +685,11 @@ describe('ArticlesService', () => {
               category: true,
             },
           },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
         },
       });
     });
@@ -710,6 +728,11 @@ describe('ArticlesService', () => {
           categories: {
             include: {
               category: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
             },
           },
         },
@@ -1031,6 +1054,7 @@ describe('article category assignment', () => {
     findCompetition.mockReset();
     findClub.mockReset();
     findManyCategory.mockReset();
+    findManyTag.mockReset();
     disconnect.mockReset();
   });
 
@@ -1185,6 +1209,186 @@ describe('article category assignment', () => {
       expect.objectContaining({
         data: {
           categories: {
+            deleteMany: {},
+            create: [],
+          },
+        },
+      }),
+    );
+  });
+});
+
+describe('article tag assignment', () => {
+  const tagId = '44444444-4444-4444-8444-444444444444';
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
+    findCompetition.mockReset();
+    findClub.mockReset();
+    findManyCategory.mockReset();
+    findManyTag.mockReset();
+    disconnect.mockReset();
+  });
+
+  it('creates article tag assignments', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyTag.mockResolvedValue([{ id: tagId }]);
+    createArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.create(
+      {
+        title: 'Transfer News',
+        slug: 'transfer-news',
+        lead: null,
+        content: {
+          type: 'doc',
+          content: [],
+        },
+        categoryIds: [],
+        tagIds: [tagId],
+      },
+      'author-id',
+    );
+
+    expect(findManyTag).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: [tagId],
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    expect(createArticle.mock.calls[0]?.[0]).toMatchObject({
+      data: {
+        tags: {
+          create: [
+            {
+              tagId,
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it('rejects unknown or inactive article tags', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyTag.mockResolvedValue([]);
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Transfer News',
+          slug: 'transfer-news',
+          lead: null,
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          categoryIds: [],
+          tagIds: [tagId],
+        },
+        'author-id',
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_TAG_INVALID',
+        message: 'One or more article tags are invalid or inactive',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('replaces tag assignments during article update', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      categories: [],
+      tags: [],
+    });
+
+    findManyTag.mockResolvedValue([{ id: tagId }]);
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      tagIds: [tagId],
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'article-id',
+        },
+        data: {
+          tags: {
+            deleteMany: {},
+            create: [
+              {
+                tagId,
+              },
+            ],
+          },
+        },
+      }),
+    );
+  });
+
+  it('allows removing all tag assignments', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      categories: [],
+      tags: [],
+    });
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      tagIds: [],
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          tags: {
             deleteMany: {},
             create: [],
           },
