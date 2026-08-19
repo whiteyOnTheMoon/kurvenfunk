@@ -45,8 +45,15 @@ jobs:
 
       - name: Show versions
         run: |
+          echo "event=${{ github.event_name }}"
+          echo "sha=${{ github.sha }}"
+          echo "ref=${{ github.ref }}"
+          echo "head_ref=${{ github.head_ref }}"
+          echo "base_ref=${{ github.base_ref }}"
+          echo "checked_out=$(git rev-parse HEAD)"
           node --version
           pnpm --version
+          sha256sum apps/web/src/components/layout/app-shell.tsx
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
