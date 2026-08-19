@@ -1,10 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button, Field, Input, Textarea } from '@kurvenfunk/ui';
 import type { JSONContent } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
+import TiptapLink from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -16,13 +17,17 @@ interface ArticleEditorProps {
   articleId?: string;
 }
 
+type ArticleStatus = 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
+
 interface EditorialArticle {
   id: string;
   title: string;
   slug: string;
   lead: string | null;
   content: JSONContent;
-  status: string;
+  status: ArticleStatus;
+  scheduledAt?: string | null;
+  publishedAt?: string | null;
 }
 
 const EMPTY_DOCUMENT: JSONContent = {
@@ -53,7 +58,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [slugTouched, setSlugTouched] = useState(false);
   const [lead, setLead] = useState('');
   const [saving, setSaving] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(Boolean(articleId));
+  const [scheduledAt, setScheduledAt] = useState('');
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [savedArticle, setSavedArticle] = useState<EditorialArticle>();
@@ -66,7 +73,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
           levels: [2, 3, 4],
         },
       }),
-      Link.configure({
+      TiptapLink.configure({
         openOnClick: false,
         autolink: true,
         defaultProtocol: 'https',
@@ -128,6 +135,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlugTouched(true);
         setLead(article.lead ?? '');
         setSavedArticle(article);
+        setScheduledAt(
+          article.scheduledAt ? new Date(article.scheduledAt).toISOString().slice(0, 16) : '',
+        );
         currentEditor.commands.setContent(article.content);
       } catch (loadError) {
         if (!cancelled) {
@@ -209,9 +219,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     editor.chain().focus().setImage({ src: normalized, alt }).run();
   }
 
-  async function saveArticle() {
+  async function saveArticle(): Promise<EditorialArticle | undefined> {
     if (!editor || !token || saving) {
-      return;
+      return undefined;
     }
 
     const trimmedTitle = title.trim();
@@ -276,6 +286,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
 
       setSavedArticle(article);
       setMessage(articleId ? 'Änderungen gespeichert.' : 'Entwurf gespeichert.');
+      return article;
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : 'Artikel konnte nicht gespeichert werden.',
@@ -283,6 +294,102 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function changePublicationStatus(
+    status: ArticleStatus,
+    options?: { scheduledAt?: string },
+  ) {
+    if (!articleId || !token || changingStatus || saving) {
+      return;
+    }
+
+    setChangingStatus(true);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const saved = await saveArticle();
+
+      if (!saved) {
+        throw new Error('Artikel konnte vor dem Statuswechsel nicht gespeichert werden.');
+      }
+
+      const response = await fetch(
+        `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/publication`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status,
+            ...(status === 'SCHEDULED'
+              ? {
+                  scheduledAt: options?.scheduledAt,
+                }
+              : {}),
+          }),
+        },
+      );
+
+      const payload = (await response.json().catch(() => null)) as {
+        data?: EditorialArticle;
+        error?: {
+          message?: string;
+        };
+      } | null;
+
+      if (!response.ok || !payload?.data) {
+        throw new Error(
+          payload?.error?.message ?? 'Publikationsstatus konnte nicht geändert werden.',
+        );
+      }
+
+      setSavedArticle(payload.data);
+      setScheduledAt(
+        payload.data.scheduledAt
+          ? new Date(payload.data.scheduledAt).toISOString().slice(0, 16)
+          : '',
+      );
+
+      const messages: Record<ArticleStatus, string> = {
+        DRAFT: 'Artikel ist wieder ein Entwurf.',
+        REVIEW: 'Artikel wurde zur Prüfung eingereicht.',
+        SCHEDULED: 'Veröffentlichung wurde geplant.',
+        PUBLISHED: 'Artikel wurde veröffentlicht.',
+        ARCHIVED: 'Artikel wurde archiviert.',
+      };
+
+      setMessage(messages[status]);
+    } catch (statusError) {
+      setError(
+        statusError instanceof Error
+          ? statusError.message
+          : 'Publikationsstatus konnte nicht geändert werden.',
+      );
+    } finally {
+      setChangingStatus(false);
+    }
+  }
+
+  function scheduleArticle() {
+    if (!scheduledAt) {
+      setError('Bitte einen Zeitpunkt für die geplante Veröffentlichung wählen.');
+      return;
+    }
+
+    const date = new Date(scheduledAt);
+
+    if (Number.isNaN(date.getTime()) || date <= new Date()) {
+      setError('Der Veröffentlichungszeitpunkt muss in der Zukunft liegen.');
+      return;
+    }
+
+    void changePublicationStatus('SCHEDULED', {
+      scheduledAt: date.toISOString(),
+    });
   }
 
   if (!initialized || loadingArticle) {
@@ -297,6 +404,10 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
 
   return (
     <div className={styles.page}>
+      <Link href="/admin/artikel" className={styles.backLink}>
+        ← Zur Artikelübersicht
+      </Link>
+
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Redaktion</p>
@@ -310,7 +421,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
 
         <div className={styles.actions}>
           <span className={styles.status}>{savedArticle ? savedArticle.status : 'DRAFT'}</span>
-          <Button disabled={!editor || saving} onClick={() => void saveArticle()}>
+          <Button disabled={!editor || saving || changingStatus} onClick={() => void saveArticle()}>
             {saving ? 'Speichert …' : articleId ? 'Änderungen speichern' : 'Entwurf speichern'}
           </Button>
         </div>
@@ -473,12 +584,113 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
 
         <aside className={styles.sidebar}>
           <section className={styles.sidebarCard}>
-            <span className={styles.sidebarLabel}>Status</span>
-            <strong>{savedArticle ? savedArticle.status : 'Entwurf'}</strong>
-            <p>
-              Task 133 erstellt zunächst Entwürfe. Review, Planung und Veröffentlichung laufen über
-              den bereits vorhandenen Publication Workflow.
-            </p>
+            <span className={styles.sidebarLabel}>Publikation</span>
+            <strong>{savedArticle ? savedArticle.status : 'DRAFT'}</strong>
+
+            {!articleId ? (
+              <p>Speichere den Artikel zuerst, bevor du den Publikationsstatus änderst.</p>
+            ) : null}
+
+            {articleId && savedArticle?.status === 'DRAFT' ? (
+              <Button
+                variant="secondary"
+                disabled={saving || changingStatus}
+                onClick={() => void changePublicationStatus('REVIEW')}
+              >
+                Zur Prüfung
+              </Button>
+            ) : null}
+
+            {articleId && savedArticle?.status === 'REVIEW' ? (
+              <div className={styles.publicationActions}>
+                <Button
+                  variant="secondary"
+                  disabled={saving || changingStatus}
+                  onClick={() => void changePublicationStatus('DRAFT')}
+                >
+                  Zurück zu Entwurf
+                </Button>
+
+                <Button
+                  disabled={saving || changingStatus}
+                  onClick={() => void changePublicationStatus('PUBLISHED')}
+                >
+                  Jetzt veröffentlichen
+                </Button>
+
+                <label className={styles.scheduleField}>
+                  <span>Veröffentlichung planen</span>
+                  <input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(event) => setScheduledAt(event.target.value)}
+                  />
+                </label>
+
+                <Button
+                  variant="outline"
+                  disabled={saving || changingStatus || !scheduledAt}
+                  onClick={scheduleArticle}
+                >
+                  Planen
+                </Button>
+              </div>
+            ) : null}
+
+            {articleId && savedArticle?.status === 'SCHEDULED' ? (
+              <div className={styles.publicationActions}>
+                {savedArticle.scheduledAt ? (
+                  <p>
+                    Geplant für{' '}
+                    {new Intl.DateTimeFormat('de-AT', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone: 'Europe/Vienna',
+                    }).format(new Date(savedArticle.scheduledAt))}{' '}
+                    Uhr
+                  </p>
+                ) : null}
+
+                <Button
+                  variant="secondary"
+                  disabled={saving || changingStatus}
+                  onClick={() => void changePublicationStatus('REVIEW')}
+                >
+                  Zurück zur Prüfung
+                </Button>
+
+                <Button
+                  disabled={saving || changingStatus}
+                  onClick={() => void changePublicationStatus('PUBLISHED')}
+                >
+                  Jetzt veröffentlichen
+                </Button>
+              </div>
+            ) : null}
+
+            {articleId && savedArticle?.status === 'PUBLISHED' ? (
+              <div className={styles.publicationActions}>
+                <p>Der Artikel ist öffentlich sichtbar.</p>
+
+                <Button
+                  variant="outline"
+                  disabled={saving || changingStatus}
+                  onClick={() => void changePublicationStatus('ARCHIVED')}
+                >
+                  Archivieren
+                </Button>
+              </div>
+            ) : null}
+
+            {articleId && savedArticle?.status === 'ARCHIVED' ? (
+              <Button
+                variant="secondary"
+                disabled={saving || changingStatus}
+                onClick={() => void changePublicationStatus('DRAFT')}
+              >
+                Zurück zu Entwurf
+              </Button>
+            ) : null}
           </section>
 
           <section className={styles.sidebarCard}>

@@ -1,20 +1,17 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
 import { StartpageLoadingState } from '../loading/loading-states';
 import {
   clubLastMatch,
-  clubNews,
   clubNextMatch,
   clubs,
   currentMatches,
   discussions,
-  leagueNews,
-  neutralTopNews,
   standings,
-  type MockArticle,
   type MockMatch,
 } from './startpage-mock-data';
 import styles from './personalized-startpage.module.css';
@@ -56,27 +53,57 @@ interface ApiResponse {
   data?: StartpageResponse;
 }
 
-function ArticleCard({ article, featured = false }: { article: MockArticle; featured?: boolean }) {
+function formatArticleDate(value: string) {
+  return new Intl.DateTimeFormat('de-AT', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Europe/Vienna',
+  }).format(new Date(value));
+}
+
+function getArticleCategory(article: StartpageArticle) {
+  switch (article.priority) {
+    case 'FAVORITE_CLUB':
+      return 'Vereinsnews';
+    case 'COMPETITION':
+      return 'Bundesliga';
+    case 'TOP_NEWS':
+      return 'Top News';
+    case 'GENERAL':
+      return 'Allgemein';
+    case 'RECENT':
+      return 'Aktuell';
+  }
+}
+
+function ArticleCard({
+  article,
+  featured = false,
+}: {
+  article: StartpageArticle;
+  featured?: boolean;
+}) {
   return (
     <article className={`${styles.newsCard} ${featured ? styles.newsCardFeatured : ''}`}>
       <div className={styles.newsCardMeta}>
-        <span>{article.category}</span>
-        <span>{article.time}</span>
+        <span>{getArticleCategory(article)}</span>
+        <span>{formatArticleDate(article.publishedAt)} Uhr</span>
       </div>
 
-      <h3>{article.title}</h3>
-      <p>{article.lead}</p>
-
-      <span className={styles.readMore}>Weiterlesen →</span>
+      <Link href={`/artikel/${article.slug}`} className={styles.articleLink}>
+        <h3>{article.title}</h3>
+        {article.lead ? <p>{article.lead}</p> : null}
+        <span className={styles.readMore}>Weiterlesen →</span>
+      </Link>
     </article>
   );
 }
 
-function NewsGrid({ articles }: { articles: MockArticle[] }) {
+function NewsGrid({ articles }: { articles: StartpageArticle[] }) {
   return (
     <div className={styles.newsGrid}>
-      {articles.map((article) => (
-        <ArticleCard key={article.id} article={article} featured={article.featured} />
+      {articles.map((article, index) => (
+        <ArticleCard key={article.id} article={article} featured={index === 0} />
       ))}
     </div>
   );
@@ -252,6 +279,18 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
   const competitionName = startpage.competition.shortName ?? startpage.competition.name;
 
+  const favoriteClubArticles = startpage.articles.filter(
+    (article) => article.priority === 'FAVORITE_CLUB',
+  );
+
+  const competitionArticles = startpage.articles.filter(
+    (article) => article.priority === 'COMPETITION',
+  );
+
+  const otherArticles = startpage.articles.filter((article) =>
+    ['GENERAL', 'TOP_NEWS', 'RECENT'].includes(article.priority),
+  );
+
   if (startpage.variant === 'CLUB' && startpage.favoriteClub) {
     const favoriteClub = startpage.favoriteClub;
     return (
@@ -278,7 +317,13 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
           <section className={styles.section}>
             <SectionHeading title="Vereinsnews" meta={favoriteClub.shortName ?? undefined} />
-            <NewsGrid articles={clubNews} />
+            <NewsGrid
+              articles={
+                favoriteClubArticles.length > 0
+                  ? favoriteClubArticles
+                  : startpage.articles.slice(0, 3)
+              }
+            />
           </section>
 
           <section className={styles.section}>
@@ -309,8 +354,21 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
           <section className={styles.section}>
             <SectionHeading title="Liga News" meta={competitionName} />
-            <NewsGrid articles={leagueNews} />
+            <NewsGrid
+              articles={
+                competitionArticles.length > 0
+                  ? competitionArticles
+                  : startpage.articles.slice(0, 3)
+              }
+            />
           </section>
+
+          {otherArticles.length > 0 ? (
+            <section className={styles.section}>
+              <SectionHeading title="Weitere News" meta="Aktuell" />
+              <NewsGrid articles={otherArticles} />
+            </section>
+          ) : null}
 
           <section className={styles.twoColumnSection}>
             <div>
@@ -341,7 +399,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
         <section className={styles.section}>
           <SectionHeading title="Top News" meta="Aktuell" />
-          <NewsGrid articles={neutralTopNews} />
+          <NewsGrid articles={startpage.articles.slice(0, 6)} />
         </section>
 
         <section className={styles.section}>
@@ -355,7 +413,11 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
 
         <section className={styles.section}>
           <SectionHeading title="Liga News" meta={competitionName} />
-          <NewsGrid articles={leagueNews} />
+          <NewsGrid
+            articles={
+              competitionArticles.length > 0 ? competitionArticles : startpage.articles.slice(0, 3)
+            }
+          />
         </section>
 
         <section className={styles.twoColumnSection}>

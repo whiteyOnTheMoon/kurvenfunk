@@ -265,3 +265,39 @@
     display: none;
   }
 }
+
+.backLink {
+  width: fit-content;
+  color: var(--kf-link);
+  font-size: var(--kf-font-size-sm);
+  font-weight: var(--kf-font-weight-semibold);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.publicationActions {
+  display: grid;
+  gap: var(--kf-space-3);
+}
+
+.scheduleField {
+  display: grid;
+  gap: var(--kf-space-2);
+  margin-top: var(--kf-space-2);
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-xs);
+  font-weight: var(--kf-font-weight-semibold);
+}
+
+.scheduleField input {
+  width: 100%;
+  padding: var(--kf-space-2) var(--kf-space-3);
+  border: var(--kf-border-width-1) solid var(--kf-border);
+  border-radius: var(--kf-radius-md);
+  color: var(--kf-text);
+  background: var(--kf-background);
+  font: inherit;
+}

@@ -497,3 +497,13 @@
     font-size: 0.75rem;
   }
 }
+
+.articleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.articleLink:hover h3 {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
