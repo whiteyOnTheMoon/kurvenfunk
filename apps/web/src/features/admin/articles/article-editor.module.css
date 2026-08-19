@@ -301,3 +301,45 @@
   background: var(--kf-background);
   font: inherit;
 }
+
+.categoryList {
+  display: grid;
+  gap: var(--kf-space-2);
+  margin: var(--kf-space-1) 0;
+}
+
+.categoryOption {
+  display: flex;
+  align-items: center;
+  gap: var(--kf-space-2);
+  min-height: 36px;
+  padding: var(--kf-space-2) var(--kf-space-3);
+  border: var(--kf-border-width-1) solid var(--kf-border);
+  border-radius: var(--kf-radius-md);
+  color: var(--kf-text);
+  background: var(--kf-background);
+  font-size: var(--kf-font-size-sm);
+  font-weight: var(--kf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.categoryOption:hover {
+  border-color: color-mix(in srgb, var(--kf-accent) 45%, var(--kf-border));
+}
+
+.categoryOption:has(input:checked) {
+  border-color: color-mix(in srgb, var(--kf-accent) 55%, var(--kf-border));
+  background: color-mix(in srgb, var(--kf-accent) 10%, var(--kf-surface));
+}
+
+.categoryOption:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.categoryOption input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--kf-accent);
+}

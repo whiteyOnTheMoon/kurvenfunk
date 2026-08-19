@@ -5,6 +5,7 @@ const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
 const findClub = jest.fn();
+const findManyCategory = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -21,6 +22,9 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     club: {
       findUnique: findClub,
+    },
+    category: {
+      findMany: findManyCategory,
     },
     $disconnect: disconnect,
   }),
@@ -53,6 +57,7 @@ describe('ArticlesService', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findClub.mockReset();
+    findManyCategory.mockReset();
     disconnect.mockReset();
     service = new ArticlesService();
   });
@@ -614,6 +619,16 @@ describe('ArticlesService', () => {
           content: { type: 'doc', content: [] },
           isTopNews: false,
           authorId,
+          categories: {
+            create: [],
+          },
+        },
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
         },
       });
     });
@@ -651,6 +666,13 @@ describe('ArticlesService', () => {
         where: {
           id: articleId,
         },
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+        },
       });
     });
 
@@ -683,6 +705,13 @@ describe('ArticlesService', () => {
         },
         data: {
           title: 'Updated article',
+        },
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
         },
       });
     });
@@ -987,5 +1016,180 @@ describe('ArticlesService', () => {
     await service.onModuleDestroy();
 
     expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('article category assignment', () => {
+  const categoryId = '33333333-3333-4333-8333-333333333333';
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
+    findCompetition.mockReset();
+    findClub.mockReset();
+    findManyCategory.mockReset();
+    disconnect.mockReset();
+  });
+
+  it('creates article category assignments', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyCategory.mockResolvedValue([{ id: categoryId }]);
+    createArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.create(
+      {
+        title: 'Transfer News',
+        slug: 'transfer-news',
+        lead: null,
+        content: {
+          type: 'doc',
+          content: [],
+        },
+        categoryIds: [categoryId],
+      },
+      'author-id',
+    );
+
+    expect(findManyCategory).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: [categoryId],
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    expect(createArticle.mock.calls[0]?.[0]).toMatchObject({
+      data: {
+        categories: {
+          create: [
+            {
+              categoryId,
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it('rejects unknown or inactive article categories', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyCategory.mockResolvedValue([]);
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Transfer News',
+          slug: 'transfer-news',
+          lead: null,
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          categoryIds: [categoryId],
+        },
+        'author-id',
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_CATEGORY_INVALID',
+        message: 'One or more article categories are invalid or inactive',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('replaces category assignments during article update', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      categories: [],
+    });
+
+    findManyCategory.mockResolvedValue([{ id: categoryId }]);
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      categoryIds: [categoryId],
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'article-id',
+        },
+        data: {
+          categories: {
+            deleteMany: {},
+            create: [
+              {
+                categoryId,
+              },
+            ],
+          },
+        },
+      }),
+    );
+  });
+
+  it('allows removing all category assignments', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      categories: [],
+    });
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      categoryIds: [],
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          categories: {
+            deleteMany: {},
+            create: [],
+          },
+        },
+      }),
+    );
   });
 });

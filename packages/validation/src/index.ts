@@ -34,3 +34,10 @@ export {
   type ArticlePublicationStatus,
   type ArticlePublicationWorkflowInput,
 } from './article.js';
+
+export {
+  createCategorySchema,
+  updateCategorySchema,
+  type CreateCategoryInput,
+  type UpdateCategoryInput,
+} from './category.js';

@@ -19,6 +19,18 @@ interface ArticleEditorProps {
 
 type ArticleStatus = 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
 
+interface EditorialCategory {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
+interface ArticleCategoryAssignment {
+  categoryId: string;
+  category: EditorialCategory;
+}
+
 interface EditorialArticle {
   id: string;
   title: string;
@@ -28,6 +40,7 @@ interface EditorialArticle {
   status: ArticleStatus;
   scheduledAt?: string | null;
   publishedAt?: string | null;
+  categories?: ArticleCategoryAssignment[];
 }
 
 const EMPTY_DOCUMENT: JSONContent = {
@@ -61,6 +74,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [changingStatus, setChangingStatus] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(Boolean(articleId));
   const [scheduledAt, setScheduledAt] = useState('');
+  const [categories, setCategories] = useState<EditorialCategory[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [savedArticle, setSavedArticle] = useState<EditorialArticle>();
@@ -89,6 +105,55 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       },
     },
   });
+
+  useEffect(() => {
+    if (!initialized || !authenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCategories() {
+      setLoadingCategories(true);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/v1/categories`);
+
+        const payload = (await response.json().catch(() => null)) as {
+          data?: EditorialCategory[];
+          error?: {
+            message?: string;
+          };
+        } | null;
+
+        if (!response.ok || !payload?.data) {
+          throw new Error(payload?.error?.message ?? 'Kategorien konnten nicht geladen werden.');
+        }
+
+        if (!cancelled) {
+          setCategories(payload.data.filter((category) => category.active));
+        }
+      } catch (categoryError) {
+        if (!cancelled) {
+          setError(
+            categoryError instanceof Error
+              ? categoryError.message
+              : 'Kategorien konnten nicht geladen werden.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCategories(false);
+        }
+      }
+    }
+
+    void loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, initialized, token]);
 
   useEffect(() => {
     if (!articleId || !initialized || !authenticated || !token || !editor) {
@@ -134,6 +199,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlug(article.slug);
         setSlugTouched(true);
         setLead(article.lead ?? '');
+        setSelectedCategoryIds(
+          article.categories?.map((assignment) => assignment.categoryId) ?? [],
+        );
         setSavedArticle(article);
         setScheduledAt(
           article.scheduledAt ? new Date(article.scheduledAt).toISOString().slice(0, 16) : '',
@@ -165,6 +233,14 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     if (!slugTouched) {
       setSlug(createSlug(value));
     }
+  }
+
+  function toggleCategory(categoryId: string) {
+    setSelectedCategoryIds((current) =>
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId],
+    );
   }
 
   function setLink() {
@@ -258,6 +334,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             slug: trimmedSlug,
             lead: trimmedLead || null,
             content: editor.getJSON(),
+            categoryIds: selectedCategoryIds,
           }),
         },
       );
@@ -691,6 +768,42 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
                 Zurück zu Entwurf
               </Button>
             ) : null}
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Kategorien</span>
+
+            {loadingCategories ? (
+              <p>Kategorien werden geladen …</p>
+            ) : categories.length === 0 ? (
+              <p>Keine aktiven Kategorien vorhanden.</p>
+            ) : (
+              <div className={styles.categoryList}>
+                {categories.map((category) => {
+                  const checked = selectedCategoryIds.includes(category.id);
+
+                  return (
+                    <label key={category.id} className={styles.categoryOption}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={saving || changingStatus}
+                        onChange={() => toggleCategory(category.id)}
+                      />
+                      <span>{category.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            <p>
+              {selectedCategoryIds.length === 0
+                ? 'Keine Kategorie ausgewählt.'
+                : `${selectedCategoryIds.length} ${
+                    selectedCategoryIds.length === 1 ? 'Kategorie' : 'Kategorien'
+                  } ausgewählt.`}
+            </p>
           </section>
 
           <section className={styles.sidebarCard}>

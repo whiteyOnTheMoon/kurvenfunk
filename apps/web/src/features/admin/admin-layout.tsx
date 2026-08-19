@@ -9,6 +9,7 @@ import styles from './admin-layout.module.css';
 const adminNavigation = [
   { href: '/admin', label: 'Dashboard', shortLabel: 'DB' },
   { href: '/admin/artikel', label: 'Artikel', shortLabel: 'AR' },
+  { href: '/admin/kategorien', label: 'Kategorien', shortLabel: 'KA' },
   { href: '/admin/medien', label: 'Medien', shortLabel: 'ME' },
   { href: '/admin/importe', label: 'Importe', shortLabel: 'IM' },
   { href: '/admin/sportdaten', label: 'Sportdaten', shortLabel: 'SP' },

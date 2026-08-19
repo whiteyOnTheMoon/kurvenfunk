@@ -119,9 +119,12 @@ export const createArticleSchema = z.object({
   lead: z.string().trim().max(1000).nullable().optional(),
   content: articleContentSchema,
   isTopNews: z.boolean().optional(),
+  categoryIds: z.array(z.uuid()).max(20).default([]),
 });
 
-export const updateArticleSchema = createArticleSchema.partial();
+export const updateArticleSchema = createArticleSchema.partial().extend({
+  categoryIds: z.array(z.uuid()).max(20).optional(),
+});
 
 export const articlePublicationStatusSchema = z.enum([
   'DRAFT',

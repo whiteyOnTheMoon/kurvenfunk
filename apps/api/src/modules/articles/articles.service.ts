@@ -125,6 +125,33 @@ function toPrismaJson(value: CreateArticleInput['content']): Prisma.InputJsonVal
 
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
+  private async validateCategoryIds(categoryIds: string[]) {
+    if (categoryIds.length === 0) {
+      return;
+    }
+
+    const uniqueCategoryIds = [...new Set(categoryIds)];
+
+    const categories = await this.database.category.findMany({
+      where: {
+        id: {
+          in: uniqueCategoryIds,
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (categories.length !== uniqueCategoryIds.length) {
+      throw new BadRequestException({
+        code: 'ARTICLE_CATEGORY_INVALID',
+        message: 'One or more article categories are invalid or inactive',
+      });
+    }
+  }
+
   private readonly database: DatabaseClient = createPrismaClient();
 
   async create(input: CreateArticleInput, authorId: string) {
@@ -144,6 +171,9 @@ export class ArticlesService implements OnModuleDestroy {
       });
     }
 
+    const categoryIds = [...new Set(input.categoryIds)];
+    await this.validateCategoryIds(categoryIds);
+
     return this.database.article.create({
       data: {
         title: input.title,
@@ -152,6 +182,18 @@ export class ArticlesService implements OnModuleDestroy {
         content: toPrismaJson(input.content),
         isTopNews: input.isTopNews ?? false,
         authorId,
+        categories: {
+          create: categoryIds.map((categoryId) => ({
+            categoryId,
+          })),
+        },
+      },
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
   }
@@ -186,6 +228,13 @@ export class ArticlesService implements OnModuleDestroy {
     const article = await this.database.article.findUnique({
       where: {
         id,
+      },
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
 
@@ -223,7 +272,11 @@ export class ArticlesService implements OnModuleDestroy {
       }
     }
 
-    const { content, ...data } = input;
+    const { content, categoryIds, ...data } = input;
+
+    if (categoryIds !== undefined) {
+      await this.validateCategoryIds(categoryIds);
+    }
 
     return this.database.article.update({
       where: {
@@ -236,6 +289,23 @@ export class ArticlesService implements OnModuleDestroy {
               content: toPrismaJson(content),
             }
           : {}),
+        ...(categoryIds !== undefined
+          ? {
+              categories: {
+                deleteMany: {},
+                create: [...new Set(categoryIds)].map((categoryId) => ({
+                  categoryId,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
   }

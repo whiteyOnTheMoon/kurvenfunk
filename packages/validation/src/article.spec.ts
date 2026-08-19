@@ -173,3 +173,37 @@ describe('articleContentSchema', () => {
     assert.equal(result.success, false);
   });
 });
+
+describe('article category assignment validation', () => {
+  it('does not inject categoryIds into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts category ids on article updates', () => {
+    const categoryId = '33333333-3333-4333-8333-333333333333';
+
+    const result = updateArticleSchema.parse({
+      categoryIds: [categoryId],
+    });
+
+    assert.deepEqual(result, {
+      categoryIds: [categoryId],
+    });
+  });
+
+  it('accepts removing all categories explicitly', () => {
+    const result = updateArticleSchema.parse({
+      categoryIds: [],
+    });
+
+    assert.deepEqual(result, {
+      categoryIds: [],
+    });
+  });
+});
