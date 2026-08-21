@@ -168,7 +168,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       } catch (clubError) {
         if (!cancelled) {
           setError(
-            clubError instanceof Error ? clubError.message : 'Vereine konnten nicht geladen werden.',
+            clubError instanceof Error
+              ? clubError.message
+              : 'Vereine konnten nicht geladen werden.',
           );
         }
       } finally {

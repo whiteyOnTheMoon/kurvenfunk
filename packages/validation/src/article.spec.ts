@@ -242,7 +242,6 @@ describe('article tag assignment validation', () => {
   });
 });
 
-
 describe('article club assignment validation', () => {
   it('does not inject clubIds into an unrelated partial update', () => {
     const result = updateArticleSchema.parse({

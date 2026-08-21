@@ -1436,7 +1436,6 @@ describe('article tag assignment', () => {
   });
 });
 
-
 describe('article club assignment', () => {
   const clubId = '55555555-5555-4555-8555-555555555555';
 
