@@ -125,6 +125,33 @@ function toPrismaJson(value: CreateArticleInput['content']): Prisma.InputJsonVal
 
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
+  private async validateClubIds(clubIds: string[]) {
+    if (clubIds.length === 0) {
+      return;
+    }
+
+    const uniqueClubIds = [...new Set(clubIds)];
+
+    const clubs = await this.database.club.findMany({
+      where: {
+        id: {
+          in: uniqueClubIds,
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (clubs.length !== uniqueClubIds.length) {
+      throw new BadRequestException({
+        code: 'ARTICLE_CLUB_INVALID',
+        message: 'One or more article clubs are invalid or inactive',
+      });
+    }
+  }
+
   private async validateCategoryIds(categoryIds: string[]) {
     if (categoryIds.length === 0) {
       return;
@@ -198,9 +225,11 @@ export class ArticlesService implements OnModuleDestroy {
       });
     }
 
+    const clubIds = [...new Set(input.clubIds)];
     const categoryIds = [...new Set(input.categoryIds)];
     const tagIds = [...new Set(input.tagIds)];
 
+    await this.validateClubIds(clubIds);
     await this.validateCategoryIds(categoryIds);
     await this.validateTagIds(tagIds);
 
@@ -212,6 +241,11 @@ export class ArticlesService implements OnModuleDestroy {
         content: toPrismaJson(input.content),
         isTopNews: input.isTopNews ?? false,
         authorId,
+        clubs: {
+          create: clubIds.map((clubId) => ({
+            clubId,
+          })),
+        },
         categories: {
           create: categoryIds.map((categoryId) => ({
             categoryId,
@@ -224,6 +258,11 @@ export class ArticlesService implements OnModuleDestroy {
         },
       },
       include: {
+        clubs: {
+          include: {
+            club: true,
+          },
+        },
         categories: {
           include: {
             category: true,
@@ -270,6 +309,11 @@ export class ArticlesService implements OnModuleDestroy {
         id,
       },
       include: {
+        clubs: {
+          include: {
+            club: true,
+          },
+        },
         categories: {
           include: {
             category: true,
@@ -317,7 +361,11 @@ export class ArticlesService implements OnModuleDestroy {
       }
     }
 
-    const { content, categoryIds, tagIds, ...data } = input;
+    const { content, clubIds, categoryIds, tagIds, ...data } = input;
+
+    if (clubIds !== undefined) {
+      await this.validateClubIds(clubIds);
+    }
 
     if (categoryIds !== undefined) {
       await this.validateCategoryIds(categoryIds);
@@ -336,6 +384,16 @@ export class ArticlesService implements OnModuleDestroy {
         ...(content !== undefined
           ? {
               content: toPrismaJson(content),
+            }
+          : {}),
+        ...(clubIds !== undefined
+          ? {
+              clubs: {
+                deleteMany: {},
+                create: [...new Set(clubIds)].map((clubId) => ({
+                  clubId,
+                })),
+              },
             }
           : {}),
         ...(categoryIds !== undefined
@@ -360,6 +418,11 @@ export class ArticlesService implements OnModuleDestroy {
           : {}),
       },
       include: {
+        clubs: {
+          include: {
+            club: true,
+          },
+        },
         categories: {
           include: {
             category: true,

@@ -19,6 +19,18 @@ interface ArticleEditorProps {
 
 type ArticleStatus = 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
 
+interface EditorialClub {
+  id: string;
+  name: string;
+  shortName: string | null;
+  slug: string;
+}
+
+interface ArticleClubAssignment {
+  clubId: string;
+  club: EditorialClub;
+}
+
 interface EditorialCategory {
   id: string;
   name: string;
@@ -52,6 +64,7 @@ interface EditorialArticle {
   status: ArticleStatus;
   scheduledAt?: string | null;
   publishedAt?: string | null;
+  clubs?: ArticleClubAssignment[];
   categories?: ArticleCategoryAssignment[];
   tags?: ArticleTagAssignment[];
 }
@@ -87,6 +100,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [changingStatus, setChangingStatus] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(Boolean(articleId));
   const [scheduledAt, setScheduledAt] = useState('');
+  const [clubs, setClubs] = useState<EditorialClub[]>([]);
+  const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
+  const [loadingClubs, setLoadingClubs] = useState(true);
   const [categories, setCategories] = useState<EditorialCategory[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -121,6 +137,53 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       },
     },
   });
+
+  useEffect(() => {
+    if (!initialized || !authenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadClubs() {
+      setLoadingClubs(true);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/v1/clubs`);
+
+        const payload = (await response.json().catch(() => null)) as {
+          data?: EditorialClub[];
+          error?: {
+            message?: string;
+          };
+        } | null;
+
+        if (!response.ok || !payload?.data) {
+          throw new Error(payload?.error?.message ?? 'Vereine konnten nicht geladen werden.');
+        }
+
+        if (!cancelled) {
+          setClubs(payload.data);
+        }
+      } catch (clubError) {
+        if (!cancelled) {
+          setError(
+            clubError instanceof Error ? clubError.message : 'Vereine konnten nicht geladen werden.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingClubs(false);
+        }
+      }
+    }
+
+    void loadClubs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, initialized, token]);
 
   useEffect(() => {
     if (!initialized || !authenticated || !token) {
@@ -262,6 +325,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlug(article.slug);
         setSlugTouched(true);
         setLead(article.lead ?? '');
+        setSelectedClubIds(article.clubs?.map((assignment) => assignment.clubId) ?? []);
         setSelectedCategoryIds(
           article.categories?.map((assignment) => assignment.categoryId) ?? [],
         );
@@ -297,6 +361,12 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     if (!slugTouched) {
       setSlug(createSlug(value));
     }
+  }
+
+  function toggleClub(clubId: string) {
+    setSelectedClubIds((current) =>
+      current.includes(clubId) ? current.filter((id) => id !== clubId) : [...current, clubId],
+    );
   }
 
   function toggleCategory(categoryId: string) {
@@ -404,6 +474,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             slug: trimmedSlug,
             lead: trimmedLead || null,
             content: editor.getJSON(),
+            clubIds: selectedClubIds,
             categoryIds: selectedCategoryIds,
             tagIds: selectedTagIds,
           }),
@@ -839,6 +910,42 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
                 Zurück zu Entwurf
               </Button>
             ) : null}
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Vereine</span>
+
+            {loadingClubs ? (
+              <p>Vereine werden geladen …</p>
+            ) : clubs.length === 0 ? (
+              <p>Keine aktiven Vereine vorhanden.</p>
+            ) : (
+              <div className={styles.categoryList}>
+                {clubs.map((club) => {
+                  const checked = selectedClubIds.includes(club.id);
+
+                  return (
+                    <label key={club.id} className={styles.categoryOption}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={saving || changingStatus}
+                        onChange={() => toggleClub(club.id)}
+                      />
+                      <span>{club.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            <p>
+              {selectedClubIds.length === 0
+                ? 'Kein Verein ausgewählt.'
+                : `${selectedClubIds.length} ${
+                    selectedClubIds.length === 1 ? 'Verein' : 'Vereine'
+                  } ausgewählt.`}
+            </p>
           </section>
 
           <section className={styles.sidebarCard}>

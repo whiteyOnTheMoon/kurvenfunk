@@ -119,11 +119,13 @@ export const createArticleSchema = z.object({
   lead: z.string().trim().max(1000).nullable().optional(),
   content: articleContentSchema,
   isTopNews: z.boolean().optional(),
+  clubIds: z.array(z.uuid()).max(20).default([]),
   categoryIds: z.array(z.uuid()).max(20).default([]),
   tagIds: z.array(z.uuid()).max(50).default([]),
 });
 
 export const updateArticleSchema = createArticleSchema.partial().extend({
+  clubIds: z.array(z.uuid()).max(20).optional(),
   categoryIds: z.array(z.uuid()).max(20).optional(),
   tagIds: z.array(z.uuid()).max(50).optional(),
 });

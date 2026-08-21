@@ -241,3 +241,38 @@ describe('article tag assignment validation', () => {
     });
   });
 });
+
+
+describe('article club assignment validation', () => {
+  it('does not inject clubIds into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts club ids on article updates', () => {
+    const clubId = '55555555-5555-4555-8555-555555555555';
+
+    const result = updateArticleSchema.parse({
+      clubIds: [clubId],
+    });
+
+    assert.deepEqual(result, {
+      clubIds: [clubId],
+    });
+  });
+
+  it('accepts removing all clubs explicitly', () => {
+    const result = updateArticleSchema.parse({
+      clubIds: [],
+    });
+
+    assert.deepEqual(result, {
+      clubIds: [],
+    });
+  });
+});

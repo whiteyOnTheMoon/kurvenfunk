@@ -5,6 +5,7 @@ const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
 const findClub = jest.fn();
+const findManyClub = jest.fn();
 const findManyCategory = jest.fn();
 const findManyTag = jest.fn();
 const disconnect = jest.fn();
@@ -23,6 +24,7 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     club: {
       findUnique: findClub,
+      findMany: findManyClub,
     },
     category: {
       findMany: findManyCategory,
@@ -61,6 +63,7 @@ describe('ArticlesService', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findClub.mockReset();
+    findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
     disconnect.mockReset();
@@ -602,6 +605,9 @@ describe('ArticlesService', () => {
             slug: 'test-article',
             lead: 'Test lead',
             content: { type: 'doc', content: [] },
+            clubIds: [],
+            categoryIds: [],
+            tagIds: [],
           },
           authorId,
         ),
@@ -624,6 +630,9 @@ describe('ArticlesService', () => {
           content: { type: 'doc', content: [] },
           isTopNews: false,
           authorId,
+          clubs: {
+            create: [],
+          },
           categories: {
             create: [],
           },
@@ -632,6 +641,11 @@ describe('ArticlesService', () => {
           },
         },
         include: {
+          clubs: {
+            include: {
+              club: true,
+            },
+          },
           categories: {
             include: {
               category: true,
@@ -656,7 +670,13 @@ describe('ArticlesService', () => {
           {
             title: 'Test article',
             slug: 'test-article',
-            content: {},
+            content: {
+              type: 'doc',
+              content: [],
+            },
+            clubIds: [],
+            categoryIds: [],
+            tagIds: [],
           },
           authorId,
         ),
@@ -680,6 +700,11 @@ describe('ArticlesService', () => {
           id: articleId,
         },
         include: {
+          clubs: {
+            include: {
+              club: true,
+            },
+          },
           categories: {
             include: {
               category: true,
@@ -725,6 +750,11 @@ describe('ArticlesService', () => {
           title: 'Updated article',
         },
         include: {
+          clubs: {
+            include: {
+              club: true,
+            },
+          },
           categories: {
             include: {
               category: true,
@@ -1053,6 +1083,7 @@ describe('article category assignment', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findClub.mockReset();
+    findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
     disconnect.mockReset();
@@ -1076,7 +1107,9 @@ describe('article category assignment', () => {
           type: 'doc',
           content: [],
         },
+        clubIds: [],
         categoryIds: [categoryId],
+        tagIds: [],
       },
       'author-id',
     );
@@ -1122,7 +1155,9 @@ describe('article category assignment', () => {
             type: 'doc',
             content: [],
           },
+          clubIds: [],
           categoryIds: [categoryId],
+          tagIds: [],
         },
         'author-id',
       ),
@@ -1229,6 +1264,7 @@ describe('article tag assignment', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findClub.mockReset();
+    findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
     disconnect.mockReset();
@@ -1252,6 +1288,7 @@ describe('article tag assignment', () => {
           type: 'doc',
           content: [],
         },
+        clubIds: [],
         categoryIds: [],
         tagIds: [tagId],
       },
@@ -1299,6 +1336,7 @@ describe('article tag assignment', () => {
             type: 'doc',
             content: [],
           },
+          clubIds: [],
           categoryIds: [],
           tagIds: [tagId],
         },
@@ -1389,6 +1427,194 @@ describe('article tag assignment', () => {
       expect.objectContaining({
         data: {
           tags: {
+            deleteMany: {},
+            create: [],
+          },
+        },
+      }),
+    );
+  });
+});
+
+
+describe('article club assignment', () => {
+  const clubId = '55555555-5555-4555-8555-555555555555';
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
+    findCompetition.mockReset();
+    findClub.mockReset();
+    findManyClub.mockReset();
+    findManyCategory.mockReset();
+    findManyTag.mockReset();
+    disconnect.mockReset();
+  });
+
+  it('creates article club assignments', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyClub.mockResolvedValue([{ id: clubId }]);
+    createArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.create(
+      {
+        title: 'Rapid News',
+        slug: 'rapid-news',
+        lead: null,
+        content: {
+          type: 'doc',
+          content: [],
+        },
+        clubIds: [clubId],
+        categoryIds: [],
+        tagIds: [],
+      },
+      'author-id',
+    );
+
+    expect(findManyClub).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: [clubId],
+        },
+        active: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    expect(createArticle.mock.calls[0]?.[0]).toMatchObject({
+      data: {
+        clubs: {
+          create: [
+            {
+              clubId,
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it('rejects unknown or inactive article clubs', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findManyClub.mockResolvedValue([]);
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Rapid News',
+          slug: 'rapid-news',
+          lead: null,
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          clubIds: [clubId],
+          categoryIds: [],
+          tagIds: [],
+        },
+        'author-id',
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_CLUB_INVALID',
+        message: 'One or more article clubs are invalid or inactive',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('replaces club assignments during article update', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    findManyClub.mockResolvedValue([{ id: clubId }]);
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      clubIds: [clubId],
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'article-id',
+        },
+        data: {
+          clubs: {
+            deleteMany: {},
+            create: [
+              {
+                clubId,
+              },
+            ],
+          },
+        },
+      }),
+    );
+  });
+
+  it('allows removing all club assignments', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: 'article-id',
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    updateArticle.mockResolvedValue({
+      id: 'article-id',
+    });
+
+    const service = new ArticlesService();
+
+    await service.update('article-id', {
+      clubIds: [],
+    });
+
+    expect(findManyClub).not.toHaveBeenCalled();
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          clubs: {
             deleteMany: {},
             create: [],
           },
