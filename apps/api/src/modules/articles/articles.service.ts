@@ -152,6 +152,29 @@ export class ArticlesService implements OnModuleDestroy {
     }
   }
 
+  private async validateCompetitionId(competitionId: string | null) {
+    if (competitionId === null) {
+      return;
+    }
+
+    const competition = await this.database.competition.findUnique({
+      where: {
+        id: competitionId,
+      },
+      select: {
+        id: true,
+        active: true,
+      },
+    });
+
+    if (!competition?.active) {
+      throw new BadRequestException({
+        code: 'ARTICLE_COMPETITION_INVALID',
+        message: 'Article competition is invalid or inactive',
+      });
+    }
+  }
+
   private async validateCategoryIds(categoryIds: string[]) {
     if (categoryIds.length === 0) {
       return;
@@ -229,6 +252,7 @@ export class ArticlesService implements OnModuleDestroy {
     const categoryIds = [...new Set(input.categoryIds)];
     const tagIds = [...new Set(input.tagIds)];
 
+    await this.validateCompetitionId(input.competitionId ?? null);
     await this.validateClubIds(clubIds);
     await this.validateCategoryIds(categoryIds);
     await this.validateTagIds(tagIds);
@@ -241,6 +265,7 @@ export class ArticlesService implements OnModuleDestroy {
         content: toPrismaJson(input.content),
         isTopNews: input.isTopNews ?? false,
         authorId,
+        competitionId: input.competitionId ?? null,
         clubs: {
           create: clubIds.map((clubId) => ({
             clubId,
@@ -362,6 +387,10 @@ export class ArticlesService implements OnModuleDestroy {
     }
 
     const { content, clubIds, categoryIds, tagIds, ...data } = input;
+
+    if (input.competitionId !== undefined) {
+      await this.validateCompetitionId(input.competitionId);
+    }
 
     if (clubIds !== undefined) {
       await this.validateClubIds(clubIds);

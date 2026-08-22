@@ -275,3 +275,45 @@ describe('article club assignment validation', () => {
     });
   });
 });
+
+describe('article competition assignment validation', () => {
+  const competitionId = '22222222-2222-4222-8222-222222222222';
+
+  it('does not inject competitionId into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts a competition id on article updates', () => {
+    const result = updateArticleSchema.parse({
+      competitionId,
+    });
+
+    assert.deepEqual(result, {
+      competitionId,
+    });
+  });
+
+  it('accepts removing the competition explicitly', () => {
+    const result = updateArticleSchema.parse({
+      competitionId: null,
+    });
+
+    assert.deepEqual(result, {
+      competitionId: null,
+    });
+  });
+
+  it('rejects an invalid competition id', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        competitionId: 'not-a-uuid',
+      }),
+    );
+  });
+});

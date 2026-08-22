@@ -14,6 +14,9 @@ export class CompetitionsService implements OnModuleDestroy {
 
   async findAll(): Promise<CompetitionListItem[]> {
     return this.database.competition.findMany({
+      where: {
+        active: true,
+      },
       orderBy: {
         name: 'asc',
       },

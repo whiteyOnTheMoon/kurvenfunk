@@ -19,6 +19,13 @@ interface ArticleEditorProps {
 
 type ArticleStatus = 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
 
+interface EditorialCompetition {
+  id: string;
+  name: string;
+  shortName: string | null;
+  slug: string;
+}
+
 interface EditorialClub {
   id: string;
   name: string;
@@ -64,6 +71,7 @@ interface EditorialArticle {
   status: ArticleStatus;
   scheduledAt?: string | null;
   publishedAt?: string | null;
+  competitionId?: string | null;
   clubs?: ArticleClubAssignment[];
   categories?: ArticleCategoryAssignment[];
   tags?: ArticleTagAssignment[];
@@ -100,6 +108,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [changingStatus, setChangingStatus] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(Boolean(articleId));
   const [scheduledAt, setScheduledAt] = useState('');
+  const [competitions, setCompetitions] = useState<EditorialCompetition[]>([]);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState('');
+  const [loadingCompetitions, setLoadingCompetitions] = useState(true);
   const [clubs, setClubs] = useState<EditorialClub[]>([]);
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
@@ -137,6 +148,54 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       },
     },
   });
+
+  useEffect(() => {
+    if (!initialized || !authenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCompetitions() {
+      setLoadingCompetitions(true);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/v1/competitions`);
+        const payload = (await response.json().catch(() => null)) as {
+          data?: EditorialCompetition[];
+          error?: {
+            message?: string;
+          };
+        } | null;
+
+        if (!response.ok || !payload?.data) {
+          throw new Error(payload?.error?.message ?? 'Wettbewerbe konnten nicht geladen werden.');
+        }
+
+        if (!cancelled) {
+          setCompetitions(payload.data);
+        }
+      } catch (competitionError) {
+        if (!cancelled) {
+          setError(
+            competitionError instanceof Error
+              ? competitionError.message
+              : 'Wettbewerbe konnten nicht geladen werden.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCompetitions(false);
+        }
+      }
+    }
+
+    void loadCompetitions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, initialized, token]);
 
   useEffect(() => {
     if (!initialized || !authenticated || !token) {
@@ -327,6 +386,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlug(article.slug);
         setSlugTouched(true);
         setLead(article.lead ?? '');
+        setSelectedCompetitionId(article.competitionId ?? '');
         setSelectedClubIds(article.clubs?.map((assignment) => assignment.clubId) ?? []);
         setSelectedCategoryIds(
           article.categories?.map((assignment) => assignment.categoryId) ?? [],
@@ -476,6 +536,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             slug: trimmedSlug,
             lead: trimmedLead || null,
             content: editor.getJSON(),
+            competitionId: selectedCompetitionId || null,
             clubIds: selectedClubIds,
             categoryIds: selectedCategoryIds,
             tagIds: selectedTagIds,
@@ -912,6 +973,34 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
                 Zurück zu Entwurf
               </Button>
             ) : null}
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Wettbewerb</span>
+            {loadingCompetitions ? (
+              <p>Wettbewerbe werden geladen …</p>
+            ) : competitions.length === 0 ? (
+              <p>Keine Wettbewerbe vorhanden.</p>
+            ) : (
+              <select
+                className={styles.competitionSelect}
+                value={selectedCompetitionId}
+                disabled={saving || changingStatus}
+                onChange={(event) => setSelectedCompetitionId(event.target.value)}
+              >
+                <option value="">Kein Wettbewerb</option>
+                {competitions.map((competition) => (
+                  <option key={competition.id} value={competition.id}>
+                    {competition.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p>
+              {selectedCompetitionId
+                ? 'Ein Wettbewerb ist diesem Artikel zugeordnet.'
+                : 'Kein Wettbewerb ausgewählt.'}
+            </p>
           </section>
 
           <section className={styles.sidebarCard}>

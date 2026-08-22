@@ -302,6 +302,22 @@
   font: inherit;
 }
 
+.competitionSelect {
+  width: 100%;
+  min-height: 40px;
+  padding: var(--kf-space-2) var(--kf-space-3);
+  border: var(--kf-border-width-1) solid var(--kf-border);
+  border-radius: var(--kf-radius-md);
+  color: var(--kf-text);
+  background: var(--kf-background);
+  font: inherit;
+}
+
+.competitionSelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .categoryList {
   display: grid;
   gap: var(--kf-space-2);

@@ -4,6 +4,7 @@ const findFirstArticle = jest.fn<Promise<unknown>, [unknown]>();
 const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
+const findUniqueCompetition = jest.fn();
 const findClub = jest.fn();
 const findManyClub = jest.fn();
 const findManyCategory = jest.fn();
@@ -21,6 +22,7 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     competition: {
       findUniqueOrThrow: findCompetition,
+      findUnique: findUniqueCompetition,
     },
     club: {
       findUnique: findClub,
@@ -62,6 +64,7 @@ describe('ArticlesService', () => {
     createArticle.mockReset();
     updateArticle.mockReset();
     findCompetition.mockReset();
+    findUniqueCompetition.mockReset();
     findClub.mockReset();
     findManyClub.mockReset();
     findManyCategory.mockReset();
@@ -630,6 +633,7 @@ describe('ArticlesService', () => {
           content: { type: 'doc', content: [] },
           isTopNews: false,
           authorId,
+          competitionId: null,
           clubs: {
             create: [],
           },
@@ -1617,6 +1621,231 @@ describe('article club assignment', () => {
             deleteMany: {},
             create: [],
           },
+        },
+      }),
+    );
+  });
+});
+
+describe('article competition assignments', () => {
+  const articleId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const authorId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const assignedCompetitionId = '22222222-2222-4222-8222-222222222222';
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
+    findCompetition.mockReset();
+    findUniqueCompetition.mockReset();
+    findClub.mockReset();
+    findManyClub.mockReset();
+    findManyCategory.mockReset();
+    findManyTag.mockReset();
+    disconnect.mockReset();
+  });
+
+  it('creates an article with a competition assignment', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: true,
+    });
+    createArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: assignedCompetitionId,
+    });
+
+    const service = new ArticlesService();
+
+    await service.create(
+      {
+        title: 'Bundesliga News',
+        slug: 'bundesliga-news',
+        lead: null,
+        content: {
+          type: 'doc',
+          content: [],
+        },
+        competitionId: assignedCompetitionId,
+        clubIds: [],
+        categoryIds: [],
+        tagIds: [],
+      },
+      authorId,
+    );
+
+    expect(findUniqueCompetition).toHaveBeenCalledWith({
+      where: {
+        id: assignedCompetitionId,
+      },
+      select: {
+        id: true,
+        active: true,
+      },
+    });
+
+    const createCall = createArticle.mock.calls[0]?.[0] as {
+      data: {
+        competitionId: string | null;
+      };
+    };
+
+    expect(createCall.data.competitionId).toBe(assignedCompetitionId);
+  });
+
+  it('rejects an unknown competition assignment', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue(null);
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Unknown Competition',
+          slug: 'unknown-competition',
+          lead: null,
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          competitionId: assignedCompetitionId,
+          clubIds: [],
+          categoryIds: [],
+          tagIds: [],
+        },
+        authorId,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_COMPETITION_INVALID',
+        message: 'Article competition is invalid or inactive',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('rejects an inactive competition assignment', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: false,
+    });
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Inactive Competition',
+          slug: 'inactive-competition',
+          lead: null,
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          competitionId: assignedCompetitionId,
+          clubIds: [],
+          categoryIds: [],
+          tagIds: [],
+        },
+        authorId,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_COMPETITION_INVALID',
+        message: 'Article competition is invalid or inactive',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('updates an article competition assignment', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: articleId,
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: true,
+    });
+
+    updateArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: assignedCompetitionId,
+    });
+
+    const service = new ArticlesService();
+
+    await service.update(articleId, {
+      competitionId: assignedCompetitionId,
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: articleId,
+        },
+        data: {
+          competitionId: assignedCompetitionId,
+        },
+      }),
+    );
+  });
+
+  it('allows removing the competition assignment', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: articleId,
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      competitionId: assignedCompetitionId,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    updateArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: null,
+    });
+
+    const service = new ArticlesService();
+
+    await service.update(articleId, {
+      competitionId: null,
+    });
+
+    expect(findUniqueCompetition).not.toHaveBeenCalled();
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: articleId,
+        },
+        data: {
+          competitionId: null,
         },
       }),
     );
