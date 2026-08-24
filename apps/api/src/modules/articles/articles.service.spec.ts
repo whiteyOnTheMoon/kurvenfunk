@@ -10,6 +10,7 @@ const findClub = jest.fn();
 const findManyClub = jest.fn();
 const findManyCategory = jest.fn();
 const findManyTag = jest.fn();
+const findFirstMedia = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -37,6 +38,9 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     tag: {
       findMany: findManyTag,
+    },
+    media: {
+      findFirst: findFirstMedia,
     },
     $disconnect: disconnect,
   }),
@@ -74,6 +78,7 @@ describe('ArticlesService', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
     service = new ArticlesService();
   });
@@ -640,6 +645,7 @@ describe('ArticlesService', () => {
           authorId,
           competitionId: null,
           matchId: null,
+          leadMediaId: null,
           clubs: {
             create: [],
           },
@@ -651,6 +657,16 @@ describe('ArticlesService', () => {
           },
         },
         include: {
+          leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
           clubs: {
             include: {
               club: true,
@@ -710,6 +726,16 @@ describe('ArticlesService', () => {
           id: articleId,
         },
         include: {
+          leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
           clubs: {
             include: {
               club: true,
@@ -760,6 +786,16 @@ describe('ArticlesService', () => {
           title: 'Updated article',
         },
         include: {
+          leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
           clubs: {
             include: {
               club: true,
@@ -777,6 +813,85 @@ describe('ArticlesService', () => {
           },
         },
       });
+    });
+
+    it('assigns active lead media during article update', async () => {
+      const leadMediaId = '77777777-7777-4777-8777-777777777777';
+
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstMedia.mockResolvedValue({
+        id: leadMediaId,
+      });
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        leadMediaId,
+      });
+
+      await service.update(articleId, {
+        leadMediaId,
+      });
+
+      expect(findFirstMedia).toHaveBeenCalledWith({
+        where: {
+          id: leadMediaId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      expect(updateArticle.mock.calls[0]?.[0]).toMatchObject({
+        where: {
+          id: articleId,
+        },
+        data: {
+          leadMediaId,
+        },
+      });
+    });
+
+    it('removes lead media during article update', async () => {
+      findUniqueArticle.mockResolvedValue({
+        ...draftArticle,
+        leadMediaId: '77777777-7777-4777-8777-777777777777',
+      });
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        leadMediaId: null,
+      });
+
+      await service.update(articleId, {
+        leadMediaId: null,
+      });
+
+      expect(findFirstMedia).not.toHaveBeenCalled();
+
+      expect(updateArticle.mock.calls[0]?.[0]).toMatchObject({
+        data: {
+          leadMediaId: null,
+        },
+      });
+    });
+
+    it('rejects unknown or inactive lead media', async () => {
+      const leadMediaId = '77777777-7777-4777-8777-777777777777';
+
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstMedia.mockResolvedValue(null);
+
+      await expect(
+        service.update(articleId, {
+          leadMediaId,
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_LEAD_MEDIA_INVALID',
+          message: 'Article lead media is invalid or inactive',
+        },
+      });
+
+      expect(updateArticle).not.toHaveBeenCalled();
     });
 
     it('rejects an update when the new slug belongs to another article', async () => {
@@ -1096,6 +1211,7 @@ describe('article category assignment', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
   });
 
@@ -1277,6 +1393,7 @@ describe('article tag assignment', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
   });
 
@@ -1460,6 +1577,7 @@ describe('article club assignment', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
   });
 
@@ -1651,6 +1769,7 @@ describe('article competition assignments', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
   });
 
@@ -1878,6 +1997,7 @@ describe('article match assignments', () => {
     findManyClub.mockReset();
     findManyCategory.mockReset();
     findManyTag.mockReset();
+    findFirstMedia.mockReset();
     disconnect.mockReset();
   });
 

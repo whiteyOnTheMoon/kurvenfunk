@@ -121,6 +121,7 @@ export const createArticleSchema = z.object({
   isTopNews: z.boolean().optional(),
   competitionId: z.uuid().nullable().optional(),
   matchId: z.uuid().nullable().optional(),
+  leadMediaId: z.uuid().nullable().optional(),
   clubIds: z.array(z.uuid()).max(20).default([]),
   categoryIds: z.array(z.uuid()).max(20).default([]),
   tagIds: z.array(z.uuid()).max(50).default([]),

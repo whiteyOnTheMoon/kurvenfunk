@@ -85,6 +85,20 @@ interface ArticleTagAssignment {
   tag: EditorialTag;
 }
 
+interface EditorialMediaItem {
+  id: string;
+  originalFileName: string | null;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  altText: string | null;
+}
+
+interface EditorialMediaList {
+  items: EditorialMediaItem[];
+  nextCursor: string | null;
+}
+
 interface EditorialArticle {
   id: string;
   title: string;
@@ -99,6 +113,8 @@ interface EditorialArticle {
   clubs?: ArticleClubAssignment[];
   categories?: ArticleCategoryAssignment[];
   tags?: ArticleTagAssignment[];
+  leadMediaId: string | null;
+  leadMedia: EditorialMediaItem | null;
 }
 
 const EMPTY_DOCUMENT: JSONContent = {
@@ -150,6 +166,12 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
   const [savedArticle, setSavedArticle] = useState<EditorialArticle>();
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [mediaPickerMode, setMediaPickerMode] = useState<'content' | 'lead'>('content');
+  const [selectedLeadMedia, setSelectedLeadMedia] = useState<EditorialMediaItem | null>(null);
+  const [mediaItems, setMediaItems] = useState<EditorialMediaItem[]>([]);
+  const [mediaNextCursor, setMediaNextCursor] = useState<string | null>(null);
+  const [loadingMedia, setLoadingMedia] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -480,6 +502,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlug(article.slug);
         setSlugTouched(true);
         setLead(article.lead ?? '');
+        setSelectedLeadMedia(article.leadMedia ?? null);
         setSelectedCompetitionId(article.competitionId ?? '');
         setSelectedMatchId(article.matchId ?? '');
         setSelectedClubIds(article.clubs?.map((assignment) => assignment.clubId) ?? []);
@@ -586,28 +609,94 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     editor.chain().focus().extendMarkRange('link').setLink({ href: normalized }).run();
   }
 
+  async function loadMedia(cursor?: string) {
+    if (!token || loadingMedia) {
+      return;
+    }
+
+    setLoadingMedia(true);
+    setError(undefined);
+
+    try {
+      const params = new URLSearchParams({
+        limit: '24',
+      });
+
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
+
+      const response = await fetch(`${apiUrl}/api/v1/media?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        data?: EditorialMediaList;
+        error?: {
+          message?: string;
+        };
+      } | null;
+
+      if (!response.ok || !payload?.data) {
+        throw new Error(payload?.error?.message ?? 'Medien konnten nicht geladen werden.');
+      }
+
+      setMediaItems((current) =>
+        cursor ? [...current, ...payload.data!.items] : payload.data!.items,
+      );
+      setMediaNextCursor(payload.data.nextCursor);
+    } catch (mediaError) {
+      setError(
+        mediaError instanceof Error ? mediaError.message : 'Medien konnten nicht geladen werden.',
+      );
+    } finally {
+      setLoadingMedia(false);
+    }
+  }
+
+  function openMediaPicker(mode: 'content' | 'lead') {
+    if (mode === 'content' && !editor) {
+      return;
+    }
+
+    setMediaPickerMode(mode);
+    setMediaPickerOpen(true);
+    setMediaItems([]);
+    setMediaNextCursor(null);
+    void loadMedia();
+  }
+
   function insertImage() {
+    openMediaPicker('content');
+  }
+
+  function selectMediaImage(media: EditorialMediaItem) {
+    if (mediaPickerMode === 'lead') {
+      setSelectedLeadMedia(media);
+      setMediaPickerOpen(false);
+      setError(undefined);
+      return;
+    }
+
     if (!editor) {
       return;
     }
 
-    const src = window.prompt('Bild-URL', 'https://');
+    const src = `${apiUrl}/api/v1/media/${encodeURIComponent(media.id)}/content`;
 
-    if (!src) {
-      return;
-    }
+    editor
+      .chain()
+      .focus()
+      .setImage({
+        src,
+        alt: media.altText ?? '',
+      })
+      .run();
 
-    const normalized = src.trim();
-
-    if (!/^https?:\/\//i.test(normalized)) {
-      setError('Bild-URLs müssen mit http:// oder https:// beginnen.');
-      return;
-    }
-
-    const alt = window.prompt('Alternativtext für das Bild', '') ?? '';
-
+    setMediaPickerOpen(false);
     setError(undefined);
-    editor.chain().focus().setImage({ src: normalized, alt }).run();
   }
 
   async function saveArticle(): Promise<EditorialArticle | undefined> {
@@ -648,6 +737,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             title: trimmedTitle,
             slug: trimmedSlug,
             lead: trimmedLead || null,
+            leadMediaId: selectedLeadMedia?.id ?? null,
             content: editor.getJSON(),
             competitionId: selectedCompetitionId || null,
             matchId: selectedMatchId || null,
@@ -1258,11 +1348,136 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
           </section>
 
           <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Leadbild</span>
+
+            {selectedLeadMedia ? (
+              <div className={styles.leadMedia}>
+                <div className={styles.leadMediaPreview}>
+                  {/* Media content is served by our authenticated editorial API. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${apiUrl}/api/v1/media/${encodeURIComponent(
+                      selectedLeadMedia.id,
+                    )}/content`}
+                    alt={selectedLeadMedia.altText ?? ''}
+                  />
+                </div>
+
+                <strong>{selectedLeadMedia.originalFileName ?? 'Bild'}</strong>
+
+                <div className={styles.leadMediaActions}>
+                  <Button variant="secondary" onClick={() => openMediaPicker('lead')}>
+                    Ändern
+                  </Button>
+                  <Button variant="outline" onClick={() => setSelectedLeadMedia(null)}>
+                    Entfernen
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p>Noch kein Leadbild ausgewählt.</p>
+                <Button variant="secondary" onClick={() => openMediaPicker('lead')}>
+                  Leadbild auswählen
+                </Button>
+              </>
+            )}
+          </section>
+
+          <section className={styles.sidebarCard}>
             <span className={styles.sidebarLabel}>Editor</span>
-            <p>Unterstützt Text, H2–H4, Links, Listen, Zitate und Bilder per URL.</p>
+            <p>
+              Unterstützt Text, H2–H4, Links, Listen, Zitate und Bilder aus der Medienbibliothek.
+            </p>
           </section>
         </aside>
       </div>
+
+      {mediaPickerOpen ? (
+        <div
+          className={styles.mediaPickerBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setMediaPickerOpen(false);
+            }
+          }}
+        >
+          <section
+            className={styles.mediaPicker}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="article-media-picker-title"
+          >
+            <header className={styles.mediaPickerHeader}>
+              <div>
+                <span className={styles.sidebarLabel}>Medienbibliothek</span>
+                <h2 id="article-media-picker-title">
+                  {mediaPickerMode === 'lead' ? 'Leadbild auswählen' : 'Bild einfügen'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={styles.mediaPickerClose}
+                aria-label="Medienbibliothek schließen"
+                onClick={() => setMediaPickerOpen(false)}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className={styles.mediaPickerBody}>
+              {loadingMedia && mediaItems.length === 0 ? (
+                <p className={styles.mediaPickerState}>Medien werden geladen …</p>
+              ) : mediaItems.length === 0 ? (
+                <div className={styles.mediaPickerState}>
+                  <p>Noch keine Medien vorhanden.</p>
+                  <Link href="/admin/medien">Zur Medienbibliothek</Link>
+                </div>
+              ) : (
+                <div className={styles.mediaPickerGrid}>
+                  {mediaItems.map((media) => (
+                    <button
+                      key={media.id}
+                      type="button"
+                      className={styles.mediaPickerItem}
+                      onClick={() => selectMediaImage(media)}
+                    >
+                      {/* Media content is served by our authenticated editorial API. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${apiUrl}/api/v1/media/${encodeURIComponent(media.id)}/content`}
+                        alt={media.altText ?? ''}
+                      />
+                      <span>{media.originalFileName ?? 'Bild'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {mediaNextCursor ? (
+                <div className={styles.mediaPickerMore}>
+                  <Button
+                    variant="secondary"
+                    disabled={loadingMedia}
+                    onClick={() => void loadMedia(mediaNextCursor)}
+                  >
+                    {loadingMedia ? 'Lädt …' : 'Mehr laden'}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
+            <footer className={styles.mediaPickerFooter}>
+              <Link href="/admin/medien">Medienbibliothek verwalten</Link>
+              <Button variant="outline" onClick={() => setMediaPickerOpen(false)}>
+                Abbrechen
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

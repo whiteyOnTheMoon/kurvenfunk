@@ -276,6 +276,48 @@ describe('article club assignment validation', () => {
   });
 });
 
+describe('article lead media assignment validation', () => {
+  const leadMediaId = '77777777-7777-4777-8777-777777777777';
+
+  it('does not inject leadMediaId into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts a lead media id on article updates', () => {
+    const result = updateArticleSchema.parse({
+      leadMediaId,
+    });
+
+    assert.deepEqual(result, {
+      leadMediaId,
+    });
+  });
+
+  it('accepts removing the lead media explicitly', () => {
+    const result = updateArticleSchema.parse({
+      leadMediaId: null,
+    });
+
+    assert.deepEqual(result, {
+      leadMediaId: null,
+    });
+  });
+
+  it('rejects an invalid lead media id', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        leadMediaId: 'not-a-uuid',
+      }),
+    );
+  });
+});
+
 describe('article competition assignment validation', () => {
   const competitionId = '22222222-2222-4222-8222-222222222222';
 

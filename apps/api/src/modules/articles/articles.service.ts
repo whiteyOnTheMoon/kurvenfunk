@@ -259,6 +259,29 @@ export class ArticlesService implements OnModuleDestroy {
     }
   }
 
+  private async validateLeadMediaId(leadMediaId: string | null | undefined) {
+    if (!leadMediaId) {
+      return;
+    }
+
+    const media = await this.database.media.findFirst({
+      where: {
+        id: leadMediaId,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!media) {
+      throw new BadRequestException({
+        code: 'ARTICLE_LEAD_MEDIA_INVALID',
+        message: 'Article lead media is invalid or inactive',
+      });
+    }
+  }
+
   private readonly database: DatabaseClient = createPrismaClient();
 
   async create(input: CreateArticleInput, authorId: string) {
@@ -284,6 +307,7 @@ export class ArticlesService implements OnModuleDestroy {
 
     await this.validateCompetitionId(input.competitionId ?? null);
     await this.validateMatchId(input.matchId ?? null, input.competitionId ?? null);
+    await this.validateLeadMediaId(input.leadMediaId);
     await this.validateClubIds(clubIds);
     await this.validateCategoryIds(categoryIds);
     await this.validateTagIds(tagIds);
@@ -298,6 +322,7 @@ export class ArticlesService implements OnModuleDestroy {
         authorId,
         competitionId: input.competitionId ?? null,
         matchId: input.matchId ?? null,
+        leadMediaId: input.leadMediaId ?? null,
         clubs: {
           create: clubIds.map((clubId) => ({
             clubId,
@@ -315,6 +340,16 @@ export class ArticlesService implements OnModuleDestroy {
         },
       },
       include: {
+        leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
         clubs: {
           include: {
             club: true,
@@ -366,6 +401,16 @@ export class ArticlesService implements OnModuleDestroy {
         id,
       },
       include: {
+        leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
         clubs: {
           include: {
             club: true,
@@ -431,6 +476,10 @@ export class ArticlesService implements OnModuleDestroy {
       );
     }
 
+    if (input.leadMediaId !== undefined) {
+      await this.validateLeadMediaId(input.leadMediaId);
+    }
+
     if (clubIds !== undefined) {
       await this.validateClubIds(clubIds);
     }
@@ -486,6 +535,16 @@ export class ArticlesService implements OnModuleDestroy {
           : {}),
       },
       include: {
+        leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
         clubs: {
           include: {
             club: true,
