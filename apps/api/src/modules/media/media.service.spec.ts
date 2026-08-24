@@ -29,11 +29,15 @@ interface MediaCreateArgs {
 describe('MediaService', () => {
   const mediaCreate = jest.fn();
   const mediaFindFirst = jest.fn();
+  const mediaFindMany = jest.fn();
+  const mediaUpdate = jest.fn();
 
   const database = {
     media: {
       create: mediaCreate,
       findFirst: mediaFindFirst,
+      findMany: mediaFindMany,
+      update: mediaUpdate,
     },
   };
 
@@ -253,5 +257,317 @@ describe('MediaService', () => {
     );
 
     expect(storageGet).not.toHaveBeenCalled();
+  });
+
+  it('lists active media with usage counts and pagination', async () => {
+    mediaFindMany.mockResolvedValue([
+      {
+        id: 'b102a9df-1929-4600-b068-c415abb5c937',
+        storageType: 'INTERNAL',
+        storageKey: 'media/2026/08/first.webp',
+        externalUrl: null,
+        originalFileName: 'first.webp',
+        mimeType: 'image/webp',
+        sizeBytes: 1234n,
+        width: null,
+        height: null,
+        altText: 'First image',
+        copyright: null,
+        source: null,
+        sourceUrl: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-08-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-08-24T12:00:00.000Z'),
+        _count: {
+          profileAvatars: 1,
+          clubLogos: 2,
+          articleLeads: 3,
+        },
+      },
+      {
+        id: '4f8aa214-febd-4c5c-baf4-d1e86da29f37',
+        storageType: 'INTERNAL',
+        storageKey: 'media/2026/08/second.webp',
+        externalUrl: null,
+        originalFileName: 'second.webp',
+        mimeType: 'image/webp',
+        sizeBytes: 2345n,
+        width: null,
+        height: null,
+        altText: 'Second image',
+        copyright: null,
+        source: null,
+        sourceUrl: null,
+        status: 'ACTIVE',
+        createdAt: new Date('2026-08-23T12:00:00.000Z'),
+        updatedAt: new Date('2026-08-23T12:00:00.000Z'),
+        _count: {
+          profileAvatars: 0,
+          clubLogos: 0,
+          articleLeads: 0,
+        },
+      },
+    ]);
+
+    const service = new MediaService(storage);
+
+    const result = await service.list({
+      limit: 1,
+    });
+
+    expect(mediaFindMany).toHaveBeenCalledWith({
+      where: {
+        status: 'ACTIVE',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
+      include: {
+        _count: {
+          select: {
+            profileAvatars: true,
+            clubLogos: true,
+            articleLeads: true,
+          },
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      items: [
+        expect.objectContaining({
+          id: 'b102a9df-1929-4600-b068-c415abb5c937',
+          sizeBytes: 1234,
+          contentUrl: '/api/v1/media/b102a9df-1929-4600-b068-c415abb5c937/content',
+          usage: {
+            profileAvatars: 1,
+            clubLogos: 2,
+            articleLeads: 3,
+            total: 6,
+          },
+        }),
+      ],
+      nextCursor: 'b102a9df-1929-4600-b068-c415abb5c937',
+    });
+  });
+
+  it('uses a cursor when listing media', async () => {
+    mediaFindMany.mockResolvedValue([]);
+
+    const service = new MediaService(storage);
+
+    const cursor = 'b102a9df-1929-4600-b068-c415abb5c937';
+
+    const result = await service.list({
+      cursor,
+      limit: 30,
+    });
+
+    expect(mediaFindMany).toHaveBeenCalledWith({
+      where: {
+        status: 'ACTIVE',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 31,
+      cursor: {
+        id: cursor,
+      },
+      skip: 1,
+      include: {
+        _count: {
+          select: {
+            profileAvatars: true,
+            clubLogos: true,
+            articleLeads: true,
+          },
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      items: [],
+      nextCursor: null,
+    });
+  });
+
+  it('returns a media item with detailed usage', async () => {
+    mediaFindFirst.mockResolvedValue({
+      id: 'b102a9df-1929-4600-b068-c415abb5c937',
+      storageType: 'INTERNAL',
+      storageKey: 'media/2026/08/test.webp',
+      externalUrl: null,
+      originalFileName: 'test.webp',
+      mimeType: 'image/webp',
+      sizeBytes: 1234n,
+      width: null,
+      height: null,
+      altText: 'Rapid',
+      copyright: 'Kurvenfunk',
+      source: 'Redaktion',
+      sourceUrl: 'https://kurvenfunk.at',
+      status: 'ACTIVE',
+      createdAt: new Date('2026-08-24T12:00:00.000Z'),
+      updatedAt: new Date('2026-08-24T12:00:00.000Z'),
+      profileAvatars: [
+        {
+          id: '797e5126-9fb3-4360-bd47-a5d305f6229e',
+          userId: 'a55be870-29d5-4e66-9640-d6c12e5846cd',
+        },
+      ],
+      clubLogos: [
+        {
+          id: '9377bfd3-ac3f-4830-a318-6115b674f474',
+          name: 'SK Rapid Wien',
+          slug: 'sk-rapid-wien',
+        },
+      ],
+      articleLeads: [
+        {
+          id: '2493d081-65d0-463c-b899-f34532c075c7',
+          title: 'Rapid gewinnt',
+          slug: 'rapid-gewinnt',
+        },
+      ],
+    });
+
+    const service = new MediaService(storage);
+
+    const result = await service.getById('b102a9df-1929-4600-b068-c415abb5c937');
+
+    expect(mediaFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'b102a9df-1929-4600-b068-c415abb5c937',
+        status: 'ACTIVE',
+      },
+      include: {
+        profileAvatars: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+        clubLogos: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        articleLeads: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: 'b102a9df-1929-4600-b068-c415abb5c937',
+      altText: 'Rapid',
+      usage: {
+        profileAvatars: [
+          {
+            id: '797e5126-9fb3-4360-bd47-a5d305f6229e',
+            userId: 'a55be870-29d5-4e66-9640-d6c12e5846cd',
+          },
+        ],
+        clubLogos: [
+          {
+            id: '9377bfd3-ac3f-4830-a318-6115b674f474',
+            name: 'SK Rapid Wien',
+            slug: 'sk-rapid-wien',
+          },
+        ],
+        articleLeads: [
+          {
+            id: '2493d081-65d0-463c-b899-f34532c075c7',
+            title: 'Rapid gewinnt',
+            slug: 'rapid-gewinnt',
+          },
+        ],
+        total: 3,
+      },
+    });
+  });
+
+  it('rejects a missing media item when loading details', async () => {
+    mediaFindFirst.mockResolvedValue(null);
+
+    const service = new MediaService(storage);
+
+    await expect(service.getById('b102a9df-1929-4600-b068-c415abb5c937')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('updates editable media metadata', async () => {
+    mediaFindFirst.mockResolvedValue({
+      id: 'b102a9df-1929-4600-b068-c415abb5c937',
+    });
+
+    mediaUpdate.mockResolvedValue({
+      id: 'b102a9df-1929-4600-b068-c415abb5c937',
+      storageType: 'INTERNAL',
+      storageKey: 'media/2026/08/test.webp',
+      externalUrl: null,
+      originalFileName: 'test.webp',
+      mimeType: 'image/webp',
+      sizeBytes: 1234n,
+      width: null,
+      height: null,
+      altText: 'Neue Beschreibung',
+      copyright: 'Kurvenfunk',
+      source: 'Redaktion',
+      sourceUrl: 'https://kurvenfunk.at',
+      status: 'ACTIVE',
+      createdAt: new Date('2026-08-24T12:00:00.000Z'),
+      updatedAt: new Date('2026-08-24T13:00:00.000Z'),
+    });
+
+    const service = new MediaService(storage);
+
+    const result = await service.update('b102a9df-1929-4600-b068-c415abb5c937', {
+      altText: 'Neue Beschreibung',
+      copyright: 'Kurvenfunk',
+      source: 'Redaktion',
+      sourceUrl: 'https://kurvenfunk.at',
+    });
+
+    expect(mediaUpdate).toHaveBeenCalledWith({
+      where: {
+        id: 'b102a9df-1929-4600-b068-c415abb5c937',
+      },
+      data: {
+        altText: 'Neue Beschreibung',
+        copyright: 'Kurvenfunk',
+        source: 'Redaktion',
+        sourceUrl: 'https://kurvenfunk.at',
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: 'b102a9df-1929-4600-b068-c415abb5c937',
+      altText: 'Neue Beschreibung',
+      copyright: 'Kurvenfunk',
+      source: 'Redaktion',
+    });
+  });
+
+  it('rejects updating missing media', async () => {
+    mediaFindFirst.mockResolvedValue(null);
+
+    const service = new MediaService(storage);
+
+    await expect(
+      service.update('b102a9df-1929-4600-b068-c415abb5c937', {
+        altText: null,
+        copyright: null,
+        source: null,
+        sourceUrl: null,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(mediaUpdate).not.toHaveBeenCalled();
   });
 });

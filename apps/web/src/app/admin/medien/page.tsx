@@ -1,11 +1,6 @@
-import { AdminPlaceholder } from '../../../features/admin/admin-placeholder';
+import { MediaLibrary } from '../../../features/admin/media/media-library';
+import { env } from '../../../lib/env';
 
 export default function AdminMediaPage() {
-  return (
-    <AdminPlaceholder
-      eyebrow="Redaktion"
-      title="Medien"
-      description="Bilder und weitere Mediendateien zentral verwalten."
-    />
-  );
+  return <MediaLibrary apiUrl={env.API_URL} />;
 }

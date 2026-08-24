@@ -1,6 +1,10 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import type { MediaUploadMetadataInput } from '@kurvenfunk/validation';
+import type {
+  MediaListQueryInput,
+  MediaUploadMetadataInput,
+  UpdateMediaMetadataInput,
+} from '@kurvenfunk/validation';
 import { randomUUID } from 'node:crypto';
 
 import { STORAGE_SERVICE, type StorageService } from '../../infrastructure/storage/storage.types';
@@ -95,6 +99,123 @@ export class MediaService {
     }
   }
 
+  async list(query: MediaListQueryInput) {
+    const media = await this.database.media.findMany({
+      where: {
+        status: 'ACTIVE',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+      ...(query.cursor
+        ? {
+            cursor: {
+              id: query.cursor,
+            },
+            skip: 1,
+          }
+        : {}),
+      include: {
+        _count: {
+          select: {
+            profileAvatars: true,
+            clubLogos: true,
+            articleLeads: true,
+          },
+        },
+      },
+    });
+
+    const hasMore = media.length > query.limit;
+    const items = hasMore ? media.slice(0, query.limit) : media;
+    const lastItem = items.at(-1);
+
+    return {
+      items: items.map((item) => this.serializeMediaWithUsage(item)),
+      nextCursor: hasMore && lastItem ? lastItem.id : null,
+    };
+  }
+
+  async getById(id: string) {
+    const media = await this.database.media.findFirst({
+      where: {
+        id,
+        status: 'ACTIVE',
+      },
+      include: {
+        profileAvatars: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+        clubLogos: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        articleLeads: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!media) {
+      throw new NotFoundException({
+        code: 'MEDIA_NOT_FOUND',
+        message: 'Media not found',
+      });
+    }
+
+    return {
+      ...this.serializeMedia(media),
+      usage: {
+        profileAvatars: media.profileAvatars,
+        clubLogos: media.clubLogos,
+        articleLeads: media.articleLeads,
+        total: media.profileAvatars.length + media.clubLogos.length + media.articleLeads.length,
+      },
+    };
+  }
+
+  async update(id: string, input: UpdateMediaMetadataInput) {
+    const existing = await this.database.media.findFirst({
+      where: {
+        id,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'MEDIA_NOT_FOUND',
+        message: 'Media not found',
+      });
+    }
+
+    const media = await this.database.media.update({
+      where: {
+        id,
+      },
+      data: {
+        altText: input.altText,
+        copyright: input.copyright,
+        source: input.source,
+        sourceUrl: input.sourceUrl,
+      },
+    });
+
+    return this.serializeMedia(media);
+  }
+
   async getContent(id: string) {
     const media = await this.database.media.findFirst({
       where: {
@@ -123,6 +244,26 @@ export class MediaService {
       body: object.body,
       mimeType: object.contentType ?? media.mimeType,
       sizeBytes: Number(media.sizeBytes),
+    };
+  }
+
+  private serializeMediaWithUsage<
+    T extends Parameters<MediaService['serializeMedia']>[0] & {
+      _count: {
+        profileAvatars: number;
+        clubLogos: number;
+        articleLeads: number;
+      };
+    },
+  >(media: T) {
+    return {
+      ...this.serializeMedia(media),
+      usage: {
+        profileAvatars: media._count.profileAvatars,
+        clubLogos: media._count.clubLogos,
+        articleLeads: media._count.articleLeads,
+        total: media._count.profileAvatars + media._count.clubLogos + media._count.articleLeads,
+      },
     };
   }
 

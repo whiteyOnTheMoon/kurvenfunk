@@ -3,14 +3,23 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { mediaUploadMetadataSchema, type MediaUploadMetadataInput } from '@kurvenfunk/validation';
+import {
+  mediaListQuerySchema,
+  mediaUploadMetadataSchema,
+  updateMediaMetadataSchema,
+  type MediaListQueryInput,
+  type MediaUploadMetadataInput,
+  type UpdateMediaMetadataInput,
+} from '@kurvenfunk/validation';
 import type { Response } from 'express';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -40,6 +49,31 @@ export class MediaController {
     metadata: MediaUploadMetadataInput,
   ) {
     return this.mediaService.upload(file, metadata);
+  }
+
+  @Get()
+  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  list(
+    @Query(new ZodValidationPipe(mediaListQuerySchema))
+    query: MediaListQueryInput,
+  ) {
+    return this.mediaService.list(query);
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  getById(@Param('id') id: string) {
+    return this.mediaService.getById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  update(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateMediaMetadataSchema))
+    input: UpdateMediaMetadataInput,
+  ) {
+    return this.mediaService.update(id, input);
   }
 
   @Get(':id/content')
