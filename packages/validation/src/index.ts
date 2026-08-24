@@ -47,3 +47,4 @@ export {
   type CreateTagInput,
   type UpdateTagInput,
 } from './tag.js';
+export * from './media.js';

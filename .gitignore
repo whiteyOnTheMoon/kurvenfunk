@@ -57,7 +57,7 @@ pnpm-debug.log*
 # Local persistent storage
 # ------------------------------------------------------------
 
-storage/
+/storage/
 data/
 
 # Docker / service-specific persistent data

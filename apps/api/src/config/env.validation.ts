@@ -17,6 +17,17 @@ const apiEnvSchema = z
     KEYCLOAK_ISSUER: z.string().url(),
     KEYCLOAK_JWKS_URL: z.string().url(),
     KEYCLOAK_AUDIENCE: z.string().min(1),
+
+    STORAGE_ENDPOINT: z.string().url(),
+    STORAGE_REGION: z.string().min(1).default('us-east-1'),
+    STORAGE_BUCKET: z.string().min(1),
+    STORAGE_ACCESS_KEY: z.string().min(1),
+    STORAGE_SECRET_KEY: z.string().min(1),
+    STORAGE_FORCE_PATH_STYLE: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+
     SWAGGER_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
