@@ -175,6 +175,36 @@ export class ArticlesService implements OnModuleDestroy {
     }
   }
 
+  private async validateMatchId(matchId: string | null, competitionId: string | null) {
+    if (matchId === null) {
+      return;
+    }
+
+    const match = await this.database.match.findUnique({
+      where: {
+        id: matchId,
+      },
+      select: {
+        id: true,
+        competitionId: true,
+      },
+    });
+
+    if (!match) {
+      throw new BadRequestException({
+        code: 'ARTICLE_MATCH_INVALID',
+        message: 'Article match is invalid',
+      });
+    }
+
+    if (competitionId !== match.competitionId) {
+      throw new BadRequestException({
+        code: 'ARTICLE_MATCH_COMPETITION_MISMATCH',
+        message: 'Article match does not belong to the selected competition',
+      });
+    }
+  }
+
   private async validateCategoryIds(categoryIds: string[]) {
     if (categoryIds.length === 0) {
       return;
@@ -253,6 +283,7 @@ export class ArticlesService implements OnModuleDestroy {
     const tagIds = [...new Set(input.tagIds)];
 
     await this.validateCompetitionId(input.competitionId ?? null);
+    await this.validateMatchId(input.matchId ?? null, input.competitionId ?? null);
     await this.validateClubIds(clubIds);
     await this.validateCategoryIds(categoryIds);
     await this.validateTagIds(tagIds);
@@ -266,6 +297,7 @@ export class ArticlesService implements OnModuleDestroy {
         isTopNews: input.isTopNews ?? false,
         authorId,
         competitionId: input.competitionId ?? null,
+        matchId: input.matchId ?? null,
         clubs: {
           create: clubIds.map((clubId) => ({
             clubId,
@@ -363,7 +395,7 @@ export class ArticlesService implements OnModuleDestroy {
   }
 
   async update(id: string, input: UpdateArticleInput) {
-    await this.findEditorialById(id);
+    const article = await this.findEditorialById(id);
 
     if (input.slug) {
       const existing = await this.database.article.findFirst({
@@ -390,6 +422,13 @@ export class ArticlesService implements OnModuleDestroy {
 
     if (input.competitionId !== undefined) {
       await this.validateCompetitionId(input.competitionId);
+    }
+
+    if (input.matchId !== undefined || input.competitionId !== undefined) {
+      await this.validateMatchId(
+        input.matchId !== undefined ? input.matchId : (article.matchId ?? null),
+        input.competitionId !== undefined ? input.competitionId : (article.competitionId ?? null),
+      );
     }
 
     if (clubIds !== undefined) {

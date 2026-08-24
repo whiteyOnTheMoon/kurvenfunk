@@ -33,6 +33,29 @@ interface EditorialClub {
   slug: string;
 }
 
+interface EditorialMatchClub {
+  id: string;
+  name: string;
+  shortName: string | null;
+  slug: string;
+}
+
+interface EditorialMatch {
+  id: string;
+  kickoff: string;
+  matchday: number | null;
+  status: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  homeClub: EditorialMatchClub;
+  awayClub: EditorialMatchClub;
+}
+
+interface EditorialMatchSchedule {
+  competition: EditorialCompetition;
+  matches: EditorialMatch[];
+}
+
 interface ArticleClubAssignment {
   clubId: string;
   club: EditorialClub;
@@ -72,6 +95,7 @@ interface EditorialArticle {
   scheduledAt?: string | null;
   publishedAt?: string | null;
   competitionId?: string | null;
+  matchId?: string | null;
   clubs?: ArticleClubAssignment[];
   categories?: ArticleCategoryAssignment[];
   tags?: ArticleTagAssignment[];
@@ -111,6 +135,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [competitions, setCompetitions] = useState<EditorialCompetition[]>([]);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState('');
   const [loadingCompetitions, setLoadingCompetitions] = useState(true);
+  const [matches, setMatches] = useState<EditorialMatch[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState('');
+  const [loadingMatches, setLoadingMatches] = useState(false);
   const [clubs, setClubs] = useState<EditorialClub[]>([]);
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
@@ -196,6 +223,73 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       cancelled = true;
     };
   }, [apiUrl, authenticated, initialized, token]);
+
+  useEffect(() => {
+    if (!initialized || !authenticated || !token) {
+      return;
+    }
+
+    if (!selectedCompetitionId) {
+      return;
+    }
+
+    const competition = competitions.find((item) => item.id === selectedCompetitionId);
+
+    if (!competition) {
+      return;
+    }
+
+    const competitionSlug = competition.slug;
+    let cancelled = false;
+
+    async function loadMatches() {
+      setLoadingMatches(true);
+
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/v1/matches?competition=${encodeURIComponent(competitionSlug)}`,
+        );
+
+        const payload = (await response.json().catch(() => null)) as {
+          data?: EditorialMatchSchedule;
+          error?: {
+            message?: string;
+          };
+        } | null;
+
+        if (!response.ok || !payload?.data) {
+          throw new Error(payload?.error?.message ?? 'Spiele konnten nicht geladen werden.');
+        }
+
+        if (!cancelled) {
+          setMatches(payload.data.matches);
+
+          setSelectedMatchId((current) =>
+            current && payload.data?.matches.some((match) => match.id === current) ? current : '',
+          );
+        }
+      } catch (matchError) {
+        if (!cancelled) {
+          setMatches([]);
+          setError(
+            matchError instanceof Error
+              ? matchError.message
+              : 'Spiele konnten nicht geladen werden.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMatches(false);
+        }
+      }
+    }
+
+    void loadMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, competitions, initialized, selectedCompetitionId, token]);
 
   useEffect(() => {
     if (!initialized || !authenticated || !token) {
@@ -387,6 +481,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlugTouched(true);
         setLead(article.lead ?? '');
         setSelectedCompetitionId(article.competitionId ?? '');
+        setSelectedMatchId(article.matchId ?? '');
         setSelectedClubIds(article.clubs?.map((assignment) => assignment.clubId) ?? []);
         setSelectedCategoryIds(
           article.categories?.map((assignment) => assignment.categoryId) ?? [],
@@ -423,6 +518,24 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     if (!slugTouched) {
       setSlug(createSlug(value));
     }
+  }
+
+  function changeCompetition(competitionId: string) {
+    setSelectedCompetitionId(competitionId);
+    setSelectedMatchId('');
+    setMatches([]);
+  }
+
+  function formatMatchOption(match: EditorialMatch) {
+    const kickoff = new Intl.DateTimeFormat('de-AT', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'Europe/Vienna',
+    }).format(new Date(match.kickoff));
+
+    const round = match.matchday !== null ? `${match.matchday}. Spieltag · ` : '';
+
+    return `${round}${match.homeClub.name} – ${match.awayClub.name} · ${kickoff}`;
   }
 
   function toggleClub(clubId: string) {
@@ -537,6 +650,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             lead: trimmedLead || null,
             content: editor.getJSON(),
             competitionId: selectedCompetitionId || null,
+            matchId: selectedMatchId || null,
             clubIds: selectedClubIds,
             categoryIds: selectedCategoryIds,
             tagIds: selectedTagIds,
@@ -986,7 +1100,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
                 className={styles.competitionSelect}
                 value={selectedCompetitionId}
                 disabled={saving || changingStatus}
-                onChange={(event) => setSelectedCompetitionId(event.target.value)}
+                onChange={(event) => changeCompetition(event.target.value)}
               >
                 <option value="">Kein Wettbewerb</option>
                 {competitions.map((competition) => (
@@ -1000,6 +1114,38 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
               {selectedCompetitionId
                 ? 'Ein Wettbewerb ist diesem Artikel zugeordnet.'
                 : 'Kein Wettbewerb ausgewählt.'}
+            </p>
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>Spiel</span>
+
+            {!selectedCompetitionId ? (
+              <p>Wähle zuerst einen Wettbewerb aus.</p>
+            ) : loadingMatches ? (
+              <p>Spiele werden geladen …</p>
+            ) : matches.length === 0 ? (
+              <p>Für diesen Wettbewerb sind keine Spiele vorhanden.</p>
+            ) : (
+              <select
+                className={styles.competitionSelect}
+                value={selectedMatchId}
+                disabled={saving || changingStatus}
+                onChange={(event) => setSelectedMatchId(event.target.value)}
+              >
+                <option value="">Kein Spiel</option>
+                {matches.map((match) => (
+                  <option key={match.id} value={match.id}>
+                    {formatMatchOption(match)}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <p>
+              {selectedMatchId
+                ? 'Ein Spiel ist diesem Artikel zugeordnet.'
+                : 'Kein Spiel ausgewählt.'}
             </p>
           </section>
 

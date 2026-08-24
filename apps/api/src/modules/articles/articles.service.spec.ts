@@ -5,6 +5,7 @@ const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findCompetition = jest.fn();
 const findUniqueCompetition = jest.fn();
+const findUniqueMatch = jest.fn();
 const findClub = jest.fn();
 const findManyClub = jest.fn();
 const findManyCategory = jest.fn();
@@ -23,6 +24,9 @@ jest.mock('@kurvenfunk/database', () => ({
     competition: {
       findUniqueOrThrow: findCompetition,
       findUnique: findUniqueCompetition,
+    },
+    match: {
+      findUnique: findUniqueMatch,
     },
     club: {
       findUnique: findClub,
@@ -65,6 +69,7 @@ describe('ArticlesService', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findUniqueCompetition.mockReset();
+    findUniqueMatch.mockReset();
     findClub.mockReset();
     findManyClub.mockReset();
     findManyCategory.mockReset();
@@ -634,6 +639,7 @@ describe('ArticlesService', () => {
           isTopNews: false,
           authorId,
           competitionId: null,
+          matchId: null,
           clubs: {
             create: [],
           },
@@ -1640,6 +1646,7 @@ describe('article competition assignments', () => {
     updateArticle.mockReset();
     findCompetition.mockReset();
     findUniqueCompetition.mockReset();
+    findUniqueMatch.mockReset();
     findClub.mockReset();
     findManyClub.mockReset();
     findManyCategory.mockReset();
@@ -1849,5 +1856,295 @@ describe('article competition assignments', () => {
         },
       }),
     );
+  });
+});
+
+describe('article match assignments', () => {
+  const articleId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const authorId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const assignedCompetitionId = '22222222-2222-4222-8222-222222222222';
+  const assignedMatchId = '66666666-6666-4666-8666-666666666666';
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findUniqueArticle.mockReset();
+    findFirstArticle.mockReset();
+    createArticle.mockReset();
+    updateArticle.mockReset();
+    findCompetition.mockReset();
+    findUniqueCompetition.mockReset();
+    findUniqueMatch.mockReset();
+    findClub.mockReset();
+    findManyClub.mockReset();
+    findManyCategory.mockReset();
+    findManyTag.mockReset();
+    disconnect.mockReset();
+  });
+
+  it('creates an article with a match assignment', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: true,
+    });
+    findUniqueMatch.mockResolvedValue({
+      id: assignedMatchId,
+      competitionId: assignedCompetitionId,
+    });
+    createArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: assignedCompetitionId,
+      matchId: assignedMatchId,
+    });
+
+    const service = new ArticlesService();
+
+    await service.create(
+      {
+        title: 'Matchbericht',
+        slug: 'matchbericht',
+        lead: null,
+        content: {
+          type: 'doc',
+          content: [],
+        },
+        competitionId: assignedCompetitionId,
+        matchId: assignedMatchId,
+        clubIds: [],
+        categoryIds: [],
+        tagIds: [],
+      },
+      authorId,
+    );
+
+    expect(findUniqueMatch).toHaveBeenCalledWith({
+      where: {
+        id: assignedMatchId,
+      },
+      select: {
+        id: true,
+        competitionId: true,
+      },
+    });
+
+    const createCall = createArticle.mock.calls[0]?.[0] as {
+      data: {
+        competitionId: string | null;
+        matchId: string | null;
+      };
+    };
+
+    expect(createCall.data.competitionId).toBe(assignedCompetitionId);
+    expect(createCall.data.matchId).toBe(assignedMatchId);
+  });
+
+  it('rejects an unknown match assignment', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: true,
+    });
+    findUniqueMatch.mockResolvedValue(null);
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Unknown Match',
+          slug: 'unknown-match',
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          competitionId: assignedCompetitionId,
+          matchId: assignedMatchId,
+          clubIds: [],
+          categoryIds: [],
+          tagIds: [],
+        },
+        authorId,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_MATCH_INVALID',
+        message: 'Article match is invalid',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('rejects a match from another competition', async () => {
+    findUniqueArticle.mockResolvedValue(null);
+    findUniqueCompetition.mockResolvedValue({
+      id: assignedCompetitionId,
+      active: true,
+    });
+    findUniqueMatch.mockResolvedValue({
+      id: assignedMatchId,
+      competitionId: '77777777-7777-4777-8777-777777777777',
+    });
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.create(
+        {
+          title: 'Wrong Competition',
+          slug: 'wrong-competition',
+          content: {
+            type: 'doc',
+            content: [],
+          },
+          competitionId: assignedCompetitionId,
+          matchId: assignedMatchId,
+          clubIds: [],
+          categoryIds: [],
+          tagIds: [],
+        },
+        authorId,
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_MATCH_COMPETITION_MISMATCH',
+        message: 'Article match does not belong to the selected competition',
+      },
+    });
+
+    expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('updates an article match assignment', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: articleId,
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      competitionId: assignedCompetitionId,
+      matchId: null,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    findUniqueMatch.mockResolvedValue({
+      id: assignedMatchId,
+      competitionId: assignedCompetitionId,
+    });
+
+    updateArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: assignedCompetitionId,
+      matchId: assignedMatchId,
+    });
+
+    const service = new ArticlesService();
+
+    await service.update(articleId, {
+      matchId: assignedMatchId,
+    });
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: articleId,
+        },
+        data: {
+          matchId: assignedMatchId,
+        },
+      }),
+    );
+  });
+
+  it('allows removing the match assignment', async () => {
+    findUniqueArticle.mockResolvedValue({
+      id: articleId,
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      competitionId: assignedCompetitionId,
+      matchId: assignedMatchId,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    updateArticle.mockResolvedValue({
+      id: articleId,
+      competitionId: assignedCompetitionId,
+      matchId: null,
+    });
+
+    const service = new ArticlesService();
+
+    await service.update(articleId, {
+      matchId: null,
+    });
+
+    expect(findUniqueMatch).not.toHaveBeenCalled();
+
+    expect(updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          matchId: null,
+        },
+      }),
+    );
+  });
+
+  it('rejects changing the competition while keeping a match from another competition', async () => {
+    const newCompetitionId = '88888888-8888-4888-8888-888888888888';
+
+    findUniqueArticle.mockResolvedValue({
+      id: articleId,
+      title: 'Article',
+      slug: 'article',
+      content: {
+        type: 'doc',
+        content: [],
+      },
+      status: 'DRAFT',
+      deletedAt: null,
+      competitionId: assignedCompetitionId,
+      matchId: assignedMatchId,
+      clubs: [],
+      categories: [],
+      tags: [],
+    });
+
+    findUniqueCompetition.mockResolvedValue({
+      id: newCompetitionId,
+      active: true,
+    });
+
+    findUniqueMatch.mockResolvedValue({
+      id: assignedMatchId,
+      competitionId: assignedCompetitionId,
+    });
+
+    const service = new ArticlesService();
+
+    await expect(
+      service.update(articleId, {
+        competitionId: newCompetitionId,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'ARTICLE_MATCH_COMPETITION_MISMATCH',
+      },
+    });
+
+    expect(updateArticle).not.toHaveBeenCalled();
   });
 });

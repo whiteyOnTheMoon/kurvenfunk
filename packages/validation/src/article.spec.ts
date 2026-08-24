@@ -317,3 +317,45 @@ describe('article competition assignment validation', () => {
     );
   });
 });
+
+describe('article match assignment validation', () => {
+  const matchId = '66666666-6666-4666-8666-666666666666';
+
+  it('does not inject matchId into an unrelated partial update', () => {
+    const result = updateArticleSchema.parse({
+      title: 'Updated title',
+    });
+
+    assert.deepEqual(result, {
+      title: 'Updated title',
+    });
+  });
+
+  it('accepts a match id on article updates', () => {
+    const result = updateArticleSchema.parse({
+      matchId,
+    });
+
+    assert.deepEqual(result, {
+      matchId,
+    });
+  });
+
+  it('accepts removing the match explicitly', () => {
+    const result = updateArticleSchema.parse({
+      matchId: null,
+    });
+
+    assert.deepEqual(result, {
+      matchId: null,
+    });
+  });
+
+  it('rejects an invalid match id', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        matchId: 'not-a-uuid',
+      }),
+    );
+  });
+});
