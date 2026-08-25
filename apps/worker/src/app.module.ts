@@ -1,10 +1,14 @@
+import { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS, QUEUE_NAMES } from '@kurvenfunk/types';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS, QUEUE_NAMES } from '@kurvenfunk/types';
-import { TestJobService } from './jobs/test-job.service';
-import { TestProcessor } from './processors/test.processor';
 import { validateEnvironment } from './config/env.validation';
+import { DatabaseService } from './database/database.service';
+import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
+import { TestJobService } from './jobs/test-job.service';
+import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
+import { TestProcessor } from './processors/test.processor';
+import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
   imports: [
@@ -35,6 +39,13 @@ import { validateEnvironment } from './config/env.validation';
       })),
     ),
   ],
-  providers: [TestProcessor, TestJobService],
+  providers: [
+    DatabaseService,
+    ScheduledPublishingService,
+    ScheduledPublishingProcessor,
+    ScheduledPublishingJobService,
+    TestProcessor,
+    TestJobService,
+  ],
 })
 export class AppModule {}

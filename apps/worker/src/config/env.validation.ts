@@ -10,6 +10,8 @@ const workerEnvSchema = z
 
     REDIS_PASSWORD: z.string().min(1),
 
+    DATABASE_URL: z.string().trim().min(1),
+
     WORKER_RUN_STARTUP_TEST: z
       .enum(['true', 'false'])
       .default('false')
