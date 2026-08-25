@@ -3,6 +3,8 @@ const findUniqueArticle = jest.fn<Promise<unknown>, [unknown]>();
 const findFirstArticle = jest.fn<Promise<unknown>, [unknown]>();
 const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
+const createArticleRevision = jest.fn<Promise<unknown>, [unknown]>();
+const transaction = jest.fn();
 const findCompetition = jest.fn();
 const findUniqueCompetition = jest.fn();
 const findUniqueMatch = jest.fn();
@@ -22,6 +24,10 @@ jest.mock('@kurvenfunk/database', () => ({
       create: createArticle,
       update: updateArticle,
     },
+    articleRevision: {
+      create: createArticleRevision,
+    },
+    $transaction: transaction,
     competition: {
       findUniqueOrThrow: findCompetition,
       findUnique: findUniqueCompetition,
@@ -71,6 +77,20 @@ describe('ArticlesService', () => {
     findFirstArticle.mockReset();
     createArticle.mockReset();
     updateArticle.mockReset();
+    createArticleRevision.mockReset();
+    transaction.mockReset();
+    transaction.mockImplementation(async (callback) =>
+      callback({
+        article: {
+          update: updateArticle,
+        },
+        articleRevision: {
+          create: createArticleRevision,
+        },
+      }),
+    );
+
+    createArticleRevision.mockResolvedValue({});
     findCompetition.mockReset();
     findUniqueCompetition.mockReset();
     findUniqueMatch.mockReset();
@@ -847,6 +867,123 @@ describe('ArticlesService', () => {
           },
         },
       });
+    });
+
+    it('stores the previous editorial state as a revision before updating', async () => {
+      const previousContent = {
+        type: 'doc' as const,
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: 'Alter Inhalt',
+              },
+            ],
+          },
+        ],
+      };
+
+      const previousArticle = {
+        ...draftArticle,
+        title: 'Alter Titel',
+        slug: 'alter-slug',
+        lead: 'Alter Lead',
+        content: previousContent,
+        isTopNews: true,
+        competitionId: '22222222-2222-4222-8222-222222222222',
+        matchId: '33333333-3333-4333-8333-333333333333',
+        leadMediaId: '77777777-7777-4777-8777-777777777777',
+        seoTitle: 'Alter SEO-Titel',
+        seoDescription: 'Alte SEO-Beschreibung',
+        canonicalUrl: 'https://kurvenfunk.at/artikel/alter-slug',
+        ogImageId: '88888888-8888-4888-8888-888888888888',
+        clubs: [
+          {
+            clubId: '55555555-5555-4555-8555-555555555555',
+          },
+        ],
+        categories: [
+          {
+            categoryId: '44444444-4444-4444-8444-444444444444',
+          },
+        ],
+        tags: [
+          {
+            tagId: '66666666-6666-4666-8666-666666666666',
+          },
+        ],
+      };
+
+      findUniqueArticle.mockResolvedValue(previousArticle);
+      updateArticle.mockResolvedValue({
+        ...previousArticle,
+        title: 'Neuer Titel',
+      });
+
+      await service.update(articleId, {
+        title: 'Neuer Titel',
+      });
+
+      expect(transaction).toHaveBeenCalledTimes(1);
+
+      expect(createArticleRevision).toHaveBeenCalledWith({
+        data: {
+          articleId,
+          title: 'Alter Titel',
+          slug: 'alter-slug',
+          lead: 'Alter Lead',
+          content: previousContent,
+          isTopNews: true,
+          competitionId: '22222222-2222-4222-8222-222222222222',
+          matchId: '33333333-3333-4333-8333-333333333333',
+          leadMediaId: '77777777-7777-4777-8777-777777777777',
+          seoTitle: 'Alter SEO-Titel',
+          seoDescription: 'Alte SEO-Beschreibung',
+          canonicalUrl: 'https://kurvenfunk.at/artikel/alter-slug',
+          ogImageId: '88888888-8888-4888-8888-888888888888',
+          clubIds: ['55555555-5555-4555-8555-555555555555'],
+          categoryIds: ['44444444-4444-4444-8444-444444444444'],
+          tagIds: ['66666666-6666-4666-8666-666666666666'],
+        },
+      });
+
+      expect(updateArticle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: articleId,
+          },
+          data: {
+            title: 'Neuer Titel',
+          },
+        }),
+      );
+
+      expect(createArticleRevision.mock.invocationCallOrder[0]).toBeLessThan(
+        updateArticle.mock.invocationCallOrder[0]!,
+      );
+    });
+
+    it('does not create a revision when article validation fails', async () => {
+      const leadMediaId = '77777777-7777-4777-8777-777777777777';
+
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstMedia.mockResolvedValue(null);
+
+      await expect(
+        service.update(articleId, {
+          leadMediaId,
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_LEAD_MEDIA_INVALID',
+        },
+      });
+
+      expect(transaction).not.toHaveBeenCalled();
+      expect(createArticleRevision).not.toHaveBeenCalled();
+      expect(updateArticle).not.toHaveBeenCalled();
     });
 
     it('assigns active lead media during article update', async () => {

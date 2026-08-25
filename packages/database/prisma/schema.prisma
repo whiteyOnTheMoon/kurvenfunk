@@ -481,6 +481,7 @@ model Article {
   categories ArticleCategory[]
   tags       ArticleTag[]
   comments   Comment[]
+  revisions  ArticleRevision[]
 
   entityMatches EntityMatch[]
 
@@ -494,6 +495,31 @@ model Article {
   @@index([ogImageId])
   @@index([isTopNews, publishedAt])
   @@index([status, publishedAt])
+}
+
+model ArticleRevision {
+  id             String   @id @default(uuid()) @db.Uuid
+  articleId      String   @db.Uuid
+  title          String
+  slug           String
+  lead           String?
+  content        Json
+  isTopNews      Boolean
+  competitionId  String?  @db.Uuid
+  matchId        String?  @db.Uuid
+  leadMediaId    String?  @db.Uuid
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  ogImageId      String?  @db.Uuid
+  clubIds        Json
+  categoryIds    Json
+  tagIds         Json
+  createdAt      DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, createdAt])
 }
 
 model ArticleClub {

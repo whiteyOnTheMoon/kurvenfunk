@@ -123,6 +123,10 @@ function toPrismaJson(value: CreateArticleInput['content']): Prisma.InputJsonVal
   return value as Prisma.InputJsonValue;
 }
 
+function storedJsonToPrismaInput(value: Prisma.JsonValue): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
+
 @Injectable()
 export class ArticlesService implements OnModuleDestroy {
   private async validateClubIds(clubIds: string[]) {
@@ -544,85 +548,108 @@ export class ArticlesService implements OnModuleDestroy {
       await this.validateTagIds(tagIds);
     }
 
-    return this.database.article.update({
-      where: {
-        id,
-      },
-      data: {
-        ...data,
-        ...(content !== undefined
-          ? {
-              content: toPrismaJson(content),
-            }
-          : {}),
-        ...(clubIds !== undefined
-          ? {
-              clubs: {
-                deleteMany: {},
-                create: [...new Set(clubIds)].map((clubId) => ({
-                  clubId,
-                })),
-              },
-            }
-          : {}),
-        ...(categoryIds !== undefined
-          ? {
-              categories: {
-                deleteMany: {},
-                create: [...new Set(categoryIds)].map((categoryId) => ({
-                  categoryId,
-                })),
-              },
-            }
-          : {}),
-        ...(tagIds !== undefined
-          ? {
-              tags: {
-                deleteMany: {},
-                create: [...new Set(tagIds)].map((tagId) => ({
-                  tagId,
-                })),
-              },
-            }
-          : {}),
-      },
-      include: {
-        leadMedia: {
-          select: {
-            id: true,
-            originalFileName: true,
-            mimeType: true,
-            width: true,
-            height: true,
-            altText: true,
+    return this.database.$transaction(async (transaction) => {
+      await transaction.articleRevision.create({
+        data: {
+          articleId: article.id,
+          title: article.title,
+          slug: article.slug,
+          lead: article.lead,
+          content: storedJsonToPrismaInput(article.content),
+          isTopNews: article.isTopNews,
+          competitionId: article.competitionId,
+          matchId: article.matchId,
+          leadMediaId: article.leadMediaId,
+          seoTitle: article.seoTitle,
+          seoDescription: article.seoDescription,
+          canonicalUrl: article.canonicalUrl,
+          ogImageId: article.ogImageId,
+          clubIds: article.clubs?.map(({ clubId }) => clubId) ?? [],
+          categoryIds: article.categories?.map(({ categoryId }) => categoryId) ?? [],
+          tagIds: article.tags?.map(({ tagId }) => tagId) ?? [],
+        },
+      });
+
+      return transaction.article.update({
+        where: {
+          id,
+        },
+        data: {
+          ...data,
+          ...(content !== undefined
+            ? {
+                content: toPrismaJson(content),
+              }
+            : {}),
+          ...(clubIds !== undefined
+            ? {
+                clubs: {
+                  deleteMany: {},
+                  create: [...new Set(clubIds)].map((clubId) => ({
+                    clubId,
+                  })),
+                },
+              }
+            : {}),
+          ...(categoryIds !== undefined
+            ? {
+                categories: {
+                  deleteMany: {},
+                  create: [...new Set(categoryIds)].map((categoryId) => ({
+                    categoryId,
+                  })),
+                },
+              }
+            : {}),
+          ...(tagIds !== undefined
+            ? {
+                tags: {
+                  deleteMany: {},
+                  create: [...new Set(tagIds)].map((tagId) => ({
+                    tagId,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: {
+          leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
+          ogImage: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
+          clubs: {
+            include: {
+              club: true,
+            },
+          },
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
           },
         },
-        ogImage: {
-          select: {
-            id: true,
-            originalFileName: true,
-            mimeType: true,
-            width: true,
-            height: true,
-            altText: true,
-          },
-        },
-        clubs: {
-          include: {
-            club: true,
-          },
-        },
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-      },
+      });
     });
   }
 
