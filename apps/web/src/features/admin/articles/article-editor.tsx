@@ -104,6 +104,11 @@ interface EditorialArticle {
   title: string;
   slug: string;
   lead: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  canonicalUrl: string | null;
+  ogImageId: string | null;
+  ogImage: EditorialMediaItem | null;
   content: JSONContent;
   status: ArticleStatus;
   scheduledAt?: string | null;
@@ -144,6 +149,10 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [lead, setLead] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
+  const [canonicalUrl, setCanonicalUrl] = useState('');
+  const [selectedOgImage, setSelectedOgImage] = useState<EditorialMediaItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(Boolean(articleId));
@@ -167,7 +176,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
   const [error, setError] = useState<string>();
   const [savedArticle, setSavedArticle] = useState<EditorialArticle>();
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-  const [mediaPickerMode, setMediaPickerMode] = useState<'content' | 'lead'>('content');
+  const [mediaPickerMode, setMediaPickerMode] = useState<'content' | 'lead' | 'og'>('content');
   const [selectedLeadMedia, setSelectedLeadMedia] = useState<EditorialMediaItem | null>(null);
   const [mediaItems, setMediaItems] = useState<EditorialMediaItem[]>([]);
   const [mediaNextCursor, setMediaNextCursor] = useState<string | null>(null);
@@ -502,7 +511,11 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
         setSlug(article.slug);
         setSlugTouched(true);
         setLead(article.lead ?? '');
+        setSeoTitle(article.seoTitle ?? '');
+        setSeoDescription(article.seoDescription ?? '');
+        setCanonicalUrl(article.canonicalUrl ?? '');
         setSelectedLeadMedia(article.leadMedia ?? null);
+        setSelectedOgImage(article.ogImage ?? null);
         setSelectedCompetitionId(article.competitionId ?? '');
         setSelectedMatchId(article.matchId ?? '');
         setSelectedClubIds(article.clubs?.map((assignment) => assignment.clubId) ?? []);
@@ -656,7 +669,7 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     }
   }
 
-  function openMediaPicker(mode: 'content' | 'lead') {
+  function openMediaPicker(mode: 'content' | 'lead' | 'og') {
     if (mode === 'content' && !editor) {
       return;
     }
@@ -707,6 +720,9 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
     const trimmedTitle = title.trim();
     const trimmedSlug = slug.trim();
     const trimmedLead = lead.trim();
+    const trimmedSeoTitle = seoTitle.trim();
+    const trimmedSeoDescription = seoDescription.trim();
+    const trimmedCanonicalUrl = canonicalUrl.trim();
 
     if (!trimmedTitle) {
       setError('Bitte einen Titel eingeben.');
@@ -738,6 +754,10 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
             slug: trimmedSlug,
             lead: trimmedLead || null,
             leadMediaId: selectedLeadMedia?.id ?? null,
+            seoTitle: trimmedSeoTitle || null,
+            seoDescription: trimmedSeoDescription || null,
+            canonicalUrl: trimmedCanonicalUrl || null,
+            ogImageId: selectedOgImage?.id ?? null,
             content: editor.getJSON(),
             competitionId: selectedCompetitionId || null,
             matchId: selectedMatchId || null,
@@ -1385,6 +1405,72 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
           </section>
 
           <section className={styles.sidebarCard}>
+            <span className={styles.sidebarLabel}>SEO</span>
+
+            <Field label="SEO-Titel">
+              <Input
+                value={seoTitle}
+                maxLength={300}
+                disabled={saving || changingStatus}
+                onChange={(event) => setSeoTitle(event.target.value)}
+                placeholder={title || 'SEO-Titel'}
+              />
+            </Field>
+
+            <Field label="SEO-Beschreibung">
+              <Textarea
+                value={seoDescription}
+                maxLength={500}
+                disabled={saving || changingStatus}
+                onChange={(event) => setSeoDescription(event.target.value)}
+                placeholder={lead || 'Kurze Beschreibung für Suchmaschinen'}
+              />
+            </Field>
+
+            <Field label="Canonical URL">
+              <Input
+                type="url"
+                value={canonicalUrl}
+                disabled={saving || changingStatus}
+                onChange={(event) => setCanonicalUrl(event.target.value)}
+                placeholder="https://kurvenfunk.at/artikel/..."
+              />
+            </Field>
+
+            <span className={styles.sidebarLabel}>OG-Bild</span>
+
+            {selectedOgImage ? (
+              <div className={styles.leadMedia}>
+                <div className={styles.leadMediaPreview}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${apiUrl}/api/v1/media/${encodeURIComponent(selectedOgImage.id)}/content`}
+                    alt={selectedOgImage.altText ?? ''}
+                  />
+                </div>
+
+                <strong>{selectedOgImage.originalFileName ?? 'Bild'}</strong>
+
+                <div className={styles.leadMediaActions}>
+                  <Button variant="secondary" onClick={() => openMediaPicker('og')}>
+                    Ändern
+                  </Button>
+                  <Button variant="outline" onClick={() => setSelectedOgImage(null)}>
+                    Entfernen
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p>Noch kein OG-Bild ausgewählt.</p>
+                <Button variant="secondary" onClick={() => openMediaPicker('og')}>
+                  OG-Bild auswählen
+                </Button>
+              </>
+            )}
+          </section>
+
+          <section className={styles.sidebarCard}>
             <span className={styles.sidebarLabel}>Editor</span>
             <p>
               Unterstützt Text, H2–H4, Links, Listen, Zitate und Bilder aus der Medienbibliothek.
@@ -1413,7 +1499,11 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
               <div>
                 <span className={styles.sidebarLabel}>Medienbibliothek</span>
                 <h2 id="article-media-picker-title">
-                  {mediaPickerMode === 'lead' ? 'Leadbild auswählen' : 'Bild einfügen'}
+                  {mediaPickerMode === 'lead'
+                    ? 'Leadbild auswählen'
+                    : mediaPickerMode === 'og'
+                      ? 'OG-Bild auswählen'
+                      : 'Bild einfügen'}
                 </h2>
               </div>
 

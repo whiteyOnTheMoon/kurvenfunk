@@ -401,3 +401,64 @@ describe('article match assignment validation', () => {
     );
   });
 });
+
+describe('article SEO validation', () => {
+  const ogImageId = '88888888-8888-4888-8888-888888888888';
+
+  it('accepts valid SEO fields', () => {
+    const result = updateArticleSchema.parse({
+      seoTitle: '  Rapid gewinnt in Graz  ',
+      seoDescription: '  Spielbericht und Analyse zur Partie.  ',
+      canonicalUrl: 'https://kurvenfunk.at/artikel/rapid-gewinnt-in-graz',
+      ogImageId,
+    });
+
+    assert.deepEqual(result, {
+      seoTitle: 'Rapid gewinnt in Graz',
+      seoDescription: 'Spielbericht und Analyse zur Partie.',
+      canonicalUrl: 'https://kurvenfunk.at/artikel/rapid-gewinnt-in-graz',
+      ogImageId,
+    });
+  });
+
+  it('accepts clearing SEO fields explicitly', () => {
+    const result = updateArticleSchema.parse({
+      seoTitle: null,
+      seoDescription: null,
+      canonicalUrl: null,
+      ogImageId: null,
+    });
+
+    assert.deepEqual(result, {
+      seoTitle: null,
+      seoDescription: null,
+      canonicalUrl: null,
+      ogImageId: null,
+    });
+  });
+
+  it('rejects unsafe canonical URLs', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        canonicalUrl: 'javascript:alert(1)',
+      }),
+    );
+  });
+
+  it('rejects invalid og image ids', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        ogImageId: 'not-a-uuid',
+      }),
+    );
+  });
+
+  it('rejects overly long SEO fields', () => {
+    assert.throws(() =>
+      updateArticleSchema.parse({
+        seoTitle: 'x'.repeat(301),
+        seoDescription: 'x'.repeat(501),
+      }),
+    );
+  });
+});

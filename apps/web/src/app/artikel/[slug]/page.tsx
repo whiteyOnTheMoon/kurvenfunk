@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { ArticleDetail } from '../../../features/articles/article-detail';
@@ -9,9 +10,28 @@ interface ArticlePageProps {
   }>;
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { slug } = await params;
+interface ArticleMetadataData {
+  title: string;
+  slug: string;
+  lead: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  canonicalUrl: string | null;
+  ogImage: {
+    id: string;
+    altText: string | null;
+    width: number | null;
+    height: number | null;
+  } | null;
+  leadMedia: {
+    id: string;
+    altText: string | null;
+    width: number | null;
+    height: number | null;
+  } | null;
+}
 
+async function fetchArticle(slug: string) {
   const response = await fetch(
     `${env.API_URL}/api/v1/articles/by-slug/${encodeURIComponent(slug)}`,
     {
@@ -20,7 +40,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   );
 
   if (response.status === 404) {
-    notFound();
+    return null;
   }
 
   if (!response.ok) {
@@ -28,12 +48,70 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   }
 
   const payload = (await response.json()) as {
-    data: Parameters<typeof ArticleDetail>[0]['article'] | null;
+    data: (Parameters<typeof ArticleDetail>[0]['article'] & ArticleMetadataData) | null;
   };
 
-  if (!payload.data) {
+  return payload.data;
+}
+
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await fetchArticle(slug);
+
+  if (!article) {
+    return {};
+  }
+
+  const title = article.seoTitle || article.title;
+  const description = article.seoDescription || article.lead || undefined;
+  const canonical = article.canonicalUrl || `${env.WEB_URL}/artikel/${article.slug}`;
+  const image = article.ogImage || article.leadMedia;
+
+  const imageUrl = image
+    ? `${env.API_URL}/api/v1/media/${encodeURIComponent(image.id)}/content`
+    : undefined;
+
+  const openGraphImages =
+    image && imageUrl
+      ? [
+          {
+            url: imageUrl,
+            width: image.width ?? undefined,
+            height: image.height ?? undefined,
+            alt: image.altText ?? title,
+          },
+        ]
+      : undefined;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: 'article',
+      title,
+      description,
+      url: canonical,
+      images: openGraphImages,
+    },
+    twitter: {
+      card: imageUrl ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
+
+export default async function ArticlePage({ params }: ArticlePageProps) {
+  const { slug } = await params;
+  const article = await fetchArticle(slug);
+
+  if (!article) {
     notFound();
   }
 
-  return <ArticleDetail article={payload.data} />;
+  return <ArticleDetail article={article} />;
 }

@@ -646,6 +646,10 @@ describe('ArticlesService', () => {
           competitionId: null,
           matchId: null,
           leadMediaId: null,
+          seoTitle: null,
+          seoDescription: null,
+          canonicalUrl: null,
+          ogImageId: null,
           clubs: {
             create: [],
           },
@@ -658,6 +662,16 @@ describe('ArticlesService', () => {
         },
         include: {
           leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
+          ogImage: {
             select: {
               id: true,
               originalFileName: true,
@@ -736,6 +750,16 @@ describe('ArticlesService', () => {
               altText: true,
             },
           },
+          ogImage: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
           clubs: {
             include: {
               club: true,
@@ -787,6 +811,16 @@ describe('ArticlesService', () => {
         },
         include: {
           leadMedia: {
+            select: {
+              id: true,
+              originalFileName: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
+          ogImage: {
             select: {
               id: true,
               originalFileName: true,
@@ -888,6 +922,95 @@ describe('ArticlesService', () => {
         response: {
           code: 'ARTICLE_LEAD_MEDIA_INVALID',
           message: 'Article lead media is invalid or inactive',
+        },
+      });
+
+      expect(updateArticle).not.toHaveBeenCalled();
+    });
+
+    it('updates article SEO fields', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      updateArticle.mockResolvedValue(draftArticle);
+
+      await service.update(articleId, {
+        seoTitle: 'Rapid gewinnt in Graz',
+        seoDescription: 'Spielbericht und Analyse.',
+        canonicalUrl: 'https://kurvenfunk.at/artikel/rapid-gewinnt-in-graz',
+      });
+
+      expect(updateArticle.mock.calls[0]?.[0]).toMatchObject({
+        data: {
+          seoTitle: 'Rapid gewinnt in Graz',
+          seoDescription: 'Spielbericht und Analyse.',
+          canonicalUrl: 'https://kurvenfunk.at/artikel/rapid-gewinnt-in-graz',
+        },
+      });
+    });
+
+    it('assigns active OG image during article update', async () => {
+      const ogImageId = '88888888-8888-4888-8888-888888888888';
+
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstMedia.mockResolvedValue({
+        id: ogImageId,
+      });
+      updateArticle.mockResolvedValue({
+        ...draftArticle,
+        ogImageId,
+      });
+
+      await service.update(articleId, {
+        ogImageId,
+      });
+
+      expect(findFirstMedia).toHaveBeenCalledWith({
+        where: {
+          id: ogImageId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      expect(updateArticle.mock.calls[0]?.[0]).toMatchObject({
+        data: {
+          ogImageId,
+        },
+      });
+    });
+
+    it('removes OG image during article update', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      updateArticle.mockResolvedValue(draftArticle);
+
+      await service.update(articleId, {
+        ogImageId: null,
+      });
+
+      expect(findFirstMedia).not.toHaveBeenCalled();
+
+      expect(updateArticle.mock.calls[0]?.[0]).toMatchObject({
+        data: {
+          ogImageId: null,
+        },
+      });
+    });
+
+    it('rejects unknown or inactive OG image', async () => {
+      const ogImageId = '88888888-8888-4888-8888-888888888888';
+
+      findUniqueArticle.mockResolvedValue(draftArticle);
+      findFirstMedia.mockResolvedValue(null);
+
+      await expect(
+        service.update(articleId, {
+          ogImageId,
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'ARTICLE_OG_IMAGE_INVALID',
+          message: 'Article OG image is invalid or inactive',
         },
       });
 

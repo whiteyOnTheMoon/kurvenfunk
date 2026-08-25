@@ -395,9 +395,10 @@ model Media {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  profileAvatars Profile[] @relation("ProfileAvatar")
-  clubLogos      Club[]    @relation("ClubLogo")
-  articleLeads   Article[] @relation("ArticleLeadMedia")
+  profileAvatars  Profile[] @relation("ProfileAvatar")
+  clubLogos       Club[]    @relation("ClubLogo")
+  articleLeads    Article[] @relation("ArticleLeadMedia")
+  articleOgImages Article[] @relation("ArticleOgImage")
 
   @@index([status])
   @@index([createdAt])
@@ -458,6 +459,10 @@ model Article {
   competitionId      String?       @db.Uuid
   matchId            String?       @db.Uuid
   leadMediaId        String?       @db.Uuid
+  seoTitle           String?
+  seoDescription     String?
+  canonicalUrl       String?
+  ogImageId          String?       @db.Uuid
   scheduledAt        DateTime?
   publishedAt        DateTime?
   archivedAt         DateTime?
@@ -470,6 +475,7 @@ model Article {
   competition Competition?   @relation(fields: [competitionId], references: [id], onDelete: SetNull)
   match       Match?         @relation(fields: [matchId], references: [id], onDelete: SetNull)
   leadMedia   Media?         @relation("ArticleLeadMedia", fields: [leadMediaId], references: [id], onDelete: SetNull)
+  ogImage     Media?         @relation("ArticleOgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
 
   clubs      ArticleClub[]
   categories ArticleCategory[]
@@ -485,6 +491,8 @@ model Article {
   @@index([sourceId])
   @@index([competitionId])
   @@index([matchId])
+  @@index([ogImageId])
+  @@index([isTopNews, publishedAt])
   @@index([status, publishedAt])
 }
 

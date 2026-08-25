@@ -282,6 +282,29 @@ export class ArticlesService implements OnModuleDestroy {
     }
   }
 
+  private async validateOgImageId(ogImageId: string | null | undefined) {
+    if (!ogImageId) {
+      return;
+    }
+
+    const media = await this.database.media.findFirst({
+      where: {
+        id: ogImageId,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!media) {
+      throw new BadRequestException({
+        code: 'ARTICLE_OG_IMAGE_INVALID',
+        message: 'Article OG image is invalid or inactive',
+      });
+    }
+  }
+
   private readonly database: DatabaseClient = createPrismaClient();
 
   async create(input: CreateArticleInput, authorId: string) {
@@ -308,6 +331,7 @@ export class ArticlesService implements OnModuleDestroy {
     await this.validateCompetitionId(input.competitionId ?? null);
     await this.validateMatchId(input.matchId ?? null, input.competitionId ?? null);
     await this.validateLeadMediaId(input.leadMediaId);
+    await this.validateOgImageId(input.ogImageId);
     await this.validateClubIds(clubIds);
     await this.validateCategoryIds(categoryIds);
     await this.validateTagIds(tagIds);
@@ -323,6 +347,10 @@ export class ArticlesService implements OnModuleDestroy {
         competitionId: input.competitionId ?? null,
         matchId: input.matchId ?? null,
         leadMediaId: input.leadMediaId ?? null,
+        seoTitle: input.seoTitle ?? null,
+        seoDescription: input.seoDescription ?? null,
+        canonicalUrl: input.canonicalUrl ?? null,
+        ogImageId: input.ogImageId ?? null,
         clubs: {
           create: clubIds.map((clubId) => ({
             clubId,
@@ -341,6 +369,16 @@ export class ArticlesService implements OnModuleDestroy {
       },
       include: {
         leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
+        ogImage: {
           select: {
             id: true,
             originalFileName: true,
@@ -402,6 +440,16 @@ export class ArticlesService implements OnModuleDestroy {
       },
       include: {
         leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
+        ogImage: {
           select: {
             id: true,
             originalFileName: true,
@@ -480,6 +528,10 @@ export class ArticlesService implements OnModuleDestroy {
       await this.validateLeadMediaId(input.leadMediaId);
     }
 
+    if (input.ogImageId !== undefined) {
+      await this.validateOgImageId(input.ogImageId);
+    }
+
     if (clubIds !== undefined) {
       await this.validateClubIds(clubIds);
     }
@@ -536,6 +588,16 @@ export class ArticlesService implements OnModuleDestroy {
       },
       include: {
         leadMedia: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            altText: true,
+          },
+        },
+        ogImage: {
           select: {
             id: true,
             originalFileName: true,
@@ -805,6 +867,9 @@ export class ArticlesService implements OnModuleDestroy {
         content: true,
         publishedAt: true,
         originalUrl: true,
+        seoTitle: true,
+        seoDescription: true,
+        canonicalUrl: true,
         author: {
           select: {
             id: true,
@@ -827,6 +892,16 @@ export class ArticlesService implements OnModuleDestroy {
             copyright: true,
             source: true,
             sourceUrl: true,
+            width: true,
+            height: true,
+          },
+        },
+        ogImage: {
+          select: {
+            id: true,
+            externalUrl: true,
+            storageKey: true,
+            altText: true,
             width: true,
             height: true,
           },
