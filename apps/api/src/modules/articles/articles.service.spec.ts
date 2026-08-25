@@ -4,7 +4,19 @@ const findFirstArticle = jest.fn<Promise<unknown>, [unknown]>();
 const createArticle = jest.fn<Promise<unknown>, [unknown]>();
 const updateArticle = jest.fn<Promise<unknown>, [unknown]>();
 const createArticleRevision = jest.fn<Promise<unknown>, [unknown]>();
-const transaction = jest.fn();
+
+type ArticleTransactionClient = {
+  article: {
+    update: (input: unknown) => Promise<unknown>;
+  };
+  articleRevision: {
+    create: (input: unknown) => Promise<unknown>;
+  };
+};
+
+type ArticleTransactionCallback = (client: ArticleTransactionClient) => unknown;
+
+const transaction = jest.fn<Promise<unknown>, [ArticleTransactionCallback]>();
 const findCompetition = jest.fn();
 const findUniqueCompetition = jest.fn();
 const findUniqueMatch = jest.fn();
@@ -79,15 +91,17 @@ describe('ArticlesService', () => {
     updateArticle.mockReset();
     createArticleRevision.mockReset();
     transaction.mockReset();
-    transaction.mockImplementation(async (callback) =>
-      callback({
-        article: {
-          update: updateArticle,
-        },
-        articleRevision: {
-          create: createArticleRevision,
-        },
-      }),
+    transaction.mockImplementation((callback) =>
+      Promise.resolve(
+        callback({
+          article: {
+            update: updateArticle,
+          },
+          articleRevision: {
+            create: createArticleRevision,
+          },
+        }),
+      ),
     );
 
     createArticleRevision.mockResolvedValue({});
@@ -961,7 +975,7 @@ describe('ArticlesService', () => {
       );
 
       expect(createArticleRevision.mock.invocationCallOrder[0]).toBeLessThan(
-        updateArticle.mock.invocationCallOrder[0]!,
+        updateArticle.mock.invocationCallOrder[0],
       );
     });
 
