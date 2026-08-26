@@ -1,6 +1,6 @@
 import { createLogger } from '@kurvenfunk/logger';
 import { QUEUE_NAMES } from '@kurvenfunk/types';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
@@ -8,6 +8,7 @@ import { NewsClubMatchingService } from '../services/news-club-matching.service'
 import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
+import { NewsImportDeadLetterService } from '../services/news-import-dead-letter.service';
 import { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
@@ -34,6 +35,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsCompetitionMatchingService: NewsCompetitionMatchingService,
     private readonly newsMatchMatchingService: NewsMatchMatchingService,
     private readonly newsConfidenceScoreService: NewsConfidenceScoreService,
+    private readonly newsImportDeadLetterService: NewsImportDeadLetterService,
   ) {
     super();
   }
@@ -176,6 +178,36 @@ export class NewsImportProcessor extends WorkerHost {
       });
 
       throw error;
+    }
+  }
+
+  @OnWorkerEvent('failed')
+  async onFailed(job: Job<NewsImportJobPayload> | undefined, error: Error): Promise<void> {
+    if (job === undefined) {
+      logger.error('News import failed event received without job', {
+        event: 'queue.job.dead_letter_skipped',
+        metadata: {
+          queue: QUEUE_NAMES.NEWS_IMPORT,
+          failedReason: error.message,
+        },
+      });
+
+      return;
+    }
+
+    try {
+      await this.newsImportDeadLetterService.moveToDeadLetter(job, error);
+    } catch (deadLetterError: unknown) {
+      logger.error('Failed to move news import job to dead letter queue', {
+        event: 'queue.job.dead_letter_failed',
+        metadata: {
+          queue: QUEUE_NAMES.NEWS_IMPORT,
+          jobId: job.id,
+          jobName: job.name,
+          providerKey: job.data.providerKey,
+          error: deadLetterError,
+        },
+      });
     }
   }
 

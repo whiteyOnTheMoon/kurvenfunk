@@ -26,6 +26,7 @@ import type { NewsClubMatchingService } from '../services/news-club-matching.ser
 import type { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import type { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
 import type { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
+import type { NewsImportDeadLetterService } from '../services/news-import-dead-letter.service';
 import type { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import type { NewsNormalizationService } from '../services/news-normalization.service';
 import type { NewsValidationService } from '../services/news-validation.service';
@@ -47,6 +48,7 @@ describe('NewsImportProcessor', () => {
   const scoreConfidence = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
+  const moveToDeadLetter = jest.fn();
 
   const importSession = {
     providerId: '11111111-1111-4111-8111-111111111111',
@@ -153,6 +155,10 @@ describe('NewsImportProcessor', () => {
       score: scoreConfidence,
     } as unknown as NewsConfidenceScoreService;
 
+    const newsImportDeadLetterService = {
+      moveToDeadLetter,
+    } as unknown as NewsImportDeadLetterService;
+
     processor = new NewsImportProcessor(
       provider,
       normalizer,
@@ -164,6 +170,7 @@ describe('NewsImportProcessor', () => {
       newsCompetitionMatchingService,
       newsMatchMatchingService,
       newsConfidenceScoreService,
+      newsImportDeadLetterService,
     );
   });
 
@@ -510,5 +517,21 @@ describe('NewsImportProcessor', () => {
 
     expect(failNewsImport).toHaveBeenCalledWith(importSession, expect.any(Error));
     expect(completeNewsImport).not.toHaveBeenCalled();
+  });
+
+  it('forwards failed jobs to the dead letter service', async () => {
+    const job = createJob();
+    const error = new Error('Provider failure');
+
+    await processor.onFailed(job, error);
+
+    expect(moveToDeadLetter).toHaveBeenCalledTimes(1);
+    expect(moveToDeadLetter).toHaveBeenCalledWith(job, error);
+  });
+
+  it('ignores failed events without a job', async () => {
+    await processor.onFailed(undefined, new Error('Missing job'));
+
+    expect(moveToDeadLetter).not.toHaveBeenCalled();
   });
 });

@@ -9,7 +9,7 @@ export {
   QUEUE_NAMES,
 } from './queue.js';
 
-export type { QueueName } from './queue.js';
+export type { NewsImportDeadLetterPayload, QueueName } from './queue.js';
 
 export * from './news-provider.js';
 

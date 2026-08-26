@@ -16,6 +16,7 @@ import { NewsClubMatchingService } from './services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from './services/news-competition-matching.service';
 import { NewsConfidenceScoreService } from './services/news-confidence-score.service';
 import { NewsDuplicateDetectionService } from './services/news-duplicate-detection.service';
+import { NewsImportDeadLetterService } from './services/news-import-dead-letter.service';
 import { NewsMatchMatchingService } from './services/news-match-matching.service';
 import { NewsNormalizationService } from './services/news-normalization.service';
 import { NewsValidationService } from './services/news-validation.service';
@@ -50,6 +51,14 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
         defaultJobOptions: DEFAULT_JOB_OPTIONS,
       })),
     ),
+
+    BullModule.registerQueue({
+      name: QUEUE_NAMES.NEWS_IMPORT_DEAD_LETTER,
+      defaultJobOptions: {
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    }),
   ],
   providers: [
     DatabaseService,
@@ -60,6 +69,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsCompetitionMatchingService,
     NewsConfidenceScoreService,
     NewsDuplicateDetectionService,
+    NewsImportDeadLetterService,
     NewsMatchMatchingService,
     NewsNormalizationService,
     NewsValidationService,
