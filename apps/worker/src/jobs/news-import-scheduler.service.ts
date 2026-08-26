@@ -1,5 +1,5 @@
 import { createLogger } from '@kurvenfunk/logger';
-import { QUEUE_NAMES } from '@kurvenfunk/types';
+import { NEWS_IMPORT_RETRY_OPTIONS, QUEUE_NAMES } from '@kurvenfunk/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -55,6 +55,7 @@ export class NewsImportSchedulerService implements OnModuleInit {
         data: {
           providerKey: PROVIDER_KEY,
         },
+        opts: NEWS_IMPORT_RETRY_OPTIONS,
       },
     );
 

@@ -23,12 +23,16 @@ export const APPLICATION_QUEUE_NAMES = [
   QUEUE_NAMES.SANCTIONS,
 ] as const;
 
-export const DEFAULT_JOB_OPTIONS = {
+export const NEWS_IMPORT_RETRY_OPTIONS = {
   attempts: 3,
   backoff: {
     type: 'exponential',
     delay: 2_000,
   },
+} as const;
+
+export const DEFAULT_JOB_OPTIONS = {
+  ...NEWS_IMPORT_RETRY_OPTIONS,
   removeOnComplete: {
     count: 1_000,
   },

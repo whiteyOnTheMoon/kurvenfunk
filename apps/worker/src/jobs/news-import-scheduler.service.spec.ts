@@ -11,6 +11,13 @@ jest.mock('@kurvenfunk/types', () => ({
   QUEUE_NAMES: {
     NEWS_IMPORT: 'news-import',
   },
+  NEWS_IMPORT_RETRY_OPTIONS: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 2_000,
+    },
+  },
 }));
 
 import { ConfigService } from '@nestjs/config';
@@ -87,6 +94,13 @@ describe('NewsImportSchedulerService', () => {
         data: {
           providerKey: 'fake',
         },
+        opts: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2_000,
+          },
+        },
       },
     );
   });
@@ -119,6 +133,13 @@ describe('NewsImportSchedulerService', () => {
         name: 'fetch-provider',
         data: {
           providerKey: 'fake',
+        },
+        opts: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2_000,
+          },
         },
       },
     );
