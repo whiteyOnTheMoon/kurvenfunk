@@ -10,7 +10,9 @@ import { TestJobService } from './jobs/test-job.service';
 import { NewsImportProcessor } from './processors/news-import.processor';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
 import { TestProcessor } from './processors/test.processor';
+import { FakeNewsNormalizer } from './providers/fake-news-normalizer';
 import { FakeNewsProvider } from './providers/fake-news-provider';
+import { NewsNormalizationService } from './services/news-normalization.service';
 import { RawPayloadService } from './services/raw-payload.service';
 import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
@@ -46,7 +48,9 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
   providers: [
     DatabaseService,
     FakeNewsProvider,
+    FakeNewsNormalizer,
     NewsImportSchedulerService,
+    NewsNormalizationService,
     RawPayloadService,
     ScheduledPublishingService,
     NewsImportProcessor,

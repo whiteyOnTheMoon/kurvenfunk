@@ -7,3 +7,5 @@ export { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS, QUEUE_NAMES } from './que
 export type { QueueName } from './queue.js';
 
 export * from './news-provider.js';
+
+export * from './news-normalization.js';

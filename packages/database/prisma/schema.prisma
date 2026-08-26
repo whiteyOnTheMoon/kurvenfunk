@@ -1414,6 +1414,8 @@ model ImportRecord {
   externalId          String?
   externalUrl         String?
   contentHash         String?
+  normalizedPayload   Json?
+  normalizedAt        DateTime?
   canonicalEntityType MatchEntityType?
   canonicalEntityId   String?            @db.Uuid
   duplicateOfRecordId String?            @db.Uuid

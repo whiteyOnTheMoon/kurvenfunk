@@ -2,7 +2,9 @@ import { createLogger } from '@kurvenfunk/logger';
 import { QUEUE_NAMES } from '@kurvenfunk/types';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
+import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { NewsNormalizationService } from '../services/news-normalization.service';
 import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
 
 const logger = createLogger({
@@ -17,7 +19,9 @@ export interface NewsImportJobPayload {
 export class NewsImportProcessor extends WorkerHost {
   constructor(
     private readonly fakeNewsProvider: FakeNewsProvider,
+    private readonly fakeNewsNormalizer: FakeNewsNormalizer,
     private readonly rawPayloadService: RawPayloadService,
+    private readonly newsNormalizationService: NewsNormalizationService,
   ) {
     super();
   }
@@ -57,7 +61,13 @@ export class NewsImportProcessor extends WorkerHost {
         });
 
         for (const record of result.records) {
-          await this.rawPayloadService.storeRecord(importSession, record);
+          const storedRecord = await this.rawPayloadService.storeRecord(importSession, record);
+
+          await this.newsNormalizationService.normalizeRecord(
+            storedRecord.importRecordId,
+            record,
+            this.fakeNewsNormalizer,
+          );
         }
 
         pageCount += 1;

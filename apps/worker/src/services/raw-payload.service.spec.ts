@@ -137,7 +137,11 @@ describe('RawPayloadService', () => {
       id: '33333333-3333-4333-8333-333333333333',
     });
 
-    await service.storeRecord(
+    importRecordCreate.mockResolvedValue({
+      id: '44444444-4444-4444-8444-444444444444',
+    });
+
+    const storedRecord = await service.storeRecord(
       {
         providerId: '11111111-1111-4111-8111-111111111111',
         importJobId: '22222222-2222-4222-8222-222222222222',
@@ -170,6 +174,14 @@ describe('RawPayloadService', () => {
         externalUrl: 'https://fake-provider.test/news/fake-001',
         contentHash: expect.stringMatching(/^[a-f0-9]{64}$/),
       }),
+      select: {
+        id: true,
+      },
+    });
+
+    expect(storedRecord).toEqual({
+      rawPayloadId: '33333333-3333-4333-8333-333333333333',
+      importRecordId: '44444444-4444-4444-8444-444444444444',
     });
 
     expect(importJobUpdate).toHaveBeenCalledWith({
@@ -185,7 +197,7 @@ describe('RawPayloadService', () => {
   });
 
   it('produces the same hash for equivalent object key order', async () => {
-    const { service, rawPayloadCreate } = createService();
+    const { service, rawPayloadCreate, importRecordCreate } = createService();
 
     rawPayloadCreate
       .mockResolvedValueOnce({
@@ -193,6 +205,14 @@ describe('RawPayloadService', () => {
       })
       .mockResolvedValueOnce({
         id: '44444444-4444-4444-8444-444444444444',
+      });
+
+    importRecordCreate
+      .mockResolvedValueOnce({
+        id: '55555555-5555-4555-8555-555555555555',
+      })
+      .mockResolvedValueOnce({
+        id: '66666666-6666-4666-8666-666666666666',
       });
 
     const first: NewsProviderRecord = {

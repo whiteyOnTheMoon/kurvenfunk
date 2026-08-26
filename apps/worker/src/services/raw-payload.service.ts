@@ -13,6 +13,11 @@ export interface RawPayloadImportSession {
   importJobId: string;
 }
 
+export interface StoredRawPayloadRecord {
+  rawPayloadId: string;
+  importRecordId: string;
+}
+
 @Injectable()
 export class RawPayloadService {
   constructor(private readonly databaseService: DatabaseService) {}
@@ -63,7 +68,10 @@ export class RawPayloadService {
     };
   }
 
-  async storeRecord(session: RawPayloadImportSession, record: NewsProviderRecord): Promise<string> {
+  async storeRecord(
+    session: RawPayloadImportSession,
+    record: NewsProviderRecord,
+  ): Promise<StoredRawPayloadRecord> {
     const serializedPayload = this.serializePayload(record.payload);
     const payloadHash = createHash('sha256').update(serializedPayload).digest('hex');
     const sizeBytes = BigInt(Buffer.byteLength(serializedPayload, 'utf8'));
@@ -89,7 +97,7 @@ export class RawPayloadService {
         },
       });
 
-      await transaction.importRecord.create({
+      const importRecord = await transaction.importRecord.create({
         data: {
           importJobId: session.importJobId,
           providerId: session.providerId,
@@ -99,6 +107,9 @@ export class RawPayloadService {
           externalId: record.externalId,
           externalUrl: record.externalUrl,
           contentHash: payloadHash,
+        },
+        select: {
+          id: true,
         },
       });
 
@@ -113,10 +124,13 @@ export class RawPayloadService {
         },
       });
 
-      return rawPayload;
+      return {
+        rawPayloadId: rawPayload.id,
+        importRecordId: importRecord.id,
+      };
     });
 
-    return result.id;
+    return result;
   }
 
   async completeNewsImport(session: RawPayloadImportSession): Promise<void> {

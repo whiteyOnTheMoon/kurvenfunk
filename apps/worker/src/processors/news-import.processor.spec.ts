@@ -18,9 +18,12 @@ jest.mock('@kurvenfunk/types', () => ({
   },
 }));
 
+import type { NewsProviderRecord } from '@kurvenfunk/types';
 import type { Job } from 'bullmq';
+import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
-import type { RawPayloadService } from '../services/raw-payload.service';
+import type { NewsNormalizationService } from '../services/news-normalization.service';
+import type { RawPayloadImportSession, RawPayloadService } from '../services/raw-payload.service';
 import { NewsImportProcessor, type NewsImportJobPayload } from './news-import.processor';
 
 describe('NewsImportProcessor', () => {
@@ -29,6 +32,7 @@ describe('NewsImportProcessor', () => {
 
   const startNewsImport = jest.fn();
   const storeRecord = jest.fn();
+  const normalizeRecord = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
 
@@ -41,9 +45,17 @@ describe('NewsImportProcessor', () => {
     jest.clearAllMocks();
 
     provider = new FakeNewsProvider();
+    const normalizer = new FakeNewsNormalizer();
 
     startNewsImport.mockResolvedValue(importSession);
-    storeRecord.mockResolvedValue('33333333-3333-4333-8333-333333333333');
+    storeRecord.mockImplementation(
+      (_session: RawPayloadImportSession, record: NewsProviderRecord) =>
+        Promise.resolve({
+          rawPayloadId: `raw-${record.externalId ?? 'unknown'}`,
+          importRecordId: `import-${record.externalId ?? 'unknown'}`,
+        }),
+    );
+    normalizeRecord.mockResolvedValue(undefined);
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -54,7 +66,16 @@ describe('NewsImportProcessor', () => {
       failNewsImport,
     } as unknown as RawPayloadService;
 
-    processor = new NewsImportProcessor(provider, rawPayloadService);
+    const newsNormalizationService = {
+      normalizeRecord,
+    } as unknown as NewsNormalizationService;
+
+    processor = new NewsImportProcessor(
+      provider,
+      normalizer,
+      rawPayloadService,
+      newsNormalizationService,
+    );
   });
 
   function createJob(
@@ -114,6 +135,30 @@ describe('NewsImportProcessor', () => {
     expect(completeNewsImport).toHaveBeenCalledTimes(1);
     expect(completeNewsImport).toHaveBeenCalledWith(importSession);
     expect(failNewsImport).not.toHaveBeenCalled();
+  });
+
+  it('normalizes every persisted provider record', async () => {
+    await processor.process(createJob());
+
+    expect(normalizeRecord).toHaveBeenCalledTimes(5);
+
+    expect(normalizeRecord).toHaveBeenNthCalledWith(
+      1,
+      'import-fake-001',
+      expect.objectContaining({
+        externalId: 'fake-001',
+      }),
+      expect.any(FakeNewsNormalizer),
+    );
+
+    expect(normalizeRecord).toHaveBeenNthCalledWith(
+      5,
+      'import-fake-005',
+      expect.objectContaining({
+        externalId: 'fake-005',
+      }),
+      expect.any(FakeNewsNormalizer),
+    );
   });
 
   it('rejects an unknown provider without creating an import job', async () => {
