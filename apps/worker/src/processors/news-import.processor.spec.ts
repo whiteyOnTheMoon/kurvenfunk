@@ -1,3 +1,8 @@
+jest.mock('@kurvenfunk/database', () => ({
+  Prisma: {},
+  createPrismaClient: jest.fn(),
+}));
+
 jest.mock('@kurvenfunk/logger', () => ({
   createLogger: () => ({
     info: jest.fn(),
@@ -14,16 +19,42 @@ jest.mock('@kurvenfunk/types', () => ({
 }));
 
 import type { Job } from 'bullmq';
-import { NewsImportProcessor, type NewsImportJobPayload } from './news-import.processor';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import type { RawPayloadService } from '../services/raw-payload.service';
+import { NewsImportProcessor, type NewsImportJobPayload } from './news-import.processor';
 
 describe('NewsImportProcessor', () => {
   let provider: FakeNewsProvider;
   let processor: NewsImportProcessor;
 
+  const startNewsImport = jest.fn();
+  const storeRecord = jest.fn();
+  const completeNewsImport = jest.fn();
+  const failNewsImport = jest.fn();
+
+  const importSession = {
+    providerId: '11111111-1111-4111-8111-111111111111',
+    importJobId: '22222222-2222-4222-8222-222222222222',
+  };
+
   beforeEach(() => {
+    jest.clearAllMocks();
+
     provider = new FakeNewsProvider();
-    processor = new NewsImportProcessor(provider);
+
+    startNewsImport.mockResolvedValue(importSession);
+    storeRecord.mockResolvedValue('33333333-3333-4333-8333-333333333333');
+    completeNewsImport.mockResolvedValue(undefined);
+    failNewsImport.mockResolvedValue(undefined);
+
+    const rawPayloadService = {
+      startNewsImport,
+      storeRecord,
+      completeNewsImport,
+      failNewsImport,
+    } as unknown as RawPayloadService;
+
+    processor = new NewsImportProcessor(provider, rawPayloadService);
   });
 
   function createJob(
@@ -54,7 +85,38 @@ describe('NewsImportProcessor', () => {
     });
   });
 
-  it('rejects an unknown provider', async () => {
+  it('persists every provider record as raw payload', async () => {
+    await processor.process(createJob());
+
+    expect(startNewsImport).toHaveBeenCalledTimes(1);
+    expect(startNewsImport).toHaveBeenCalledWith(provider, {
+      queueJobId: 'news-import-job-1',
+    });
+
+    expect(storeRecord).toHaveBeenCalledTimes(5);
+
+    expect(storeRecord).toHaveBeenNthCalledWith(
+      1,
+      importSession,
+      expect.objectContaining({
+        externalId: 'fake-001',
+      }),
+    );
+
+    expect(storeRecord).toHaveBeenNthCalledWith(
+      5,
+      importSession,
+      expect.objectContaining({
+        externalId: 'fake-005',
+      }),
+    );
+
+    expect(completeNewsImport).toHaveBeenCalledTimes(1);
+    expect(completeNewsImport).toHaveBeenCalledWith(importSession);
+    expect(failNewsImport).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown provider without creating an import job', async () => {
     await expect(
       processor.process(
         createJob({
@@ -62,17 +124,39 @@ describe('NewsImportProcessor', () => {
         }),
       ),
     ).rejects.toThrow('Unknown news provider: unknown');
+
+    expect(startNewsImport).not.toHaveBeenCalled();
+    expect(storeRecord).not.toHaveBeenCalled();
+    expect(failNewsImport).not.toHaveBeenCalled();
   });
 
-  it('rejects an unsupported job name', async () => {
+  it('rejects an unsupported job name without creating an import job', async () => {
     await expect(processor.process(createJob(undefined, 'unknown-job'))).rejects.toThrow(
       'Unsupported news import job: unknown-job',
     );
+
+    expect(startNewsImport).not.toHaveBeenCalled();
+    expect(storeRecord).not.toHaveBeenCalled();
+    expect(failNewsImport).not.toHaveBeenCalled();
   });
 
-  it('propagates provider failures so BullMQ can retry the job', async () => {
+  it('marks the durable import job failed and propagates provider failures', async () => {
     jest.spyOn(provider, 'fetch').mockRejectedValueOnce(new Error('Provider unavailable'));
 
     await expect(processor.process(createJob())).rejects.toThrow('Provider unavailable');
+
+    expect(startNewsImport).toHaveBeenCalledTimes(1);
+    expect(failNewsImport).toHaveBeenCalledTimes(1);
+    expect(failNewsImport).toHaveBeenCalledWith(importSession, expect.any(Error));
+    expect(completeNewsImport).not.toHaveBeenCalled();
+  });
+
+  it('propagates raw payload persistence failures', async () => {
+    storeRecord.mockRejectedValueOnce(new Error('Raw payload write failed'));
+
+    await expect(processor.process(createJob())).rejects.toThrow('Raw payload write failed');
+
+    expect(failNewsImport).toHaveBeenCalledWith(importSession, expect.any(Error));
+    expect(completeNewsImport).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,250 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import type { DatabaseClient } from '@kurvenfunk/database';
+import type { NewsProvider, NewsProviderRecord } from '@kurvenfunk/types';
+import type { DatabaseService } from '../database/database.service';
+import { RawPayloadService } from './raw-payload.service';
+
+jest.mock('@kurvenfunk/database', () => ({
+  Prisma: {},
+  createPrismaClient: jest.fn(),
+}));
+
+describe('RawPayloadService', () => {
+  const provider: NewsProvider = {
+    key: 'fake',
+    name: 'Kurvenfunk Fake News Provider',
+    capabilities: {
+      supportsCursorPagination: true,
+      supportsTimeWindow: true,
+    },
+    fetch: jest.fn(),
+  };
+
+  const record: NewsProviderRecord = {
+    externalId: 'fake-001',
+    externalUrl: 'https://fake-provider.test/news/fake-001',
+    payload: {
+      title: 'Rapid gewinnt',
+      id: 'fake-001',
+      nested: {
+        z: 2,
+        a: 1,
+      },
+    },
+  };
+
+  function createService() {
+    const providerUpsert = jest.fn();
+    const providerUpdate = jest.fn();
+
+    const importJobCreate = jest.fn();
+    const importJobUpdate = jest.fn();
+
+    const rawPayloadCreate = jest.fn();
+    const importRecordCreate = jest.fn();
+
+    const transactionClient = {
+      rawPayload: {
+        create: rawPayloadCreate,
+      },
+      importRecord: {
+        create: importRecordCreate,
+      },
+      importJob: {
+        update: importJobUpdate,
+      },
+    };
+
+    const transaction = jest.fn(async (input: unknown) => {
+      if (typeof input === 'function') {
+        return input(transactionClient);
+      }
+
+      return Promise.all(input as Promise<unknown>[]);
+    });
+
+    const database = {
+      provider: {
+        upsert: providerUpsert,
+        update: providerUpdate,
+      },
+      importJob: {
+        create: importJobCreate,
+        update: importJobUpdate,
+      },
+      $transaction: transaction,
+    } as unknown as DatabaseClient;
+
+    const databaseService = {
+      client: database,
+    } as DatabaseService;
+
+    return {
+      service: new RawPayloadService(databaseService),
+      providerUpsert,
+      providerUpdate,
+      importJobCreate,
+      importJobUpdate,
+      rawPayloadCreate,
+      importRecordCreate,
+      transaction,
+    };
+  }
+
+  it('creates provider and running import job', async () => {
+    const { service, providerUpsert, importJobCreate } = createService();
+
+    providerUpsert.mockResolvedValue({
+      id: '11111111-1111-4111-8111-111111111111',
+    });
+
+    importJobCreate.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+    });
+
+    const session = await service.startNewsImport(provider, {
+      queueJobId: 'bull-job-123',
+    });
+
+    expect(session).toEqual({
+      providerId: '11111111-1111-4111-8111-111111111111',
+      importJobId: '22222222-2222-4222-8222-222222222222',
+    });
+
+    expect(providerUpsert).toHaveBeenCalledTimes(1);
+    expect(importJobCreate).toHaveBeenCalledTimes(1);
+
+    expect(importJobCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          providerId: '11111111-1111-4111-8111-111111111111',
+          kind: 'NEWS_FETCH',
+          status: 'RUNNING',
+          trigger: 'SYSTEM',
+          queueJobId: 'bull-job-123',
+        }),
+      }),
+    );
+  });
+
+  it('stores raw payload and links an import record', async () => {
+    const { service, rawPayloadCreate, importRecordCreate, importJobUpdate } = createService();
+
+    rawPayloadCreate.mockResolvedValue({
+      id: '33333333-3333-4333-8333-333333333333',
+    });
+
+    await service.storeRecord(
+      {
+        providerId: '11111111-1111-4111-8111-111111111111',
+        importJobId: '22222222-2222-4222-8222-222222222222',
+      },
+      record,
+    );
+
+    expect(rawPayloadCreate).toHaveBeenCalledTimes(1);
+
+    const rawPayloadArguments = rawPayloadCreate.mock.calls[0]?.[0];
+
+    expect(rawPayloadArguments.data).toEqual(
+      expect.objectContaining({
+        providerId: '11111111-1111-4111-8111-111111111111',
+        importJobId: '22222222-2222-4222-8222-222222222222',
+        type: 'RECORD',
+        externalId: 'fake-001',
+        payload: record.payload,
+        payloadHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        sizeBytes: expect.any(BigInt),
+      }),
+    );
+
+    expect(importRecordCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        rawPayloadId: '33333333-3333-4333-8333-333333333333',
+        recordType: 'NEWS_ARTICLE',
+        status: 'RECEIVED',
+        externalId: 'fake-001',
+        externalUrl: 'https://fake-provider.test/news/fake-001',
+        contentHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      }),
+    });
+
+    expect(importJobUpdate).toHaveBeenCalledWith({
+      where: {
+        id: '22222222-2222-4222-8222-222222222222',
+      },
+      data: {
+        receivedCount: {
+          increment: 1,
+        },
+      },
+    });
+  });
+
+  it('produces the same hash for equivalent object key order', async () => {
+    const { service, rawPayloadCreate } = createService();
+
+    rawPayloadCreate
+      .mockResolvedValueOnce({
+        id: '33333333-3333-4333-8333-333333333333',
+      })
+      .mockResolvedValueOnce({
+        id: '44444444-4444-4444-8444-444444444444',
+      });
+
+    const first: NewsProviderRecord = {
+      externalId: 'one',
+      payload: {
+        b: 2,
+        a: 1,
+      },
+    };
+
+    const second: NewsProviderRecord = {
+      externalId: 'two',
+      payload: {
+        a: 1,
+        b: 2,
+      },
+    };
+
+    const session = {
+      providerId: '11111111-1111-4111-8111-111111111111',
+      importJobId: '22222222-2222-4222-8222-222222222222',
+    };
+
+    await service.storeRecord(session, first);
+    await service.storeRecord(session, second);
+
+    const firstHash = rawPayloadCreate.mock.calls[0]?.[0].data.payloadHash;
+    const secondHash = rawPayloadCreate.mock.calls[1]?.[0].data.payloadHash;
+
+    expect(firstHash).toBe(secondHash);
+  });
+
+  it('marks the import job as failed', async () => {
+    const { service, importJobUpdate } = createService();
+
+    await service.failNewsImport(
+      {
+        providerId: '11111111-1111-4111-8111-111111111111',
+        importJobId: '22222222-2222-4222-8222-222222222222',
+      },
+      new Error('Provider unavailable'),
+    );
+
+    expect(importJobUpdate).toHaveBeenCalledWith({
+      where: {
+        id: '22222222-2222-4222-8222-222222222222',
+      },
+      data: expect.objectContaining({
+        status: 'FAILED',
+        errorCode: 'NEWS_IMPORT_FAILED',
+        errorMessage: 'Provider unavailable',
+      }),
+    });
+  });
+});

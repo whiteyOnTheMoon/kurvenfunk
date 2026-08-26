@@ -11,6 +11,7 @@ import { NewsImportProcessor } from './processors/news-import.processor';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
 import { TestProcessor } from './processors/test.processor';
 import { FakeNewsProvider } from './providers/fake-news-provider';
+import { RawPayloadService } from './services/raw-payload.service';
 import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
@@ -46,6 +47,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     DatabaseService,
     FakeNewsProvider,
     NewsImportSchedulerService,
+    RawPayloadService,
     ScheduledPublishingService,
     NewsImportProcessor,
     ScheduledPublishingProcessor,

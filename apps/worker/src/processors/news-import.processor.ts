@@ -3,6 +3,7 @@ import { QUEUE_NAMES } from '@kurvenfunk/types';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
 
 const logger = createLogger({
   service: 'worker',
@@ -14,12 +15,16 @@ export interface NewsImportJobPayload {
 
 @Processor(QUEUE_NAMES.NEWS_IMPORT)
 export class NewsImportProcessor extends WorkerHost {
-  constructor(private readonly fakeNewsProvider: FakeNewsProvider) {
+  constructor(
+    private readonly fakeNewsProvider: FakeNewsProvider,
+    private readonly rawPayloadService: RawPayloadService,
+  ) {
     super();
   }
 
   async process(job: Job<NewsImportJobPayload>): Promise<void> {
     const startedAt = process.hrtime.bigint();
+    let importSession: RawPayloadImportSession | undefined;
 
     logger.info('News import job started', {
       event: 'queue.job.started',
@@ -38,6 +43,10 @@ export class NewsImportProcessor extends WorkerHost {
 
       const provider = this.resolveProvider(job.data.providerKey);
 
+      importSession = await this.rawPayloadService.startNewsImport(provider, {
+        ...(job.id !== undefined ? { queueJobId: String(job.id) } : {}),
+      });
+
       let cursor: string | undefined;
       let pageCount = 0;
       let recordCount = 0;
@@ -47,10 +56,16 @@ export class NewsImportProcessor extends WorkerHost {
           ...(cursor !== undefined ? { cursor } : {}),
         });
 
+        for (const record of result.records) {
+          await this.rawPayloadService.storeRecord(importSession, record);
+        }
+
         pageCount += 1;
         recordCount += result.records.length;
         cursor = result.nextCursor;
       } while (cursor !== undefined);
+
+      await this.rawPayloadService.completeNewsImport(importSession);
 
       const durationNs = process.hrtime.bigint() - startedAt;
       const durationMs = Number(durationNs) / 1_000_000;
@@ -62,12 +77,30 @@ export class NewsImportProcessor extends WorkerHost {
           jobId: job.id,
           jobName: job.name,
           providerKey: provider.key,
+          importJobId: importSession.importJobId,
           pageCount,
           recordCount,
           durationMs: Number(durationMs.toFixed(2)),
         },
       });
     } catch (error: unknown) {
+      if (importSession !== undefined) {
+        try {
+          await this.rawPayloadService.failNewsImport(importSession, error);
+        } catch (persistenceError: unknown) {
+          logger.error('Failed to persist news import failure state', {
+            event: 'import.job.failure_persistence_failed',
+            metadata: {
+              queue: QUEUE_NAMES.NEWS_IMPORT,
+              jobId: job.id,
+              providerKey: job.data.providerKey,
+              importJobId: importSession.importJobId,
+              error: persistenceError,
+            },
+          });
+        }
+      }
+
       const durationNs = process.hrtime.bigint() - startedAt;
       const durationMs = Number(durationNs) / 1_000_000;
 
