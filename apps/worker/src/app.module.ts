@@ -7,6 +7,7 @@ import { DatabaseService } from './database/database.service';
 import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
 import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
 import { TestJobService } from './jobs/test-job.service';
+import { NewsImportProcessor } from './processors/news-import.processor';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
 import { TestProcessor } from './processors/test.processor';
 import { FakeNewsProvider } from './providers/fake-news-provider';
@@ -46,6 +47,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     FakeNewsProvider,
     NewsImportSchedulerService,
     ScheduledPublishingService,
+    NewsImportProcessor,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,
     TestProcessor,
