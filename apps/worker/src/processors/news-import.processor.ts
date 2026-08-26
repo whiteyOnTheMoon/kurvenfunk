@@ -4,6 +4,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { NewsClubMatchingService } from '../services/news-club-matching.service';
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
@@ -26,6 +27,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsNormalizationService: NewsNormalizationService,
     private readonly newsValidationService: NewsValidationService,
     private readonly newsDuplicateDetectionService: NewsDuplicateDetectionService,
+    private readonly newsClubMatchingService: NewsClubMatchingService,
   ) {
     super();
   }
@@ -82,7 +84,16 @@ export class NewsImportProcessor extends WorkerHost {
             continue;
           }
 
-          await this.newsDuplicateDetectionService.detectDuplicate(
+          const duplicateDetection = await this.newsDuplicateDetectionService.detectDuplicate(
+            storedRecord.importRecordId,
+            validation.article,
+          );
+
+          if (duplicateDetection.duplicate) {
+            continue;
+          }
+
+          await this.newsClubMatchingService.matchClubs(
             storedRecord.importRecordId,
             validation.article,
           );
