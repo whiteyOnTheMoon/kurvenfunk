@@ -5,6 +5,7 @@ import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
 import { NewsClubMatchingService } from '../services/news-club-matching.service';
+import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
@@ -28,6 +29,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsValidationService: NewsValidationService,
     private readonly newsDuplicateDetectionService: NewsDuplicateDetectionService,
     private readonly newsClubMatchingService: NewsClubMatchingService,
+    private readonly newsCompetitionMatchingService: NewsCompetitionMatchingService,
   ) {
     super();
   }
@@ -94,6 +96,11 @@ export class NewsImportProcessor extends WorkerHost {
           }
 
           await this.newsClubMatchingService.matchClubs(
+            storedRecord.importRecordId,
+            validation.article,
+          );
+
+          await this.newsCompetitionMatchingService.matchCompetition(
             storedRecord.importRecordId,
             validation.article,
           );
