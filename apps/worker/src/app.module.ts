@@ -15,6 +15,7 @@ import { FakeNewsProvider } from './providers/fake-news-provider';
 import { NewsClubMatchingService } from './services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from './services/news-competition-matching.service';
 import { NewsDuplicateDetectionService } from './services/news-duplicate-detection.service';
+import { NewsMatchMatchingService } from './services/news-match-matching.service';
 import { NewsNormalizationService } from './services/news-normalization.service';
 import { NewsValidationService } from './services/news-validation.service';
 import { RawPayloadService } from './services/raw-payload.service';
@@ -57,6 +58,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsClubMatchingService,
     NewsCompetitionMatchingService,
     NewsDuplicateDetectionService,
+    NewsMatchMatchingService,
     NewsNormalizationService,
     NewsValidationService,
     RawPayloadService,

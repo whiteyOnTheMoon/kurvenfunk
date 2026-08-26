@@ -7,6 +7,7 @@ import { FakeNewsProvider } from '../providers/fake-news-provider';
 import { NewsClubMatchingService } from '../services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
+import { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
 import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
@@ -30,6 +31,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsDuplicateDetectionService: NewsDuplicateDetectionService,
     private readonly newsClubMatchingService: NewsClubMatchingService,
     private readonly newsCompetitionMatchingService: NewsCompetitionMatchingService,
+    private readonly newsMatchMatchingService: NewsMatchMatchingService,
   ) {
     super();
   }
@@ -95,14 +97,21 @@ export class NewsImportProcessor extends WorkerHost {
             continue;
           }
 
-          await this.newsClubMatchingService.matchClubs(
+          const clubMatching = await this.newsClubMatchingService.matchClubs(
             storedRecord.importRecordId,
             validation.article,
           );
 
-          await this.newsCompetitionMatchingService.matchCompetition(
+          const competitionMatching = await this.newsCompetitionMatchingService.matchCompetition(
             storedRecord.importRecordId,
             validation.article,
+          );
+
+          await this.newsMatchMatchingService.matchMatch(
+            storedRecord.importRecordId,
+            validation.article,
+            clubMatching,
+            competitionMatching,
           );
         }
 

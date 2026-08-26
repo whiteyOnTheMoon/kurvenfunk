@@ -25,6 +25,7 @@ import { FakeNewsProvider } from '../providers/fake-news-provider';
 import type { NewsClubMatchingService } from '../services/news-club-matching.service';
 import type { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import type { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
+import type { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import type { NewsNormalizationService } from '../services/news-normalization.service';
 import type { NewsValidationService } from '../services/news-validation.service';
 import type { RawPayloadImportSession, RawPayloadService } from '../services/raw-payload.service';
@@ -41,6 +42,7 @@ describe('NewsImportProcessor', () => {
   const detectDuplicate = jest.fn();
   const matchClubs = jest.fn();
   const matchCompetition = jest.fn();
+  const matchMatch = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
 
@@ -101,6 +103,11 @@ describe('NewsImportProcessor', () => {
       unmatchedName: null,
     });
 
+    matchMatch.mockResolvedValue({
+      match: null,
+      ambiguous: false,
+    });
+
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -131,6 +138,10 @@ describe('NewsImportProcessor', () => {
       matchCompetition,
     } as unknown as NewsCompetitionMatchingService;
 
+    const newsMatchMatchingService = {
+      matchMatch,
+    } as unknown as NewsMatchMatchingService;
+
     processor = new NewsImportProcessor(
       provider,
       normalizer,
@@ -140,6 +151,7 @@ describe('NewsImportProcessor', () => {
       newsDuplicateDetectionService,
       newsClubMatchingService,
       newsCompetitionMatchingService,
+      newsMatchMatchingService,
     );
   });
 
@@ -318,6 +330,54 @@ describe('NewsImportProcessor', () => {
     );
   });
 
+  it('runs match matching with the club and competition matching results', async () => {
+    const clubMatchingResult = {
+      matches: [
+        {
+          clubId: 'rapid-id',
+          clubName: 'SK Rapid Wien',
+          matchedName: 'SK Rapid Wien',
+          matchedAlias: 'SK Rapid Wien',
+        },
+        {
+          clubId: 'austria-id',
+          clubName: 'FK Austria Wien',
+          matchedName: 'FK Austria Wien',
+          matchedAlias: 'FK Austria Wien',
+        },
+      ],
+      unmatchedNames: [],
+    };
+
+    const competitionMatchingResult = {
+      match: {
+        competitionId: 'bundesliga-id',
+        competitionName: 'Österreichische Bundesliga',
+        matchedName: 'Bundesliga',
+        matchedField: 'shortName' as const,
+      },
+      unmatchedName: null,
+    };
+
+    matchClubs.mockResolvedValue(clubMatchingResult);
+    matchCompetition.mockResolvedValue(competitionMatchingResult);
+
+    await processor.process(createJob());
+
+    expect(matchMatch).toHaveBeenCalledTimes(5);
+
+    expect(matchMatch).toHaveBeenNthCalledWith(
+      1,
+      'import-fake-001',
+      expect.objectContaining({
+        title: 'Normalized title',
+        clubNames: [],
+      }),
+      clubMatchingResult,
+      competitionMatchingResult,
+    );
+  });
+
   it('skips club matching when duplicate detection finds a duplicate', async () => {
     detectDuplicate.mockResolvedValueOnce({
       duplicate: true,
@@ -330,9 +390,16 @@ describe('NewsImportProcessor', () => {
     expect(detectDuplicate).toHaveBeenCalledTimes(5);
     expect(matchClubs).toHaveBeenCalledTimes(4);
     expect(matchCompetition).toHaveBeenCalledTimes(4);
+    expect(matchMatch).toHaveBeenCalledTimes(4);
 
     expect(matchClubs).not.toHaveBeenCalledWith('import-fake-001', expect.anything());
     expect(matchCompetition).not.toHaveBeenCalledWith('import-fake-001', expect.anything());
+    expect(matchMatch).not.toHaveBeenCalledWith(
+      'import-fake-001',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    );
 
     expect(completeNewsImport).toHaveBeenCalledTimes(1);
     expect(failNewsImport).not.toHaveBeenCalled();
@@ -352,6 +419,7 @@ describe('NewsImportProcessor', () => {
     expect(detectDuplicate).toHaveBeenCalledTimes(4);
     expect(matchClubs).toHaveBeenCalledTimes(4);
     expect(matchCompetition).toHaveBeenCalledTimes(4);
+    expect(matchMatch).toHaveBeenCalledTimes(4);
     expect(completeNewsImport).toHaveBeenCalledTimes(1);
     expect(failNewsImport).not.toHaveBeenCalled();
   });
