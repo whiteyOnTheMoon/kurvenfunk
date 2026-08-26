@@ -152,6 +152,8 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       DATABASE_URL: ${DATABASE_URL}
 
+      NEWS_IMPORT_SCHEDULER_ENABLED: ${NEWS_IMPORT_SCHEDULER_ENABLED:-false}
+      NEWS_IMPORT_SCHEDULER_INTERVAL_MS: ${NEWS_IMPORT_SCHEDULER_INTERVAL_MS:-300000}
     depends_on:
       postgres:
         condition: service_healthy

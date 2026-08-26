@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnvironment } from './config/env.validation';
 import { DatabaseService } from './database/database.service';
+import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
 import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
 import { TestJobService } from './jobs/test-job.service';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
@@ -43,6 +44,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
   providers: [
     DatabaseService,
     FakeNewsProvider,
+    NewsImportSchedulerService,
     ScheduledPublishingService,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,

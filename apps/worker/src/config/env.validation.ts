@@ -11,6 +11,15 @@ const workerEnvSchema = z
     REDIS_PASSWORD: z.string().min(1),
 
     DATABASE_URL: z.string().trim().min(1),
+    NEWS_IMPORT_SCHEDULER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    NEWS_IMPORT_SCHEDULER_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(1_000)
+      .default(300_000),
 
     WORKER_RUN_STARTUP_TEST: z
       .enum(['true', 'false'])
