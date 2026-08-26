@@ -15,11 +15,7 @@ const workerEnvSchema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
-    NEWS_IMPORT_SCHEDULER_INTERVAL_MS: z.coerce
-      .number()
-      .int()
-      .min(1_000)
-      .default(300_000),
+    NEWS_IMPORT_SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(1_000).default(300_000),
 
     WORKER_RUN_STARTUP_TEST: z
       .enum(['true', 'false'])

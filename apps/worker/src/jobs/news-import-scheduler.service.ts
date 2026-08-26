@@ -22,10 +22,7 @@ export class NewsImportSchedulerService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const enabled = this.configService.get<boolean>(
-      'NEWS_IMPORT_SCHEDULER_ENABLED',
-      false,
-    );
+    const enabled = this.configService.get<boolean>('NEWS_IMPORT_SCHEDULER_ENABLED', false);
 
     if (!enabled) {
       const removed = await this.newsImportQueue.removeJobScheduler(SCHEDULER_ID);
