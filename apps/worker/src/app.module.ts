@@ -8,6 +8,7 @@ import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.s
 import { TestJobService } from './jobs/test-job.service';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
 import { TestProcessor } from './processors/test.processor';
+import { FakeNewsProvider } from './providers/fake-news-provider';
 import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
@@ -41,6 +42,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
   ],
   providers: [
     DatabaseService,
+    FakeNewsProvider,
     ScheduledPublishingService,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,
