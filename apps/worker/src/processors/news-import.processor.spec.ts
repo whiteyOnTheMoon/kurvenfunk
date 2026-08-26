@@ -22,6 +22,7 @@ import type { NewsProviderRecord } from '@kurvenfunk/types';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import type { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import type { NewsNormalizationService } from '../services/news-normalization.service';
 import type { NewsValidationService } from '../services/news-validation.service';
 import type { RawPayloadImportSession, RawPayloadService } from '../services/raw-payload.service';
@@ -35,6 +36,7 @@ describe('NewsImportProcessor', () => {
   const storeRecord = jest.fn();
   const normalizeRecord = jest.fn();
   const validateRecord = jest.fn();
+  const detectDuplicate = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
 
@@ -81,6 +83,10 @@ describe('NewsImportProcessor', () => {
       },
     });
 
+    detectDuplicate.mockResolvedValue({
+      duplicate: false,
+    });
+
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -99,12 +105,17 @@ describe('NewsImportProcessor', () => {
       validateRecord,
     } as unknown as NewsValidationService;
 
+    const newsDuplicateDetectionService = {
+      detectDuplicate,
+    } as unknown as NewsDuplicateDetectionService;
+
     processor = new NewsImportProcessor(
       provider,
       normalizer,
       rawPayloadService,
       newsNormalizationService,
       newsValidationService,
+      newsDuplicateDetectionService,
     );
   });
 
@@ -213,6 +224,28 @@ describe('NewsImportProcessor', () => {
     );
   });
 
+  it('runs duplicate detection for every valid record', async () => {
+    await processor.process(createJob());
+
+    expect(detectDuplicate).toHaveBeenCalledTimes(5);
+
+    expect(detectDuplicate).toHaveBeenNthCalledWith(
+      1,
+      'import-fake-001',
+      expect.objectContaining({
+        title: 'Normalized title',
+      }),
+    );
+
+    expect(detectDuplicate).toHaveBeenNthCalledWith(
+      5,
+      'import-fake-005',
+      expect.objectContaining({
+        title: 'Normalized title',
+      }),
+    );
+  });
+
   it('continues the import when an individual record fails validation', async () => {
     validateRecord.mockResolvedValueOnce({
       valid: false,
@@ -224,6 +257,7 @@ describe('NewsImportProcessor', () => {
 
     expect(normalizeRecord).toHaveBeenCalledTimes(5);
     expect(validateRecord).toHaveBeenCalledTimes(5);
+    expect(detectDuplicate).toHaveBeenCalledTimes(4);
     expect(completeNewsImport).toHaveBeenCalledTimes(1);
     expect(failNewsImport).not.toHaveBeenCalled();
   });

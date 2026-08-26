@@ -12,6 +12,7 @@ import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.
 import { TestProcessor } from './processors/test.processor';
 import { FakeNewsNormalizer } from './providers/fake-news-normalizer';
 import { FakeNewsProvider } from './providers/fake-news-provider';
+import { NewsDuplicateDetectionService } from './services/news-duplicate-detection.service';
 import { NewsNormalizationService } from './services/news-normalization.service';
 import { NewsValidationService } from './services/news-validation.service';
 import { RawPayloadService } from './services/raw-payload.service';
@@ -51,6 +52,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     FakeNewsProvider,
     FakeNewsNormalizer,
     NewsImportSchedulerService,
+    NewsDuplicateDetectionService,
     NewsNormalizationService,
     NewsValidationService,
     RawPayloadService,

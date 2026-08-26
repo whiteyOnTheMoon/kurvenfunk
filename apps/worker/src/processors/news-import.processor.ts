@@ -4,6 +4,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
 import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
@@ -24,6 +25,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly rawPayloadService: RawPayloadService,
     private readonly newsNormalizationService: NewsNormalizationService,
     private readonly newsValidationService: NewsValidationService,
+    private readonly newsDuplicateDetectionService: NewsDuplicateDetectionService,
   ) {
     super();
   }
@@ -71,7 +73,19 @@ export class NewsImportProcessor extends WorkerHost {
             this.fakeNewsNormalizer,
           );
 
-          await this.newsValidationService.validateRecord(storedRecord.importRecordId, normalized);
+          const validation = await this.newsValidationService.validateRecord(
+            storedRecord.importRecordId,
+            normalized,
+          );
+
+          if (!validation.valid) {
+            continue;
+          }
+
+          await this.newsDuplicateDetectionService.detectDuplicate(
+            storedRecord.importRecordId,
+            validation.article,
+          );
         }
 
         pageCount += 1;
