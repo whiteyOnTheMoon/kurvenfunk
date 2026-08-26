@@ -1,11 +1,6 @@
-import { AdminPlaceholder } from '../../../features/admin/admin-placeholder';
+import { ImportAdmin } from '../../../features/admin/imports/import-admin';
+import { env } from '../../../lib/env';
 
 export default function AdminImportsPage() {
-  return (
-    <AdminPlaceholder
-      eyebrow="Automatisierung"
-      title="Importe"
-      description="Newsimporte, Provider und Importstatus verwalten."
-    />
-  );
+  return <ImportAdmin apiUrl={env.API_URL} />;
 }
