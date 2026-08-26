@@ -5,6 +5,7 @@ import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
 import { NewsNormalizationService } from '../services/news-normalization.service';
+import { NewsValidationService } from '../services/news-validation.service';
 import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
 
 const logger = createLogger({
@@ -22,6 +23,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly fakeNewsNormalizer: FakeNewsNormalizer,
     private readonly rawPayloadService: RawPayloadService,
     private readonly newsNormalizationService: NewsNormalizationService,
+    private readonly newsValidationService: NewsValidationService,
   ) {
     super();
   }
@@ -63,11 +65,13 @@ export class NewsImportProcessor extends WorkerHost {
         for (const record of result.records) {
           const storedRecord = await this.rawPayloadService.storeRecord(importSession, record);
 
-          await this.newsNormalizationService.normalizeRecord(
+          const normalized = await this.newsNormalizationService.normalizeRecord(
             storedRecord.importRecordId,
             record,
             this.fakeNewsNormalizer,
           );
+
+          await this.newsValidationService.validateRecord(storedRecord.importRecordId, normalized);
         }
 
         pageCount += 1;
