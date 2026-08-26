@@ -6,6 +6,7 @@ import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
 import { NewsClubMatchingService } from '../services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
+import { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
@@ -32,6 +33,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsClubMatchingService: NewsClubMatchingService,
     private readonly newsCompetitionMatchingService: NewsCompetitionMatchingService,
     private readonly newsMatchMatchingService: NewsMatchMatchingService,
+    private readonly newsConfidenceScoreService: NewsConfidenceScoreService,
   ) {
     super();
   }
@@ -107,12 +109,14 @@ export class NewsImportProcessor extends WorkerHost {
             validation.article,
           );
 
-          await this.newsMatchMatchingService.matchMatch(
+          const matchMatching = await this.newsMatchMatchingService.matchMatch(
             storedRecord.importRecordId,
             validation.article,
             clubMatching,
             competitionMatching,
           );
+
+          this.newsConfidenceScoreService.score(clubMatching, competitionMatching, matchMatching);
         }
 
         pageCount += 1;

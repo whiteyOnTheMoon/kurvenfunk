@@ -24,6 +24,7 @@ import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
 import type { NewsClubMatchingService } from '../services/news-club-matching.service';
 import type { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
+import type { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
 import type { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import type { NewsMatchMatchingService } from '../services/news-match-matching.service';
 import type { NewsNormalizationService } from '../services/news-normalization.service';
@@ -43,6 +44,7 @@ describe('NewsImportProcessor', () => {
   const matchClubs = jest.fn();
   const matchCompetition = jest.fn();
   const matchMatch = jest.fn();
+  const scoreConfidence = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
 
@@ -108,6 +110,11 @@ describe('NewsImportProcessor', () => {
       ambiguous: false,
     });
 
+    scoreConfidence.mockReturnValue({
+      confidence: 'UNKNOWN',
+      reasons: ['no_match_evidence'],
+    });
+
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -142,6 +149,10 @@ describe('NewsImportProcessor', () => {
       matchMatch,
     } as unknown as NewsMatchMatchingService;
 
+    const newsConfidenceScoreService = {
+      score: scoreConfidence,
+    } as unknown as NewsConfidenceScoreService;
+
     processor = new NewsImportProcessor(
       provider,
       normalizer,
@@ -152,6 +163,7 @@ describe('NewsImportProcessor', () => {
       newsClubMatchingService,
       newsCompetitionMatchingService,
       newsMatchMatchingService,
+      newsConfidenceScoreService,
     );
   });
 
@@ -378,6 +390,37 @@ describe('NewsImportProcessor', () => {
     );
   });
 
+  it('calculates confidence from the entity matching results', async () => {
+    const clubMatchingResult = {
+      matches: [],
+      unmatchedNames: [],
+    };
+
+    const competitionMatchingResult = {
+      match: null,
+      unmatchedName: null,
+    };
+
+    const matchMatchingResult = {
+      match: null,
+      ambiguous: false,
+    };
+
+    matchClubs.mockResolvedValue(clubMatchingResult);
+    matchCompetition.mockResolvedValue(competitionMatchingResult);
+    matchMatch.mockResolvedValue(matchMatchingResult);
+
+    await processor.process(createJob());
+
+    expect(scoreConfidence).toHaveBeenCalledTimes(5);
+    expect(scoreConfidence).toHaveBeenNthCalledWith(
+      1,
+      clubMatchingResult,
+      competitionMatchingResult,
+      matchMatchingResult,
+    );
+  });
+
   it('skips club matching when duplicate detection finds a duplicate', async () => {
     detectDuplicate.mockResolvedValueOnce({
       duplicate: true,
@@ -391,6 +434,7 @@ describe('NewsImportProcessor', () => {
     expect(matchClubs).toHaveBeenCalledTimes(4);
     expect(matchCompetition).toHaveBeenCalledTimes(4);
     expect(matchMatch).toHaveBeenCalledTimes(4);
+    expect(scoreConfidence).toHaveBeenCalledTimes(4);
 
     expect(matchClubs).not.toHaveBeenCalledWith('import-fake-001', expect.anything());
     expect(matchCompetition).not.toHaveBeenCalledWith('import-fake-001', expect.anything());
