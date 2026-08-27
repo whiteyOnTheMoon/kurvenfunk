@@ -83,6 +83,7 @@ const FAKE_NEWS: readonly FakeNewsPayload[] = [
 export class FakeNewsProvider implements NewsProvider {
   readonly key = 'fake';
   readonly name = 'Kurvenfunk Fake News Provider';
+  readonly trustedForAutoPublish = true;
 
   readonly capabilities: NewsProviderCapabilities = {
     supportsCursorPagination: true,

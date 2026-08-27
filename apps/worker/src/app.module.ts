@@ -12,6 +12,7 @@ import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.
 import { TestProcessor } from './processors/test.processor';
 import { FakeNewsNormalizer } from './providers/fake-news-normalizer';
 import { FakeNewsProvider } from './providers/fake-news-provider';
+import { NewsAutoPublishingService } from './services/news-auto-publishing.service';
 import { NewsClubMatchingService } from './services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from './services/news-competition-matching.service';
 import { NewsConfidenceScoreService } from './services/news-confidence-score.service';
@@ -66,6 +67,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     FakeNewsProvider,
     FakeNewsNormalizer,
     NewsImportSchedulerService,
+    NewsAutoPublishingService,
     NewsClubMatchingService,
     NewsCompetitionMatchingService,
     NewsConfidenceScoreService,

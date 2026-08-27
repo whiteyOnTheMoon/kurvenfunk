@@ -4,6 +4,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { NewsAutoPublishingService } from '../services/news-auto-publishing.service';
 import { NewsClubMatchingService } from '../services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
@@ -37,6 +38,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsMatchMatchingService: NewsMatchMatchingService,
     private readonly newsConfidenceScoreService: NewsConfidenceScoreService,
     private readonly newsReviewWorkflowService: NewsReviewWorkflowService,
+    private readonly newsAutoPublishingService: NewsAutoPublishingService,
     private readonly newsImportDeadLetterService: NewsImportDeadLetterService,
   ) {
     super();
@@ -126,13 +128,24 @@ export class NewsImportProcessor extends WorkerHost {
             matchMatching,
           );
 
-          await this.newsReviewWorkflowService.apply(
+          const reviewWorkflow = await this.newsReviewWorkflowService.apply(
             storedRecord.importRecordId,
             confidence,
             clubMatching,
             competitionMatching,
             matchMatching,
           );
+
+          if (!reviewWorkflow.reviewRequired) {
+            await this.newsAutoPublishingService.publish(
+              provider,
+              storedRecord.importRecordId,
+              validation.article,
+              clubMatching,
+              competitionMatching,
+              matchMatching,
+            );
+          }
         }
 
         pageCount += 1;

@@ -22,6 +22,7 @@ import type { NewsProviderRecord } from '@kurvenfunk/types';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import type { NewsAutoPublishingService } from '../services/news-auto-publishing.service';
 import type { NewsClubMatchingService } from '../services/news-club-matching.service';
 import type { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
 import type { NewsConfidenceScoreService } from '../services/news-confidence-score.service';
@@ -48,6 +49,7 @@ describe('NewsImportProcessor', () => {
   const matchMatch = jest.fn();
   const scoreConfidence = jest.fn();
   const applyReviewWorkflow = jest.fn();
+  const autoPublish = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
   const moveToDeadLetter = jest.fn();
@@ -124,6 +126,11 @@ describe('NewsImportProcessor', () => {
       reviewRequired: true,
     });
 
+    autoPublish.mockResolvedValue({
+      articleId: 'article-id',
+      created: true,
+    });
+
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -166,6 +173,10 @@ describe('NewsImportProcessor', () => {
       apply: applyReviewWorkflow,
     } as unknown as NewsReviewWorkflowService;
 
+    const newsAutoPublishingService = {
+      publish: autoPublish,
+    } as unknown as NewsAutoPublishingService;
+
     const newsImportDeadLetterService = {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
@@ -182,6 +193,7 @@ describe('NewsImportProcessor', () => {
       newsMatchMatchingService,
       newsConfidenceScoreService,
       newsReviewWorkflowService,
+      newsAutoPublishingService,
       newsImportDeadLetterService,
     );
   });
@@ -477,6 +489,58 @@ describe('NewsImportProcessor', () => {
       competitionMatchingResult,
       matchMatchingResult,
     );
+  });
+
+  it('auto publishes records that pass review without manual intervention', async () => {
+    const clubMatchingResult = {
+      matches: [],
+      unmatchedNames: [],
+    };
+
+    const competitionMatchingResult = {
+      match: null,
+      unmatchedName: null,
+    };
+
+    const matchMatchingResult = {
+      match: null,
+      ambiguous: false,
+    };
+
+    matchClubs.mockResolvedValue(clubMatchingResult);
+    matchCompetition.mockResolvedValue(competitionMatchingResult);
+    matchMatch.mockResolvedValue(matchMatchingResult);
+
+    applyReviewWorkflow.mockResolvedValue({
+      status: 'MATCHED',
+      reviewRequired: false,
+    });
+
+    await processor.process(createJob());
+
+    expect(autoPublish).toHaveBeenCalledTimes(5);
+    expect(autoPublish).toHaveBeenNthCalledWith(
+      1,
+      provider,
+      'import-fake-001',
+      expect.objectContaining({
+        title: 'Normalized title',
+      }),
+      clubMatchingResult,
+      competitionMatchingResult,
+      matchMatchingResult,
+    );
+  });
+
+  it('does not auto publish records requiring manual review', async () => {
+    applyReviewWorkflow.mockResolvedValue({
+      status: 'REVIEW_REQUIRED',
+      reviewRequired: true,
+    });
+
+    await processor.process(createJob());
+
+    expect(autoPublish).not.toHaveBeenCalled();
   });
 
   it('skips club matching when duplicate detection finds a duplicate', async () => {

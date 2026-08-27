@@ -26,6 +26,7 @@ export interface NewsProvider {
   readonly key: NewsProviderKey;
   readonly name: string;
   readonly capabilities: NewsProviderCapabilities;
+  readonly trustedForAutoPublish: boolean;
 
   fetch(input: NewsProviderFetchInput): Promise<NewsProviderFetchResult>;
 }
