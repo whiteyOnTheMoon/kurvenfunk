@@ -460,9 +460,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                           <td>
                             <StatusBadge status={job.status} />
                           </td>
-                          <td>
-                            {job.processedCount}/{job.receivedCount}
-                          </td>
+                          <td>{job.receivedCount}</td>
                           <td>{job.createdCount + job.updatedCount}</td>
                           <td>{job.duplicateCount}</td>
                           <td>
