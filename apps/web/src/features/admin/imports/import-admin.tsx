@@ -312,13 +312,15 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   }, [apiUrl, authenticated, initialized, token]);
 
   async function decideReview(id: string, decision: 'approve' | 'reject') {
+    console.info('[import-review] click', { id, decision, hasToken: Boolean(token) });
+
     if (!token) {
       setError('Keine gültige Anmeldung vorhanden.');
       return;
     }
 
     setReviewingId(id);
-    setError(undefined);
+    setError(`Review ${decision === 'approve' ? 'wird freigegeben' : 'wird abgelehnt'} …`);
 
     try {
       const response = await fetch(`${apiUrl}/api/v1/imports/review/${id}/${decision}`, {
