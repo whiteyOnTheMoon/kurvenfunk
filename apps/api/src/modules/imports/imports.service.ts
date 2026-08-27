@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, type OnModuleDestroy } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  type OnModuleDestroy,
+} from '@nestjs/common';
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 
 const DEFAULT_JOB_LIMIT = 30;
@@ -303,6 +308,125 @@ export class ImportsService implements OnModuleDestroy {
           },
         },
       },
+    });
+  }
+
+  async getReviewQueue() {
+    return this.database.importRecord.findMany({
+      where: {
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 100,
+      select: {
+        id: true,
+        importJobId: true,
+        recordType: true,
+        status: true,
+        externalId: true,
+        externalUrl: true,
+        normalizedPayload: true,
+        normalizedAt: true,
+        canonicalEntityType: true,
+        canonicalEntityId: true,
+        errorCode: true,
+        errorMessage: true,
+        reviewDecision: true,
+        reviewedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        provider: {
+          select: {
+            id: true,
+            key: true,
+            name: true,
+          },
+        },
+        importJob: {
+          select: {
+            id: true,
+            kind: true,
+            status: true,
+            trigger: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  async approveReview(id: string, reviewerId: string) {
+    return this.decideReview(id, reviewerId, 'APPROVED');
+  }
+
+  async rejectReview(id: string, reviewerId: string) {
+    return this.decideReview(id, reviewerId, 'REJECTED');
+  }
+
+  private async decideReview(id: string, reviewerId: string, decision: 'APPROVED' | 'REJECTED') {
+    return this.database.$transaction(async (transaction) => {
+      const record = await transaction.importRecord.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          status: true,
+          reviewDecision: true,
+          reviewedAt: true,
+        },
+      });
+
+      if (!record) {
+        throw new NotFoundException({
+          code: 'IMPORT_RECORD_NOT_FOUND',
+          message: 'Import record not found',
+        });
+      }
+
+      if (record.status !== 'REVIEW_REQUIRED' || record.reviewDecision !== null) {
+        throw new BadRequestException({
+          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+          message: 'Import record is not awaiting review',
+        });
+      }
+
+      const reviewedAt = new Date();
+
+      const result = await transaction.importRecord.updateMany({
+        where: {
+          id,
+          status: 'REVIEW_REQUIRED',
+          reviewDecision: null,
+        },
+        data: {
+          status: decision === 'APPROVED' ? 'MATCHED' : 'SKIPPED',
+          reviewDecision: decision,
+          reviewedById: reviewerId,
+          reviewedAt,
+        },
+      });
+
+      if (result.count !== 1) {
+        throw new BadRequestException({
+          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+          message: 'Import record is not awaiting review',
+        });
+      }
+
+      return transaction.importRecord.findUniqueOrThrow({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          status: true,
+          reviewDecision: true,
+          reviewedAt: true,
+          reviewedById: true,
+        },
+      });
     });
   }
 

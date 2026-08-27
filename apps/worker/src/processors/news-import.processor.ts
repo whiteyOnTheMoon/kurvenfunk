@@ -10,6 +10,7 @@ import { NewsConfidenceScoreService } from '../services/news-confidence-score.se
 import { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import { NewsImportDeadLetterService } from '../services/news-import-dead-letter.service';
 import { NewsMatchMatchingService } from '../services/news-match-matching.service';
+import { NewsReviewWorkflowService } from '../services/news-review-workflow.service';
 import { NewsNormalizationService } from '../services/news-normalization.service';
 import { NewsValidationService } from '../services/news-validation.service';
 import { RawPayloadService, type RawPayloadImportSession } from '../services/raw-payload.service';
@@ -35,6 +36,7 @@ export class NewsImportProcessor extends WorkerHost {
     private readonly newsCompetitionMatchingService: NewsCompetitionMatchingService,
     private readonly newsMatchMatchingService: NewsMatchMatchingService,
     private readonly newsConfidenceScoreService: NewsConfidenceScoreService,
+    private readonly newsReviewWorkflowService: NewsReviewWorkflowService,
     private readonly newsImportDeadLetterService: NewsImportDeadLetterService,
   ) {
     super();
@@ -118,7 +120,19 @@ export class NewsImportProcessor extends WorkerHost {
             competitionMatching,
           );
 
-          this.newsConfidenceScoreService.score(clubMatching, competitionMatching, matchMatching);
+          const confidence = this.newsConfidenceScoreService.score(
+            clubMatching,
+            competitionMatching,
+            matchMatching,
+          );
+
+          await this.newsReviewWorkflowService.apply(
+            storedRecord.importRecordId,
+            confidence,
+            clubMatching,
+            competitionMatching,
+            matchMatching,
+          );
         }
 
         pageCount += 1;

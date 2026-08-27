@@ -28,6 +28,7 @@ import type { NewsConfidenceScoreService } from '../services/news-confidence-sco
 import type { NewsDuplicateDetectionService } from '../services/news-duplicate-detection.service';
 import type { NewsImportDeadLetterService } from '../services/news-import-dead-letter.service';
 import type { NewsMatchMatchingService } from '../services/news-match-matching.service';
+import type { NewsReviewWorkflowService } from '../services/news-review-workflow.service';
 import type { NewsNormalizationService } from '../services/news-normalization.service';
 import type { NewsValidationService } from '../services/news-validation.service';
 import type { RawPayloadImportSession, RawPayloadService } from '../services/raw-payload.service';
@@ -46,6 +47,7 @@ describe('NewsImportProcessor', () => {
   const matchCompetition = jest.fn();
   const matchMatch = jest.fn();
   const scoreConfidence = jest.fn();
+  const applyReviewWorkflow = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
   const moveToDeadLetter = jest.fn();
@@ -117,6 +119,11 @@ describe('NewsImportProcessor', () => {
       reasons: ['no_match_evidence'],
     });
 
+    applyReviewWorkflow.mockResolvedValue({
+      status: 'REVIEW_REQUIRED',
+      reviewRequired: true,
+    });
+
     completeNewsImport.mockResolvedValue(undefined);
     failNewsImport.mockResolvedValue(undefined);
 
@@ -155,6 +162,10 @@ describe('NewsImportProcessor', () => {
       score: scoreConfidence,
     } as unknown as NewsConfidenceScoreService;
 
+    const newsReviewWorkflowService = {
+      apply: applyReviewWorkflow,
+    } as unknown as NewsReviewWorkflowService;
+
     const newsImportDeadLetterService = {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
@@ -170,6 +181,7 @@ describe('NewsImportProcessor', () => {
       newsCompetitionMatchingService,
       newsMatchMatchingService,
       newsConfidenceScoreService,
+      newsReviewWorkflowService,
       newsImportDeadLetterService,
     );
   });
@@ -428,6 +440,45 @@ describe('NewsImportProcessor', () => {
     );
   });
 
+  it('applies the review workflow with the calculated confidence and matching results', async () => {
+    const clubMatchingResult = {
+      matches: [],
+      unmatchedNames: [],
+    };
+
+    const competitionMatchingResult = {
+      match: null,
+      unmatchedName: null,
+    };
+
+    const matchMatchingResult = {
+      match: null,
+      ambiguous: false,
+    };
+
+    const confidenceResult = {
+      confidence: 'UNKNOWN' as const,
+      reasons: ['no_match_evidence'],
+    };
+
+    matchClubs.mockResolvedValue(clubMatchingResult);
+    matchCompetition.mockResolvedValue(competitionMatchingResult);
+    matchMatch.mockResolvedValue(matchMatchingResult);
+    scoreConfidence.mockReturnValue(confidenceResult);
+
+    await processor.process(createJob());
+
+    expect(applyReviewWorkflow).toHaveBeenCalledTimes(5);
+    expect(applyReviewWorkflow).toHaveBeenNthCalledWith(
+      1,
+      'import-fake-001',
+      confidenceResult,
+      clubMatchingResult,
+      competitionMatchingResult,
+      matchMatchingResult,
+    );
+  });
+
   it('skips club matching when duplicate detection finds a duplicate', async () => {
     detectDuplicate.mockResolvedValueOnce({
       duplicate: true,
@@ -442,6 +493,7 @@ describe('NewsImportProcessor', () => {
     expect(matchCompetition).toHaveBeenCalledTimes(4);
     expect(matchMatch).toHaveBeenCalledTimes(4);
     expect(scoreConfidence).toHaveBeenCalledTimes(4);
+    expect(applyReviewWorkflow).toHaveBeenCalledTimes(4);
 
     expect(matchClubs).not.toHaveBeenCalledWith('import-fake-001', expect.anything());
     expect(matchCompetition).not.toHaveBeenCalledWith('import-fake-001', expect.anything());

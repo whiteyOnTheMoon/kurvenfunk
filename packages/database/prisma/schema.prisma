@@ -83,7 +83,8 @@ model User {
   notificationActions     Notification[]           @relation("NotificationActor")
   notificationPreferences NotificationPreference[]
 
-  entityMatchesReviewed EntityMatch[] @relation("EntityMatchReviewedBy")
+  entityMatchesReviewed EntityMatch[]  @relation("EntityMatchReviewedBy")
+  importRecordsReviewed ImportRecord[] @relation("ImportRecordReviewedBy")
 
   @@index([status])
   @@index([favoriteClubId])
@@ -1297,6 +1298,11 @@ enum ImportRecordStatus {
   FAILED
 }
 
+enum ImportReviewDecision {
+  APPROVED
+  REJECTED
+}
+
 enum RawPayloadType {
   RESPONSE
   RECORD
@@ -1405,28 +1411,32 @@ model ImportJob {
 }
 
 model ImportRecord {
-  id                  String             @id @default(uuid()) @db.Uuid
-  importJobId         String             @db.Uuid
-  providerId          String             @db.Uuid
-  rawPayloadId        String?            @db.Uuid
+  id                  String                @id @default(uuid()) @db.Uuid
+  importJobId         String                @db.Uuid
+  providerId          String                @db.Uuid
+  rawPayloadId        String?               @db.Uuid
   recordType          ImportRecordType
-  status              ImportRecordStatus @default(RECEIVED)
+  status              ImportRecordStatus    @default(RECEIVED)
   externalId          String?
   externalUrl         String?
   contentHash         String?
   normalizedPayload   Json?
   normalizedAt        DateTime?
   canonicalEntityType MatchEntityType?
-  canonicalEntityId   String?            @db.Uuid
-  duplicateOfRecordId String?            @db.Uuid
+  canonicalEntityId   String?               @db.Uuid
+  duplicateOfRecordId String?               @db.Uuid
   errorCode           String?
   errorMessage        String?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  reviewDecision      ImportReviewDecision?
+  reviewedById        String?               @db.Uuid
+  reviewedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   importJob  ImportJob   @relation(fields: [importJobId], references: [id], onDelete: Cascade)
   provider   Provider    @relation(fields: [providerId], references: [id], onDelete: Restrict)
   rawPayload RawPayload? @relation(fields: [rawPayloadId], references: [id], onDelete: SetNull)
+  reviewedBy User?       @relation("ImportRecordReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   duplicateOf ImportRecord?  @relation("ImportRecordDuplicates", fields: [duplicateOfRecordId], references: [id], onDelete: SetNull)
   duplicates  ImportRecord[] @relation("ImportRecordDuplicates")
@@ -1434,6 +1444,9 @@ model ImportRecord {
   @@index([importJobId])
   @@index([providerId, recordType, externalId])
   @@index([status])
+  @@index([status, createdAt])
+  @@index([reviewDecision])
+  @@index([reviewedById])
   @@index([canonicalEntityType, canonicalEntityId])
   @@index([createdAt])
   @@index([rawPayloadId])

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createPrismaClient } from '@kurvenfunk/database';
 
 import { ImportsService } from './imports.service';
@@ -36,8 +36,30 @@ describe('ImportsService', () => {
   const importJobFindMany = jest.fn();
   const importJobFindUnique = jest.fn();
   const importRecordCount = jest.fn();
+  const importRecordFindMany = jest.fn();
+  const importRecordFindUnique = jest.fn();
+  const importRecordFindUniqueOrThrow = jest.fn();
+  const importRecordUpdateMany = jest.fn<
+    Promise<{ count: number }>,
+    [
+      {
+        where: {
+          id: string;
+          status: string;
+          reviewDecision: null;
+        };
+        data: {
+          status: string;
+          reviewDecision: string;
+          reviewedById: string;
+          reviewedAt: Date;
+        };
+      },
+    ]
+  >();
   const entityMatchCount = jest.fn();
   const entityMatchFindMany = jest.fn();
+  const transaction = jest.fn();
   const disconnect = jest.fn();
 
   const database = {
@@ -51,11 +73,16 @@ describe('ImportsService', () => {
     },
     importRecord: {
       count: importRecordCount,
+      findMany: importRecordFindMany,
+      findUnique: importRecordFindUnique,
+      findUniqueOrThrow: importRecordFindUniqueOrThrow,
+      updateMany: importRecordUpdateMany,
     },
     entityMatch: {
       count: entityMatchCount,
       findMany: entityMatchFindMany,
     },
+    $transaction: transaction,
     $disconnect: disconnect,
   };
 
@@ -63,6 +90,10 @@ describe('ImportsService', () => {
     jest.resetAllMocks();
 
     (createPrismaClient as jest.Mock).mockReturnValue(database);
+
+    transaction.mockImplementation(
+      async (callback: (client: typeof database) => Promise<unknown>) => callback(database),
+    );
   });
 
   describe('getOverview', () => {
@@ -306,6 +337,182 @@ describe('ImportsService', () => {
           take: 100,
         }),
       );
+    });
+  });
+
+  describe('review workflow', () => {
+    it('returns unresolved import records in review order', async () => {
+      const records = [
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          status: 'REVIEW_REQUIRED',
+          reviewDecision: null,
+        },
+      ];
+
+      importRecordFindMany.mockResolvedValue(records);
+
+      const service = new ImportsService();
+
+      await expect(service.getReviewQueue()).resolves.toEqual(records);
+
+      expect(importRecordFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            status: 'REVIEW_REQUIRED',
+            reviewDecision: null,
+          },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          take: 100,
+        }),
+      );
+    });
+
+    it('approves an unresolved review atomically', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+        reviewedAt: null,
+      });
+
+      importRecordUpdateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      importRecordFindUniqueOrThrow.mockResolvedValue({
+        id: 'record-1',
+        status: 'MATCHED',
+        reviewDecision: 'APPROVED',
+        reviewedById: 'user-1',
+        reviewedAt: new Date('2026-08-27T00:00:00.000Z'),
+      });
+
+      const service = new ImportsService();
+
+      await expect(service.approveReview('record-1', 'user-1')).resolves.toEqual(
+        expect.objectContaining({
+          id: 'record-1',
+          status: 'MATCHED',
+          reviewDecision: 'APPROVED',
+          reviewedById: 'user-1',
+        }),
+      );
+
+      expect(importRecordUpdateMany).toHaveBeenCalledTimes(1);
+
+      const approveUpdate = importRecordUpdateMany.mock.calls[0]?.[0];
+
+      expect(approveUpdate.where).toEqual({
+        id: 'record-1',
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+      });
+      expect(approveUpdate.data).toMatchObject({
+        status: 'MATCHED',
+        reviewDecision: 'APPROVED',
+        reviewedById: 'user-1',
+      });
+      expect(approveUpdate.data.reviewedAt).toBeInstanceOf(Date);
+    });
+
+    it('rejects an unresolved review as skipped', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+        reviewedAt: null,
+      });
+
+      importRecordUpdateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      importRecordFindUniqueOrThrow.mockResolvedValue({
+        id: 'record-1',
+        status: 'SKIPPED',
+        reviewDecision: 'REJECTED',
+        reviewedById: 'user-1',
+        reviewedAt: new Date('2026-08-27T00:00:00.000Z'),
+      });
+
+      const service = new ImportsService();
+
+      await expect(service.rejectReview('record-1', 'user-1')).resolves.toEqual(
+        expect.objectContaining({
+          status: 'SKIPPED',
+          reviewDecision: 'REJECTED',
+        }),
+      );
+
+      expect(importRecordUpdateMany).toHaveBeenCalledTimes(1);
+
+      const rejectUpdate = importRecordUpdateMany.mock.calls[0]?.[0];
+
+      expect(rejectUpdate.data).toMatchObject({
+        status: 'SKIPPED',
+        reviewDecision: 'REJECTED',
+        reviewedById: 'user-1',
+      });
+    });
+
+    it('throws when the review record does not exist', async () => {
+      importRecordFindUnique.mockResolvedValue(null);
+
+      const service = new ImportsService();
+
+      await expect(service.approveReview('missing', 'user-1')).rejects.toEqual(
+        new NotFoundException({
+          code: 'IMPORT_RECORD_NOT_FOUND',
+          message: 'Import record not found',
+        }),
+      );
+
+      expect(importRecordUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects an already decided review', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        status: 'MATCHED',
+        reviewDecision: 'APPROVED',
+        reviewedAt: new Date(),
+      });
+
+      const service = new ImportsService();
+
+      await expect(service.rejectReview('record-1', 'user-1')).rejects.toEqual(
+        new BadRequestException({
+          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+          message: 'Import record is not awaiting review',
+        }),
+      );
+
+      expect(importRecordUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('detects a concurrent review decision', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+        reviewedAt: null,
+      });
+
+      importRecordUpdateMany.mockResolvedValue({
+        count: 0,
+      });
+
+      const service = new ImportsService();
+
+      await expect(service.approveReview('record-1', 'user-1')).rejects.toEqual(
+        new BadRequestException({
+          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+          message: 'Import record is not awaiting review',
+        }),
+      );
+
+      expect(importRecordFindUniqueOrThrow).not.toHaveBeenCalled();
     });
   });
 

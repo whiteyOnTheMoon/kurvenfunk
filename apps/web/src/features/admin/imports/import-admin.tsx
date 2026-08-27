@@ -99,6 +99,37 @@ interface MatchingProblem {
   } | null;
 }
 
+interface ReviewItem {
+  id: string;
+  importJobId: string;
+  recordType: string;
+  status: string;
+  externalId: string | null;
+  externalUrl: string | null;
+  normalizedPayload: unknown;
+  normalizedAt: string | null;
+  canonicalEntityType: string | null;
+  canonicalEntityId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  reviewDecision: 'APPROVED' | 'REJECTED' | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  provider: {
+    id: string;
+    key: string;
+    name: string;
+  };
+  importJob: {
+    id: string;
+    kind: string;
+    status: string;
+    trigger: string;
+    createdAt: string;
+  };
+}
+
 interface JobList {
   items: ImportJob[];
   nextCursor: string | null;
@@ -163,6 +194,28 @@ async function readPayload<T>(response: Response): Promise<T> {
   return payload.data;
 }
 
+function getReviewPayloadSummary(payload: unknown) {
+  if (typeof payload !== 'object' || payload === null) {
+    return {
+      title: 'Unbekannter Artikel',
+      lead: null,
+      clubNames: [] as string[],
+      competitionName: null,
+    };
+  }
+
+  const value = payload as Record<string, unknown>;
+
+  return {
+    title: typeof value.title === 'string' ? value.title : 'Unbekannter Artikel',
+    lead: typeof value.lead === 'string' ? value.lead : null,
+    clubNames: Array.isArray(value.clubNames)
+      ? value.clubNames.filter((item): item is string => typeof item === 'string')
+      : [],
+    competitionName: typeof value.competitionName === 'string' ? value.competitionName : null,
+  };
+}
+
 export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   const { authenticated, initialized, token } = useAuth();
 
@@ -170,6 +223,8 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   const [jobs, setJobs] = useState<ImportJob[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [matchingProblems, setMatchingProblems] = useState<MatchingProblem[]>([]);
+  const [reviewQueue, setReviewQueue] = useState<ReviewItem[]>([]);
+  const [reviewingId, setReviewingId] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
@@ -212,16 +267,19 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
           Authorization: `Bearer ${token}`,
         };
 
-        const [overviewResponse, jobsResponse, matchingResponse] = await Promise.all([
-          fetch(`${apiUrl}/api/v1/imports/overview`, { headers }),
-          fetch(`${apiUrl}/api/v1/imports/jobs?limit=30`, { headers }),
-          fetch(`${apiUrl}/api/v1/imports/matching-problems`, { headers }),
-        ]);
+        const [overviewResponse, jobsResponse, matchingResponse, reviewResponse] =
+          await Promise.all([
+            fetch(`${apiUrl}/api/v1/imports/overview`, { headers }),
+            fetch(`${apiUrl}/api/v1/imports/jobs?limit=30`, { headers }),
+            fetch(`${apiUrl}/api/v1/imports/matching-problems`, { headers }),
+            fetch(`${apiUrl}/api/v1/imports/review-queue`, { headers }),
+          ]);
 
-        const [overviewData, jobData, matchingData] = await Promise.all([
+        const [overviewData, jobData, matchingData, reviewData] = await Promise.all([
           readPayload<ImportOverview>(overviewResponse),
           readPayload<JobList>(jobsResponse),
           readPayload<MatchingProblem[]>(matchingResponse),
+          readPayload<ReviewItem[]>(reviewResponse),
         ]);
 
         if (!cancelled) {
@@ -229,6 +287,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
           setJobs(jobData.items);
           setNextCursor(jobData.nextCursor);
           setMatchingProblems(matchingData);
+          setReviewQueue(reviewData);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -251,6 +310,56 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
       cancelled = true;
     };
   }, [apiUrl, authenticated, initialized, token]);
+
+  async function decideReview(id: string, decision: 'approve' | 'reject') {
+    if (!token) {
+      setError('Keine gültige Anmeldung vorhanden.');
+      return;
+    }
+
+    setReviewingId(id);
+    setError(undefined);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/v1/imports/review/${id}/${decision}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      await readPayload<{
+        id: string;
+        status: string;
+        reviewDecision: string;
+      }>(response);
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      const [overviewResponse, reviewResponse] = await Promise.all([
+        fetch(`${apiUrl}/api/v1/imports/overview`, { headers }),
+        fetch(`${apiUrl}/api/v1/imports/review-queue`, { headers }),
+      ]);
+
+      const [overviewData, reviewData] = await Promise.all([
+        readPayload<ImportOverview>(overviewResponse),
+        readPayload<ReviewItem[]>(reviewResponse),
+      ]);
+
+      setOverview(overviewData);
+      setReviewQueue(reviewData);
+    } catch (reviewError) {
+      setError(
+        reviewError instanceof Error
+          ? reviewError.message
+          : 'Review-Entscheidung konnte nicht gespeichert werden.',
+      );
+    } finally {
+      setReviewingId(undefined);
+    }
+  }
 
   async function loadMore() {
     if (!nextCursor || loadingMore) {
@@ -548,6 +657,102 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                   </div>
                 ) : null}
               </>
+            )}
+          </section>
+
+          <section aria-labelledby="review-queue">
+            <div className={styles.sectionHeader}>
+              <div>
+                <p className={styles.sectionEyebrow}>Redaktion</p>
+                <h2 id="review-queue">Review-Queue</h2>
+              </div>
+              <span>{reviewQueue.length} offen</span>
+            </div>
+
+            {reviewQueue.length === 0 ? (
+              <EmptyState title="Keine offenen Reviews">
+                Aktuell warten keine importierten Artikel auf eine manuelle Prüfung.
+              </EmptyState>
+            ) : (
+              <div className={styles.reviewList}>
+                {reviewQueue.map((item) => {
+                  const payload = getReviewPayloadSummary(item.normalizedPayload);
+                  const busy = reviewingId === item.id;
+
+                  return (
+                    <article key={item.id} className={styles.reviewCard}>
+                      <div className={styles.reviewHeader}>
+                        <div>
+                          <div className={styles.reviewTitle}>
+                            <strong>{payload.title}</strong>
+                            <StatusBadge status={item.status} />
+                          </div>
+
+                          <span>
+                            {item.provider.name} · {formatDate(item.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {payload.lead ? <p className={styles.reviewLead}>{payload.lead}</p> : null}
+
+                      <dl className={styles.reviewMeta}>
+                        <div>
+                          <dt>Confidence</dt>
+                          <dd>{item.errorMessage ?? 'Manuelle Prüfung erforderlich'}</dd>
+                        </div>
+
+                        <div>
+                          <dt>Vereine</dt>
+                          <dd>
+                            {payload.clubNames.length > 0 ? payload.clubNames.join(', ') : '–'}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt>Wettbewerb</dt>
+                          <dd>{payload.competitionName ?? '–'}</dd>
+                        </div>
+
+                        <div>
+                          <dt>Zuordnung</dt>
+                          <dd>
+                            {item.canonicalEntityType
+                              ? `${item.canonicalEntityType} · ${item.canonicalEntityId ?? '–'}`
+                              : '–'}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      {item.externalUrl ? (
+                        <p className={styles.reviewSource}>
+                          <a href={item.externalUrl} target="_blank" rel="noreferrer">
+                            Originalquelle öffnen
+                          </a>
+                        </p>
+                      ) : null}
+
+                      <div className={styles.reviewActions}>
+                        <Button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void decideReview(item.id, 'approve')}
+                        >
+                          {busy ? 'Wird gespeichert …' : 'Freigeben'}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void decideReview(item.id, 'reject')}
+                        >
+                          Ablehnen
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             )}
           </section>
 

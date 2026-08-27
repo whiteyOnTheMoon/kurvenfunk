@@ -18,6 +18,7 @@ import { NewsConfidenceScoreService } from './services/news-confidence-score.ser
 import { NewsDuplicateDetectionService } from './services/news-duplicate-detection.service';
 import { NewsImportDeadLetterService } from './services/news-import-dead-letter.service';
 import { NewsMatchMatchingService } from './services/news-match-matching.service';
+import { NewsReviewWorkflowService } from './services/news-review-workflow.service';
 import { NewsNormalizationService } from './services/news-normalization.service';
 import { NewsValidationService } from './services/news-validation.service';
 import { RawPayloadService } from './services/raw-payload.service';
@@ -71,6 +72,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsDuplicateDetectionService,
     NewsImportDeadLetterService,
     NewsMatchMatchingService,
+    NewsReviewWorkflowService,
     NewsNormalizationService,
     NewsValidationService,
     RawPayloadService,
