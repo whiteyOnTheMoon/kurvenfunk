@@ -8,6 +8,7 @@ const DUPLICATE_CANDIDATE_STATUSES = [
   'CREATED',
   'UPDATED',
   'DUPLICATE',
+  'REVIEW_REQUIRED',
 ] as const;
 
 export type NewsDuplicateMethod = 'PROVIDER_ID' | 'URL' | 'HASH' | 'TITLE' | 'TITLE_SIMILARITY';

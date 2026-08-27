@@ -99,6 +99,44 @@ describe('NewsDuplicateDetectionService', () => {
     });
   });
 
+  it('treats an existing REVIEW_REQUIRED record as a duplicate', async () => {
+    const { service, findFirst, importRecordUpdate, importJobUpdate } = createService();
+
+    findFirst.mockResolvedValueOnce({
+      id: 'original-record',
+      duplicateOfRecordId: null,
+    });
+
+    await expect(service.detectDuplicate('current-record', article)).resolves.toEqual({
+      duplicate: true,
+      duplicateOfRecordId: 'original-record',
+      method: 'PROVIDER_ID',
+    });
+
+    expect(importRecordUpdate).toHaveBeenCalledWith({
+      where: {
+        id: 'current-record',
+      },
+      data: {
+        status: 'DUPLICATE',
+        duplicateOfRecordId: 'original-record',
+        errorCode: null,
+        errorMessage: null,
+      },
+    });
+
+    expect(importJobUpdate).toHaveBeenCalledWith({
+      where: {
+        id: 'job-1',
+      },
+      data: {
+        duplicateCount: {
+          increment: 1,
+        },
+      },
+    });
+  });
+
   it('falls back to exact URL detection', async () => {
     const { service, findFirst } = createService();
 
