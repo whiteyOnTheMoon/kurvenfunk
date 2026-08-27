@@ -475,6 +475,49 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                   </table>
                 </div>
 
+                <div className={styles.mobileJobs}>
+                  {jobs.map((job) => (
+                    <article key={job.id} className={styles.mobileJobCard}>
+                      <div className={styles.mobileJobHeader}>
+                        <div className={styles.jobIdentity}>
+                          <strong>{job.provider.name}</strong>
+                          <span>
+                            {job.kind} · {job.trigger}
+                          </span>
+                          <code>{job.id.slice(0, 8)}</code>
+                        </div>
+
+                        <StatusBadge status={job.status} />
+                      </div>
+
+                      <dl className={styles.mobileJobStats}>
+                        <div>
+                          <dt>Eingang</dt>
+                          <dd>{job.receivedCount}</dd>
+                        </div>
+                        <div>
+                          <dt>Importiert</dt>
+                          <dd>{job.createdCount + job.updatedCount}</dd>
+                        </div>
+                        <div>
+                          <dt>Duplikate</dt>
+                          <dd>{job.duplicateCount}</dd>
+                        </div>
+                        <div>
+                          <dt>Fehler</dt>
+                          <dd className={job.failedCount > 0 ? styles.countDanger : undefined}>
+                            {job.failedCount}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <p className={styles.mobileJobDate}>
+                        {formatDate(job.startedAt ?? job.createdAt)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+
                 {jobs.some((job) => job.errorMessage) ? (
                   <div className={styles.jobErrors}>
                     <h3>Letzte Job-Fehler</h3>
