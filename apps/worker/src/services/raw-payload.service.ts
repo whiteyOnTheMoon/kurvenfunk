@@ -6,6 +6,8 @@ import { DatabaseService } from '../database/database.service';
 
 export interface RawPayloadImportContext {
   queueJobId?: string;
+  windowStart?: string;
+  windowEnd?: string;
 }
 
 export interface RawPayloadImportSession {
@@ -55,6 +57,8 @@ export class RawPayloadService {
         status: 'RUNNING',
         trigger: 'SYSTEM',
         queueJobId: context.queueJobId,
+        windowStart: context.windowStart !== undefined ? new Date(context.windowStart) : undefined,
+        windowEnd: context.windowEnd !== undefined ? new Date(context.windowEnd) : undefined,
         startedAt: new Date(),
       },
       select: {
@@ -136,6 +140,32 @@ export class RawPayloadService {
   async completeNewsImport(session: RawPayloadImportSession): Promise<void> {
     const finishedAt = new Date();
 
+    const groupedStatuses = await this.databaseService.client.importRecord.groupBy({
+      by: ['status'],
+      where: {
+        importJobId: session.importJobId,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const counts = new Map(groupedStatuses.map((group) => [group.status, group._count._all]));
+
+    type ImportRecordStatus = (typeof groupedStatuses)[number]['status'];
+
+    const count = (...statuses: ImportRecordStatus[]) =>
+      statuses.reduce((total, status) => total + (counts.get(status) ?? 0), 0);
+
+    const processedCount = count(
+      'CREATED',
+      'UPDATED',
+      'DUPLICATE',
+      'SKIPPED',
+      'REVIEW_REQUIRED',
+      'FAILED',
+    );
+
     await this.databaseService.client.$transaction([
       this.databaseService.client.importJob.update({
         where: {
@@ -143,6 +173,11 @@ export class RawPayloadService {
         },
         data: {
           status: 'SUCCEEDED',
+          processedCount,
+          createdCount: count('CREATED'),
+          updatedCount: count('UPDATED'),
+          duplicateCount: count('DUPLICATE'),
+          failedCount: count('FAILED'),
           finishedAt,
         },
       }),

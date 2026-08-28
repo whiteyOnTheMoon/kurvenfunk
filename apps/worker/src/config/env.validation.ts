@@ -11,11 +11,21 @@ const workerEnvSchema = z
     REDIS_PASSWORD: z.string().min(1),
 
     DATABASE_URL: z.string().trim().min(1),
+
+    NEWS_IMPORT_PROVIDER: z.enum(['fake', 'ots']).default('fake'),
+
     NEWS_IMPORT_SCHEDULER_ENABLED: z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
     NEWS_IMPORT_SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(1_000).default(300_000),
+
+    NEWS_OTS_API_KEY: z.string().trim().min(1).optional(),
+    NEWS_OTS_API_BASE_URL: z.string().trim().url().default('https://www.ots.at/api'),
+    NEWS_OTS_QUERY: z.string().trim().min(1).default('Fußball'),
+    NEWS_OTS_PAGE_SIZE: z.coerce.number().int().min(1).max(100).default(20),
+    NEWS_OTS_MAX_PAGES: z.coerce.number().int().min(1).max(100).default(5),
+    NEWS_OTS_LOOKBACK_MINUTES: z.coerce.number().int().min(1).max(1_440).default(15),
 
     WORKER_RUN_STARTUP_TEST: z
       .enum(['true', 'false'])

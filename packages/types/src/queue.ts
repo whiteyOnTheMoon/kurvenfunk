@@ -13,13 +13,18 @@ export const QUEUE_NAMES = {
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 
+export interface NewsImportJobPayload {
+  providerKey: string;
+  windowStart?: string;
+  windowEnd?: string;
+  lookbackMinutes?: number;
+}
+
 export interface NewsImportDeadLetterPayload {
   originalQueue: typeof QUEUE_NAMES.NEWS_IMPORT;
   originalJobId: string | null;
   originalJobName: string;
-  originalData: {
-    providerKey: string;
-  };
+  originalData: NewsImportJobPayload;
   failedReason: string;
   attemptsMade: number;
   maxAttempts: number;

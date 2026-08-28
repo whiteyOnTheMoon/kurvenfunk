@@ -18,10 +18,12 @@ jest.mock('@kurvenfunk/types', () => ({
   },
 }));
 
-import type { NewsProviderRecord } from '@kurvenfunk/types';
+import type { NewsImportJobPayload, NewsProviderRecord } from '@kurvenfunk/types';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import type { OtsNewsNormalizer } from '../providers/ots-news-normalizer';
+import type { OtsNewsProvider } from '../providers/ots-news-provider';
 import type { NewsAutoPublishingService } from '../services/news-auto-publishing.service';
 import type { NewsClubMatchingService } from '../services/news-club-matching.service';
 import type { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
@@ -33,7 +35,7 @@ import type { NewsReviewWorkflowService } from '../services/news-review-workflow
 import type { NewsNormalizationService } from '../services/news-normalization.service';
 import type { NewsValidationService } from '../services/news-validation.service';
 import type { RawPayloadImportSession, RawPayloadService } from '../services/raw-payload.service';
-import { NewsImportProcessor, type NewsImportJobPayload } from './news-import.processor';
+import { NewsImportProcessor } from './news-import.processor';
 
 describe('NewsImportProcessor', () => {
   let provider: FakeNewsProvider;
@@ -181,9 +183,19 @@ describe('NewsImportProcessor', () => {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
 
+    const otsProvider = {
+      key: 'ots',
+    } as unknown as OtsNewsProvider;
+
+    const otsNormalizer = {
+      normalizeNewsRecord: jest.fn(),
+    } as unknown as OtsNewsNormalizer;
+
     processor = new NewsImportProcessor(
       provider,
       normalizer,
+      otsProvider,
+      otsNormalizer,
       rawPayloadService,
       newsNormalizationService,
       newsValidationService,
@@ -223,6 +235,64 @@ describe('NewsImportProcessor', () => {
     });
     expect(fetch).toHaveBeenNthCalledWith(3, {
       cursor: '4',
+    });
+  });
+
+  it('passes a runtime lookback window to every provider page', async () => {
+    const fetch = jest
+      .spyOn(provider, 'fetch')
+      .mockResolvedValueOnce({
+        records: [],
+        nextCursor: '2',
+      })
+      .mockResolvedValueOnce({
+        records: [],
+        nextCursor: '3',
+      })
+      .mockResolvedValueOnce({
+        records: [],
+      });
+
+    await processor.process(
+      createJob({
+        providerKey: 'fake',
+        lookbackMinutes: 15,
+      }),
+    );
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    const firstInput = fetch.mock.calls[0]?.[0];
+    const secondInput = fetch.mock.calls[1]?.[0];
+    const thirdInput = fetch.mock.calls[2]?.[0];
+
+    expect(firstInput?.windowStart).toBeDefined();
+    expect(firstInput?.windowEnd).toBeDefined();
+
+    expect(startNewsImport).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        windowStart: firstInput?.windowStart,
+        windowEnd: firstInput?.windowEnd,
+      }),
+    );
+
+    if (firstInput?.windowStart === undefined || firstInput.windowEnd === undefined) {
+      throw new Error('Expected runtime import window');
+    }
+
+    expect(Date.parse(firstInput.windowEnd) - Date.parse(firstInput.windowStart)).toBe(15 * 60_000);
+
+    expect(secondInput).toEqual({
+      cursor: '2',
+      windowStart: firstInput.windowStart,
+      windowEnd: firstInput.windowEnd,
+    });
+
+    expect(thirdInput).toEqual({
+      cursor: '3',
+      windowStart: firstInput.windowStart,
+      windowEnd: firstInput.windowEnd,
     });
   });
 

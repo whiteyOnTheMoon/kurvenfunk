@@ -1,9 +1,12 @@
 import { createLogger } from '@kurvenfunk/logger';
-import { QUEUE_NAMES, type NewsImportDeadLetterPayload } from '@kurvenfunk/types';
+import {
+  QUEUE_NAMES,
+  type NewsImportDeadLetterPayload,
+  type NewsImportJobPayload,
+} from '@kurvenfunk/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import type { Job, Queue } from 'bullmq';
-import type { NewsImportJobPayload } from '../processors/news-import.processor';
 
 const logger = createLogger({
   service: 'worker',
@@ -27,9 +30,7 @@ export class NewsImportDeadLetterService {
       originalQueue: QUEUE_NAMES.NEWS_IMPORT,
       originalJobId: job.id !== undefined ? String(job.id) : null,
       originalJobName: job.name,
-      originalData: {
-        providerKey: job.data.providerKey,
-      },
+      originalData: { ...job.data },
       failedReason: error.message,
       attemptsMade: job.attemptsMade,
       maxAttempts,

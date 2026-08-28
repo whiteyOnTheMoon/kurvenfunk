@@ -1,9 +1,11 @@
 import { createLogger } from '@kurvenfunk/logger';
-import { QUEUE_NAMES } from '@kurvenfunk/types';
+import { QUEUE_NAMES, type NewsImportJobPayload } from '@kurvenfunk/types';
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { FakeNewsNormalizer } from '../providers/fake-news-normalizer';
 import { FakeNewsProvider } from '../providers/fake-news-provider';
+import { OtsNewsNormalizer } from '../providers/ots-news-normalizer';
+import { OtsNewsProvider } from '../providers/ots-news-provider';
 import { NewsAutoPublishingService } from '../services/news-auto-publishing.service';
 import { NewsClubMatchingService } from '../services/news-club-matching.service';
 import { NewsCompetitionMatchingService } from '../services/news-competition-matching.service';
@@ -20,15 +22,13 @@ const logger = createLogger({
   service: 'worker',
 });
 
-export interface NewsImportJobPayload {
-  providerKey: string;
-}
-
 @Processor(QUEUE_NAMES.NEWS_IMPORT)
 export class NewsImportProcessor extends WorkerHost {
   constructor(
     private readonly fakeNewsProvider: FakeNewsProvider,
     private readonly fakeNewsNormalizer: FakeNewsNormalizer,
+    private readonly otsNewsProvider: OtsNewsProvider,
+    private readonly otsNewsNormalizer: OtsNewsNormalizer,
     private readonly rawPayloadService: RawPayloadService,
     private readonly newsNormalizationService: NewsNormalizationService,
     private readonly newsValidationService: NewsValidationService,
@@ -63,10 +63,21 @@ export class NewsImportProcessor extends WorkerHost {
         throw new Error(`Unsupported news import job: ${job.name}`);
       }
 
-      const provider = this.resolveProvider(job.data.providerKey);
+      const { provider, normalizer } = this.resolveProvider(job.data.providerKey);
+
+      const windowEnd =
+        job.data.windowEnd ??
+        (job.data.lookbackMinutes !== undefined ? new Date().toISOString() : undefined);
+      const windowStart =
+        job.data.windowStart ??
+        (job.data.lookbackMinutes !== undefined && windowEnd !== undefined
+          ? new Date(Date.parse(windowEnd) - job.data.lookbackMinutes * 60_000).toISOString()
+          : undefined);
 
       importSession = await this.rawPayloadService.startNewsImport(provider, {
         ...(job.id !== undefined ? { queueJobId: String(job.id) } : {}),
+        ...(windowStart !== undefined ? { windowStart } : {}),
+        ...(windowEnd !== undefined ? { windowEnd } : {}),
       });
 
       let cursor: string | undefined;
@@ -76,6 +87,8 @@ export class NewsImportProcessor extends WorkerHost {
       do {
         const result = await provider.fetch({
           ...(cursor !== undefined ? { cursor } : {}),
+          ...(windowStart !== undefined ? { windowStart } : {}),
+          ...(windowEnd !== undefined ? { windowEnd } : {}),
         });
 
         for (const record of result.records) {
@@ -84,7 +97,7 @@ export class NewsImportProcessor extends WorkerHost {
           const normalized = await this.newsNormalizationService.normalizeRecord(
             storedRecord.importRecordId,
             record,
-            this.fakeNewsNormalizer,
+            normalizer,
           );
 
           const validation = await this.newsValidationService.validateRecord(
@@ -238,9 +251,27 @@ export class NewsImportProcessor extends WorkerHost {
     }
   }
 
-  private resolveProvider(providerKey: string): FakeNewsProvider {
+  private resolveProvider(providerKey: string):
+    | {
+        provider: FakeNewsProvider;
+        normalizer: FakeNewsNormalizer;
+      }
+    | {
+        provider: OtsNewsProvider;
+        normalizer: OtsNewsNormalizer;
+      } {
     if (providerKey === this.fakeNewsProvider.key) {
-      return this.fakeNewsProvider;
+      return {
+        provider: this.fakeNewsProvider,
+        normalizer: this.fakeNewsNormalizer,
+      };
+    }
+
+    if (providerKey === this.otsNewsProvider.key) {
+      return {
+        provider: this.otsNewsProvider,
+        normalizer: this.otsNewsNormalizer,
+      };
     }
 
     throw new Error(`Unknown news provider: ${providerKey}`);

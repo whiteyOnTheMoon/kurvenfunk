@@ -45,6 +45,7 @@ describe('RawPayloadService', () => {
 
     const rawPayloadCreate = jest.fn();
     const importRecordCreate = jest.fn();
+    const importRecordGroupBy = jest.fn();
 
     const transactionClient = {
       rawPayload: {
@@ -75,6 +76,9 @@ describe('RawPayloadService', () => {
         create: importJobCreate,
         update: importJobUpdate,
       },
+      importRecord: {
+        groupBy: importRecordGroupBy,
+      },
       $transaction: transaction,
     } as unknown as DatabaseClient;
 
@@ -90,6 +94,7 @@ describe('RawPayloadService', () => {
       importJobUpdate,
       rawPayloadCreate,
       importRecordCreate,
+      importRecordGroupBy,
       transaction,
     };
   }
@@ -107,6 +112,8 @@ describe('RawPayloadService', () => {
 
     const session = await service.startNewsImport(provider, {
       queueJobId: 'bull-job-123',
+      windowStart: '2026-08-28T01:45:00.000Z',
+      windowEnd: '2026-08-28T02:00:00.000Z',
     });
 
     expect(session).toEqual({
@@ -125,6 +132,8 @@ describe('RawPayloadService', () => {
           status: 'RUNNING',
           trigger: 'SYSTEM',
           queueJobId: 'bull-job-123',
+          windowStart: new Date('2026-08-28T01:45:00.000Z'),
+          windowEnd: new Date('2026-08-28T02:00:00.000Z'),
         }),
       }),
     );
@@ -243,6 +252,88 @@ describe('RawPayloadService', () => {
     const secondHash = rawPayloadCreate.mock.calls[1]?.[0].data.payloadHash;
 
     expect(firstHash).toBe(secondHash);
+  });
+
+  it('finalizes counters from the persisted import record states', async () => {
+    const { service, importRecordGroupBy, importJobUpdate, providerUpdate } = createService();
+
+    importRecordGroupBy.mockResolvedValue([
+      {
+        status: 'REVIEW_REQUIRED',
+        _count: {
+          _all: 12,
+        },
+      },
+      {
+        status: 'DUPLICATE',
+        _count: {
+          _all: 3,
+        },
+      },
+      {
+        status: 'CREATED',
+        _count: {
+          _all: 2,
+        },
+      },
+      {
+        status: 'UPDATED',
+        _count: {
+          _all: 1,
+        },
+      },
+      {
+        status: 'SKIPPED',
+        _count: {
+          _all: 1,
+        },
+      },
+      {
+        status: 'FAILED',
+        _count: {
+          _all: 1,
+        },
+      },
+    ]);
+
+    await service.completeNewsImport({
+      providerId: '11111111-1111-4111-8111-111111111111',
+      importJobId: '22222222-2222-4222-8222-222222222222',
+    });
+
+    expect(importRecordGroupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      where: {
+        importJobId: '22222222-2222-4222-8222-222222222222',
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    expect(importJobUpdate).toHaveBeenCalledWith({
+      where: {
+        id: '22222222-2222-4222-8222-222222222222',
+      },
+      data: expect.objectContaining({
+        status: 'SUCCEEDED',
+        processedCount: 20,
+        createdCount: 2,
+        updatedCount: 1,
+        duplicateCount: 3,
+        failedCount: 1,
+        finishedAt: expect.any(Date),
+      }),
+    });
+
+    expect(providerUpdate).toHaveBeenCalledWith({
+      where: {
+        id: '11111111-1111-4111-8111-111111111111',
+      },
+      data: {
+        lastImportAt: expect.any(Date),
+      },
+    });
   });
 
   it('marks the import job as failed', async () => {

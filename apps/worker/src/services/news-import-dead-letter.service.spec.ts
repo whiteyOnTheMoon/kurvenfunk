@@ -14,9 +14,8 @@ jest.mock('@kurvenfunk/types', () => ({
   },
 }));
 
-import type { NewsImportDeadLetterPayload } from '@kurvenfunk/types';
+import type { NewsImportDeadLetterPayload, NewsImportJobPayload } from '@kurvenfunk/types';
 import type { Job, Queue } from 'bullmq';
-import type { NewsImportJobPayload } from '../processors/news-import.processor';
 import { NewsImportDeadLetterService } from './news-import-dead-letter.service';
 
 describe('NewsImportDeadLetterService', () => {
@@ -43,7 +42,10 @@ describe('NewsImportDeadLetterService', () => {
       id: 'news-import-job-1',
       name: 'fetch-provider',
       data: {
-        providerKey: 'fake',
+        providerKey: 'ots',
+        windowStart: '2026-08-28T01:45:00.000Z',
+        windowEnd: '2026-08-28T02:00:00.000Z',
+        lookbackMinutes: 15,
       },
       attemptsMade,
       opts: {
@@ -68,7 +70,6 @@ describe('NewsImportDeadLetterService', () => {
     await service.moveToDeadLetter(createJob(3), new Error('Provider permanently unavailable'));
 
     expect(add).toHaveBeenCalledTimes(1);
-    expect(add).toHaveBeenCalledTimes(1);
 
     const [, payload, options] = add.mock.calls[0] as [
       string,
@@ -84,7 +85,10 @@ describe('NewsImportDeadLetterService', () => {
       originalJobId: 'news-import-job-1',
       originalJobName: 'fetch-provider',
       originalData: {
-        providerKey: 'fake',
+        providerKey: 'ots',
+        windowStart: '2026-08-28T01:45:00.000Z',
+        windowEnd: '2026-08-28T02:00:00.000Z',
+        lookbackMinutes: 15,
       },
       failedReason: 'Provider permanently unavailable',
       attemptsMade: 3,

@@ -9,9 +9,12 @@ const logger = createLogger({
   service: 'worker',
 });
 
-const PROVIDER_KEY = 'fake';
-const SCHEDULER_ID = `news-import-${PROVIDER_KEY}`;
+const SUPPORTED_PROVIDER_KEYS = ['fake', 'ots'] as const;
+const DEFAULT_PROVIDER_KEY = 'fake';
 const DEFAULT_INTERVAL_MS = 300_000;
+const DEFAULT_OTS_LOOKBACK_MINUTES = 15;
+
+type SupportedProviderKey = (typeof SUPPORTED_PROVIDER_KEYS)[number];
 
 @Injectable()
 export class NewsImportSchedulerService implements OnModuleInit {
@@ -22,17 +25,23 @@ export class NewsImportSchedulerService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    const providerKey = this.getProviderKey();
+
     const enabled = this.configService.get<boolean>('NEWS_IMPORT_SCHEDULER_ENABLED', false);
 
     if (!enabled) {
-      const removed = await this.newsImportQueue.removeJobScheduler(SCHEDULER_ID);
+      const removed = await Promise.all(
+        SUPPORTED_PROVIDER_KEYS.map(async (key) => ({
+          providerKey: key,
+          removed: await this.newsImportQueue.removeJobScheduler(this.schedulerId(key)),
+        })),
+      );
 
       logger.info('News import scheduler disabled', {
         event: 'news-import.scheduler.disabled',
         metadata: {
           queue: QUEUE_NAMES.NEWS_IMPORT,
-          schedulerId: SCHEDULER_ID,
-          providerKey: PROVIDER_KEY,
+          providerKey,
           removed,
         },
       });
@@ -40,21 +49,40 @@ export class NewsImportSchedulerService implements OnModuleInit {
       return;
     }
 
+    await Promise.all(
+      SUPPORTED_PROVIDER_KEYS.filter((key) => key !== providerKey).map((key) =>
+        this.newsImportQueue.removeJobScheduler(this.schedulerId(key)),
+      ),
+    );
+
     const intervalMs = this.configService.get<number>(
       'NEWS_IMPORT_SCHEDULER_INTERVAL_MS',
       DEFAULT_INTERVAL_MS,
     );
 
+    const schedulerId = this.schedulerId(providerKey);
+
+    const data =
+      providerKey === 'ots'
+        ? {
+            providerKey,
+            lookbackMinutes: this.configService.get<number>(
+              'NEWS_OTS_LOOKBACK_MINUTES',
+              DEFAULT_OTS_LOOKBACK_MINUTES,
+            ),
+          }
+        : {
+            providerKey,
+          };
+
     const job = await this.newsImportQueue.upsertJobScheduler(
-      SCHEDULER_ID,
+      schedulerId,
       {
         every: intervalMs,
       },
       {
         name: 'fetch-provider',
-        data: {
-          providerKey: PROVIDER_KEY,
-        },
+        data,
         opts: NEWS_IMPORT_RETRY_OPTIONS,
       },
     );
@@ -63,11 +91,25 @@ export class NewsImportSchedulerService implements OnModuleInit {
       event: 'news-import.scheduler.registered',
       metadata: {
         queue: QUEUE_NAMES.NEWS_IMPORT,
-        schedulerId: SCHEDULER_ID,
-        providerKey: PROVIDER_KEY,
+        schedulerId,
+        providerKey,
         jobId: job?.id ?? null,
         intervalMs,
       },
     });
+  }
+
+  private getProviderKey(): SupportedProviderKey {
+    const configured = this.configService.get<string>('NEWS_IMPORT_PROVIDER', DEFAULT_PROVIDER_KEY);
+
+    if (!SUPPORTED_PROVIDER_KEYS.includes(configured as SupportedProviderKey)) {
+      throw new Error(`Unsupported news import provider: ${configured}`);
+    }
+
+    return configured as SupportedProviderKey;
+  }
+
+  private schedulerId(providerKey: SupportedProviderKey): string {
+    return `news-import-${providerKey}`;
   }
 }

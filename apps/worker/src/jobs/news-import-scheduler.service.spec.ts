@@ -35,55 +35,51 @@ describe('NewsImportSchedulerService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    removeJobScheduler.mockResolvedValue(false);
   });
 
-  it('removes an existing scheduler when disabled', async () => {
-    removeJobScheduler.mockResolvedValue(true);
-
-    const configService = {
-      get: jest.fn((key: string, defaultValue: unknown) => {
-        if (key === 'NEWS_IMPORT_SCHEDULER_ENABLED') {
-          return false;
-        }
-
-        return defaultValue;
-      }),
+  function config(values: Record<string, unknown>): ConfigService {
+    return {
+      get: jest.fn((key: string, defaultValue: unknown) =>
+        key in values ? values[key] : defaultValue,
+      ),
     } as unknown as ConfigService;
+  }
 
-    const service = new NewsImportSchedulerService(queue, configService);
+  it('removes all known provider schedulers when disabled', async () => {
+    const service = new NewsImportSchedulerService(
+      queue,
+      config({
+        NEWS_IMPORT_SCHEDULER_ENABLED: false,
+      }),
+    );
 
     await service.onModuleInit();
 
-    expect(removeJobScheduler).toHaveBeenCalledTimes(1);
+    expect(removeJobScheduler).toHaveBeenCalledTimes(2);
     expect(removeJobScheduler).toHaveBeenCalledWith('news-import-fake');
+    expect(removeJobScheduler).toHaveBeenCalledWith('news-import-ots');
+
     expect(upsertJobScheduler).not.toHaveBeenCalled();
   });
 
-  it('registers the fake provider scheduler when enabled', async () => {
+  it('registers the fake provider by default', async () => {
     upsertJobScheduler.mockResolvedValue({
       id: 'scheduler-job-id',
     });
 
-    const configService = {
-      get: jest.fn((key: string, defaultValue: unknown) => {
-        if (key === 'NEWS_IMPORT_SCHEDULER_ENABLED') {
-          return true;
-        }
-
-        if (key === 'NEWS_IMPORT_SCHEDULER_INTERVAL_MS') {
-          return 60_000;
-        }
-
-        return defaultValue;
+    const service = new NewsImportSchedulerService(
+      queue,
+      config({
+        NEWS_IMPORT_SCHEDULER_ENABLED: true,
+        NEWS_IMPORT_SCHEDULER_INTERVAL_MS: 60_000,
       }),
-    } as unknown as ConfigService;
-
-    const service = new NewsImportSchedulerService(queue, configService);
+    );
 
     await service.onModuleInit();
 
-    expect(removeJobScheduler).not.toHaveBeenCalled();
-    expect(upsertJobScheduler).toHaveBeenCalledTimes(1);
+    expect(removeJobScheduler).toHaveBeenCalledWith('news-import-ots');
+
     expect(upsertJobScheduler).toHaveBeenCalledWith(
       'news-import-fake',
       {
@@ -105,22 +101,58 @@ describe('NewsImportSchedulerService', () => {
     );
   });
 
+  it('registers the OTS provider when configured', async () => {
+    upsertJobScheduler.mockResolvedValue({
+      id: 'scheduler-job-id',
+    });
+
+    const service = new NewsImportSchedulerService(
+      queue,
+      config({
+        NEWS_IMPORT_PROVIDER: 'ots',
+        NEWS_IMPORT_SCHEDULER_ENABLED: true,
+        NEWS_IMPORT_SCHEDULER_INTERVAL_MS: 120_000,
+        NEWS_OTS_LOOKBACK_MINUTES: 15,
+      }),
+    );
+
+    await service.onModuleInit();
+
+    expect(removeJobScheduler).toHaveBeenCalledWith('news-import-fake');
+
+    expect(upsertJobScheduler).toHaveBeenCalledWith(
+      'news-import-ots',
+      {
+        every: 120_000,
+      },
+      {
+        name: 'fetch-provider',
+        data: {
+          providerKey: 'ots',
+          lookbackMinutes: 15,
+        },
+        opts: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2_000,
+          },
+        },
+      },
+    );
+  });
+
   it('uses the default interval when none is configured', async () => {
     upsertJobScheduler.mockResolvedValue({
       id: 'scheduler-job-id',
     });
 
-    const configService = {
-      get: jest.fn((key: string, defaultValue: unknown) => {
-        if (key === 'NEWS_IMPORT_SCHEDULER_ENABLED') {
-          return true;
-        }
-
-        return defaultValue;
+    const service = new NewsImportSchedulerService(
+      queue,
+      config({
+        NEWS_IMPORT_SCHEDULER_ENABLED: true,
       }),
-    } as unknown as ConfigService;
-
-    const service = new NewsImportSchedulerService(queue, configService);
+    );
 
     await service.onModuleInit();
 
@@ -143,5 +175,21 @@ describe('NewsImportSchedulerService', () => {
         },
       },
     );
+  });
+
+  it('rejects an unsupported provider', async () => {
+    const service = new NewsImportSchedulerService(
+      queue,
+      config({
+        NEWS_IMPORT_PROVIDER: 'unknown',
+        NEWS_IMPORT_SCHEDULER_ENABLED: true,
+      }),
+    );
+
+    await expect(service.onModuleInit()).rejects.toThrow(
+      'Unsupported news import provider: unknown',
+    );
+
+    expect(upsertJobScheduler).not.toHaveBeenCalled();
   });
 });
