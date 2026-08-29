@@ -237,7 +237,13 @@
   border-left: var(--kf-border-width-1) solid var(--kf-border);
 }
 
-.replies .createdComment {
+.repliesAtDepthLimit {
+  display: grid;
+  gap: var(--kf-space-3);
+}
+
+.replies .createdComment,
+.repliesAtDepthLimit .createdComment {
   margin-top: var(--kf-space-3);
 }
 

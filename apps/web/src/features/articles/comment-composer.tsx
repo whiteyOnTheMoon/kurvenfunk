@@ -5,6 +5,8 @@ import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import styles from './comment-composer.module.css';
 
+const MAX_COMMENT_DISPLAY_DEPTH = 5;
+
 interface CreatedComment {
   id: string;
   parentId: string | null;
@@ -206,7 +208,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     }
   }
 
-  function renderComment(comment: CreatedComment): ReactNode {
+  function renderComment(comment: CreatedComment, displayDepth = 0): ReactNode {
     const replies = comments
       .filter((candidate) => candidate.parentId === comment.id)
       .sort(
@@ -291,7 +293,13 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         </article>
 
         {replies.length > 0 ? (
-          <div className={styles.replies}>{replies.map((reply) => renderComment(reply))}</div>
+          <div
+            className={
+              displayDepth < MAX_COMMENT_DISPLAY_DEPTH ? styles.replies : styles.repliesAtDepthLimit
+            }
+          >
+            {replies.map((reply) => renderComment(reply, displayDepth + 1))}
+          </div>
         ) : null}
       </div>
     );
