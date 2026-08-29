@@ -1,5 +1,6 @@
 const articleFindUnique = jest.fn();
 const commentCreate = jest.fn();
+const commentFindMany = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -9,6 +10,7 @@ jest.mock('@kurvenfunk/database', () => ({
     },
     comment: {
       create: commentCreate,
+      findMany: commentFindMany,
     },
     $disconnect: disconnect,
   }),
@@ -23,6 +25,26 @@ describe('CommentsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new CommentsService();
+  });
+
+  it('lists visible top-level comments for an article', async () => {
+    commentFindMany.mockResolvedValue([]);
+
+    const result = await service.listForArticle('11111111-1111-4111-8111-111111111111');
+
+    expect(commentFindMany).toHaveBeenCalledWith({
+      where: {
+        articleId: '11111111-1111-4111-8111-111111111111',
+        parentId: null,
+        status: 'VISIBLE',
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: expect.any(Object),
+    });
+    expect(result).toEqual([]);
   });
 
   it('creates a visible top-level comment for an ACTIVE user', async () => {

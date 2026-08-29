@@ -25,15 +25,26 @@ import type { CommentsService } from './comments.service';
 
 describe('CommentsController', () => {
   const create = jest.fn();
+  const listForArticle = jest.fn();
 
   const commentsService = {
     create,
+    listForArticle,
   } as unknown as CommentsService;
 
   const controller = new CommentsController(commentsService);
 
   beforeEach(() => {
     create.mockReset();
+    listForArticle.mockReset();
+  });
+
+  it('lists comments for the requested article', async () => {
+    listForArticle.mockResolvedValue([]);
+
+    await controller.list('11111111-1111-4111-8111-111111111111');
+
+    expect(listForArticle).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
   });
 
   it('passes the authenticated Kurvenfunk user to the service', async () => {

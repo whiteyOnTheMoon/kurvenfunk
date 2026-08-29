@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { createCommentSchema, type CreateCommentInput } from '@kurvenfunk/validation';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
@@ -8,6 +8,11 @@ import { CommentsService } from './comments.service';
 @Controller('articles/:articleId/comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
+
+  @Get()
+  list(@Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string) {
+    return this.commentsService.listForArticle(articleId);
+  }
 
   @Post()
   @UseGuards(AuthGuard)

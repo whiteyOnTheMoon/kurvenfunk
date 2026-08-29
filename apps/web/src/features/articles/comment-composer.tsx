@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import styles from './comment-composer.module.css';
@@ -29,11 +29,45 @@ interface ApiErrorBody {
 export function CommentComposer({ apiUrl, articleId, initialCommentCount }: CommentComposerProps) {
   const { authenticated, initialized, login, token, user } = useAuth();
   const [body, setBody] = useState('');
-  const [createdComment, setCreatedComment] = useState<CreatedComment>();
+  const [comments, setComments] = useState<CreatedComment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
 
-  const commentCount = initialCommentCount + (createdComment ? 1 : 0);
+  const commentCount = commentsLoaded ? comments.length : initialCommentCount;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadComments() {
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments`,
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          data?: CreatedComment[];
+        };
+
+        if (!cancelled && Array.isArray(payload.data)) {
+          setComments(payload.data);
+          setCommentsLoaded(true);
+        }
+      } catch {
+        // The article remains usable even if comments cannot be loaded.
+      }
+    }
+
+    void loadComments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, articleId]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,7 +118,8 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         throw new Error('INVALID_COMMENT_RESPONSE');
       }
 
-      setCreatedComment(payload.data);
+      setComments((current) => [...current, payload.data!]);
+      setCommentsLoaded(true);
       setBody('');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'COMMENT_CREATE_FAILED';
@@ -154,14 +189,23 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         </form>
       )}
 
-      {createdComment ? (
-        <article className={styles.createdComment}>
-          <div>
-            <strong>{createdComment.author?.nickname ?? 'Kurvenfunk User'}</strong>
-            <span>Gerade eben</span>
-          </div>
-          <p>{createdComment.body}</p>
-        </article>
+      {comments.length > 0 ? (
+        <div className={styles.commentList}>
+          {comments.map((comment) => (
+            <article className={styles.createdComment} key={comment.id}>
+              <div>
+                <strong>{comment.author?.nickname ?? 'Kurvenfunk User'}</strong>
+                <span>
+                  {new Date(comment.createdAt).toLocaleString('de-AT', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              </div>
+              <p>{comment.body}</p>
+            </article>
+          ))}
+        </div>
       ) : null}
     </div>
   );

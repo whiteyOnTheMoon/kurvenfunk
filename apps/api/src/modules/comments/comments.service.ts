@@ -38,6 +38,21 @@ const createdCommentSelect = {
 export class CommentsService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
 
+  async listForArticle(articleId: string) {
+    return this.database.comment.findMany({
+      where: {
+        articleId,
+        parentId: null,
+        status: 'VISIBLE',
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: createdCommentSelect,
+    });
+  }
+
   async create(command: CreateCommentCommand) {
     if (command.userStatus !== 'ACTIVE') {
       throw new ForbiddenException({
