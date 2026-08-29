@@ -113,5 +113,5 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
-  return <ArticleDetail article={article} />;
+  return <ArticleDetail article={article} apiUrl={env.API_URL} />;
 }

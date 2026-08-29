@@ -48,3 +48,8 @@ export {
   type UpdateTagInput,
 } from './tag.js';
 export * from './media.js';
+export {
+  COMMENT_BODY_MAX_LENGTH,
+  createCommentSchema,
+  type CreateCommentInput,
+} from './comment.js';

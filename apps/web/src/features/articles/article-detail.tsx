@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CommentComposer } from './comment-composer';
 import type { ReactNode } from 'react';
 
 import styles from './article-detail.module.css';
@@ -233,7 +234,7 @@ function ArticleBody({ content }: { content: ArticleContentNode | null }) {
   );
 }
 
-export function ArticleDetail({ article }: { article: ArticleDetailData }) {
+export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData; apiUrl: string }) {
   const category =
     article.competition?.shortName ??
     article.competition?.name ??
@@ -318,16 +319,12 @@ export function ArticleDetail({ article }: { article: ArticleDetailData }) {
             <div>
               <span className={styles.eyebrow}>Community</span>
               <h2>Diskussion</h2>
-              <p>
-                {article._count.comments === 0
-                  ? 'Zu diesem Artikel gibt es noch keine Beiträge.'
-                  : `${article._count.comments} Beiträge zu diesem Artikel.`}
-              </p>
             </div>
-
-            <div className={styles.discussionPlaceholder}>
-              Die Artikeldiskussion wird mit dem Community-System freigeschaltet.
-            </div>
+            <CommentComposer
+              apiUrl={apiUrl}
+              articleId={article.id}
+              initialCommentCount={article._count.comments}
+            />
           </section>
         </div>
 
