@@ -1,6 +1,7 @@
 const articleFindUnique = jest.fn();
 const commentCreate = jest.fn();
 const commentFindMany = jest.fn();
+const commentFindUnique = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -11,6 +12,7 @@ jest.mock('@kurvenfunk/database', () => ({
     comment: {
       create: commentCreate,
       findMany: commentFindMany,
+      findUnique: commentFindUnique,
     },
     $disconnect: disconnect,
   }),
@@ -35,7 +37,6 @@ describe('CommentsService', () => {
     expect(commentFindMany).toHaveBeenCalledWith({
       where: {
         articleId: '11111111-1111-4111-8111-111111111111',
-        parentId: null,
         status: 'VISIBLE',
         deletedAt: null,
       },
@@ -232,6 +233,171 @@ describe('CommentsService', () => {
     ).rejects.toMatchObject<NotFoundException>({
       response: {
         code: 'ARTICLE_NOT_FOUND',
+      },
+    });
+
+    expect(commentCreate).not.toHaveBeenCalled();
+  });
+
+  it('creates a reply to a visible comment for an ACTIVE user', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      depth: 0,
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    commentCreate.mockResolvedValue({
+      id: '44444444-4444-4444-8444-444444444444',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      parentId: '22222222-2222-4222-8222-222222222222',
+      body: 'Das sehe ich genauso.',
+      depth: 1,
+      status: 'VISIBLE',
+    });
+
+    const result = await service.createReply({
+      articleId: '11111111-1111-4111-8111-111111111111',
+      parentId: '22222222-2222-4222-8222-222222222222',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Das sehe ich genauso.',
+      userStatus: 'ACTIVE',
+    });
+
+    expect(commentFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: '22222222-2222-4222-8222-222222222222',
+      },
+      select: {
+        id: true,
+        articleId: true,
+        depth: true,
+        status: true,
+        deletedAt: true,
+        article: {
+          select: {
+            status: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    expect(commentCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          articleId: '11111111-1111-4111-8111-111111111111',
+          authorId: '33333333-3333-4333-8333-333333333333',
+          parentId: '22222222-2222-4222-8222-222222222222',
+          body: 'Das sehe ich genauso.',
+          depth: 1,
+          status: 'VISIBLE',
+        },
+      }),
+    );
+
+    expect(result.parentId).toBe('22222222-2222-4222-8222-222222222222');
+    expect(result.depth).toBe(1);
+  });
+
+  it('rejects replies from LIMITED users before looking up the parent', async () => {
+    await expect(
+      service.createReply({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        parentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'LIMITED',
+      }),
+    ).rejects.toMatchObject<ForbiddenException>({
+      response: {
+        code: 'COMMENT_REPLY_FORBIDDEN',
+      },
+    });
+
+    expect(commentFindUnique).not.toHaveBeenCalled();
+    expect(commentCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects replies from BANNED users', async () => {
+    await expect(
+      service.createReply({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        parentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'BANNED',
+      }),
+    ).rejects.toMatchObject<ForbiddenException>({
+      response: {
+        code: 'COMMENT_REPLY_FORBIDDEN',
+      },
+    });
+
+    expect(commentFindUnique).not.toHaveBeenCalled();
+    expect(commentCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a reply when the parent belongs to another article', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '55555555-5555-4555-8555-555555555555',
+      depth: 0,
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.createReply({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        parentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Test',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_PARENT_NOT_FOUND',
+      },
+    });
+
+    expect(commentCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a reply to a deleted parent comment', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      depth: 0,
+      status: 'DELETED',
+      deletedAt: new Date(),
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.createReply({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        parentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Test',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_PARENT_NOT_FOUND',
       },
     });
 

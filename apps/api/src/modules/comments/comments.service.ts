@@ -15,6 +15,10 @@ export interface CreateCommentCommand {
   userStatus: CommentCreateUserStatus;
 }
 
+export interface CreateCommentReplyCommand extends CreateCommentCommand {
+  parentId: string;
+}
+
 const createdCommentSelect = {
   id: true,
   articleId: true,
@@ -42,7 +46,6 @@ export class CommentsService implements OnModuleDestroy {
     return this.database.comment.findMany({
       where: {
         articleId,
-        parentId: null,
         status: 'VISIBLE',
         deletedAt: null,
       },
@@ -85,6 +88,60 @@ export class CommentsService implements OnModuleDestroy {
         authorId: command.authorId,
         body: command.body,
         depth: 0,
+        status: 'VISIBLE',
+      },
+      select: createdCommentSelect,
+    });
+  }
+
+  async createReply(command: CreateCommentReplyCommand) {
+    if (command.userStatus !== 'ACTIVE') {
+      throw new ForbiddenException({
+        code: 'COMMENT_REPLY_FORBIDDEN',
+        message: 'Antworten können mit diesem Accountstatus nicht erstellt werden.',
+      });
+    }
+
+    const parent = await this.database.comment.findUnique({
+      where: {
+        id: command.parentId,
+      },
+      select: {
+        id: true,
+        articleId: true,
+        depth: true,
+        status: true,
+        deletedAt: true,
+        article: {
+          select: {
+            status: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !parent ||
+      parent.articleId !== command.articleId ||
+      parent.status !== 'VISIBLE' ||
+      parent.deletedAt !== null ||
+      parent.article.status !== 'PUBLISHED' ||
+      parent.article.deletedAt !== null
+    ) {
+      throw new NotFoundException({
+        code: 'COMMENT_PARENT_NOT_FOUND',
+        message: 'Kommentar wurde nicht gefunden.',
+      });
+    }
+
+    return this.database.comment.create({
+      data: {
+        articleId: command.articleId,
+        authorId: command.authorId,
+        parentId: parent.id,
+        body: command.body,
+        depth: parent.depth + 1,
         status: 'VISIBLE',
       },
       select: createdCommentSelect,

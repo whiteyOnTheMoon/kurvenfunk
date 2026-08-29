@@ -131,3 +131,128 @@
     width: 100%;
   }
 }
+
+.commentBranch {
+  min-width: 0;
+}
+
+.commentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--kf-space-3);
+}
+
+.commentMeta span {
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-sm);
+}
+
+.replyButton {
+  margin-top: var(--kf-space-3);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kf-accent);
+  font: inherit;
+  font-weight: var(--kf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.replyButton:hover {
+  text-decoration: underline;
+}
+
+.replyForm {
+  display: grid;
+  gap: var(--kf-space-3);
+  margin-top: var(--kf-space-4);
+  padding-top: var(--kf-space-4);
+  border-top: var(--kf-border-width-1) solid var(--kf-border);
+}
+
+.replyForm label {
+  font-weight: var(--kf-font-weight-semibold);
+}
+
+.replyForm textarea {
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: var(--kf-space-3);
+  border: var(--kf-border-width-1) solid var(--kf-border-strong);
+  border-radius: var(--kf-radius-md);
+  background: var(--kf-background);
+  color: var(--kf-text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.replyForm textarea:focus {
+  outline: 2px solid var(--kf-accent);
+  outline-offset: 2px;
+}
+
+.replyForm textarea:disabled {
+  opacity: 0.65;
+}
+
+.replyActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kf-space-4);
+}
+
+.replyActions span {
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-sm);
+}
+
+.replyActions button {
+  border: 0;
+  border-radius: var(--kf-radius-md);
+  padding: var(--kf-space-3) var(--kf-space-4);
+  background: var(--kf-accent);
+  color: var(--kf-on-accent);
+  font: inherit;
+  font-weight: var(--kf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.replyActions button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.replyActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.replies {
+  display: grid;
+  gap: var(--kf-space-3);
+  margin-left: var(--kf-space-5);
+  padding-left: var(--kf-space-4);
+  border-left: var(--kf-border-width-1) solid var(--kf-border);
+}
+
+.replies .createdComment {
+  margin-top: var(--kf-space-3);
+}
+
+@media (max-width: 640px) {
+  .replies {
+    margin-left: var(--kf-space-3);
+    padding-left: var(--kf-space-3);
+  }
+
+  .replyActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .replyActions button {
+    width: 100%;
+  }
+}

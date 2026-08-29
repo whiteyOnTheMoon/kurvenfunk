@@ -14,6 +14,26 @@ export class CommentsController {
     return this.commentsService.listForArticle(articleId);
   }
 
+  @Post(':parentId/replies')
+  @UseGuards(AuthGuard)
+  createReply(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
+    @Param('parentId', new ParseUUIDPipe({ version: '4' })) parentId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createCommentSchema))
+    input: CreateCommentInput,
+  ) {
+    const user = request.user!;
+
+    return this.commentsService.createReply({
+      articleId,
+      parentId,
+      authorId: user.kurvenfunkUserId,
+      body: input.body,
+      userStatus: user.kurvenfunkUserStatus,
+    });
+  }
+
   @Post()
   @UseGuards(AuthGuard)
   create(
