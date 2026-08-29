@@ -47,7 +47,7 @@ export class CommentsService implements OnModuleDestroy {
         deletedAt: null,
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
       select: createdCommentSelect,
     });

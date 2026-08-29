@@ -40,7 +40,7 @@ describe('CommentsService', () => {
         deletedAt: null,
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
       select: {
         id: true,

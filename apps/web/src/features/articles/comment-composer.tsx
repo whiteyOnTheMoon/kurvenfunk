@@ -118,7 +118,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         throw new Error('INVALID_COMMENT_RESPONSE');
       }
 
-      setComments((current) => [...current, payload.data!]);
+      setComments((current) => [payload.data!, ...current]);
       setCommentsLoaded(true);
       setBody('');
     } catch (submitError) {
