@@ -42,7 +42,24 @@ describe('CommentsService', () => {
       orderBy: {
         createdAt: 'asc',
       },
-      select: expect.any(Object),
+      select: {
+        id: true,
+        articleId: true,
+        authorId: true,
+        parentId: true,
+        body: true,
+        depth: true,
+        status: true,
+        editedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            nickname: true,
+          },
+        },
+      },
     });
     expect(result).toEqual([]);
   });
