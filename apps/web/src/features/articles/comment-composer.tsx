@@ -12,6 +12,7 @@ interface CreatedComment {
   parentId: string | null;
   depth: number;
   body: string;
+  editedAt: string | null;
   createdAt: string;
   author: {
     id: string;
@@ -41,6 +42,10 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [replyBody, setReplyBody] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState<string>();
+  const [editingCommentId, setEditingCommentId] = useState<string>();
+  const [editBody, setEditBody] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string>();
 
   const commentCount = commentsLoaded ? comments.length : initialCommentCount;
 
@@ -208,6 +213,87 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     }
   }
 
+  async function handleEditSubmit(event: FormEvent<HTMLFormElement>, commentId: string) {
+    event.preventDefault();
+
+    const comment = comments.find((candidate) => candidate.id === commentId);
+    const normalizedBody = editBody.trim();
+
+    if (
+      !comment ||
+      !token ||
+      !user ||
+      user.status !== 'ACTIVE' ||
+      comment.author?.id !== user.id ||
+      normalizedBody.length === 0 ||
+      normalizedBody === comment.body
+    ) {
+      return;
+    }
+
+    setEditSubmitting(true);
+    setEditError(undefined);
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments/${encodeURIComponent(commentId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            body: normalizedBody,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorBody = (await response.json().catch(() => undefined)) as
+          ApiErrorBody | undefined;
+
+        if (
+          response.status === 403 &&
+          (errorBody?.code === 'COMMENT_EDIT_FORBIDDEN' || errorBody?.code === 'ACCOUNT_BANNED')
+        ) {
+          throw new Error('COMMENT_EDIT_FORBIDDEN');
+        }
+
+        throw new Error('COMMENT_EDIT_FAILED');
+      }
+
+      const payload = (await response.json()) as {
+        data?: CreatedComment;
+      };
+
+      if (!payload.data) {
+        throw new Error('INVALID_COMMENT_RESPONSE');
+      }
+
+      const updatedComment = payload.data;
+
+      setComments((current) =>
+        current.map((candidate) =>
+          candidate.id === updatedComment.id ? updatedComment : candidate,
+        ),
+      );
+      setEditingCommentId(undefined);
+      setEditBody('');
+      setEditError(undefined);
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : 'COMMENT_EDIT_FAILED';
+
+      setEditError(
+        message === 'COMMENT_EDIT_FORBIDDEN'
+          ? 'Du kannst diesen Kommentar nicht bearbeiten.'
+          : 'Dein Kommentar konnte nicht gespeichert werden. Bitte versuche es erneut.',
+      );
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   function renderComment(comment: CreatedComment, displayDepth = 0): ReactNode {
     const replies = comments
       .filter((candidate) => candidate.parentId === comment.id)
@@ -226,30 +312,122 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
                 timeStyle: 'short',
               })}
             </span>
+            {comment.editedAt ? <span>bearbeitet</span> : null}
           </div>
 
-          <p>{comment.body}</p>
+          {editingCommentId === comment.id ? (
+            <form
+              className={styles.editForm}
+              onSubmit={(event) => void handleEditSubmit(event, comment.id)}
+            >
+              <label htmlFor={`edit-${comment.id}`}>Kommentar bearbeiten</label>
 
-          {authenticated && user?.status === 'ACTIVE' ? (
-            <button
-              className={styles.replyButton}
-              type="button"
-              onClick={() => {
-                if (replyingTo === comment.id) {
-                  setReplyingTo(undefined);
+              <textarea
+                id={`edit-${comment.id}`}
+                value={editBody}
+                onChange={(event) => {
+                  setEditBody(event.target.value);
+                  setEditError(undefined);
+                }}
+                maxLength={COMMENT_BODY_MAX_LENGTH}
+                rows={4}
+                disabled={editSubmitting}
+                autoFocus
+              />
+
+              <div className={styles.editActions}>
+                <span>
+                  {editBody.length}/{COMMENT_BODY_MAX_LENGTH}
+                </span>
+
+                <div className={styles.editButtons}>
+                  <button
+                    className={styles.cancelButton}
+                    type="button"
+                    disabled={editSubmitting}
+                    onClick={() => {
+                      setEditingCommentId(undefined);
+                      setEditBody('');
+                      setEditError(undefined);
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      editSubmitting ||
+                      editBody.trim().length === 0 ||
+                      editBody.trim() === comment.body
+                    }
+                  >
+                    {editSubmitting ? 'Wird gespeichert …' : 'Speichern'}
+                  </button>
+                </div>
+              </div>
+
+              {editError ? (
+                <p className={styles.error} role="alert">
+                  {editError}
+                </p>
+              ) : null}
+            </form>
+          ) : (
+            <p>{comment.body}</p>
+          )}
+
+          <div className={styles.commentActions}>
+            {authenticated &&
+            user?.status === 'ACTIVE' &&
+            comment.author?.id === user.id &&
+            editingCommentId !== comment.id ? (
+              <button
+                className={styles.editButton}
+                type="button"
+                onClick={() => {
+                  setEditingCommentId(comment.id);
+                  setEditBody(comment.body);
+                  setEditError(undefined);
+
+                  if (replyingTo === comment.id) {
+                    setReplyingTo(undefined);
+                    setReplyBody('');
+                    setReplyError(undefined);
+                  }
+                }}
+              >
+                Bearbeiten
+              </button>
+            ) : null}
+
+            {authenticated && user?.status === 'ACTIVE' && editingCommentId !== comment.id ? (
+              <button
+                className={styles.replyButton}
+                type="button"
+                onClick={() => {
+                  if (replyingTo === comment.id) {
+                    setReplyingTo(undefined);
+                    setReplyBody('');
+                    setReplyError(undefined);
+                    return;
+                  }
+
+                  setReplyingTo(comment.id);
                   setReplyBody('');
                   setReplyError(undefined);
-                  return;
-                }
 
-                setReplyingTo(comment.id);
-                setReplyBody('');
-                setReplyError(undefined);
-              }}
-            >
-              {replyingTo === comment.id ? 'Abbrechen' : 'Antworten'}
-            </button>
-          ) : null}
+                  if (editingCommentId === comment.id) {
+                    setEditingCommentId(undefined);
+                    setEditBody('');
+                    setEditError(undefined);
+                  }
+                }}
+              >
+                {replyingTo === comment.id ? 'Abbrechen' : 'Antworten'}
+              </button>
+            ) : null}
+          </div>
 
           {replyingTo === comment.id ? (
             <form

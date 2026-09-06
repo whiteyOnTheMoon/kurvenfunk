@@ -2,6 +2,9 @@ const articleFindUnique = jest.fn();
 const commentCreate = jest.fn();
 const commentFindMany = jest.fn();
 const commentFindUnique = jest.fn();
+const commentUpdate = jest.fn();
+const commentRevisionCreate = jest.fn();
+const transaction = jest.fn();
 const disconnect = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -14,6 +17,7 @@ jest.mock('@kurvenfunk/database', () => ({
       findMany: commentFindMany,
       findUnique: commentFindUnique,
     },
+    $transaction: transaction,
     $disconnect: disconnect,
   }),
 }));
@@ -26,6 +30,24 @@ describe('CommentsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    transaction.mockImplementation(
+      (
+        callback: (client: {
+          comment: { update: typeof commentUpdate };
+          commentRevision: { create: typeof commentRevisionCreate };
+        }) => unknown,
+      ) =>
+        callback({
+          comment: {
+            update: commentUpdate,
+          },
+          commentRevision: {
+            create: commentRevisionCreate,
+          },
+        }),
+    );
+
     service = new CommentsService();
   });
 
@@ -237,6 +259,290 @@ describe('CommentsService', () => {
     });
 
     expect(commentCreate).not.toHaveBeenCalled();
+  });
+
+  it('edits an own visible comment and stores the previous body as a revision', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Rapid spielt heute stark.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    commentRevisionCreate.mockResolvedValue({
+      id: '55555555-5555-4555-8555-555555555555',
+    });
+
+    commentUpdate.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      parentId: null,
+      body: 'Rapid spielt heute sehr stark.',
+      depth: 0,
+      status: 'VISIBLE',
+      editedAt: new Date('2026-09-06T20:00:00.000Z'),
+      createdAt: new Date('2026-09-06T19:00:00.000Z'),
+      updatedAt: new Date('2026-09-06T20:00:00.000Z'),
+      author: {
+        id: '33333333-3333-4333-8333-333333333333',
+        nickname: 'BlockWest',
+      },
+    });
+
+    const result = await service.update({
+      articleId: '11111111-1111-4111-8111-111111111111',
+      commentId: '22222222-2222-4222-8222-222222222222',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Rapid spielt heute sehr stark.',
+      userStatus: 'ACTIVE',
+    });
+
+    expect(commentRevisionCreate).toHaveBeenCalledWith({
+      data: {
+        commentId: '22222222-2222-4222-8222-222222222222',
+        body: 'Rapid spielt heute stark.',
+      },
+    });
+
+    expect(commentUpdate).toHaveBeenCalledTimes(1);
+
+    const updateCalls = commentUpdate.mock.calls as Array<
+      [
+        {
+          where: {
+            id: string;
+          };
+          data: {
+            body: string;
+            editedAt: Date;
+          };
+          select: {
+            id: boolean;
+            body: boolean;
+            editedAt: boolean;
+          };
+        },
+      ]
+    >;
+
+    const updateArgument = updateCalls[0]?.[0];
+
+    expect(updateArgument).toBeDefined();
+    expect(updateArgument?.where).toEqual({
+      id: '22222222-2222-4222-8222-222222222222',
+    });
+    expect(updateArgument?.data.body).toBe('Rapid spielt heute sehr stark.');
+    expect(updateArgument?.data.editedAt).toBeInstanceOf(Date);
+    expect(updateArgument?.select).toEqual(
+      expect.objectContaining({
+        id: true,
+        body: true,
+        editedAt: true,
+      }),
+    );
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(result.body).toBe('Rapid spielt heute sehr stark.');
+  });
+
+  it('rejects comment edits from LIMITED users before looking up the comment', async () => {
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'LIMITED',
+      }),
+    ).rejects.toMatchObject<ForbiddenException>({
+      response: {
+        code: 'COMMENT_EDIT_FORBIDDEN',
+      },
+    });
+
+    expect(commentFindUnique).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects comment edits from BANNED users before looking up the comment', async () => {
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'BANNED',
+      }),
+    ).rejects.toMatchObject<ForbiddenException>({
+      response: {
+        code: 'COMMENT_EDIT_FORBIDDEN',
+      },
+    });
+
+    expect(commentFindUnique).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects editing a comment from another article', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '77777777-7777-4777-8777-777777777777',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Kommentar in einem anderen Artikel.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_NOT_FOUND',
+      },
+    });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects editing a hidden comment', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Versteckter Kommentar.',
+      status: 'HIDDEN',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_NOT_FOUND',
+      },
+    });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects editing a comment on an unpublished article', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Kommentar auf Entwurfsartikel.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'DRAFT',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_NOT_FOUND',
+      },
+    });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects editing another users comment', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '66666666-6666-4666-8666-666666666666',
+      body: 'Kommentar eines anderen Users.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Manipulierter Kommentar.',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<ForbiddenException>({
+      response: {
+        code: 'COMMENT_EDIT_FORBIDDEN',
+      },
+    });
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects editing a deleted comment', async () => {
+    commentFindUnique.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Gelöschter Kommentar.',
+      status: 'DELETED',
+      deletedAt: new Date(),
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    });
+
+    await expect(
+      service.update({
+        articleId: '11111111-1111-4111-8111-111111111111',
+        commentId: '22222222-2222-4222-8222-222222222222',
+        authorId: '33333333-3333-4333-8333-333333333333',
+        body: 'Nicht erlaubt.',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject<NotFoundException>({
+      response: {
+        code: 'COMMENT_NOT_FOUND',
+      },
+    });
+
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it('creates a reply to a visible comment for an ACTIVE user', async () => {

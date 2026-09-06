@@ -19,6 +19,10 @@ export interface CreateCommentReplyCommand extends CreateCommentCommand {
   parentId: string;
 }
 
+export interface UpdateCommentCommand extends CreateCommentCommand {
+  commentId: string;
+}
+
 const createdCommentSelect = {
   id: true,
   articleId: true,
@@ -91,6 +95,76 @@ export class CommentsService implements OnModuleDestroy {
         status: 'VISIBLE',
       },
       select: createdCommentSelect,
+    });
+  }
+
+  async update(command: UpdateCommentCommand) {
+    if (command.userStatus !== 'ACTIVE') {
+      throw new ForbiddenException({
+        code: 'COMMENT_EDIT_FORBIDDEN',
+        message: 'Kommentare können mit diesem Accountstatus nicht bearbeitet werden.',
+      });
+    }
+
+    const comment = await this.database.comment.findUnique({
+      where: {
+        id: command.commentId,
+      },
+      select: {
+        id: true,
+        articleId: true,
+        authorId: true,
+        body: true,
+        status: true,
+        deletedAt: true,
+        article: {
+          select: {
+            status: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !comment ||
+      comment.articleId !== command.articleId ||
+      comment.status !== 'VISIBLE' ||
+      comment.deletedAt !== null ||
+      comment.article.status !== 'PUBLISHED' ||
+      comment.article.deletedAt !== null
+    ) {
+      throw new NotFoundException({
+        code: 'COMMENT_NOT_FOUND',
+        message: 'Kommentar wurde nicht gefunden.',
+      });
+    }
+
+    if (comment.authorId !== command.authorId) {
+      throw new ForbiddenException({
+        code: 'COMMENT_EDIT_FORBIDDEN',
+        message: 'Du kannst nur deine eigenen Kommentare bearbeiten.',
+      });
+    }
+
+    return this.database.$transaction(async (transaction) => {
+      await transaction.commentRevision.create({
+        data: {
+          commentId: comment.id,
+          body: comment.body,
+        },
+      });
+
+      return transaction.comment.update({
+        where: {
+          id: comment.id,
+        },
+        data: {
+          body: command.body,
+          editedAt: new Date(),
+        },
+        select: createdCommentSelect,
+      });
     });
   }
 

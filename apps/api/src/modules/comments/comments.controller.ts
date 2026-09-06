@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { createCommentSchema, type CreateCommentInput } from '@kurvenfunk/validation';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
@@ -12,6 +22,26 @@ export class CommentsController {
   @Get()
   list(@Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string) {
     return this.commentsService.listForArticle(articleId);
+  }
+
+  @Patch(':commentId')
+  @UseGuards(AuthGuard)
+  update(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
+    @Param('commentId', new ParseUUIDPipe({ version: '4' })) commentId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createCommentSchema))
+    input: CreateCommentInput,
+  ) {
+    const user = request.user!;
+
+    return this.commentsService.update({
+      articleId,
+      commentId,
+      authorId: user.kurvenfunkUserId,
+      body: input.body,
+      userStatus: user.kurvenfunkUserStatus,
+    });
   }
 
   @Post(':parentId/replies')

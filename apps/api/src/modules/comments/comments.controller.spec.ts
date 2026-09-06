@@ -26,11 +26,13 @@ import type { CommentsService } from './comments.service';
 describe('CommentsController', () => {
   const create = jest.fn();
   const createReply = jest.fn();
+  const update = jest.fn();
   const listForArticle = jest.fn();
 
   const commentsService = {
     create,
     createReply,
+    update,
     listForArticle,
   } as unknown as CommentsService;
 
@@ -39,6 +41,7 @@ describe('CommentsController', () => {
   beforeEach(() => {
     create.mockReset();
     createReply.mockReset();
+    update.mockReset();
     listForArticle.mockReset();
   });
 
@@ -48,6 +51,41 @@ describe('CommentsController', () => {
     await controller.list('11111111-1111-4111-8111-111111111111');
 
     expect(listForArticle).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+  });
+
+  it('passes edit data and the authenticated user to the service', async () => {
+    update.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+    });
+
+    const request = {
+      user: {
+        sub: 'keycloak-user',
+        kurvenfunkUserId: '33333333-3333-4333-8333-333333333333',
+        kurvenfunkUserStatus: 'ACTIVE',
+        kurvenfunkFanPreference: 'NEUTRAL',
+        kurvenfunkFavoriteClubId: null,
+        kurvenfunkOnboardingCompleted: true,
+        kurvenfunkRoles: ['USER'],
+      },
+    } as AuthenticatedRequest;
+
+    await controller.update(
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+      request,
+      {
+        body: 'Rapid spielt heute sehr stark.',
+      },
+    );
+
+    expect(update).toHaveBeenCalledWith({
+      articleId: '11111111-1111-4111-8111-111111111111',
+      commentId: '22222222-2222-4222-8222-222222222222',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Rapid spielt heute sehr stark.',
+      userStatus: 'ACTIVE',
+    });
   });
 
   it('passes reply data and the authenticated user to the service', async () => {
