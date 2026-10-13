@@ -23,6 +23,13 @@ export interface UpdateCommentCommand extends CreateCommentCommand {
   commentId: string;
 }
 
+export interface RemoveCommentCommand {
+  articleId: string;
+  commentId: string;
+  authorId: string;
+  userStatus: CommentCreateUserStatus;
+}
+
 const createdCommentSelect = {
   id: true,
   articleId: true,
@@ -47,17 +54,74 @@ export class CommentsService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
 
   async listForArticle(articleId: string) {
-    return this.database.comment.findMany({
+    const comments = await this.database.comment.findMany({
       where: {
         articleId,
-        status: 'VISIBLE',
-        deletedAt: null,
+        OR: [
+          {
+            status: 'VISIBLE',
+            deletedAt: null,
+          },
+          {
+            status: 'DELETED',
+            deletedAt: {
+              not: null,
+            },
+          },
+        ],
       },
       orderBy: {
         createdAt: 'desc',
       },
       select: createdCommentSelect,
     });
+
+    // Only visible comments and their deleted ancestors are needed.
+    // Deleted comments without visible descendants are omitted.
+    const commentsById = new Map(comments.map((comment) => [comment.id, comment]));
+
+    const includedIds = new Set<string>();
+
+    for (const comment of comments) {
+      if (comment.status !== 'VISIBLE') {
+        continue;
+      }
+
+      includedIds.add(comment.id);
+
+      const visited = new Set<string>();
+      let parentId = comment.parentId;
+
+      while (parentId && !visited.has(parentId)) {
+        visited.add(parentId);
+
+        const parent = commentsById.get(parentId);
+
+        if (!parent) {
+          break;
+        }
+
+        includedIds.add(parent.id);
+        parentId = parent.parentId;
+      }
+    }
+
+    return comments
+      .filter((comment) => includedIds.has(comment.id))
+      .map((comment) => {
+        if (comment.status !== 'DELETED') {
+          return comment;
+        }
+
+        // Never expose deleted content or author information.
+        return {
+          ...comment,
+          authorId: null,
+          author: null,
+          body: '',
+          editedAt: null,
+        };
+      });
   }
 
   async create(command: CreateCommentCommand) {
@@ -166,6 +230,81 @@ export class CommentsService implements OnModuleDestroy {
         select: createdCommentSelect,
       });
     });
+  }
+
+  async remove(command: RemoveCommentCommand) {
+    if (command.userStatus === 'BANNED') {
+      throw new ForbiddenException({
+        code: 'COMMENT_DELETE_FORBIDDEN',
+        message: 'Kommentare können mit diesem Accountstatus nicht gelöscht werden.',
+      });
+    }
+
+    const comment = await this.database.comment.findUnique({
+      where: {
+        id: command.commentId,
+      },
+      select: {
+        id: true,
+        articleId: true,
+        authorId: true,
+        status: true,
+        deletedAt: true,
+        article: {
+          select: {
+            status: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !comment ||
+      comment.articleId !== command.articleId ||
+      comment.status !== 'VISIBLE' ||
+      comment.deletedAt !== null ||
+      comment.article.status !== 'PUBLISHED' ||
+      comment.article.deletedAt !== null
+    ) {
+      throw new NotFoundException({
+        code: 'COMMENT_NOT_FOUND',
+        message: 'Kommentar wurde nicht gefunden.',
+      });
+    }
+
+    if (comment.authorId !== command.authorId) {
+      throw new ForbiddenException({
+        code: 'COMMENT_DELETE_FORBIDDEN',
+        message: 'Du kannst nur deine eigenen Kommentare löschen.',
+      });
+    }
+
+    const result = await this.database.comment.updateMany({
+      where: {
+        id: comment.id,
+        articleId: command.articleId,
+        authorId: command.authorId,
+        status: 'VISIBLE',
+        deletedAt: null,
+      },
+      data: {
+        status: 'DELETED',
+        deletedAt: new Date(),
+      },
+    });
+
+    if (result.count !== 1) {
+      throw new NotFoundException({
+        code: 'COMMENT_NOT_FOUND',
+        message: 'Kommentar wurde nicht gefunden.',
+      });
+    }
+
+    return {
+      id: comment.id,
+      deleted: true,
+    };
   }
 
   async createReply(command: CreateCommentReplyCommand) {

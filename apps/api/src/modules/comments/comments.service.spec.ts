@@ -3,6 +3,7 @@ const commentCreate = jest.fn();
 const commentFindMany = jest.fn();
 const commentFindUnique = jest.fn();
 const commentUpdate = jest.fn();
+const commentUpdateMany = jest.fn();
 const commentRevisionCreate = jest.fn();
 const transaction = jest.fn();
 const disconnect = jest.fn();
@@ -16,13 +17,13 @@ jest.mock('@kurvenfunk/database', () => ({
       create: commentCreate,
       findMany: commentFindMany,
       findUnique: commentFindUnique,
+      updateMany: commentUpdateMany,
     },
     $transaction: transaction,
     $disconnect: disconnect,
   }),
 }));
 
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 
 describe('CommentsService', () => {
@@ -51,7 +52,153 @@ describe('CommentsService', () => {
     service = new CommentsService();
   });
 
-  it('lists visible top-level comments for an article', async () => {
+  describe('remove', () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
+    const commentId = '22222222-2222-4222-8222-222222222222';
+    const authorId = '33333333-3333-4333-8333-333333333333';
+
+    const command = {
+      articleId,
+      commentId,
+      authorId,
+      userStatus: 'ACTIVE' as const,
+    };
+
+    const existingComment = {
+      id: commentId,
+      articleId,
+      authorId,
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    };
+
+    it('soft deletes an own visible comment', async () => {
+      commentFindUnique.mockResolvedValue(existingComment);
+      commentUpdateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.remove(command);
+
+      expect(result).toEqual({
+        id: commentId,
+        deleted: true,
+      });
+
+      expect(commentUpdateMany).toHaveBeenCalledTimes(1);
+
+      expect(commentUpdateMany).toHaveBeenCalledTimes(1);
+
+      const mockCalls = commentUpdateMany.mock.calls as unknown[][];
+      const updateArgument = mockCalls[0]?.[0] as
+        | {
+            where: {
+              id: string;
+              articleId: string;
+              authorId: string;
+              status: string;
+              deletedAt: null;
+            };
+            data: {
+              status: string;
+              deletedAt: Date;
+            };
+          }
+        | undefined;
+
+      expect(updateArgument).toBeDefined();
+
+      expect(updateArgument?.where).toEqual({
+        id: commentId,
+        articleId,
+        authorId,
+        status: 'VISIBLE',
+        deletedAt: null,
+      });
+
+      expect(updateArgument?.data.status).toBe('DELETED');
+      expect(updateArgument?.data.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it('rejects deleting another users comment', async () => {
+      commentFindUnique.mockResolvedValue({
+        ...existingComment,
+        authorId: '44444444-4444-4444-8444-444444444444',
+      });
+
+      await expect(service.remove(command)).rejects.toMatchObject({
+        response: {
+          code: 'COMMENT_DELETE_FORBIDDEN',
+        },
+      });
+
+      expect(commentUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects BANNED users before database access', async () => {
+      await expect(
+        service.remove({
+          ...command,
+          userStatus: 'BANNED',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'COMMENT_DELETE_FORBIDDEN',
+        },
+      });
+
+      expect(commentFindUnique).not.toHaveBeenCalled();
+      expect(commentUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects already deleted comments', async () => {
+      commentFindUnique.mockResolvedValue({
+        ...existingComment,
+        status: 'DELETED',
+        deletedAt: new Date(),
+      });
+
+      await expect(service.remove(command)).rejects.toMatchObject({
+        response: {
+          code: 'COMMENT_NOT_FOUND',
+        },
+      });
+
+      expect(commentUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects comments belonging to another article', async () => {
+      commentFindUnique.mockResolvedValue({
+        ...existingComment,
+        articleId: '55555555-5555-4555-8555-555555555555',
+      });
+
+      await expect(service.remove(command)).rejects.toMatchObject({
+        response: {
+          code: 'COMMENT_NOT_FOUND',
+        },
+      });
+
+      expect(commentUpdateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a concurrent delete when the conditional update affects no rows', async () => {
+      commentFindUnique.mockResolvedValue(existingComment);
+      commentUpdateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.remove(command)).rejects.toMatchObject({
+        response: {
+          code: 'COMMENT_NOT_FOUND',
+        },
+      });
+
+      expect(commentUpdateMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('lists visible comments and eligible deleted ancestors for an article', async () => {
     commentFindMany.mockResolvedValue([]);
 
     const result = await service.listForArticle('11111111-1111-4111-8111-111111111111');
@@ -59,8 +206,18 @@ describe('CommentsService', () => {
     expect(commentFindMany).toHaveBeenCalledWith({
       where: {
         articleId: '11111111-1111-4111-8111-111111111111',
-        status: 'VISIBLE',
-        deletedAt: null,
+        OR: [
+          {
+            status: 'VISIBLE',
+            deletedAt: null,
+          },
+          {
+            status: 'DELETED',
+            deletedAt: {
+              not: null,
+            },
+          },
+        ],
       },
       orderBy: {
         createdAt: 'desc',
@@ -85,6 +242,104 @@ describe('CommentsService', () => {
       },
     });
     expect(result).toEqual([]);
+  });
+
+  describe('deleted comment listing', () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
+    const createdAt = new Date('2026-08-28T20:00:00.000Z');
+    const deletedAt = new Date('2026-08-29T20:00:00.000Z');
+
+    function makeComment(id: string, parentId: string | null, status: 'VISIBLE' | 'DELETED') {
+      return {
+        id,
+        articleId,
+        authorId: '33333333-3333-4333-8333-333333333333',
+        parentId,
+        body: 'Vertraulicher Kommentartext',
+        depth: parentId ? 1 : 0,
+        status,
+        editedAt: null,
+        createdAt,
+        updatedAt: createdAt,
+        author: {
+          id: '33333333-3333-4333-8333-333333333333',
+          nickname: 'BlockWest',
+        },
+      };
+    }
+
+    it('omits deleted comments without visible descendants', async () => {
+      const deleted = {
+        ...makeComment('deleted-root', null, 'DELETED'),
+        deletedAt,
+      };
+
+      commentFindMany.mockResolvedValue([deleted]);
+
+      const result = await service.listForArticle(articleId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('keeps deleted parents as anonymized placeholders when replies exist', async () => {
+      const deleted = {
+        ...makeComment('deleted-root', null, 'DELETED'),
+        deletedAt,
+      };
+
+      const reply = makeComment('visible-reply', 'deleted-root', 'VISIBLE');
+
+      commentFindMany.mockResolvedValue([reply, deleted]);
+
+      const result = await service.listForArticle(articleId);
+
+      expect(result).toHaveLength(2);
+
+      const placeholder = result.find((comment) => comment.id === 'deleted-root');
+
+      expect(placeholder).toBeDefined();
+      expect(placeholder?.status).toBe('DELETED');
+      expect(placeholder?.body).toBe('');
+      expect(placeholder?.authorId).toBeNull();
+      expect(placeholder?.author).toBeNull();
+      expect(placeholder?.editedAt).toBeNull();
+
+      expect(result.find((comment) => comment.id === 'visible-reply')).toEqual(reply);
+    });
+
+    it('preserves nested reply chains through multiple deleted ancestors', async () => {
+      const root = {
+        ...makeComment('deleted-root', null, 'DELETED'),
+        deletedAt,
+      };
+
+      const middle = {
+        ...makeComment('deleted-middle', 'deleted-root', 'DELETED'),
+        deletedAt,
+      };
+
+      const reply = makeComment('visible-reply', 'deleted-middle', 'VISIBLE');
+
+      commentFindMany.mockResolvedValue([reply, middle, root]);
+
+      const result = await service.listForArticle(articleId);
+
+      expect(result.map((comment) => comment.id)).toEqual([
+        'visible-reply',
+        'deleted-middle',
+        'deleted-root',
+      ]);
+
+      for (const comment of result.filter((entry) => entry.status === 'DELETED')) {
+        expect(comment.body).toBe('');
+        expect(comment.authorId).toBeNull();
+        expect(comment.author).toBeNull();
+      }
+
+      expect(result.find((comment) => comment.id === 'visible-reply')?.body).toBe(
+        'Vertraulicher Kommentartext',
+      );
+    });
   });
 
   it('creates a visible top-level comment for an ACTIVE user', async () => {
@@ -169,7 +424,7 @@ describe('CommentsService', () => {
         body: 'Dieser Kommentar darf nicht erstellt werden.',
         userStatus: 'LIMITED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_CREATE_FORBIDDEN',
       },
@@ -187,7 +442,7 @@ describe('CommentsService', () => {
         body: 'Dieser Kommentar darf nicht erstellt werden.',
         userStatus: 'BANNED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_CREATE_FORBIDDEN',
       },
@@ -206,7 +461,7 @@ describe('CommentsService', () => {
         body: 'Test',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'ARTICLE_NOT_FOUND',
       },
@@ -229,7 +484,7 @@ describe('CommentsService', () => {
         body: 'Test',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'ARTICLE_NOT_FOUND',
       },
@@ -252,7 +507,7 @@ describe('CommentsService', () => {
         body: 'Test',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'ARTICLE_NOT_FOUND',
       },
@@ -361,7 +616,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'LIMITED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_EDIT_FORBIDDEN',
       },
@@ -380,7 +635,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'BANNED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_EDIT_FORBIDDEN',
       },
@@ -412,7 +667,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_NOT_FOUND',
       },
@@ -443,7 +698,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_NOT_FOUND',
       },
@@ -474,7 +729,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_NOT_FOUND',
       },
@@ -505,7 +760,7 @@ describe('CommentsService', () => {
         body: 'Manipulierter Kommentar.',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_EDIT_FORBIDDEN',
       },
@@ -536,7 +791,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_NOT_FOUND',
       },
@@ -621,7 +876,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'LIMITED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_REPLY_FORBIDDEN',
       },
@@ -640,7 +895,7 @@ describe('CommentsService', () => {
         body: 'Nicht erlaubt.',
         userStatus: 'BANNED',
       }),
-    ).rejects.toMatchObject<ForbiddenException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_REPLY_FORBIDDEN',
       },
@@ -671,7 +926,7 @@ describe('CommentsService', () => {
         body: 'Test',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_PARENT_NOT_FOUND',
       },
@@ -701,7 +956,7 @@ describe('CommentsService', () => {
         body: 'Test',
         userStatus: 'ACTIVE',
       }),
-    ).rejects.toMatchObject<NotFoundException>({
+    ).rejects.toMatchObject({
       response: {
         code: 'COMMENT_PARENT_NOT_FOUND',
       },

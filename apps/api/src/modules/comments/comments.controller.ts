@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -22,6 +23,23 @@ export class CommentsController {
   @Get()
   list(@Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string) {
     return this.commentsService.listForArticle(articleId);
+  }
+
+  @Delete(':commentId')
+  @UseGuards(AuthGuard)
+  remove(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
+    @Param('commentId', new ParseUUIDPipe({ version: '4' })) commentId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const user = request.user!;
+
+    return this.commentsService.remove({
+      articleId,
+      commentId,
+      authorId: user.kurvenfunkUserId,
+      userStatus: user.kurvenfunkUserStatus,
+    });
   }
 
   @Patch(':commentId')

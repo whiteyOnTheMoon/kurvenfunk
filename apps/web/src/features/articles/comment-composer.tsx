@@ -9,6 +9,7 @@ const MAX_COMMENT_DISPLAY_DEPTH = 5;
 
 interface CreatedComment {
   id: string;
+  status: 'VISIBLE' | 'DELETED';
   parentId: string | null;
   depth: number;
   body: string;
@@ -46,8 +47,13 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [editBody, setEditBody] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string>();
+  const [deletingCommentId, setDeletingCommentId] = useState<string>();
+  const [deleteError, setDeleteError] = useState<string>();
+  const [deleteErrorCommentId, setDeleteErrorCommentId] = useState<string>();
 
-  const commentCount = commentsLoaded ? comments.length : initialCommentCount;
+  const commentCount = commentsLoaded
+    ? comments.filter((comment) => comment.status === 'VISIBLE').length
+    : initialCommentCount;
 
   useEffect(() => {
     let cancelled = false;
@@ -294,7 +300,122 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     }
   }
 
+  async function handleDelete(commentId: string) {
+    const comment = comments.find((candidate) => candidate.id === commentId);
+
+    if (
+      !comment ||
+      comment.status !== 'VISIBLE' ||
+      !token ||
+      !user ||
+      user.status === 'BANNED' ||
+      comment.author?.id !== user.id ||
+      deletingCommentId
+    ) {
+      return;
+    }
+
+    if (!window.confirm('Möchtest du diesen Kommentar wirklich löschen?')) {
+      return;
+    }
+
+    setDeletingCommentId(commentId);
+    setDeleteError(undefined);
+    setDeleteErrorCommentId(undefined);
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments/${encodeURIComponent(commentId)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('COMMENT_DELETE_FAILED');
+      }
+
+      // Remove deleted leaves immediately. Preserve deleted parents
+      // as anonymized placeholders while visible descendants exist.
+      setComments((current) => {
+        const hasVisibleDescendant = (parentId: string, visited = new Set<string>()): boolean => {
+          if (visited.has(parentId)) {
+            return false;
+          }
+
+          visited.add(parentId);
+
+          const children = current.filter((candidate) => candidate.parentId === parentId);
+
+          return children.some(
+            (child) =>
+              child.status === 'VISIBLE' || hasVisibleDescendant(child.id, new Set(visited)),
+          );
+        };
+
+        if (!hasVisibleDescendant(commentId)) {
+          return current.filter((candidate) => candidate.id !== commentId);
+        }
+
+        return current.map((candidate) =>
+          candidate.id === commentId
+            ? {
+                ...candidate,
+                status: 'DELETED',
+                body: '',
+                author: null,
+                editedAt: null,
+              }
+            : candidate,
+        );
+      });
+
+      if (editingCommentId === commentId) {
+        setEditingCommentId(undefined);
+        setEditBody('');
+        setEditError(undefined);
+      }
+
+      if (replyingTo === commentId) {
+        setReplyingTo(undefined);
+        setReplyBody('');
+        setReplyError(undefined);
+      }
+
+      // Reload the canonical tree. A reload failure must not
+      // turn a successful deletion into a deletion error.
+      try {
+        const listResponse = await fetch(
+          `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments`,
+        );
+
+        if (listResponse.ok) {
+          const payload = (await listResponse.json()) as {
+            data?: CreatedComment[];
+          };
+
+          if (Array.isArray(payload.data)) {
+            setComments(payload.data);
+            setCommentsLoaded(true);
+          }
+        }
+      } catch {
+        // Keep the locally anonymized comment until the next reload.
+      }
+    } catch {
+      setDeleteErrorCommentId(commentId);
+      setDeleteError('Der Kommentar konnte nicht gelöscht werden. Bitte versuche es erneut.');
+    } finally {
+      setDeletingCommentId(undefined);
+    }
+  }
+
   function renderComment(comment: CreatedComment, displayDepth = 0): ReactNode {
+    const isDeleted = comment.status === 'DELETED';
+
     const replies = comments
       .filter((candidate) => candidate.parentId === comment.id)
       .sort(
@@ -304,18 +425,22 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     return (
       <div className={styles.commentBranch} key={comment.id}>
         <article className={styles.createdComment}>
-          <div className={styles.commentMeta}>
-            <strong>{comment.author?.nickname ?? 'Kurvenfunk User'}</strong>
-            <span>
-              {new Date(comment.createdAt).toLocaleString('de-AT', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-              })}
-            </span>
-            {comment.editedAt ? <span>bearbeitet</span> : null}
-          </div>
+          {!isDeleted ? (
+            <div className={styles.commentMeta}>
+              <strong>{comment.author?.nickname ?? 'Kurvenfunk User'}</strong>
+              <span>
+                {new Date(comment.createdAt).toLocaleString('de-AT', {
+                  dateStyle: 'short',
+                  timeStyle: 'short',
+                })}
+              </span>
+              {comment.editedAt ? <span>bearbeitet</span> : null}
+            </div>
+          ) : null}
 
-          {editingCommentId === comment.id ? (
+          {isDeleted ? (
+            <p className={styles.deletedComment}>Kommentar gelöscht</p>
+          ) : editingCommentId === comment.id ? (
             <form
               className={styles.editForm}
               onSubmit={(event) => void handleEditSubmit(event, comment.id)}
@@ -377,59 +502,85 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
             <p>{comment.body}</p>
           )}
 
-          <div className={styles.commentActions}>
-            {authenticated &&
-            user?.status === 'ACTIVE' &&
-            comment.author?.id === user.id &&
-            editingCommentId !== comment.id ? (
-              <button
-                className={styles.editButton}
-                type="button"
-                onClick={() => {
-                  setEditingCommentId(comment.id);
-                  setEditBody(comment.body);
-                  setEditError(undefined);
+          {!isDeleted ? (
+            <div className={styles.commentActions}>
+              {authenticated &&
+              user &&
+              user.status !== 'BANNED' &&
+              comment.author?.id === user.id ? (
+                <button
+                  className={styles.deleteButton}
+                  type="button"
+                  disabled={Boolean(deletingCommentId)}
+                  onClick={() => void handleDelete(comment.id)}
+                >
+                  {deletingCommentId === comment.id ? 'Wird gelöscht …' : 'Löschen'}
+                </button>
+              ) : null}
 
-                  if (replyingTo === comment.id) {
-                    setReplyingTo(undefined);
-                    setReplyBody('');
-                    setReplyError(undefined);
-                  }
-                }}
-              >
-                Bearbeiten
-              </button>
-            ) : null}
-
-            {authenticated && user?.status === 'ACTIVE' && editingCommentId !== comment.id ? (
-              <button
-                className={styles.replyButton}
-                type="button"
-                onClick={() => {
-                  if (replyingTo === comment.id) {
-                    setReplyingTo(undefined);
-                    setReplyBody('');
-                    setReplyError(undefined);
-                    return;
-                  }
-
-                  setReplyingTo(comment.id);
-                  setReplyBody('');
-                  setReplyError(undefined);
-
-                  if (editingCommentId === comment.id) {
-                    setEditingCommentId(undefined);
-                    setEditBody('');
+              {authenticated &&
+              user?.status === 'ACTIVE' &&
+              comment.author?.id === user.id &&
+              editingCommentId !== comment.id &&
+              deletingCommentId !== comment.id ? (
+                <button
+                  className={styles.editButton}
+                  type="button"
+                  onClick={() => {
+                    setEditingCommentId(comment.id);
+                    setEditBody(comment.body);
                     setEditError(undefined);
-                  }
-                }}
-              >
-                {replyingTo === comment.id ? 'Abbrechen' : 'Antworten'}
-              </button>
-            ) : null}
-          </div>
 
-          {replyingTo === comment.id ? (
+                    if (replyingTo === comment.id) {
+                      setReplyingTo(undefined);
+                      setReplyBody('');
+                      setReplyError(undefined);
+                    }
+                  }}
+                >
+                  Bearbeiten
+                </button>
+              ) : null}
+
+              {authenticated &&
+              user?.status === 'ACTIVE' &&
+              editingCommentId !== comment.id &&
+              deletingCommentId !== comment.id ? (
+                <button
+                  className={styles.replyButton}
+                  type="button"
+                  onClick={() => {
+                    if (replyingTo === comment.id) {
+                      setReplyingTo(undefined);
+                      setReplyBody('');
+                      setReplyError(undefined);
+                      return;
+                    }
+
+                    setReplyingTo(comment.id);
+                    setReplyBody('');
+                    setReplyError(undefined);
+
+                    if (editingCommentId === comment.id) {
+                      setEditingCommentId(undefined);
+                      setEditBody('');
+                      setEditError(undefined);
+                    }
+                  }}
+                >
+                  {replyingTo === comment.id ? 'Abbrechen' : 'Antworten'}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {deleteError && deleteErrorCommentId === comment.id ? (
+            <p className={styles.error} role="alert">
+              {deleteError}
+            </p>
+          ) : null}
+
+          {!isDeleted && replyingTo === comment.id ? (
             <form
               className={styles.replyForm}
               onSubmit={(event) => void handleReplySubmit(event, comment.id)}

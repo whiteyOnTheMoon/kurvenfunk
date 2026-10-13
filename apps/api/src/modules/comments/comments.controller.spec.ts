@@ -27,12 +27,14 @@ describe('CommentsController', () => {
   const create = jest.fn();
   const createReply = jest.fn();
   const update = jest.fn();
+  const remove = jest.fn();
   const listForArticle = jest.fn();
 
   const commentsService = {
     create,
     createReply,
     update,
+    remove,
     listForArticle,
   } as unknown as CommentsService;
 
@@ -42,6 +44,7 @@ describe('CommentsController', () => {
     create.mockReset();
     createReply.mockReset();
     update.mockReset();
+    remove.mockReset();
     listForArticle.mockReset();
   });
 
@@ -51,6 +54,38 @@ describe('CommentsController', () => {
     await controller.list('11111111-1111-4111-8111-111111111111');
 
     expect(listForArticle).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+  });
+
+  it('passes delete data and the authenticated user to the service', async () => {
+    remove.mockResolvedValue({
+      id: '22222222-2222-4222-8222-222222222222',
+      deleted: true,
+    });
+
+    const request = {
+      user: {
+        sub: 'keycloak-user',
+        kurvenfunkUserId: '33333333-3333-4333-8333-333333333333',
+        kurvenfunkUserStatus: 'ACTIVE',
+        kurvenfunkFanPreference: 'NEUTRAL',
+        kurvenfunkFavoriteClubId: null,
+        kurvenfunkOnboardingCompleted: true,
+        kurvenfunkRoles: ['USER'],
+      },
+    } as AuthenticatedRequest;
+
+    await controller.remove(
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+      request,
+    );
+
+    expect(remove).toHaveBeenCalledWith({
+      articleId: '11111111-1111-4111-8111-111111111111',
+      commentId: '22222222-2222-4222-8222-222222222222',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      userStatus: 'ACTIVE',
+    });
   });
 
   it('passes edit data and the authenticated user to the service', async () => {
