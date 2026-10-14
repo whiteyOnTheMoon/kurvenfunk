@@ -3,6 +3,7 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
+import { CommentVoting, type VoteSummary } from './comment-voting';
 import styles from './comment-composer.module.css';
 
 const MAX_COMMENT_DISPLAY_DEPTH = 5;
@@ -36,6 +37,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const { authenticated, initialized, login, token, user } = useAuth();
   const [body, setBody] = useState('');
   const [comments, setComments] = useState<CreatedComment[]>([]);
+  const [voteSummaries, setVoteSummaries] = useState<Record<string, VoteSummary>>({});
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -87,6 +89,69 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       cancelled = true;
     };
   }, [apiUrl, articleId]);
+
+  const visibleCommentIds = comments
+    .filter((comment) => comment.status === 'VISIBLE')
+    .map((comment) => comment.id)
+    .join(',');
+
+  useEffect(() => {
+    if (!visibleCommentIds) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadVoteSummaries() {
+      const ids = visibleCommentIds.split(',');
+      const summaries: Record<string, VoteSummary> = {};
+
+      try {
+        // The API accepts a maximum of 100 comment IDs per request.
+        for (let offset = 0; offset < ids.length; offset += 100) {
+          const batch = ids.slice(offset, offset + 100);
+
+          const endpoint = authenticated && token ? 'reactions/comments/me' : 'reactions/comments';
+
+          const response = await fetch(
+            `${apiUrl}/api/v1/${endpoint}?ids=${encodeURIComponent(batch.join(','))}`,
+            {
+              cache: 'no-store',
+              ...(authenticated && token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error('VOTE_SUMMARIES_FAILED');
+          }
+
+          const payload = (await response.json()) as {
+            data?: VoteSummary[];
+          };
+
+          if (!Array.isArray(payload.data)) {
+            throw new Error('INVALID_VOTE_SUMMARIES');
+          }
+
+          for (const summary of payload.data) {
+            summaries[summary.commentId] = summary;
+          }
+        }
+
+        if (!cancelled) {
+          setVoteSummaries(summaries);
+        }
+      } catch {
+        // Comments remain usable if voting data cannot be loaded.
+      }
+    }
+
+    void loadVoteSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, authenticated, token, visibleCommentIds]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -501,6 +566,19 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           ) : (
             <p>{comment.body}</p>
           )}
+
+          {!isDeleted && voteSummaries[comment.id] ? (
+            <CommentVoting
+              key={`${comment.id}:${voteSummaries[comment.id].upvotes}:${voteSummaries[comment.id].downvotes}:${voteSummaries[comment.id].viewerVote ?? 'NONE'}`}
+              apiUrl={apiUrl}
+              commentId={comment.id}
+              authorId={comment.author?.id ?? null}
+              userId={authenticated ? user?.id : undefined}
+              userStatus={user?.status}
+              token={authenticated ? token : undefined}
+              summary={voteSummaries[comment.id]}
+            />
+          ) : null}
 
           {!isDeleted ? (
             <div className={styles.commentActions}>

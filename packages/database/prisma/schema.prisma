@@ -571,6 +571,8 @@ enum CommentStatus {
 
 enum ReactionType {
   LIKE
+  UPVOTE
+  DOWNVOTE
 }
 
 model Comment {
@@ -627,8 +629,8 @@ model Reaction {
   comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, type, commentId])
-  @@unique([userId, type, postId])
+  @@unique([userId, commentId])
+  @@unique([userId, postId])
   @@index([commentId])
   @@index([postId])
   @@index([userId])

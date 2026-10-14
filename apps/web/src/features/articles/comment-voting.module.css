@@ -1,0 +1,118 @@
+.container {
+  margin-top: var(--kf-space-3);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kf-space-2);
+}
+
+.vote,
+.selected,
+.count {
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-md);
+  padding: var(--kf-space-2);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.selected {
+  border-color: var(--kf-accent);
+  color: var(--kf-accent);
+  font-weight: var(--kf-font-weight-semibold);
+}
+
+.count {
+  border: 0;
+  color: var(--kf-text-muted);
+}
+
+.vote:disabled,
+.selected:disabled,
+.count:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.score {
+  margin-inline: var(--kf-space-2);
+  font-weight: var(--kf-font-weight-semibold);
+}
+
+.error {
+  color: var(--kf-danger, #b42318);
+}
+
+.dialog {
+  width: min(440px, calc(100% - 32px));
+  max-height: 80vh;
+  box-sizing: border-box;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  padding: var(--kf-space-5);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.dialogHeader,
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--kf-space-3);
+}
+
+.dialogHeader button,
+.tabs button,
+.loadMore {
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-md);
+  padding: var(--kf-space-2) var(--kf-space-3);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabs {
+  margin-top: var(--kf-space-4);
+}
+
+.tabs button[aria-pressed='true'] {
+  border-color: var(--kf-accent);
+  color: var(--kf-accent);
+}
+
+.voters {
+  margin-top: var(--kf-space-4);
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.voter {
+  padding: var(--kf-space-3) 0;
+  border-bottom: 1px solid var(--kf-border);
+}
+
+.loadMore {
+  margin-top: var(--kf-space-4);
+}
+
+@media (max-width: 640px) {
+  .controls {
+    gap: var(--kf-space-2);
+  }
+
+  .dialog {
+    padding: var(--kf-space-4);
+  }
+}
