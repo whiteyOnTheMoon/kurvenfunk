@@ -101,16 +101,15 @@ describe('Voting controllers', () => {
     });
   });
 
-  it('loads a paginated voter list', async () => {
+  it('loads a paginated chronological voter list', async () => {
     const cursor = '33333333-3333-4333-8333-333333333333';
 
     await votesController.getVoters(commentId, {
-      type: 'DOWNVOTE',
       limit: 20,
       cursor,
     });
 
-    expect(service.getVoters).toHaveBeenCalledWith(commentId, 'DOWNVOTE', 20, cursor);
+    expect(service.getVoters).toHaveBeenCalledWith(commentId, 20, cursor);
   });
 
   it('does not send a user ID for public batch summaries', async () => {

@@ -178,29 +178,83 @@ describe('ReactionsService', () => {
     expect(database.reaction.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('returns paginated voter nicknames', async () => {
+  it('returns chronological votes with nicknames, avatars and types', async () => {
     database.reaction.findMany.mockResolvedValue([
       {
         id: '44444444-4444-4444-8444-444444444444',
+        type: 'UPVOTE',
         user: {
           id: voterId,
           nickname: 'RapidFan',
+          profile: {
+            avatarMedia: {
+              status: 'ACTIVE',
+              externalUrl: 'https://example.test/avatar.jpg',
+            },
+          },
+        },
+      },
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        type: 'DOWNVOTE',
+        user: {
+          id: authorId,
+          nickname: 'SturmFan',
+          profile: null,
         },
       },
     ]);
 
-    const result = await service.getVoters(commentId, 'UPVOTE', 20);
+    const result = await service.getVoters(commentId, 20);
 
     expect(result).toEqual({
       commentId,
-      type: 'UPVOTE',
       items: [
         {
           userId: voterId,
           nickname: 'RapidFan',
+          avatarUrl: 'https://example.test/avatar.jpg',
+          type: 'UPVOTE',
+        },
+        {
+          userId: authorId,
+          nickname: 'SturmFan',
+          avatarUrl: null,
+          type: 'DOWNVOTE',
         },
       ],
       nextCursor: null,
+    });
+
+    expect(database.reaction.findMany).toHaveBeenCalledWith({
+      where: {
+        commentId,
+        type: {
+          in: ['UPVOTE', 'DOWNVOTE'],
+        },
+      },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: 21,
+      select: {
+        id: true,
+        type: true,
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profile: {
+              select: {
+                avatarMedia: {
+                  select: {
+                    externalUrl: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   });
 
@@ -223,11 +277,11 @@ describe('ReactionsService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects a voter cursor belonging to another list', async () => {
+  it('rejects a voter cursor belonging to another comment', async () => {
     database.reaction.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.getVoters(commentId, 'UPVOTE', 20, '44444444-4444-4444-8444-444444444444'),
+      service.getVoters(commentId, 20, '44444444-4444-4444-8444-444444444444'),
     ).rejects.toMatchObject({
       response: {
         code: 'INVALID_VOTE_CURSOR',
@@ -240,17 +294,23 @@ describe('ReactionsService', () => {
   it('validates cursor ownership before fetching more voters', async () => {
     const cursor = '44444444-4444-4444-8444-444444444444';
 
-    database.reaction.findFirst.mockResolvedValue({ id: cursor });
+    database.reaction.findFirst.mockResolvedValue({
+      id: cursor,
+    });
 
-    await service.getVoters(commentId, 'DOWNVOTE', 20, cursor);
+    await service.getVoters(commentId, 20, cursor);
 
     expect(database.reaction.findFirst).toHaveBeenCalledWith({
       where: {
         id: cursor,
         commentId,
-        type: 'DOWNVOTE',
+        type: {
+          in: ['UPVOTE', 'DOWNVOTE'],
+        },
       },
-      select: { id: true },
+      select: {
+        id: true,
+      },
     });
 
     expect(database.reaction.findMany).toHaveBeenCalled();

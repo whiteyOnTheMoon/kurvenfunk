@@ -16,6 +16,8 @@ export interface VoteSummary {
 interface Voter {
   userId: string;
   nickname: string | null;
+  avatarUrl: string | null;
+  type: VoteType;
 }
 
 interface VotersResponse {
@@ -61,7 +63,6 @@ export function CommentVoting({
   const [votes, setVotes] = useState(summary);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
-  const [selectedType, setSelectedType] = useState<VoteType>('UPVOTE');
   const [voters, setVoters] = useState<Voter[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingVoters, setLoadingVoters] = useState(false);
@@ -104,24 +105,30 @@ export function CommentVoting({
     }
   }
 
-  async function loadVoters(type: VoteType, cursor?: string) {
+  async function loadVoters(cursor?: string) {
     if (!token) return;
 
     const requestId = ++requestRef.current;
+
     setLoadingVoters(true);
     setVotersError(undefined);
 
     try {
       const params = new URLSearchParams({
-        type,
         limit: String(PAGE_SIZE),
       });
 
-      if (cursor) params.set('cursor', cursor);
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
 
       const response = await fetch(
         `${apiUrl}/api/v1/comments/${encodeURIComponent(commentId)}/votes/voters?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
 
       const result = await readData<VotersResponse>(response);
@@ -132,32 +139,27 @@ export function CommentVoting({
       setNextCursor(result.nextCursor);
     } catch {
       if (requestId === requestRef.current) {
-        setVotersError('Die Benutzerliste konnte nicht geladen werden.');
+        setVotersError('Die Abstimmungen konnten nicht geladen werden.');
       }
     } finally {
-      if (requestId === requestRef.current) setLoadingVoters(false);
+      if (requestId === requestRef.current) {
+        setLoadingVoters(false);
+      }
     }
   }
 
-  function openVoters(type: VoteType) {
+  function openVoters() {
     if (!token) return;
 
-    setSelectedType(type);
     setVoters([]);
     setNextCursor(null);
     setVotersError(undefined);
 
-    if (!dialogRef.current?.open) dialogRef.current?.showModal();
-    void loadVoters(type);
-  }
+    if (!dialogRef.current?.open) {
+      dialogRef.current?.showModal();
+    }
 
-  function changeTab(type: VoteType) {
-    if (type === selectedType) return;
-
-    setSelectedType(type);
-    setVoters([]);
-    setNextCursor(null);
-    void loadVoters(type);
+    void loadVoters();
   }
 
   return (
@@ -178,7 +180,7 @@ export function CommentVoting({
           type="button"
           className={styles.count}
           disabled={!token}
-          onClick={() => openVoters('UPVOTE')}
+          onClick={openVoters}
           aria-label={`${votes.upvotes} Upvotes – Abstimmende anzeigen`}
         >
           {votes.upvotes}
@@ -203,7 +205,7 @@ export function CommentVoting({
           type="button"
           className={styles.count}
           disabled={!token}
-          onClick={() => openVoters('DOWNVOTE')}
+          onClick={openVoters}
           aria-label={`${votes.downvotes} Downvotes – Abstimmende anzeigen`}
         >
           {votes.downvotes}
@@ -225,7 +227,7 @@ export function CommentVoting({
         }}
       >
         <div className={styles.dialogHeader}>
-          <strong>Abstimmungen</strong>
+          <strong>Abstimmungen · {votes.upvotes + votes.downvotes}</strong>
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
@@ -235,27 +237,38 @@ export function CommentVoting({
           </button>
         </div>
 
-        <div className={styles.tabs} aria-label="Abstimmungsart">
-          <button
-            type="button"
-            aria-pressed={selectedType === 'UPVOTE'}
-            onClick={() => changeTab('UPVOTE')}
-          >
-            Upvotes ({votes.upvotes})
-          </button>
-          <button
-            type="button"
-            aria-pressed={selectedType === 'DOWNVOTE'}
-            onClick={() => changeTab('DOWNVOTE')}
-          >
-            Downvotes ({votes.downvotes})
-          </button>
-        </div>
-
         <div className={styles.voters} aria-live="polite">
           {voters.map((voter) => (
             <div className={styles.voter} key={voter.userId}>
-              {voter.nickname ?? 'Kurvenfunk User'}
+              <div className={styles.voterIdentity}>
+                {voter.avatarUrl ? (
+                  // User profile avatars can have different external hosts.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className={styles.avatar}
+                    src={voter.avatarUrl}
+                    alt=""
+                    width={36}
+                    height={36}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className={styles.avatarPlaceholder} aria-hidden="true">
+                    {voter.nickname?.charAt(0).toUpperCase() ?? '?'}
+                  </span>
+                )}
+
+                <span className={styles.nickname}>{voter.nickname ?? 'Kurvenfunk User'}</span>
+              </div>
+
+              <span
+                className={voter.type === 'UPVOTE' ? styles.upvoteSymbol : styles.downvoteSymbol}
+                aria-label={voter.type === 'UPVOTE' ? 'Upvote' : 'Downvote'}
+                title={voter.type === 'UPVOTE' ? 'Upvote' : 'Downvote'}
+              >
+                {voter.type === 'UPVOTE' ? '▲' : '▼'}
+              </span>
             </div>
           ))}
 
@@ -275,7 +288,7 @@ export function CommentVoting({
             <button
               type="button"
               className={styles.loadMore}
-              onClick={() => void loadVoters(selectedType, nextCursor)}
+              onClick={() => void loadVoters(nextCursor)}
             >
               Weitere anzeigen
             </button>

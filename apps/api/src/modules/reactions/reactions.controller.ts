@@ -23,7 +23,6 @@ const voteSchema = z
   .strict();
 
 const votersQuerySchema = z.object({
-  type: z.enum(['UPVOTE', 'DOWNVOTE']),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().uuid().optional(),
 });
@@ -93,7 +92,7 @@ export class ReactionsController {
     @Query(new ZodValidationPipe(votersQuerySchema))
     query: VotersQuery,
   ) {
-    return this.reactionsService.getVoters(commentId, query.type, query.limit, query.cursor);
+    return this.reactionsService.getVoters(commentId, query.limit, query.cursor);
   }
 
   @Put()

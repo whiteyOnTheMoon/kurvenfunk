@@ -63,8 +63,7 @@
   background: rgb(0 0 0 / 55%);
 }
 
-.dialogHeader,
-.tabs {
+.dialogHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -81,15 +80,6 @@
   color: var(--kf-text);
   font: inherit;
   cursor: pointer;
-}
-
-.tabs {
-  margin-top: var(--kf-space-4);
-}
-
-.tabs button[aria-pressed='true'] {
-  border-color: var(--kf-accent);
-  color: var(--kf-accent);
 }
 
 .voters {
@@ -115,4 +105,60 @@
   .dialog {
     padding: var(--kf-space-4);
   }
+}
+
+.voter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.voterIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar,
+.avatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+}
+
+.avatar {
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 700;
+}
+
+.nickname {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.upvoteSymbol,
+.downvoteSymbol {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.upvoteSymbol {
+  color: #15803d;
+}
+
+.downvoteSymbol {
+  color: #dc2626;
 }

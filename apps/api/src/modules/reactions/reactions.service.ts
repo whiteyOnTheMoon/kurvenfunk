@@ -240,7 +240,7 @@ export class ReactionsService implements OnModuleDestroy {
     return this.getSummary(command.commentId, command.userId);
   }
 
-  async getVoters(commentId: string, type: VoteType, limit: number, cursor?: string) {
+  async getVoters(commentId: string, limit: number, cursor?: string) {
     await this.requireVisibleComment(commentId);
 
     if (cursor) {
@@ -248,7 +248,9 @@ export class ReactionsService implements OnModuleDestroy {
         where: {
           id: cursor,
           commentId,
-          type,
+          type: {
+            in: ['UPVOTE', 'DOWNVOTE'],
+          },
         },
         select: { id: true },
       });
@@ -264,9 +266,11 @@ export class ReactionsService implements OnModuleDestroy {
     const reactions = await this.database.reaction.findMany({
       where: {
         commentId,
-        type,
+        type: {
+          in: ['UPVOTE', 'DOWNVOTE'],
+        },
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       ...(cursor
         ? {
@@ -276,10 +280,21 @@ export class ReactionsService implements OnModuleDestroy {
         : {}),
       select: {
         id: true,
+        type: true,
         user: {
           select: {
             id: true,
             nickname: true,
+            profile: {
+              select: {
+                avatarMedia: {
+                  select: {
+                    externalUrl: true,
+                    status: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -291,10 +306,14 @@ export class ReactionsService implements OnModuleDestroy {
 
     return {
       commentId,
-      type,
       items: page.map((reaction) => ({
         userId: reaction.user.id,
         nickname: reaction.user.nickname,
+        avatarUrl:
+          reaction.user.profile?.avatarMedia?.status === 'ACTIVE'
+            ? reaction.user.profile.avatarMedia.externalUrl
+            : null,
+        type: reaction.type,
       })),
       nextCursor: hasMore && last ? last.id : null,
     };
