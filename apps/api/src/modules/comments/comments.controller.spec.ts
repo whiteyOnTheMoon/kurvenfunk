@@ -28,14 +28,14 @@ describe('CommentsController', () => {
   const createReply = jest.fn();
   const update = jest.fn();
   const remove = jest.fn();
-  const listForArticle = jest.fn();
+  const listPageForArticle = jest.fn();
 
   const commentsService = {
     create,
     createReply,
     update,
     remove,
-    listForArticle,
+    listPageForArticle,
   } as unknown as CommentsService;
 
   const controller = new CommentsController(commentsService);
@@ -45,15 +45,83 @@ describe('CommentsController', () => {
     createReply.mockReset();
     update.mockReset();
     remove.mockReset();
-    listForArticle.mockReset();
+    listPageForArticle.mockReset();
   });
 
-  it('lists comments for the requested article', async () => {
-    listForArticle.mockResolvedValue([]);
+  describe('paginated comment listing', () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
 
-    await controller.list('11111111-1111-4111-8111-111111111111');
+    it('defaults to newest sorting', async () => {
+      const result = {
+        items: [],
+        pagination: {
+          nextCursor: null,
+          hasNextPage: false,
+        },
+      };
 
-    expect(listForArticle).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+      listPageForArticle.mockResolvedValue(result);
+
+      expect(await controller.list(articleId)).toEqual(result);
+
+      expect(listPageForArticle).toHaveBeenCalledWith(articleId, 'newest', null);
+    });
+
+    it('supports oldest sorting', async () => {
+      await controller.list(articleId, 'oldest');
+
+      expect(listPageForArticle).toHaveBeenCalledWith(articleId, 'oldest', null);
+    });
+
+    it('supports popular sorting', async () => {
+      await controller.list(articleId, 'popular');
+
+      expect(listPageForArticle).toHaveBeenCalledWith(articleId, 'popular', null);
+    });
+
+    it('passes a decoded cursor to the service', async () => {
+      const cursorData = {
+        version: 1,
+        sort: 'popular',
+        id: '22222222-2222-4222-8222-222222222222',
+        createdAt: '2026-10-14T12:00:00.000Z',
+        score: 5,
+      };
+
+      const cursor = Buffer.from(JSON.stringify(cursorData)).toString('base64url');
+
+      await controller.list(articleId, 'popular', cursor);
+
+      expect(listPageForArticle).toHaveBeenCalledWith(articleId, 'popular', cursorData);
+    });
+
+    it('rejects unsupported sorting modes', () => {
+      expect(() => controller.list(articleId, 'random')).toThrow();
+
+      expect(listPageForArticle).not.toHaveBeenCalled();
+    });
+
+    it('rejects malformed cursors', () => {
+      expect(() => controller.list(articleId, 'newest', 'invalid!')).toThrow();
+
+      expect(listPageForArticle).not.toHaveBeenCalled();
+    });
+
+    it('rejects cursors from another sorting mode', () => {
+      const cursor = Buffer.from(
+        JSON.stringify({
+          version: 1,
+          sort: 'popular',
+          id: '22222222-2222-4222-8222-222222222222',
+          createdAt: '2026-10-14T12:00:00.000Z',
+          score: 5,
+        }),
+      ).toString('base64url');
+
+      expect(() => controller.list(articleId, 'newest', cursor)).toThrow();
+
+      expect(listPageForArticle).not.toHaveBeenCalled();
+    });
   });
 
   it('passes delete data and the authenticated user to the service', async () => {

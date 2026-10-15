@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { createCommentSchema, type CreateCommentInput } from '@kurvenfunk/valida
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
 import type { AuthenticatedRequest } from '../auth/auth.types';
+import { parseCommentPageCursor, parseCommentPageSort } from './comment-pagination';
 import { CommentsService } from './comments.service';
 
 @Controller('articles/:articleId/comments')
@@ -21,8 +23,17 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
-  list(@Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string) {
-    return this.commentsService.listForArticle(articleId);
+  list(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' }))
+    articleId: string,
+    @Query('sort') sort?: unknown,
+    @Query('cursor') cursor?: unknown,
+  ) {
+    const normalizedSort = parseCommentPageSort(sort);
+
+    const parsedCursor = parseCommentPageCursor(cursor, normalizedSort);
+
+    return this.commentsService.listPageForArticle(articleId, normalizedSort, parsedCursor);
   }
 
   @Delete(':commentId')

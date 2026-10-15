@@ -4,7 +4,8 @@ import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'rea
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import { CommentVoting, type VoteSummary } from './comment-voting';
-import { sortTopLevelComments, type CommentSortMode } from './comment-sort';
+import { type CommentSortMode } from './comment-sort';
+import { fetchCommentPage, mergeCommentPages } from './comment-pagination-client';
 import styles from './comment-composer.module.css';
 
 const MAX_COMMENT_DISPLAY_DEPTH = 5;
@@ -42,6 +43,14 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [commentSort, setCommentSort] = useState<CommentSortMode>('newest');
   const voteRevisions = useRef<Record<string, number>>({});
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [commentsLoadError, setCommentsLoadError] = useState<string>();
+  const [countDelta, setCountDelta] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
+  const requestVersion = useRef(0);
+  const loadMoreAbort = useRef<AbortController | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [replyingTo, setReplyingTo] = useState<string>();
@@ -56,42 +65,112 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [deleteError, setDeleteError] = useState<string>();
   const [deleteErrorCommentId, setDeleteErrorCommentId] = useState<string>();
 
-  const commentCount = commentsLoaded
-    ? comments.filter((comment) => comment.status === 'VISIBLE').length
-    : initialCommentCount;
+  // The article's total count must not shrink to the loaded page size.
+  const commentCount = Math.max(0, initialCommentCount + countDelta);
 
   useEffect(() => {
-    let cancelled = false;
+    setCountDelta(0);
+  }, [articleId]);
 
-    async function loadComments() {
+  useEffect(() => {
+    const controller = new AbortController();
+    const version = ++requestVersion.current;
+
+    loadMoreAbort.current?.abort();
+    loadMoreAbort.current = null;
+
+    setComments([]);
+    setCommentsLoaded(false);
+    setCommentsLoading(true);
+    setLoadingMore(false);
+    setNextCursor(null);
+    setCommentsLoadError(undefined);
+
+    async function loadFirstPage() {
       try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments`,
+        const page = await fetchCommentPage<CreatedComment>(
+          apiUrl,
+          articleId,
+          commentSort,
+          undefined,
+          controller.signal,
         );
 
-        if (!response.ok) {
+        if (controller.signal.aborted || version !== requestVersion.current) {
           return;
         }
 
-        const payload = (await response.json()) as {
-          data?: CreatedComment[];
-        };
-
-        if (!cancelled && Array.isArray(payload.data)) {
-          setComments(payload.data);
-          setCommentsLoaded(true);
-        }
+        setComments(page.items);
+        setNextCursor(page.pagination.hasNextPage ? page.pagination.nextCursor : null);
+        setCommentsLoaded(true);
       } catch {
-        // The article remains usable even if comments cannot be loaded.
+        if (!controller.signal.aborted && version === requestVersion.current) {
+          setCommentsLoadError('Kommentare konnten nicht geladen werden.');
+        }
+      } finally {
+        if (!controller.signal.aborted && version === requestVersion.current) {
+          setCommentsLoading(false);
+        }
       }
     }
 
-    void loadComments();
+    void loadFirstPage();
 
     return () => {
-      cancelled = true;
+      controller.abort();
+      loadMoreAbort.current?.abort();
     };
-  }, [apiUrl, articleId]);
+  }, [apiUrl, articleId, commentSort, reloadKey]);
+
+  async function handleLoadMore() {
+    if (!nextCursor || loadingMore || commentsLoading || loadMoreAbort.current) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const version = requestVersion.current;
+
+    loadMoreAbort.current = controller;
+
+    setLoadingMore(true);
+    setCommentsLoadError(undefined);
+
+    try {
+      const page = await fetchCommentPage<CreatedComment>(
+        apiUrl,
+        articleId,
+        commentSort,
+        nextCursor,
+        controller.signal,
+      );
+
+      if (controller.signal.aborted || version !== requestVersion.current) {
+        return;
+      }
+
+      setComments((current) => mergeCommentPages(current, page.items));
+
+      setNextCursor(page.pagination.hasNextPage ? page.pagination.nextCursor : null);
+    } catch {
+      if (!controller.signal.aborted && version === requestVersion.current) {
+        setCommentsLoadError('Weitere Kommentare konnten nicht geladen werden.');
+      }
+    } finally {
+      if (loadMoreAbort.current === controller) {
+        loadMoreAbort.current = null;
+      }
+
+      if (version === requestVersion.current) {
+        setLoadingMore(false);
+      }
+    }
+  }
+
+  function refreshComments() {
+    requestVersion.current += 1;
+    loadMoreAbort.current?.abort();
+    setReloadKey((current) => current + 1);
+  }
 
   const visibleCommentIds = comments
     .filter((comment) => comment.status === 'VISIBLE')
@@ -221,9 +300,9 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         throw new Error('INVALID_COMMENT_RESPONSE');
       }
 
-      setComments((current) => [payload.data!, ...current]);
-      setCommentsLoaded(true);
+      setCountDelta((current) => current + 1);
       setBody('');
+      refreshComments();
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'COMMENT_CREATE_FAILED';
 
@@ -288,6 +367,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
 
       setComments((current) => [...current, payload.data!]);
       setCommentsLoaded(true);
+      setCountDelta((current) => current + 1);
       setReplyBody('');
       setReplyingTo(undefined);
     } catch (submitError) {
@@ -469,26 +549,8 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         setReplyError(undefined);
       }
 
-      // Reload the canonical tree. A reload failure must not
-      // turn a successful deletion into a deletion error.
-      try {
-        const listResponse = await fetch(
-          `${apiUrl}/api/v1/articles/${encodeURIComponent(articleId)}/comments`,
-        );
-
-        if (listResponse.ok) {
-          const payload = (await listResponse.json()) as {
-            data?: CreatedComment[];
-          };
-
-          if (Array.isArray(payload.data)) {
-            setComments(payload.data);
-            setCommentsLoaded(true);
-          }
-        }
-      } catch {
-        // Keep the locally anonymized comment until the next reload.
-      }
+      setCountDelta((current) => current - 1);
+      refreshComments();
     } catch {
       setDeleteErrorCommentId(commentId);
       setDeleteError('Der Kommentar konnte nicht gelöscht werden. Bitte versuche es erneut.');
@@ -603,6 +665,10 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
                   ...current,
                   [updated.commentId]: updated,
                 }));
+
+                if (commentSort === 'popular') {
+                  refreshComments();
+                }
               }}
             />
           ) : null}
@@ -794,7 +860,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         </form>
       )}
 
-      {comments.length > 0 ? (
+      {comments.length > 0 || commentCount > 0 || commentsLoading || commentsLoadError ? (
         <>
           <div className={styles.sortControls}>
             <label htmlFor={`comment-sort-${articleId}`}>Sortieren nach</label>
@@ -802,7 +868,12 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
             <select
               id={`comment-sort-${articleId}`}
               value={commentSort}
-              onChange={(event) => setCommentSort(event.target.value as CommentSortMode)}
+              onChange={(event) => {
+                requestVersion.current += 1;
+                loadMoreAbort.current?.abort();
+
+                setCommentSort(event.target.value as CommentSortMode);
+              }}
             >
               <option value="newest">Neueste</option>
               <option value="oldest">Älteste</option>
@@ -811,10 +882,30 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           </div>
 
           <div className={styles.commentList}>
-            {sortTopLevelComments(comments, voteSummaries, commentSort).map((comment) =>
-              renderComment(comment),
-            )}
+            {comments
+              .filter((comment) => comment.parentId === null)
+              .map((comment) => renderComment(comment))}
           </div>
+
+          {commentsLoading ? (
+            <p className={styles.paginationMessage} role="status">
+              Kommentare werden geladen …
+            </p>
+          ) : null}
+
+          {commentsLoadError ? (
+            <p className={styles.error} role="alert">
+              {commentsLoadError}
+            </p>
+          ) : null}
+
+          {commentsLoaded && nextCursor ? (
+            <div className={styles.paginationActions}>
+              <button type="button" disabled={loadingMore} onClick={() => void handleLoadMore()}>
+                {loadingMore ? 'Weitere Kommentare werden geladen …' : 'Weitere Kommentare laden'}
+              </button>
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>
