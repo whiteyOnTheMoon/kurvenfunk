@@ -4,6 +4,7 @@ import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'rea
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import { CommentVoting, type VoteSummary } from './comment-voting';
+import { CommentReport } from './comment-report';
 import { type CommentSortMode } from './comment-sort';
 import { fetchCommentPage, mergeCommentPages } from './comment-pagination-client';
 import styles from './comment-composer.module.css';
@@ -674,6 +675,14 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
 
           {!isDeleted ? (
             <div className={styles.commentActions}>
+              <CommentReport
+                apiUrl={apiUrl}
+                commentId={comment.id}
+                userId={authenticated ? user?.id : undefined}
+                userStatus={user?.status}
+                token={authenticated ? token : undefined}
+              />
+
               {authenticated &&
               user &&
               user.status !== 'BANNED' &&
