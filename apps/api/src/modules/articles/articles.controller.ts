@@ -23,6 +23,8 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { cursorPaginationQuerySchema } from '../../common/pagination/cursor-pagination';
 import { AuthGuard } from '../auth/auth.guard';
 import type { AuthenticatedRequest } from '../auth/auth.types';
+import { PERMISSIONS } from '../permissions/permissions.constants';
+import { RequirePermissions } from '../permissions/require-permissions.decorator';
 import { ArticleEditorialGuard } from './article-editorial.guard';
 import { ArticlesService } from './articles.service';
 
@@ -71,7 +73,7 @@ export class ArticlesController {
   }
 
   @Patch(':id/publication')
-  @UseGuards(AuthGuard, ArticleEditorialGuard)
+  @RequirePermissions(PERMISSIONS.ARTICLE_PUBLISH)
   changePublicationStatus(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(articlePublicationWorkflowSchema))

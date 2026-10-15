@@ -22,6 +22,7 @@ import { ModerationModule } from './modules/moderation/moderation.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PersonalizationModule } from './modules/personalization/personalization.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ProvidersModule } from './modules/providers/providers.module';
@@ -62,6 +63,7 @@ import { UsersModule } from './modules/users/users.module';
     ),
 
     AuthModule,
+    PermissionsModule,
     UsersModule,
     ProfilesModule,
     OnboardingModule,

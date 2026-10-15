@@ -13,6 +13,8 @@ import {
 import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
+import { PERMISSIONS } from '../permissions/permissions.constants';
+import { RequirePermissions } from '../permissions/require-permissions.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { ReactionsService } from './reactions.service';
 
@@ -96,7 +98,7 @@ export class ReactionsController {
   }
 
   @Put()
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_VOTE)
   setVote(
     @Param('commentId', new ParseUUIDPipe({ version: '4' }))
     commentId: string,
@@ -115,7 +117,7 @@ export class ReactionsController {
   }
 
   @Delete()
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_VOTE)
   removeVote(
     @Param('commentId', new ParseUUIDPipe({ version: '4' }))
     commentId: string,

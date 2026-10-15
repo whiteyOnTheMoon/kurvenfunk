@@ -6,23 +6,29 @@ import {
 } from '@nestjs/common';
 
 import type { AuthenticatedRequest } from '../auth/auth.types';
-
-const EDITORIAL_ROLES = new Set(['EDITOR', 'ADMIN', 'SUPERADMIN']);
+import { PERMISSIONS } from '../permissions/permissions.constants';
+import { PermissionsService } from '../permissions/permissions.service';
 
 @Injectable()
 export class ArticleEditorialGuard implements CanActivate {
+  constructor(private readonly permissionsService: PermissionsService) {}
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
     const user = request.user;
 
-    if (!user || user.kurvenfunkUserStatus !== 'ACTIVE') {
-      throw new ForbiddenException({
-        code: 'ARTICLE_WRITE_FORBIDDEN',
-        message: 'Article write access is not allowed',
-      });
-    }
+    const allowed =
+      user !== undefined &&
+      this.permissionsService.hasPermission(
+        {
+          roles: user.kurvenfunkRoles,
+          status: user.kurvenfunkUserStatus,
+        },
+        PERMISSIONS.ARTICLE_CREATE,
+      );
 
-    if (!user.kurvenfunkRoles.some((role) => EDITORIAL_ROLES.has(role))) {
+    if (!allowed) {
       throw new ForbiddenException({
         code: 'ARTICLE_WRITE_FORBIDDEN',
         message: 'Article write access is not allowed',

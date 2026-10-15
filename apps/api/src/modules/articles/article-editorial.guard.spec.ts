@@ -1,10 +1,11 @@
 import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
 
 import type { AuthenticatedRequest, AuthenticatedUser } from '../auth/auth.types';
+import { PermissionsService } from '../permissions/permissions.service';
 import { ArticleEditorialGuard } from './article-editorial.guard';
 
 describe('ArticleEditorialGuard', () => {
-  const guard = new ArticleEditorialGuard();
+  const guard = new ArticleEditorialGuard(new PermissionsService());
 
   function createUser(
     roles: AuthenticatedUser['kurvenfunkRoles'],
@@ -50,6 +51,16 @@ describe('ArticleEditorialGuard', () => {
     expect(() => guard.canActivate(createContext(createUser(['EDITOR'], 'LIMITED')))).toThrow(
       ForbiddenException,
     );
+  });
+
+  it('rejects a banned superadmin', () => {
+    expect(() => guard.canActivate(createContext(createUser(['SUPERADMIN'], 'BANNED')))).toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('allows an active user with multiple roles including EDITOR', () => {
+    expect(guard.canActivate(createContext(createUser(['USER', 'EDITOR'])))).toBe(true);
   });
 
   it('rejects a request without an authenticated user', () => {

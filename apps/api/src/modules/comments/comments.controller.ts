@@ -9,11 +9,11 @@ import {
   Post,
   Query,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { createCommentSchema, type CreateCommentInput } from '@kurvenfunk/validation';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { AuthGuard } from '../auth/auth.guard';
+import { PERMISSIONS } from '../permissions/permissions.constants';
+import { RequirePermissions } from '../permissions/require-permissions.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { parseCommentPageCursor, parseCommentPageSort } from './comment-pagination';
 import { CommentsService } from './comments.service';
@@ -37,7 +37,7 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_DELETE)
   remove(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Param('commentId', new ParseUUIDPipe({ version: '4' })) commentId: string,
@@ -54,7 +54,7 @@ export class CommentsController {
   }
 
   @Patch(':commentId')
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_EDIT)
   update(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Param('commentId', new ParseUUIDPipe({ version: '4' })) commentId: string,
@@ -74,7 +74,7 @@ export class CommentsController {
   }
 
   @Post(':parentId/replies')
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_CREATE)
   createReply(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Param('parentId', new ParseUUIDPipe({ version: '4' })) parentId: string,
@@ -94,7 +94,7 @@ export class CommentsController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
+  @RequirePermissions(PERMISSIONS.COMMENT_CREATE)
   create(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Req() request: AuthenticatedRequest,
