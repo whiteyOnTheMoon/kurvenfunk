@@ -4,6 +4,7 @@ import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import { CommentVoting, type VoteSummary } from './comment-voting';
+import { sortTopLevelComments, type CommentSortMode } from './comment-sort';
 import styles from './comment-composer.module.css';
 
 const MAX_COMMENT_DISPLAY_DEPTH = 5;
@@ -38,6 +39,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [body, setBody] = useState('');
   const [comments, setComments] = useState<CreatedComment[]>([]);
   const [voteSummaries, setVoteSummaries] = useState<Record<string, VoteSummary>>({});
+  const [commentSort, setCommentSort] = useState<CommentSortMode>('newest');
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -577,6 +579,12 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
               userStatus={user?.status}
               token={authenticated ? token : undefined}
               summary={voteSummaries[comment.id]}
+              onVoteChange={(updated) => {
+                setVoteSummaries((current) => ({
+                  ...current,
+                  [updated.commentId]: updated,
+                }));
+              }}
             />
           ) : null}
 
@@ -768,11 +776,27 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       )}
 
       {comments.length > 0 ? (
-        <div className={styles.commentList}>
-          {comments
-            .filter((comment) => comment.parentId === null)
-            .map((comment) => renderComment(comment))}
-        </div>
+        <>
+          <div className={styles.sortControls}>
+            <label htmlFor={`comment-sort-${articleId}`}>Sortieren nach</label>
+
+            <select
+              id={`comment-sort-${articleId}`}
+              value={commentSort}
+              onChange={(event) => setCommentSort(event.target.value as CommentSortMode)}
+            >
+              <option value="newest">Neueste</option>
+              <option value="oldest">Älteste</option>
+              <option value="popular">Beliebt</option>
+            </select>
+          </div>
+
+          <div className={styles.commentList}>
+            {sortTopLevelComments(comments, voteSummaries, commentSort).map((comment) =>
+              renderComment(comment),
+            )}
+          </div>
+        </>
       ) : null}
     </div>
   );

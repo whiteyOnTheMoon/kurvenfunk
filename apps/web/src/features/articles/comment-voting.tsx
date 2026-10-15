@@ -33,6 +33,7 @@ interface CommentVotingProps {
   userStatus?: 'ACTIVE' | 'LIMITED' | 'BANNED';
   token?: string;
   summary: VoteSummary;
+  onVoteChange?: (summary: VoteSummary) => void;
 }
 
 const PAGE_SIZE = 20;
@@ -59,6 +60,7 @@ export function CommentVoting({
   userStatus,
   token,
   summary,
+  onVoteChange,
 }: CommentVotingProps) {
   const [votes, setVotes] = useState(summary);
   const [submitting, setSubmitting] = useState(false);
@@ -98,6 +100,7 @@ export function CommentVoting({
 
       const updated = await readData<VoteSummary>(response);
       setVotes(updated);
+      onVoteChange?.(updated);
     } catch {
       setError('Deine Stimme konnte nicht gespeichert werden.');
     } finally {
