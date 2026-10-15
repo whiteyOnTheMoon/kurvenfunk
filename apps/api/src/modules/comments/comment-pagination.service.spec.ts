@@ -10,6 +10,7 @@ jest.mock('@kurvenfunk/database', () => ({
   }),
 }));
 
+import type { CommentSpamProtectionService } from './comment-spam-protection.service';
 import { CommentsService } from './comments.service';
 import { COMMENT_PAGE_SIZE, parseCommentPageCursor } from './comment-pagination';
 
@@ -48,7 +49,14 @@ describe('Comment database pagination', () => {
   beforeEach(() => {
     commentFindMany.mockReset();
     queryRaw.mockReset();
-    service = new CommentsService();
+    service = new CommentsService({
+      reserve: jest.fn().mockResolvedValue({
+        keys: ['rate', 'cooldown', 'duplicate'],
+        token: 'unit-test',
+      }),
+      release: jest.fn().mockResolvedValue(undefined),
+      validateLinks: jest.fn(),
+    } as unknown as CommentSpamProtectionService);
   });
 
   it('returns an empty page when no comments exist', async () => {

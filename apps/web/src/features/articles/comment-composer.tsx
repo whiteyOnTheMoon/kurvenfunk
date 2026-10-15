@@ -7,6 +7,7 @@ import { CommentVoting, type VoteSummary } from './comment-voting';
 import { CommentReport } from './comment-report';
 import { type CommentSortMode } from './comment-sort';
 import { fetchCommentPage, mergeCommentPages } from './comment-pagination-client';
+import { getCommentSpamErrorMessage } from './comment-spam-error';
 import styles from './comment-composer.module.css';
 
 const MAX_COMMENT_DISPLAY_DEPTH = 5;
@@ -289,6 +290,10 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           throw new Error('COMMENT_CREATE_FORBIDDEN');
         }
 
+        if (typeof errorBody?.code === 'string' && getCommentSpamErrorMessage(errorBody.code)) {
+          throw new Error(errorBody.code);
+        }
+
         throw new Error('COMMENT_CREATE_FAILED');
       }
 
@@ -309,7 +314,8 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       setError(
         message === 'COMMENT_CREATE_FORBIDDEN'
           ? 'Mit deinem aktuellen Accountstatus kannst du keine Kommentare schreiben.'
-          : 'Dein Kommentar konnte nicht veröffentlicht werden. Bitte versuche es erneut.',
+          : (getCommentSpamErrorMessage(message) ??
+              'Dein Kommentar konnte nicht veröffentlicht werden. Bitte versuche es erneut.'),
       );
     } finally {
       setSubmitting(false);
@@ -354,6 +360,10 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           throw new Error('COMMENT_REPLY_FORBIDDEN');
         }
 
+        if (typeof errorBody?.code === 'string' && getCommentSpamErrorMessage(errorBody.code)) {
+          throw new Error(errorBody.code);
+        }
+
         throw new Error('COMMENT_REPLY_FAILED');
       }
 
@@ -376,7 +386,8 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       setReplyError(
         message === 'COMMENT_REPLY_FORBIDDEN'
           ? 'Mit deinem aktuellen Accountstatus kannst du keine Antworten schreiben.'
-          : 'Deine Antwort konnte nicht veröffentlicht werden. Bitte versuche es erneut.',
+          : (getCommentSpamErrorMessage(message) ??
+              'Deine Antwort konnte nicht veröffentlicht werden. Bitte versuche es erneut.'),
       );
     } finally {
       setReplySubmitting(false);
@@ -430,6 +441,10 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           throw new Error('COMMENT_EDIT_FORBIDDEN');
         }
 
+        if (typeof errorBody?.code === 'string' && getCommentSpamErrorMessage(errorBody.code)) {
+          throw new Error(errorBody.code);
+        }
+
         throw new Error('COMMENT_EDIT_FAILED');
       }
 
@@ -457,7 +472,8 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       setEditError(
         message === 'COMMENT_EDIT_FORBIDDEN'
           ? 'Du kannst diesen Kommentar nicht bearbeiten.'
-          : 'Dein Kommentar konnte nicht gespeichert werden. Bitte versuche es erneut.',
+          : (getCommentSpamErrorMessage(message) ??
+              'Dein Kommentar konnte nicht gespeichert werden. Bitte versuche es erneut.'),
       );
     } finally {
       setEditSubmitting(false);

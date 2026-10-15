@@ -24,6 +24,7 @@ jest.mock('@kurvenfunk/database', () => ({
   }),
 }));
 
+import type { CommentSpamProtectionService } from './comment-spam-protection.service';
 import { CommentsService } from './comments.service';
 
 describe('CommentsService', () => {
@@ -49,7 +50,14 @@ describe('CommentsService', () => {
         }),
     );
 
-    service = new CommentsService();
+    service = new CommentsService({
+      reserve: jest.fn().mockResolvedValue({
+        keys: ['rate', 'cooldown', 'duplicate'],
+        token: 'unit-test',
+      }),
+      release: jest.fn().mockResolvedValue(undefined),
+      validateLinks: jest.fn(),
+    } as unknown as CommentSpamProtectionService);
   });
 
   describe('remove', () => {

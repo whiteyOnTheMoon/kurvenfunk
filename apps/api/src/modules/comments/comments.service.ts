@@ -6,6 +6,8 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 
+import { CommentSpamProtectionService } from './comment-spam-protection.service';
+
 import {
   COMMENT_PAGE_SIZE,
   encodeCommentPageCursor,
@@ -76,6 +78,8 @@ export interface PaginatedComment {
 @Injectable()
 export class CommentsService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
+
+  constructor(private readonly spamProtection: CommentSpamProtectionService) {}
 
   async listForArticle(articleId: string) {
     const comments = await this.database.comment.findMany({
@@ -529,16 +533,27 @@ export class CommentsService implements OnModuleDestroy {
       });
     }
 
-    return this.database.comment.create({
-      data: {
-        articleId: command.articleId,
-        authorId: command.authorId,
-        body: command.body,
-        depth: 0,
-        status: 'VISIBLE',
-      },
-      select: createdCommentSelect,
-    });
+    const reservation = await this.spamProtection.reserve(command.authorId, command.body);
+
+    try {
+      return await this.database.comment.create({
+        data: {
+          articleId: command.articleId,
+          authorId: command.authorId,
+          body: command.body,
+          depth: 0,
+          status: 'VISIBLE',
+        },
+        select: createdCommentSelect,
+      });
+    } catch (error) {
+      try {
+        await this.spamProtection.release(reservation);
+      } catch {
+        // Preserve the original database error.
+      }
+      throw error;
+    }
   }
 
   async update(command: UpdateCommentCommand) {
@@ -589,6 +604,8 @@ export class CommentsService implements OnModuleDestroy {
         message: 'Du kannst nur deine eigenen Kommentare bearbeiten.',
       });
     }
+
+    this.spamProtection.validateLinks(command.body);
 
     return this.database.$transaction(async (transaction) => {
       await transaction.commentRevision.create({
@@ -727,17 +744,28 @@ export class CommentsService implements OnModuleDestroy {
       });
     }
 
-    return this.database.comment.create({
-      data: {
-        articleId: command.articleId,
-        authorId: command.authorId,
-        parentId: parent.id,
-        body: command.body,
-        depth: parent.depth + 1,
-        status: 'VISIBLE',
-      },
-      select: createdCommentSelect,
-    });
+    const reservation = await this.spamProtection.reserve(command.authorId, command.body);
+
+    try {
+      return await this.database.comment.create({
+        data: {
+          articleId: command.articleId,
+          authorId: command.authorId,
+          parentId: parent.id,
+          body: command.body,
+          depth: parent.depth + 1,
+          status: 'VISIBLE',
+        },
+        select: createdCommentSelect,
+      });
+    } catch (error) {
+      try {
+        await this.spamProtection.release(reservation);
+      } catch {
+        // Preserve the original database error.
+      }
+      throw error;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
