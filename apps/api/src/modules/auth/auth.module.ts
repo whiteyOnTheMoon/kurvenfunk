@@ -10,6 +10,6 @@ import { KeycloakJwtService } from './keycloak-jwt.service';
   imports: [UsersModule],
   controllers: [AuthController],
   providers: [KeycloakJwtService, AccountStatusGuard, AuthGuard],
-  exports: [KeycloakJwtService, AuthGuard],
+  exports: [KeycloakJwtService, AccountStatusGuard, AuthGuard],
 })
 export class AuthModule {}
