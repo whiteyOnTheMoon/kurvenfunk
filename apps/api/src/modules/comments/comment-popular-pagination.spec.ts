@@ -18,6 +18,16 @@ describe('Popular comment pagination', () => {
 
   let service: CommentsService;
 
+  function rawCalls(): unknown[][] {
+    const calls: unknown = queryRaw.mock.calls;
+
+    if (!Array.isArray(calls) || !calls.every((call: unknown) => Array.isArray(call))) {
+      throw new Error('Expected Jest mock call arrays');
+    }
+
+    return calls as unknown[][];
+  }
+
   function makeComment(
     index: number,
     parentId: string | null = null,
@@ -49,7 +59,7 @@ describe('Popular comment pagination', () => {
 
   function mockCommentLookup(roots: TestComment[], children: TestComment[] = []) {
     commentFindMany.mockImplementation(
-      async (query: {
+      (query: {
         where: {
           id?: { in: string[] };
           parentId?: null | { in: string[] };
@@ -114,11 +124,13 @@ describe('Popular comment pagination', () => {
     expect(result.pagination.hasNextPage).toBe(false);
     expect(result.pagination.nextCursor).toBeNull();
 
-    const sqlParts = queryRaw.mock.calls[0]?.[0] as readonly string[] | undefined;
+    const sqlParts = rawCalls()[0]?.[0];
 
-    expect(sqlParts).toBeDefined();
+    if (!Array.isArray(sqlParts) || !sqlParts.every((part: unknown) => typeof part === 'string')) {
+      throw new Error('Expected SQL template strings');
+    }
 
-    const sql = sqlParts!.join(' ');
+    const sql = sqlParts.join(' ');
 
     expect(sql).toContain('UPVOTE');
     expect(sql).toContain('DOWNVOTE');
@@ -127,7 +139,7 @@ describe('Popular comment pagination', () => {
     expect(sql).toContain('r.id ASC');
 
     // Article ID must be passed as a bound parameter.
-    expect(queryRaw.mock.calls[0]?.slice(1)).toContain(articleId);
+    expect(rawCalls()[0]?.slice(1)).toContain(articleId);
   });
 
   it('loads multiple popular pages without duplicate roots', async () => {
@@ -156,12 +168,12 @@ describe('Popular comment pagination', () => {
     const cursor = parseCommentPageCursor(first.pagination.nextCursor, 'popular');
 
     expect(cursor).not.toBeNull();
-    expect(cursor?.id).toBe(roots[19]!.id);
+    expect(cursor?.id).toBe(roots[19].id);
     expect(cursor?.score).toBe(81);
 
     const second = await service.listPageForArticle(articleId, 'popular', cursor);
 
-    expect(second.items.map((comment) => comment.id)).toEqual([roots[20]!.id]);
+    expect(second.items.map((comment) => comment.id)).toEqual([roots[20].id]);
 
     expect(second.pagination.hasNextPage).toBe(false);
     expect(second.pagination.nextCursor).toBeNull();
@@ -174,8 +186,8 @@ describe('Popular comment pagination', () => {
     expect(new Set(allIds).size).toBe(21);
 
     // The second database query must receive the cursor score.
-    expect(queryRaw.mock.calls[1]?.slice(1)).toContain(81);
-    expect(queryRaw.mock.calls[1]?.slice(1)).toContain(roots[19]!.id);
+    expect(rawCalls()[1]?.slice(1)).toContain(81);
+    expect(rawCalls()[1]?.slice(1)).toContain(roots[19].id);
   });
 
   it('anonymizes deleted parents with visible replies', async () => {

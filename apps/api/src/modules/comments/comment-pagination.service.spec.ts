@@ -76,7 +76,7 @@ describe('Comment database pagination', () => {
     const roots = Array.from({ length: 21 }, (_, index) => makeComment(40 - index));
 
     commentFindMany.mockImplementation(
-      async (query: {
+      (query: {
         where: {
           parentId: null | { in: string[] };
           AND?: unknown;
@@ -104,11 +104,11 @@ describe('Comment database pagination', () => {
 
     const cursor = parseCommentPageCursor(first.pagination.nextCursor, 'newest');
 
-    expect(cursor?.id).toBe(roots[19]!.id);
+    expect(cursor?.id).toBe(roots[19].id);
 
     const second = await service.listPageForArticle(articleId, 'newest', cursor);
 
-    expect(second.items.map((item) => item.id)).toEqual([roots[20]!.id]);
+    expect(second.items.map((item) => item.id)).toEqual([roots[20].id]);
 
     expect(second.pagination.hasNextPage).toBe(false);
     expect(second.pagination.nextCursor).toBeNull();
@@ -136,7 +136,7 @@ describe('Comment database pagination', () => {
     const reply = makeComment(3, middle.id);
 
     commentFindMany.mockImplementation(
-      async (query: {
+      (query: {
         where: {
           parentId: null | { in: string[] };
         };
@@ -183,7 +183,7 @@ describe('Comment database pagination', () => {
     const deletedRoot = makeComment(1, null, 'DELETED');
 
     commentFindMany.mockImplementation(
-      async (query: {
+      (query: {
         where: {
           parentId: null | { in: string[] };
         };

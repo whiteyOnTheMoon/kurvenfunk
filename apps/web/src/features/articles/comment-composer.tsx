@@ -69,22 +69,11 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const commentCount = Math.max(0, initialCommentCount + countDelta);
 
   useEffect(() => {
-    setCountDelta(0);
-  }, [articleId]);
-
-  useEffect(() => {
     const controller = new AbortController();
     const version = ++requestVersion.current;
 
     loadMoreAbort.current?.abort();
     loadMoreAbort.current = null;
-
-    setComments([]);
-    setCommentsLoaded(false);
-    setCommentsLoading(true);
-    setLoadingMore(false);
-    setNextCursor(null);
-    setCommentsLoadError(undefined);
 
     async function loadFirstPage() {
       try {
@@ -166,9 +155,19 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     }
   }
 
+  function resetCommentPage() {
+    setComments([]);
+    setCommentsLoaded(false);
+    setCommentsLoading(true);
+    setLoadingMore(false);
+    setNextCursor(null);
+    setCommentsLoadError(undefined);
+  }
+
   function refreshComments() {
     requestVersion.current += 1;
     loadMoreAbort.current?.abort();
+    resetCommentPage();
     setReloadKey((current) => current + 1);
   }
 
@@ -871,6 +870,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
               onChange={(event) => {
                 requestVersion.current += 1;
                 loadMoreAbort.current?.abort();
+                resetCommentPage();
 
                 setCommentSort(event.target.value as CommentSortMode);
               }}

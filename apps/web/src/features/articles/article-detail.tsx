@@ -321,6 +321,7 @@ export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData;
               <h2>Diskussion</h2>
             </div>
             <CommentComposer
+              key={`${apiUrl}:${article.id}`}
               apiUrl={apiUrl}
               articleId={article.id}
               initialCommentCount={article._count.comments}
