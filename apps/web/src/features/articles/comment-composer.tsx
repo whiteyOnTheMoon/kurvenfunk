@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { COMMENT_BODY_MAX_LENGTH } from '@kurvenfunk/validation';
 import { useAuth } from '../auth/auth-provider';
 import { CommentVoting, type VoteSummary } from './comment-voting';
@@ -40,6 +40,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
   const [comments, setComments] = useState<CreatedComment[]>([]);
   const [voteSummaries, setVoteSummaries] = useState<Record<string, VoteSummary>>({});
   const [commentSort, setCommentSort] = useState<CommentSortMode>('newest');
+  const voteRevisions = useRef<Record<string, number>>({});
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -103,6 +104,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
     }
 
     let cancelled = false;
+    const revisionsAtRequestStart = { ...voteRevisions.current };
 
     async function loadVoteSummaries() {
       const ids = visibleCommentIds.split(',');
@@ -141,7 +143,22 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
         }
 
         if (!cancelled) {
-          setVoteSummaries(summaries);
+          setVoteSummaries((current) => {
+            const merged = { ...summaries };
+
+            // Never overwrite a vote changed while this request was running.
+            for (const commentId of Object.keys(summaries)) {
+              const previousRevision = revisionsAtRequestStart[commentId] ?? 0;
+
+              const currentRevision = voteRevisions.current[commentId] ?? 0;
+
+              if (currentRevision > previousRevision && current[commentId]) {
+                merged[commentId] = current[commentId];
+              }
+            }
+
+            return merged;
+          });
         }
       } catch {
         // Comments remain usable if voting data cannot be loaded.
@@ -571,7 +588,6 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
 
           {!isDeleted && voteSummaries[comment.id] ? (
             <CommentVoting
-              key={`${comment.id}:${voteSummaries[comment.id].upvotes}:${voteSummaries[comment.id].downvotes}:${voteSummaries[comment.id].viewerVote ?? 'NONE'}`}
               apiUrl={apiUrl}
               commentId={comment.id}
               authorId={comment.author?.id ?? null}
@@ -580,6 +596,9 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
               token={authenticated ? token : undefined}
               summary={voteSummaries[comment.id]}
               onVoteChange={(updated) => {
+                voteRevisions.current[updated.commentId] =
+                  (voteRevisions.current[updated.commentId] ?? 0) + 1;
+
                 setVoteSummaries((current) => ({
                   ...current,
                   [updated.commentId]: updated,

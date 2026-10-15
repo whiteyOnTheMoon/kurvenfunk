@@ -62,7 +62,10 @@ export function CommentVoting({
   summary,
   onVoteChange,
 }: CommentVotingProps) {
-  const [votes, setVotes] = useState(summary);
+  const [localVotes, setLocalVotes] = useState(summary);
+
+  // The parent owns voting state when an update callback is provided.
+  const votes = onVoteChange ? summary : localVotes;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [voters, setVoters] = useState<Voter[]>([]);
@@ -99,7 +102,7 @@ export function CommentVoting({
       );
 
       const updated = await readData<VoteSummary>(response);
-      setVotes(updated);
+      setLocalVotes(updated);
       onVoteChange?.(updated);
     } catch {
       setError('Deine Stimme konnte nicht gespeichert werden.');

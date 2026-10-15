@@ -87,3 +87,30 @@ test('equal timestamps use a deterministic ID tie-breaker', () => {
     ['alpha', 'beta'],
   );
 });
+
+test('popular updates after changing votes', () => {
+  const updatedSummaries = {
+    ...summaries,
+    new: { score: 8 },
+  };
+
+  assert.deepEqual(ids('popular', updatedSummaries), ['new', 'middle', 'old']);
+});
+
+test('popular updates after removing votes', () => {
+  const updatedSummaries = {
+    ...summaries,
+    middle: { score: 3 },
+  };
+
+  assert.deepEqual(ids('popular', updatedSummaries), ['old', 'middle', 'new']);
+});
+
+test('popular updates when an upvote becomes a downvote', () => {
+  const updatedSummaries = {
+    ...summaries,
+    old: { score: -3 },
+  };
+
+  assert.deepEqual(ids('popular', updatedSummaries), ['middle', 'new', 'old']);
+});
