@@ -10,6 +10,7 @@ jest.mock('../users/users.service', () => ({
 }));
 
 import { UsersService } from '../users/users.service';
+import { AccountStatusGuard } from './account-status.guard';
 import { AuthGuard } from './auth.guard';
 import type { KeycloakJwtService } from './keycloak-jwt.service';
 
@@ -25,7 +26,7 @@ describe('AuthGuard', () => {
     syncKeycloakUser,
   } as unknown as UsersService;
 
-  const guard = new AuthGuard(keycloakJwtService, usersService);
+  const guard = new AuthGuard(keycloakJwtService, usersService, new AccountStatusGuard());
 
   function createContext(authorization?: string): ExecutionContext {
     const request = {

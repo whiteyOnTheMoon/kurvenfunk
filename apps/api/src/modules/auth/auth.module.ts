@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { UsersModule } from '../users/users.module';
+import { AccountStatusGuard } from './account-status.guard';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { KeycloakJwtService } from './keycloak-jwt.service';
@@ -8,7 +9,7 @@ import { KeycloakJwtService } from './keycloak-jwt.service';
 @Module({
   imports: [UsersModule],
   controllers: [AuthController],
-  providers: [KeycloakJwtService, AuthGuard],
+  providers: [KeycloakJwtService, AccountStatusGuard, AuthGuard],
   exports: [KeycloakJwtService, AuthGuard],
 })
 export class AuthModule {}

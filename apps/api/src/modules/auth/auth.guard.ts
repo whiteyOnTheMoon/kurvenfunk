@@ -1,13 +1,13 @@
 import {
   type CanActivate,
   type ExecutionContext,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { UsersService } from '../users/users.service';
+import { AccountStatusGuard } from './account-status.guard';
 import type { AuthenticatedRequest } from './auth.types';
 import { KeycloakJwtService } from './keycloak-jwt.service';
 
@@ -16,6 +16,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     private readonly keycloakJwtService: KeycloakJwtService,
     private readonly usersService: UsersService,
+    private readonly accountStatusGuard: AccountStatusGuard,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,13 +35,6 @@ export class AuthGuard implements CanActivate {
 
     const user = await this.usersService.syncKeycloakUser(payload.sub);
 
-    if (user.status === 'BANNED') {
-      throw new ForbiddenException({
-        code: 'ACCOUNT_BANNED',
-        message: 'Account is banned',
-      });
-    }
-
     request.user = {
       ...payload,
       sub: payload.sub,
@@ -52,7 +46,7 @@ export class AuthGuard implements CanActivate {
       kurvenfunkRoles: user.roles,
     };
 
-    return true;
+    return this.accountStatusGuard.canActivate(context);
   }
 
   private extractBearerToken(request: Request): string {
