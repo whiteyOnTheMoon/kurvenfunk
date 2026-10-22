@@ -1,0 +1,49 @@
+$ node --experimental-strip-types --test src/features/personalization/*.spec.mjs src/features/articles/comment-sort.spec.mjs src/features/articles/comment-spam-error.spec.mjs
+(node:16047) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/kurvenfunk/apps/web/src/features/articles/comment-sort.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/kurvenfunk/apps/web/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ newest sorts top-level comments newest first (1.293443ms)
+✔ oldest sorts top-level comments oldest first (0.145954ms)
+✔ popular sorts by vote score descending (0.132426ms)
+✔ replies do not appear as top-level comments (0.129343ms)
+✔ popular falls back to newest when scores are unavailable (0.122069ms)
+✔ sorting does not mutate the source list (0.140159ms)
+✔ equal timestamps use a deterministic ID tie-breaker (6.258528ms)
+✔ popular updates after changing votes (0.13974ms)
+✔ popular updates after removing votes (0.178857ms)
+✔ popular updates when an upvote becomes a downvote (0.271878ms)
+(node:16048) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/kurvenfunk/apps/web/src/features/articles/comment-spam-error.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/kurvenfunk/apps/web/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ maps COMMENT_POST_COOLDOWN to a German message (1.306686ms)
+✔ maps COMMENT_RATE_LIMIT to a German message (0.180289ms)
+✔ maps COMMENT_DUPLICATE_SPAM to a German message (0.39579ms)
+✔ maps COMMENT_LINK_LIMIT to a German message (0.1651ms)
+✔ maps COMMENT_SPAM_PROTECTION_UNAVAILABLE to a German message (0.130917ms)
+✔ returns undefined for unknown errors (0.212715ms)
+✔ returns undefined for missing error codes (0.159559ms)
+✔ returns undefined for invalid error types (0.113435ms)
+✔ preserves existing permission error handling (0.137252ms)
+(node:16049) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/kurvenfunk/apps/web/src/features/personalization/club-theme.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/kurvenfunk/apps/web/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ resolves all persisted club colors (1.847863ms)
+✔ keeps optional color 2 and color 3 empty (0.273012ms)
+✔ normalizes lowercase hex values (0.13071ms)
+✔ uses safe fallbacks for invalid required values (0.122984ms)
+✔ chooses a readable black or white foreground (0.108762ms)
+✔ passes club logo metadata through the resolved theme (0.144373ms)
+✔ converts theme to CSS custom properties (2.042347ms)
+✔ resolves the default Kurvenfunk theme (0.438937ms)
+✔ converts the default Kurvenfunk theme to CSS properties (0.396402ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 149.380971

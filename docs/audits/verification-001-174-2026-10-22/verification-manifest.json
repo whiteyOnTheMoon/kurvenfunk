@@ -1,0 +1,29 @@
+{
+  "branch": "develop",
+  "commit": "17693e9ca3e51d8b13161be90a47a7d3491ad164",
+  "working_tree_clean": true,
+  "owned_test_containers_remaining": 0,
+  "application_code_modified": false,
+  "existing_documentation_modified": false,
+  "deployments": false,
+  "production_access": false,
+  "task_count": 174,
+  "repository_tests_passed": 699,
+  "integration_groups": 20,
+  "positive_integration_groups": 17,
+  "defect_reproductions": 3,
+  "failed_gates": [
+    "api:test:e2e: ESM 0 tests",
+    "worker tsc --noEmit: TS2741 test fixture"
+  ],
+  "files": {
+    "VERGLEICH.md": "242d55331f09eec19c51b976ac2bb9571e080535dedd35a5440c3f8f19ebe4c1",
+    "AGENTENPAKETE.md": "bfc5ac23359a5364b88e53dad4001ded7a0211b5f26ef4bf3fa455655959748b",
+    "ROADMAP.md": "b40e3ccdc1a155ff90a3ba1d9eb4aa58771959a38a1e9df6b66b7a643d4650a9",
+    "AUDIT.md": "a42443047e7f14529dd7612d6d663e6eca4e6d3e4e82b121440ed3a85419e68a",
+    "MEILENSTEINE.md": "463e33d864c86293d33558adbf43b094e36d22d7c2aff939fde030ffeccb94dd",
+    "PRUEFUNGEN.md": "3410568e8ecfd62986feeb240f838813c035048303cd68bcb2fbeccc2a2191c2",
+    "STATUSMATRIX.md": "8978bd796c7b8b83b1077659d3ffcfb174ffa08c821e3111e60942a8da35e601",
+    "README.md": "1fdb060d59534a0eb658bfc26e19fdc2959fbe64e7e2ad0df71ddf257d6a17d4"
+  }
+}

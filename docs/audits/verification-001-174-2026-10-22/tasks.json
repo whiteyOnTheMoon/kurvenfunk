@@ -1,0 +1,2340 @@
+[
+  {
+    "id": 1,
+    "title": "MVP Dokument erstellen",
+    "phase": 1,
+    "phase_title": "PRODUCT FOUNDATION",
+    "requirements": "001 – MVP Dokument erstellen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Zielgruppe definieren\n\n   ●   Portalziel dokumentieren\n\n   ●   Kernfunktionen festlegen\n\n   ●   Nicht-MVP-Funktionen festlegen\n\n   ●   Communityidee beschreiben\n\n   ●   Personalisierung beschreiben\n\n   ●   Moderationsidee beschreiben\n\n   ●   Monetarisierung grob festhalten\n\nErgebnis\n\ndocs/product/mvp.md\n\nWarum jetzt?\n\nAlle späteren Architekturentscheidungen benötigen einen klaren Scope.\n\n\n\n"
+  },
+  {
+    "id": 2,
+    "title": "Community Konzept dokumentieren",
+    "phase": 1,
+    "phase_title": "PRODUCT FOUNDATION",
+    "requirements": "002 – Community Konzept dokumentieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFestlegen:\n\n   ●   Artikel besitzen Diskussionen\n\n   ●   Vereinsforen\n\n   ●   allgemeine Foren\n\n   ●   Benutzerprofile\n\n   ●   Reaktionen\n\n   ●   Reports\n\n   ●   gelbe Karten\n\n   ●   rote Karten\n\n   ●   LIMITED\n\n   ●   BANNED\n\n   ●   Moderatorenrechte\n\nErgebnis\n\ndocs/product/community.md\n\n\n\n"
+  },
+  {
+    "id": 3,
+    "title": "Personalisierungskonzept dokumentieren",
+    "phase": 1,
+    "phase_title": "PRODUCT FOUNDATION",
+    "requirements": "003 – Personalisierungskonzept dokumentieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFestlegen:\n\n   ●   Benutzer kann Lieblingsverein wählen\n\n   ●   Benutzer kann \"Neutral\" wählen\n\n   ●   Vereinswahl ist später änderbar\n\n   ●   Vereinswahl beeinflusst Startseite\n\n   ●   Vereinsnews werden priorisiert\n\n   ●   Vereinsbranding wird angewendet\n\n   ●   neutrale Nutzer sehen Standardbranding\n\nErgebnis\n\ndocs/product/personalization.md\n\n\n\n"
+  },
+  {
+    "id": 4,
+    "title": "technische Architektur dokumentieren",
+    "phase": 1,
+    "phase_title": "PRODUCT FOUNDATION",
+    "requirements": "004 – technische Architektur dokumentieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nDokumentieren:\n\n   ●   Web\n\n   ●   API\n\n   ●   Worker\n\n   ●   PostgreSQL\n\n   ●   Redis\n\n   ●   Keycloak\n\n   ●   Meilisearch\n\n   ●   MinIO/R2\n\n   ●   Datenflüsse\n\n   ●   Netzwerke\n\n   ●   Environment Separation\n\nErgebnis\n\ndocs/architecture/system.md\n\n\n\n"
+  },
+  {
+    "id": 5,
+    "title": "Architecture Decision Records einführen",
+    "phase": 1,
+    "phase_title": "PRODUCT FOUNDATION",
+    "requirements": "005 – Architecture Decision Records einführen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFür wichtige Entscheidungen kurze ADR-Dateien erstellen.\n\nBeispiele:\n\n001-modular-monolith.md\n\n002-keycloak-auth.md\n\n003-postgres-source-of-truth.md\n\n004-dev-staging-prod.md\n\n005-provider-adapters.md\n\nWarum?\n\nSpäter lässt sich nachvollziehen, warum etwas so gebaut wurde.\n\n\n\nPHASE 02 – REPOSITORY & MONOREPO\n\n"
+  },
+  {
+    "id": 6,
+    "title": "Git Repository prüfen / erstellen",
+    "phase": 2,
+    "phase_title": "REPOSITORY & MONOREPO",
+    "requirements": "006 – Git Repository prüfen / erstellen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Repository initialisieren\n\n   ●   Remote prüfen\n\n   ●   .gitignore\n\n   ●   README\n\n       ●   Branch-Konzept\n\nBranches\n\nmain\n\ndevelop\n\nfeature/*\n\nfix/*\n\nchore/*\n\n\n\n"
+  },
+  {
+    "id": 7,
+    "title": "pnpm Workspace konfigurieren",
+    "phase": 2,
+    "phase_title": "REPOSITORY & MONOREPO",
+    "requirements": "007 – pnpm Workspace konfigurieren\n\nStatus:     ✅ TODO\nWas gemacht werden muss\n\nWorkspace definieren:\n\npackages:\n\n - apps/*\n\n - packages/*\n\nTesten:\n\npnpm install\n\n\n\n"
+  },
+  {
+    "id": 8,
+    "title": "Turborepo konfigurieren",
+    "phase": 2,
+    "phase_title": "REPOSITORY & MONOREPO",
+    "requirements": "008 – Turborepo konfigurieren\n\nStatus:     ✅ TODO\nWas gemacht werden muss\n\nTasks:\n\ndev\n\nbuild\n\nlint\n\ntypecheck\n\ntest\n\nAbnahmetest:\n\npnpm turbo build\n\n\n\n"
+  },
+  {
+    "id": 9,
+    "title": "Shared Config Package",
+    "phase": 2,
+    "phase_title": "REPOSITORY & MONOREPO",
+    "requirements": "009 – Shared Config Package\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnter:\n\npackages/config\n\nbereitstellen:\n\n   ●    TypeScript Config\n\n   ●    ESLint Config\n\n   ●    Prettier\n\n   ●    gemeinsame Node-Konventionen\n\n\n\nPHASE 03 – DEV / STAGING / PRODUCTION\n\n"
+  },
+  {
+    "id": 10,
+    "title": "Environment Separation definieren",
+    "phase": 3,
+    "phase_title": "DEV / STAGING / PRODUCTION",
+    "requirements": "010 – Environment Separation definieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nCompose-Dateien:\n\ncompose.yml\n\ncompose.dev.yml\n\ncompose.staging.yml\n\ncompose.prod.yml\n\nEnvironment-Dateien:\n\n.env.dev\n\n.env.staging\n\n.env.prod\n\nNur:\n\n.env.example\n\nkommt in Git.\n\n\n\n"
+  },
+  {
+    "id": 11,
+    "title": "Docker Projektnamen definieren",
+    "phase": 3,
+    "phase_title": "DEV / STAGING / PRODUCTION",
+    "requirements": "011 – Docker Projektnamen definieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nkurvenfunk-dev\n\nkurvenfunk-staging\n\nkurvenfunk-prod\n\nKeine festen container_name mehr verwenden.\n\n\n\n"
+  },
+  {
+    "id": 12,
+    "title": "VPS Persistenzstruktur erstellen",
+    "phase": 3,
+    "phase_title": "DEV / STAGING / PRODUCTION",
+    "requirements": "012 – VPS Persistenzstruktur erstellen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n/srv/kurvenfunk/\n\n├── dev/\n\n├── staging/\n\n└── prod/\n\nJe Environment:\n\npostgres\n\nredis\n\nmeilisearch\n\nminio\n\nlogs\n\nbackups\n\nWichtig\n\nRepository und persistente Daten müssen vollständig getrennt sein.\n\n\n\n"
+  },
+  {
+    "id": 13,
+    "title": "Dateirechte definieren",
+    "phase": 3,
+    "phase_title": "DEV / STAGING / PRODUCTION",
+    "requirements": "013 – Dateirechte definieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Owner festlegen\n\n   ●   Gruppen festlegen\n\n   ●   unnötige Schreibrechte entfernen\n\n   ●   Secrets nur für notwendigen Benutzer lesbar machen\n\n\n\n"
+  },
+  {
+    "id": 14,
+    "title": "Docker Networks erstellen",
+    "phase": 3,
+    "phase_title": "DEV / STAGING / PRODUCTION",
+    "requirements": "014 – Docker Networks erstellen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nLogical Networks:\n\nfrontend\n\nbackend\n\nNur notwendige Services dürfen in beiden Netzwerken hängen.\n\nPostgreSQL, Redis und Meilisearch dürfen nicht öffentlich erreichbar sein.\n\n\n\nPHASE 04 – DATABASE & CORE INFRASTRUCTURE\n\n"
+  },
+  {
+    "id": 15,
+    "title": "PostgreSQL DEV",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "015 – PostgreSQL DEV\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   postgres:17-alpine\n\n   ●   Persistence\n\n   ●   Healthcheck\n\n   ●   Kurvenfunk DB\n\n   ●   Keycloak DB\n\n   ●   DB User\n\n   ●   Restart Test\n\n"
+  },
+  {
+    "id": 16,
+    "title": "PostgreSQL STAGING",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "016 – PostgreSQL STAGING\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEigene Instanz mit:\n\n   ●   eigener Datenbank\n\n   ●   eigenen Credentials\n\n   ●   eigenem Storage\n\n   ●   eigenem Backup\n\n\n\n"
+  },
+  {
+    "id": 17,
+    "title": "PostgreSQL PRODUCTION vorbereiten",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "017 – PostgreSQL PRODUCTION vorbereiten\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nProduction-Konfiguration vorbereiten, aber noch keine echten Produktionsdaten\nverwenden.\n\n\n\n"
+  },
+  {
+    "id": 18,
+    "title": "Redis DEV",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "018 – Redis DEV\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Redis Container\n\n   ●   Passwort\n\n   ●   Persistenz\n\n   ●   Healthcheck\n\n   ●   Speicherlimit\n\n   ●   PING/SET/GET Test\n\n\n\n"
+  },
+  {
+    "id": 19,
+    "title": "Redis STAGING",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "019 – Redis STAGING\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEigene Instanz und eigene Credentials.\n\n\n\n"
+  },
+  {
+    "id": 20,
+    "title": "Redis PRODUCTION vorbereiten",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "020 – Redis PRODUCTION vorbereiten\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSeparate Production-Konfiguration inklusive Limits und Persistence.\n\n\n\n"
+  },
+  {
+    "id": 21,
+    "title": "Keycloak DEV",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "021 – Keycloak DEV\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Container\n\n   ●   PostgreSQL DB\n\n   ●   Realm kurvenfunk\n\n   ●   Web Client\n\n   ●   API Client\n\n   ●   Redirect URLs\n\n   ●   Web Origins\n\n   ●   Healthcheck\n\n\n\n"
+  },
+  {
+    "id": 22,
+    "title": "Keycloak STAGING",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "022 – Keycloak STAGING\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEigene Instanz mit:\n\n   ●   eigenen Benutzern\n\n   ●   eigenen Secrets\n\n   ●   eigenen Redirect URLs\n\n\n\n"
+  },
+  {
+    "id": 23,
+    "title": "Keycloak PRODUCTION vorbereiten",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "023 – Keycloak PRODUCTION vorbereiten\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nProduction Realm und Clients vorbereiten.\n\nProduktions-Secrets werden erst vor Launch erzeugt.\n\n\n\n"
+  },
+  {
+    "id": 24,
+    "title": "Meilisearch DEV",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "024 – Meilisearch DEV\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Container\n\n   ●   Master Key\n\n   ●   Persistence\n\n   ●   Healthcheck\n\n   ●   Testindex\n\n   ●   Testsuche\n\n\n\n"
+  },
+  {
+    "id": 25,
+    "title": "Meilisearch STAGING",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "025 – Meilisearch STAGING\n\nStatus:   ✅ TODO\nEigene Instanz und eigener Index.\n\n\n\n"
+  },
+  {
+    "id": 26,
+    "title": "Meilisearch PRODUCTION vorbereiten",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "026 – Meilisearch PRODUCTION vorbereiten\n\nStatus:   ✅ TODO\nSeparate Instanz vorbereiten.\n\n\n\n"
+  },
+  {
+    "id": 27,
+    "title": "MinIO DEV",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "027 – MinIO DEV\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\n   ●   Container\n\n   ●   Credentials\n\n   ●    Bucket kurvenfunk-media\n\n   ●    Upload\n\n   ●    Download\n\n   ●    Delete Test\n\n\n\n"
+  },
+  {
+    "id": 28,
+    "title": "MinIO STAGING",
+    "phase": 4,
+    "phase_title": "DATABASE & CORE INFRASTRUCTURE",
+    "requirements": "028 – MinIO STAGING\n\nStatus:   ✅ TODO\nEigener Bucket/Storage.\n\n\n\nPHASE 05 – APPLICATION SERVICES\n\n"
+  },
+  {
+    "id": 29,
+    "title": "Next.js Web App",
+    "phase": 5,
+    "phase_title": "APPLICATION SERVICES",
+    "requirements": "029 – Next.js Web App\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnter:\n\napps/web\n\n   ●    Next.js initialisieren\n\n   ●    TypeScript\n\n   ●    App Router\n\n   ●    Environment Validation\n\n   ●    Health Endpoint\n\n   ●    Dockerfile\n\n   ●    .dockerignore\n\n\n\n"
+  },
+  {
+    "id": 30,
+    "title": "NestJS API",
+    "phase": 5,
+    "phase_title": "APPLICATION SERVICES",
+    "requirements": "030 – NestJS API\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnter:\n\napps/api\n\n   ●     NestJS initialisieren\n\n   ●     Config Module\n\n   ●     globale Validation\n\n   ●     globales Error Handling\n\n   ●     API Prefix\n\n   ●     Health Endpoint\n\n   ●     Dockerfile\n\nAPI Prefix:\n\n/api/v1\n\n\n\n"
+  },
+  {
+    "id": 31,
+    "title": "Worker Service",
+    "phase": 5,
+    "phase_title": "APPLICATION SERVICES",
+    "requirements": "031 – Worker Service\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnter:\n\napps/worker\n\n   ●     Worker initialisieren\n\n   ●     Redis verbinden\n\n   ●     BullMQ installieren\n\n   ●     Test Queue\n\n   ●     Test Job\n\n   ●     Graceful Shutdown\n\n   ●     Dockerfile\n\n\n\nPHASE 06 – SHARED PACKAGES\n\n"
+  },
+  {
+    "id": 32,
+    "title": "Database Package",
+    "phase": 6,
+    "phase_title": "SHARED PACKAGES",
+    "requirements": "032 – Database Package\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\npackages/database\n\nenthält:\n\n   ●    Prisma\n\n   ●    Prisma Client\n\n   ●    Schema\n\n   ●    Migrations\n\n   ●    Seeds\n\n\n\n"
+  },
+  {
+    "id": 33,
+    "title": "Types Package",
+    "phase": 6,
+    "phase_title": "SHARED PACKAGES",
+    "requirements": "033 – Types Package\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nGemeinsam benötigte TypeScript-Typen zentral bereitstellen.\n\nKeine Business Logic dort ablegen.\n\n\n\n"
+  },
+  {
+    "id": 34,
+    "title": "Validation Package",
+    "phase": 6,
+    "phase_title": "SHARED PACKAGES",
+    "requirements": "034 – Validation Package\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nZod Schemas für gemeinsam genutzte Datenstrukturen erstellen.\n\n\n\n"
+  },
+  {
+    "id": 35,
+    "title": "Logger Package",
+    "phase": 6,
+    "phase_title": "SHARED PACKAGES",
+    "requirements": "035 – Logger Package\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nStandardfelder:\n\ntimestamp\n\nlevel\n\nservice\n\nrequestId\n\nuserId\n\nevent\n\nmessage\n\nKeine Passwörter, Tokens oder unnötige personenbezogene Daten loggen.\n\n\n\n"
+  },
+  {
+    "id": 36,
+    "title": "UI Package",
+    "phase": 6,
+    "phase_title": "SHARED PACKAGES",
+    "requirements": "036 – UI Package\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBasiskomponenten vorbereiten, die innerhalb des Frontends wiederverwendet\nwerden.\n\n\n\nPHASE 07 – TECHNICAL FOUNDATION\n\n"
+  },
+  {
+    "id": 37,
+    "title": "Environment Validation",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "037 – Environment Validation\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBeim Start prüfen, ob alle notwendigen Environment-Variablen vorhanden und gültig\nsind.\n\nAnwendung soll bei falscher Konfiguration kontrolliert abbrechen.\n\n\n\n"
+  },
+  {
+    "id": 38,
+    "title": "Secrets Management",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "038 – Secrets Management\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nTrennen:\n\nDEV Secrets\n\nSTAGING Secrets\n\nPRODUCTION Secrets\n\nSecrets niemals committen.\n\n\n\n"
+  },
+  {
+    "id": 39,
+    "title": "Request ID System",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "039 – Request ID System\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nJeder Request erhält eindeutige ID.\n\nWeiterreichen:\n\nWeb\n\n→ API\n\n→ Queue\n\n→ Worker\n\n\n\n"
+  },
+  {
+    "id": 40,
+    "title": "Structured Logging",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "040 – Structured Logging\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nDevelopment:\n\nlesbare Console Logs.\n\nProduction:\n\nstrukturierte Logs.\n\n\n\n"
+  },
+  {
+    "id": 41,
+    "title": "Healthchecks",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "041 – Healthchecks\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEndpoints:\n\n/health\n\n/health/live\n\n/health/ready\n\nReadiness prüft mindestens:\n\n   ●   PostgreSQL\n\n   ●   Redis\n\n\n\n"
+  },
+  {
+    "id": 42,
+    "title": "Queue Infrastruktur",
+    "phase": 7,
+    "phase_title": "TECHNICAL FOUNDATION",
+    "requirements": "042 – Queue Infrastruktur\n\nStatus:   ✅ TODO\n\nWas gemacht werden muss\n\nQueues definieren:\n\nnews-import\n\nsports-import\n\nsearch-index\n\nnotifications\n\nscheduled-publishing\n\ncleanup\n\nmoderation\n\nsanctions\n\n\n\nPHASE 08 – DEPLOYMENT\n\n"
+  },
+  {
+    "id": 43,
+    "title": "Docker Compose finalisieren",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "043 – Docker Compose finalisieren\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAlle Services müssen einzeln steuerbar sein.\n\nBeispiel:\n\ndocker compose restart api\n\ndocker compose restart worker\n\ndocker compose restart meilisearch\n\n\n\n"
+  },
+  {
+    "id": 44,
+    "title": "Cloudflare DEV Routing",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "044 – Cloudflare DEV Routing\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nDEV Domains auf entsprechende Container routen.\n\nDEV optional über Cloudflare Access schützen.\n\n\n\n"
+  },
+  {
+    "id": 45,
+    "title": "Cloudflare STAGING Routing",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "045 – Cloudflare STAGING Routing\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nStaging Domains konfigurieren und Zugriff ggf. schützen.\n\n\n\n"
+  },
+  {
+    "id": 46,
+    "title": "Production Routing vorbereiten",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "046 – Production Routing vorbereiten\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nLive Domains vorbereiten, aber noch nicht öffentlich freigeben.\n\n\n\n"
+  },
+  {
+    "id": 47,
+    "title": "CI Pipeline",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "047 – CI Pipeline\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBei Push:\n\nInstall\n\n→ Lint\n\n→ Typecheck\n\n→ Tests\n\n→ Build\n\n\n\n"
+  },
+  {
+    "id": 48,
+    "title": "DEV Deployment",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "048 – DEV Deployment\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\ndevelop kann DEV automatisch aktualisieren.\n\n\n\n"
+  },
+  {
+    "id": 49,
+    "title": "STAGING Deployment",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "049 – STAGING Deployment\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nRelease Candidate:\n\nBuild\n\n→ Deploy\n\n→ Migration\n\n→ Healthcheck\n\n→ E2E\n\n\n\n"
+  },
+  {
+    "id": 50,
+    "title": "PRODUCTION Deployment",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "050 – PRODUCTION Deployment\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nNur manuell freigegeben:\n\nBackup\n\n→ Migration\n\n→ Deployment\n\n→ Healthcheck\n\n→ Smoke Test\n\n\n\n"
+  },
+  {
+    "id": 51,
+    "title": "Rollback Konzept",
+    "phase": 8,
+    "phase_title": "DEPLOYMENT",
+    "requirements": "051 – Rollback Konzept\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nVorheriges Image bzw. vorheriger Release muss schnell wieder gestartet werden\nkönnen.\n\n\n\nPHASE 09 – BACKUPS\n\n"
+  },
+  {
+    "id": 52,
+    "title": "PostgreSQL Backup",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "052 – PostgreSQL Backup\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAutomatisierte Dumps für Staging und Production.\n\n"
+  },
+  {
+    "id": 53,
+    "title": "Backup Rotation",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "053 – Backup Rotation\n\nStatus:   ✅ TODO\nBeispiel:\n\n7 Daily\n\n4 Weekly\n\n6 Monthly\n\n\n\n"
+  },
+  {
+    "id": 54,
+    "title": "Keycloak Backup",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "054 – Keycloak Backup\n\nStatus:   ✅ TODO\nRealm-Konfiguration und relevante Einstellungen sichern.\n\n\n\n"
+  },
+  {
+    "id": 55,
+    "title": "Object Storage Backup Strategie",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "055 – Object Storage Backup Strategie\n\nStatus:   ✅ TODO\nFestlegen, welche Uploads zusätzlich gesichert werden müssen.\n\n\n\n"
+  },
+  {
+    "id": 56,
+    "title": "Restore Scripts",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "056 – Restore Scripts\n\nStatus:   ✅ TODO\nScripts unter:\n\ninfrastructure/scripts/restore/\n\n\n\n"
+  },
+  {
+    "id": 57,
+    "title": "Restore Test",
+    "phase": 9,
+    "phase_title": "BACKUPS",
+    "requirements": "057 – Restore Test\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBackup tatsächlich auf leerer Testumgebung wiederherstellen.\n\nEin Backup ohne getesteten Restore zählt nicht als funktionierendes Backup.\n\n\n\nPHASE 10 – DOMAIN MODEL\n\n"
+  },
+  {
+    "id": 58,
+    "title": "User Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "058 – User Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEntity:\n\nUser\n\nenthält z. B.:\n\nid\n\nkeycloakSubject\n\nnickname\n\nstatus\n\nfavoriteClubId\n\nonboardingCompleted\n\ncreatedAt\n\nupdatedAt\n\n\n\n"
+  },
+  {
+    "id": 59,
+    "title": "Profile Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "059 – Profile Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nZusätzliche öffentliche Profildaten von Accountdaten trennen.\n\nBeispielsweise:\n\ndisplayName\n\nbio\n\navatar\n\nfavoriteClub\n\n\n\n"
+  },
+  {
+    "id": 60,
+    "title": "User Status Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "060 – User Status Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEnum:\n\nACTIVE\n\nLIMITED\n\nBANNED\n\nStatus muss von Permissions berücksichtigt werden.\n\n\n\n"
+  },
+  {
+    "id": 61,
+    "title": "User Roles Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "061 – User Roles Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nRollen:\n\nUSER\n\nTRUSTED_USER\n\nMODERATOR\n\nEDITOR\n\nADMIN\n\nSUPERADMIN\n\nRolle und Status getrennt speichern.\n\n\n\n"
+  },
+  {
+    "id": 62,
+    "title": "Club Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "062 – Club Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSpeichern:\n\nname\n\nshortName\n\nslug\n\nlogo\n\nprimaryColor\n\nsecondaryColor\n\naccentColor\n\nwebsite\n\nactive\n\nFarben werden später für Personalisierung verwendet.\n\n\n\n"
+  },
+  {
+    "id": 63,
+    "title": "Club Alias Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "063 – Club Alias Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAliases wie:\n\nSK Rapid\n\nRapid Wien\n\nRapid\n\nSCR\n\neinem Club zuordnen.\n\nWichtig für News- und Sportdatenmatching.\n\n\n\n"
+  },
+  {
+    "id": 64,
+    "title": "Neutral Preference",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "064 – Neutral Preference\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBenutzer muss ausdrücklich:\n\nLieblingsverein\n\noder:\n\nNeutral\n\nwählen können.\n\nNicht einfach favoriteClub = NULL verwenden, weil NULL auch \"noch nicht gewählt\"\nbedeuten könnte.\n\nBeispielsweise:\n\nFanPreference:\n\nCLUB\n\nNEUTRAL\n\nUNSET\n\n\n\n"
+  },
+  {
+    "id": 65,
+    "title": "Competition Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "065 – Competition Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nWettbewerbe unabhängig von einzelnen Saisons modellieren.\n\n\n\n"
+  },
+  {
+    "id": 66,
+    "title": "Season Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "066 – Season Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSaisons einem Wettbewerb zuordnen.\n\n\n\n"
+  },
+  {
+    "id": 67,
+    "title": "Match Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "067 – Match Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSpeichern:\n\nhomeClub\n\nawayClub\n\nkickoff\n\ncompetition\n\nseason\n\nmatchday\n\nstatus\n\nscore\n\n\n\n"
+  },
+  {
+    "id": 68,
+    "title": "Standing Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "068 – Standing Model\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nTabellenstände und Tabellenzeilen modellieren.\n\n\n\n"
+  },
+  {
+    "id": 69,
+    "title": "Article Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "069 – Article Model\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nArtikel mit:\n\n      ●   Kategorien\n\n      ●   Tags\n\n      ●   Vereinen\n\n      ●   Wettbewerb\n\n      ●   Spiel\n\n      ●   Quelle\n\n      ●   Autor\n\nverknüpfen können.\n\n\n\n"
+  },
+  {
+    "id": 70,
+    "title": "Media Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "070 – Media Model\n\nStatus:    ✅ TODO\nWas gemacht werden muss\n\nSpeichern:\n\nstorageKey\n\nurl\n\nmime\n\nsize\n\ncopyright\n\nsource\n\naltText\n\n"
+  },
+  {
+    "id": 71,
+    "title": "Comment Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "071 – Comment Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnterstützen:\n\n   ●   Artikelbezug\n\n   ●   Autor\n\n   ●   Antworten\n\n   ●   Soft Delete\n\n   ●   Edit History\n\n   ●   Moderation\n\n\n\n"
+  },
+  {
+    "id": 72,
+    "title": "Reaction Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "072 – Reaction Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nMVP zunächst:\n\nLIKE\n\nLIMITED User dürfen weiterhin voten.\n\n\n\n"
+  },
+  {
+    "id": 73,
+    "title": "Forum Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "073 – Forum Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEntities:\n\nForumCategory\n\nForum\n\nThread\n\nPost\n\nThreadSubscription\n\nThreadReadState\n\n\n\n"
+  },
+  {
+    "id": 74,
+    "title": "Moderation Report Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "074 – Moderation Report Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nReports müssen sowohl Kommentare als auch Forenbeiträge und Benutzer\nreferenzieren können.\n\n\n\n"
+  },
+  {
+    "id": 75,
+    "title": "Yellow Card Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "075 – Yellow Card Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEntity:\n\nModerationCard\n\nmit Typ:\n\nYELLOW\n\nRED\n\nSpeichern:\n\n   ●     Benutzer\n\n   ●     Moderator\n\n   ●     Grund\n\n   ●     Kommentar\n\n   ●     Bezug zu Inhalt\n\n   ●     Zeitpunkt\n\n   ●     Ablauf optional\n\n\n\n"
+  },
+  {
+    "id": 76,
+    "title": "Sanction Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "076 – Sanction Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSanktionen getrennt von Karten speichern.\n\nBeispiele:\n\nLIMITED\n\nCOMMENT_BLOCK\n\nFORUM_BLOCK\n\nACCOUNT_BAN\n\nIP_BLOCK\n\nDadurch können Karten und technische Sperren flexibel kombiniert werden.\n\n\n\n"
+  },
+  {
+    "id": 77,
+    "title": "IP Block Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "077 – IP Block Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nSpeichern:\n\nipHash\n\nreason\n\ncreatedAt\n\nexpiresAt\n\ncreatedBy\n\nactive\n\n\n\n"
+  },
+  {
+    "id": 78,
+    "title": "Audit Log Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "078 – Audit Log Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nKritische Admin-/Moderationsaktionen nachvollziehbar speichern.\n\n\n\n"
+  },
+  {
+    "id": 79,
+    "title": "Notification Model",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "079 – Notification Model\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBenachrichtigungen pro Benutzer speichern.\n\n\n\n"
+  },
+  {
+    "id": 80,
+    "title": "Import Models",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "080 – Import Models\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nProvider\n\nImportJob\n\nImportRecord\n\nRawPayload\n\nEntityMatch\n\n\n\n"
+  },
+  {
+    "id": 81,
+    "title": "Prisma Schema erstellen",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "081 – Prisma Schema erstellen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAlle zuvor definierten Domains sauber in Prisma abbilden.\n\n\n\n"
+  },
+  {
+    "id": 82,
+    "title": "Initial Migration",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "082 – Initial Migration\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nMigration zuerst DEV, danach STAGING testen.\n\n\n\n"
+  },
+  {
+    "id": 83,
+    "title": "Seed System",
+    "phase": 10,
+    "phase_title": "DOMAIN MODEL",
+    "requirements": "083 – Seed System\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nTestdaten:\n\n   ●   Bundesliga\n\n   ●   Saison\n\n   ●   Vereine\n\n   ●     Vereinsfarben\n\n   ●     Aliases\n\n   ●     Testuser\n\n   ●     Testartikel\n\n   ●     Testspiele\n\n\n\nPHASE 11 – API FOUNDATION\n\n"
+  },
+  {
+    "id": 84,
+    "title": "NestJS Module anlegen",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "084 – NestJS Module anlegen\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nModule entsprechend Backendstruktur erzeugen.\n\nNicht sofort komplett implementieren.\n\n\n\n"
+  },
+  {
+    "id": 85,
+    "title": "API Versionierung",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "085 – API Versionierung\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAlle öffentlichen Endpoints unter:\n\n/api/v1\n\n\n\n"
+  },
+  {
+    "id": 86,
+    "title": "Response Standard",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "086 – Response Standard\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nEinheitliche Responses definieren.\n\n\n\n"
+  },
+  {
+    "id": 87,
+    "title": "Error Standard",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "087 – Error Standard\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFehler enthalten:\n\ncode\n\nmessage\n\nrequestId\n\n\n\n"
+  },
+  {
+    "id": 88,
+    "title": "Validation",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "088 – Validation\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAlle Benutzereingaben serverseitig validieren.\n\n\n\n"
+  },
+  {
+    "id": 89,
+    "title": "Pagination",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "089 – Pagination\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nCursor Pagination für große Listen.\n\n\n\n"
+  },
+  {
+    "id": 90,
+    "title": "Filtering",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "090 – Filtering\n\nStatus:   ✅ TODO\nStandard für API Filter festlegen.\n\n\n\n"
+  },
+  {
+    "id": 91,
+    "title": "Sorting",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "091 – Sorting\n\nStatus:   ✅ TODO\nEinheitliche Sortierparameter definieren.\n\n\n\n"
+  },
+  {
+    "id": 92,
+    "title": "Swagger / OpenAPI",
+    "phase": 11,
+    "phase_title": "API FOUNDATION",
+    "requirements": "092 – Swagger / OpenAPI\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nAPI Dokumentation auf Staging bereitstellen.\n\n\n\nPHASE 12 – AUTHENTICATION\n\n"
+  },
+  {
+    "id": 93,
+    "title": "Keycloak ↔ API",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "093 – Keycloak ↔ API\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nJWT prüfen:\n\n   ●   Signature\n\n   ●   Issuer\n\n   ●   Audience\n\n   ●   Expiry\n\nNestJS Auth Guard erstellen.\n\n\n\n"
+  },
+  {
+    "id": 94,
+    "title": "User Sync",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "094 – User Sync\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nNach erfolgreichem Keycloak Login prüfen:\n\nexistiert Kurvenfunk User?\n\nNein:\n\nUser anlegen\n\nonboardingCompleted = false\n\nFanPreference = UNSET\n\n\n\n"
+  },
+  {
+    "id": 95,
+    "title": "E-Mail Registrierung",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "095 – E-Mail Registrierung\n\nStatus:   ✅ TODO\nAblauf\n\nE-Mail + Passwort\n\n→ Keycloak Account\n\n→ Verification Mail\n\n→ E-Mail bestätigen\n\n→ erster erfolgreicher Login\n\n→ Kurvenfunk Onboarding\n\n\n\n"
+  },
+  {
+    "id": 96,
+    "title": "E-Mail Verifizierung",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "096 – E-Mail Verifizierung\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nOhne bestätigte Mail kein vollständiger Kurvenfunk Account.\n\nNach erfolgreicher Verifizierung beim nächsten Login:\n\nonboardingCompleted == false\n\n→ Onboarding öffnen.\n\n\n\n"
+  },
+  {
+    "id": 97,
+    "title": "Login mit E-Mail",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "097 – Login mit E-Mail\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBehandeln:\n\n   ●   falsches Passwort\n\n   ●   Account existiert nicht\n\n   ●   E-Mail nicht bestätigt\n\n   ●   LIMITED\n\n   ●   BANNED\n\n\n\n"
+  },
+  {
+    "id": 98,
+    "title": "Google Login",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "098 – Google Login\n\nStatus:   ✅ TODO\nAblauf\n\nGoogle\n\n→ Keycloak\n\n→ erfolgreicher Login\n\n→ User Sync\n\n→ Onboarding falls neu\n\nGoogle-Benutzer benötigen keine zusätzliche Kurvenfunk-Mail-Verifizierung, wenn\ndie Identität entsprechend vom Provider bestätigt wurde.\n\n\n\n"
+  },
+  {
+    "id": 99,
+    "title": "Logout",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "099 – Logout\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nLokale und Keycloak Session sauber beenden.\n\n\n\n"
+  },
+  {
+    "id": 100,
+    "title": "Password Reset",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "100 – Password Reset\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nKeycloak Passwort-Reset-Flow integrieren.\n\n\n\n"
+  },
+  {
+    "id": 101,
+    "title": "Account Linking",
+    "phase": 12,
+    "phase_title": "AUTHENTICATION",
+    "requirements": "101 – Account Linking\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nVerhindern, dass derselbe Benutzer durch E-Mail und Google unbeabsichtigt zwei\nProfile bekommt.\n\n\n\nPHASE 13 – USER ONBOARDING\n\n"
+  },
+  {
+    "id": 102,
+    "title": "Onboarding Gate",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "102 – Onboarding Gate\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nNach jedem erfolgreichen Login prüfen:\n\nonboardingCompleted\n\nBei false darf der Benutzer noch nicht normal ins Portal gelangen.\n\nWeiterleitung:\n\n/onboarding\n\n"
+  },
+  {
+    "id": 103,
+    "title": "Nickname Auswahl",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "103 – Nickname Auswahl\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBenutzer muss einen Nickname wählen.\n\nPrüfen:\n\n   ●   eindeutig\n\n   ●   case-insensitive eindeutig\n\n   ●   Mindestlänge\n\n   ●   Maximallänge\n\n   ●   erlaubte Zeichen\n\n   ●   verbotene Begriffe\n\n   ●   reservierte Namen\n\nReserviert z. B.:\n\nadmin\n\nmoderator\n\nkurvenfunk\n\nsupport\n\nsystem\n\n\n\n"
+  },
+  {
+    "id": 104,
+    "title": "Nickname Live Validation",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "104 – Nickname Live Validation\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nWährend Eingabe prüfen:\n\nNickname verfügbar?\n\nKlare Benutzerinformation anzeigen.\n\n\n\n"
+  },
+  {
+    "id": 105,
+    "title": "Vereinsauswahl",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "105 – Vereinsauswahl\n\nStatus:   ✅ TODO\n\nWas gemacht werden muss\n\nAlle aktiven Vereine visuell anzeigen:\n\nLogo\n\nVereinsname\n\nZusätzliche Auswahl:\n\nNeutral\n\n\n\n"
+  },
+  {
+    "id": 106,
+    "title": "Neutral Auswahl",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "106 – Neutral Auswahl\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nNeutral muss eine echte Preference sein und darf nicht mit \"Onboarding noch nicht\nerledigt\" verwechselt werden.\n\n\n\n"
+  },
+  {
+    "id": 107,
+    "title": "Onboarding abschließen",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "107 – Onboarding abschließen\n\nStatus:   ✅ TODO\nSpeichern\n\nnickname\n\nfanPreference\n\nfavoriteClubId optional\n\nonboardingCompleted = true\n\nDanach Weiterleitung auf personalisierte Startseite.\n\n\n\n"
+  },
+  {
+    "id": 108,
+    "title": "Vereinswahl später ändern",
+    "phase": 13,
+    "phase_title": "USER ONBOARDING",
+    "requirements": "108 – Vereinswahl später ändern\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nUnter Profileinstellungen:\n\nLieblingsverein ändern\n\noder:\n\nNeutral\n\n\n\nPHASE 14 – PERSONALIZATION & CLUB BRANDING\n\n"
+  },
+  {
+    "id": 109,
+    "title": "Club Theme System",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "109 – Club Theme System\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nPro Verein definieren:\n\nprimaryColor\n\nsecondaryColor\n\naccentColor\n\nlogo\n\nDaraus Frontend Theme Tokens generieren.\n\n\n\n"
+  },
+  {
+    "id": 110,
+    "title": "Default Kurvenfunk Theme",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "110 – Default Kurvenfunk Theme\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFür:\n\n   ●   Gäste\n\n   ●   neutrale Benutzer\n\n   ●   unbekannte Preference\n\nwird das normale Kurvenfunk Branding verwendet.\n\n\n\n"
+  },
+  {
+    "id": 111,
+    "title": "Personalized Club Theme",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "111 – Personalized Club Theme\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nBei gewähltem Lieblingsverein dürfen ausgewählte UI-Elemente Vereinsfarben\nübernehmen.\n\nBeispielsweise:\n\n   ●   Header Akzent\n\n   ●   aktive Navigation\n\n   ●   Buttons/Akzente\n\n   ●   Badges\n\n   ●   Vereinsbereich\n\nDie Seite soll trotzdem klar als Kurvenfunk erkennbar bleiben.\n\n\n\n"
+  },
+  {
+    "id": 112,
+    "title": "News Priorisierung",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "112 – News Priorisierung\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nFür Fan eines Vereins:\n\n1. relevante News des Lieblingsvereins\n\n2. wichtige Bundesliga News\n\n3. restliche News\n\nNicht ausschließlich Vereinsnews anzeigen.\n\n\n\n"
+  },
+  {
+    "id": 113,
+    "title": "Neutral News Ranking",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "113 – Neutral News Ranking\n\nStatus:   ✅ TODO\nWas gemacht werden muss\n\nNeutrale Benutzer bekommen:\n\n   ●   Top News\n\n   ●   aktuelle News\n\n   ●   relevante Liga News\n\nohne Vereinspriorisierung.\n\n\n\n"
+  },
+  {
+    "id": 114,
+    "title": "Personalized Startpage",
+    "phase": 14,
+    "phase_title": "PERSONALIZATION & CLUB BRANDING",
+    "requirements": "114 – Personalized Startpage\n\nStatus:   ✅ TODO\nFan-Version\n\nBeispielsweise:\n\nMein Verein\n\n↓\n\nVereinsnews\n\n↓\n\nnächstes Spiel\n\n↓\n\nletztes Ergebnis\n\n↓\n\nTabellenposition\n\n↓\n\nLiga News\n\n↓\n\nDiskussionen\n\nNeutral-Version\n\nTop News\n\n↓\n\naktuelle Spiele\n\n↓\n\nLiga New\n\n↓\n\nTabelle\n\n↓\n\nDiskussionen\n\n\n\nPHASE 15 – DESIGN SYSTEM\n\n"
+  },
+  {
+    "id": 115,
+    "title": "Design Tokens",
+    "phase": 15,
+    "phase_title": "DESIGN SYSTEM",
+    "requirements": "115 – Design Tokens\n\nStatus:   ⬜ TODO\n\nWas gemacht werden muss\n\nDefinieren:\n\n   ●     Kurvenfunk Farben\n\n   ●     Vereins-Theme Tokens\n\n   ●     Typografie\n\n   ●     Spacing\n\n   ●     Borders\n\n   ●     Radius\n\n   ●     Breakpoints\n\n   ●     Icons\n\n\n\n"
+  },
+  {
+    "id": 116,
+    "title": "UI Components",
+    "phase": 15,
+    "phase_title": "DESIGN SYSTEM",
+    "requirements": "116 – UI Components\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nButton\n\nInput\n\nTextarea\n\nSelect\n\nCheckbox\n\nSwitch\n\nCard\n\nBadge\n\nAvatar\n\nModal\n\nDialog\n\nDropdown\n\nTabs\n\nTooltip\n\nToast\n\nAlert\n\nPagination\n\nSkeleton\n\nEmptyState\n\nAlle müssen Theme Tokens unterstützen.\n\n\n\nPHASE 16 – FRONTEND BASE\n\n"
+  },
+  {
+    "id": 117,
+    "title": "App Shell",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "117 – App Shell\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\n   ●   Header\n\n   ●   Desktop Navigation\n\n   ●   Mobile Navigation\n\n   ●   Content Container\n\n   ●   Footer\n\n   ●   User Menu\n\n   ●   Club Theme\n\n\n\n"
+  },
+  {
+    "id": 118,
+    "title": "Startseite Mock",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "118 – Startseite Mock\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nBeide Varianten mit Mock-Daten erstellen:\n\nNeutral\n\nClub Fan\n\n\n\n"
+  },
+  {
+    "id": 119,
+    "title": "Newsübersicht",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "119 – Newsübersicht\n\nStatus:   ⬜ TODO\n\nWas gemacht werden muss\n\n   ●    News Cards\n\n   ●    Pagination\n\n   ●    Filter\n\n   ●    Vereinsfilter\n\n   ●    Wettbewerbsfilter\n\n\n\n"
+  },
+  {
+    "id": 120,
+    "title": "Artikelseite",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "120 – Artikelseite\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nAnzeigen:\n\n   ●    Titel\n\n   ●    Lead\n\n   ●    Bild\n\n   ●    Quelle\n\n   ●    Autor\n\n   ●    Datum\n\n   ●    Artikel\n\n   ●    Clubs\n\n   ●    Tags\n\n   ●    Diskussion\n\n\n\n"
+  },
+  {
+    "id": 121,
+    "title": "Vereinsseite",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "121 – Vereinsseite\n\nStatus:   ⬜ TODO\nBereiche\n\nÜbersicht\n\nNews\n\nSpiele\n\nTabelle\n\nForum\n\n\n\n"
+  },
+  {
+    "id": 122,
+    "title": "Spielseite",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "122 – Spielseite\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\n   ●   Teams\n\n   ●   Vereinslogos\n\n   ●   Ergebnis\n\n   ●   Status\n\n   ●   Wettbewerb\n\n   ●   Spieltag\n\n   ●   Datum\n\n   ●   News\n\n   ●   Diskussion\n\n\n\n"
+  },
+  {
+    "id": 123,
+    "title": "Tabelle",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "123 – Tabelle\n\nStatus:   ⬜ TODO\nDesktop und Mobile optimieren.\n\nLieblingsverein visuell hervorheben.\n\n\n\n"
+  },
+  {
+    "id": 124,
+    "title": "Spielplan",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "124 – Spielplan\n\nStatus:   ⬜ TODO\nLieblingsverein ebenfalls hervorheben.\n\n\n\n"
+  },
+  {
+    "id": 125,
+    "title": "Profilseite",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "125 – Profilseite\n\nStatus:   ⬜ TODO\nAnzeigen\n\n   ●     Nickname\n\n   ●     Avatar\n\n   ●     Lieblingsverein\n\n   ●     Bio\n\n   ●     Communityaktivität\n\n\n\n"
+  },
+  {
+    "id": 126,
+    "title": "User Settings",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "126 – User Settings\n\nStatus:   ⬜ TODO\nBereiche:\n\nProfil\n\nLieblingsverein\n\nAccount\n\nDatenschutz\n\nBenachrichtigungen\n\nSessions\n\n\n\n"
+  },
+  {
+    "id": 127,
+    "title": "Admin Layout",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "127 – Admin Layout\n\nStatus:   ⬜ TODO\nNavigation:\n\nDashboard\n\nArtikel\n\nMedien\n\nImporte\n\nSportdaten\n\nBenutzer\n\nModeration\n\nForum\n\nSystem\n\n"
+  },
+  {
+    "id": 128,
+    "title": "Loading States",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "128 – Loading States\n\nStatus:   ⬜ TODO\nSkeletons für alle wichtigen Inhalte.\n\n\n\n"
+  },
+  {
+    "id": 129,
+    "title": "Empty States",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "129 – Empty States\n\nStatus:   ⬜ TODO\nKlare Zustände für leere Listen.\n\n\n\n"
+  },
+  {
+    "id": 130,
+    "title": "Error States",
+    "phase": 16,
+    "phase_title": "FRONTEND BASE",
+    "requirements": "130 – Error States\n\nStatus:   ⬜ TODO\n403\n\n404\n\n429\n\n500\n\n\n\nPHASE 17 – EDITORIAL SYSTEM\n\n"
+  },
+  {
+    "id": 131,
+    "title": "Article CRUD",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "131 – Article CRUD\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\n   ●   Create\n\n   ●   Read\n\n   ●   Edit\n\n   ●   Archive\n\n   ●   Delete\n\n   ●   Restore\n\n\n\n"
+  },
+  {
+    "id": 132,
+    "title": "Publication Workflow",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "132 – Publication Workflow\n\nStatus:   ⬜ TODO\ndraft\n\nreview\n\nscheduled\n\npublished\n\narchived\n\n\n\n"
+  },
+  {
+    "id": 133,
+    "title": "Article Editor",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "133 – Article Editor\n\nStatus:   ⬜ TODO\nUnterstützen:\n\n   ●    Text\n\n   ●    Überschriften\n\n   ●    Links\n\n   ●    Listen\n\n   ●    Zitate\n\n   ●    Bilder\n\n\n\n"
+  },
+  {
+    "id": 134,
+    "title": "Kategorien",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "134 – Kategorien\n\nStatus:   ⬜ TODO\nCRUD und Artikelzuordnung.\n\n\n\n"
+  },
+  {
+    "id": 135,
+    "title": "Tags",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "135 – Tags\n\nStatus:   ⬜ TODO\nCRUD und Artikelzuordnung.\n\n\n\n"
+  },
+  {
+    "id": 136,
+    "title": "Club Assignment",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "136 – Club Assignment\n\nStatus:   ⬜ TODO\nMehrere Vereine pro Artikel ermöglichen.\n\nExtrem wichtig für Personalisierung.\n\n\n\n"
+  },
+  {
+    "id": 137,
+    "title": "Competition Assignment",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "137 – Competition Assignment\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 138,
+    "title": "Match Assignment",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "138 – Match Assignment\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 139,
+    "title": "Media Upload",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "139 – Media Upload\n\nStatus:   ⬜ TODO\nUpload über Storage Abstraction.\n\n\n\n"
+  },
+  {
+    "id": 140,
+    "title": "Media Library",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "140 – Media Library\n\nStatus:   ⬜ TODO\nVerwalten:\n\n   ●   Bild\n\n   ●   Alt Text\n\n   ●   Copyright\n\n   ●   Quelle\n\n   ●   Verwendung\n\n\n\n"
+  },
+  {
+    "id": 141,
+    "title": "SEO Fields",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "141 – SEO Fields\n\nStatus:   ⬜ TODO\nslug\n\nseoTitle\n\nseoDescription\n\ncanonicalUrl\n\nogImage\n\n"
+  },
+  {
+    "id": 142,
+    "title": "Revisions",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "142 – Revisions\n\nStatus:   ⬜ TODO\nÄnderungshistorie speichern.\n\n\n\n"
+  },
+  {
+    "id": 143,
+    "title": "Scheduled Publishing",
+    "phase": 17,
+    "phase_title": "EDITORIAL SYSTEM",
+    "requirements": "143 – Scheduled Publishing\n\nStatus:   ⬜ TODO\nWorker veröffentlicht Artikel zum geplanten Zeitpunkt.\n\n\n\nPHASE 18 – NEWS IMPORT\n\n"
+  },
+  {
+    "id": 144,
+    "title": "Provider Interface",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "144 – Provider Interface\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nStandard definieren, den jeder Newsprovider implementieren muss.\n\n\n\n"
+  },
+  {
+    "id": 145,
+    "title": "Fake Provider",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "145 – Fake Provider\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nImportpipeline vollständig mit Testdaten entwickeln.\n\n\n\n"
+  },
+  {
+    "id": 146,
+    "title": "Scheduler",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "146 – Scheduler\n\nStatus:   ⬜ TODO\nProvider regelmäßig abrufen.\n\n\n\n"
+  },
+  {
+    "id": 147,
+    "title": "Import Queue",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "147 – Import Queue\n\nStatus:   ⬜ TODO\nnews-import\n\n"
+  },
+  {
+    "id": 148,
+    "title": "Raw Payload",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "148 – Raw Payload\n\nStatus:   ⬜ TODO\nOriginaldaten speichern, um Importprobleme reproduzieren zu können.\n\n\n\n"
+  },
+  {
+    "id": 149,
+    "title": "Normalization",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "149 – Normalization\n\nStatus:   ⬜ TODO\nProviderdaten auf internes Kurvenfunk-Format abbilden.\n\n\n\n"
+  },
+  {
+    "id": 150,
+    "title": "Validation",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "150 – Validation\n\nStatus:   ⬜ TODO\nPflichtfelder und Datenqualität prüfen.\n\n\n\n"
+  },
+  {
+    "id": 151,
+    "title": "Duplicate Detection",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "151 – Duplicate Detection\n\nStatus:   ⬜ TODO\nPrüfen:\n\n   ●   Provider ID\n\n   ●   URL\n\n   ●   Hash\n\n   ●   Titel\n\n   ●   Ähnlichkeit\n\n\n\n"
+  },
+  {
+    "id": 152,
+    "title": "Club Matching",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "152 – Club Matching\n\nStatus:   ⬜ TODO\nClub Aliases verwenden.\n\n\n\n"
+  },
+  {
+    "id": 153,
+    "title": "Competition Matching",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "153 – Competition Matching\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 154,
+    "title": "Match Matching",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "154 – Match Matching\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 155,
+    "title": "Confidence Score",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "155 – Confidence Score\n\nStatus:   ⬜ TODO\nexact\n\nhigh\n\nmedium\n\nlow\n\nunknown\n\n\n\n"
+  },
+  {
+    "id": 156,
+    "title": "Retry Logic",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "156 – Retry Logic\n\nStatus:   ⬜ TODO\nFehlgeschlagene Imports automatisch erneut versuchen.\n\n\n\n"
+  },
+  {
+    "id": 157,
+    "title": "Dead Letter Queue",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "157 – Dead Letter Queue\n\nStatus:   ⬜ TODO\nDauerhaft fehlgeschlagene Jobs isolieren.\n\n\n\n"
+  },
+  {
+    "id": 158,
+    "title": "Import Admin",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "158 – Import Admin\n\nStatus:   ⬜ TODO\nAnzeigen:\n\n   ●   Provider\n\n   ●   Job\n\n   ●   Status\n\n   ●   importierte Artikel\n\n   ●   Duplikate\n\n   ●   Matchingprobleme\n\n   ●   Fehler\n\n\n\n"
+  },
+  {
+    "id": 159,
+    "title": "Review Workflow",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "159 – Review Workflow\n\nStatus:   ⬜ TODO\nUnsichere Artikel werden manuell geprüft.\n\n\n\n"
+  },
+  {
+    "id": 160,
+    "title": "Auto Publish",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "160 – Auto Publish\n\nStatus:   ⬜ TODO\nNur vertrauenswürdige Provider und sichere Matches automatisch veröffentlichen.\n\n\n\n"
+  },
+  {
+    "id": 161,
+    "title": "erster echter Newsprovider",
+    "phase": 18,
+    "phase_title": "NEWS IMPORT",
+    "requirements": "161 – erster echter Newsprovider\n\nStatus:   ⬜ TODO\nErst nach funktionierender Testpipeline anbinden.\n\n\n\nPHASE 19 – COMMENTS & REACTIONS\n\n"
+  },
+  {
+    "id": 162,
+    "title": "Kommentar erstellen",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "162 – Kommentar erstellen\n\nStatus:   ⬜ TODO\nPermission\n\nACTIVE → erlaubt\n\nLIMITED → verboten\n\nBANNED → verboten\n\n\n\n"
+  },
+  {
+    "id": 163,
+    "title": "Antworten",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "163 – Antworten\n\nStatus:   ⬜ TODO\nGleiche Statusprüfung wie Kommentare.\n\n\n\n"
+  },
+  {
+    "id": 164,
+    "title": "Comment Depth",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "164 – Comment Depth\n\nStatus:   ⬜ TODO\n\nTechnisch Parent Relation.\n\nDarstellung auf wenige Ebenen begrenzen.\n\n\n\n"
+  },
+  {
+    "id": 165,
+    "title": "Kommentar bearbeiten",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "165 – Kommentar bearbeiten\n\nStatus:   ⬜ TODO\nNur eigener Kommentar innerhalb definierter Regeln.\n\nBearbeitung markieren.\n\n\n\n"
+  },
+  {
+    "id": 166,
+    "title": "Kommentar löschen",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "166 – Kommentar löschen\n\nStatus:   ⬜ TODO\nSoft Delete für User.\n\nModeratoraktionen separat auditieren.\n\n\n\n"
+  },
+  {
+    "id": 167,
+    "title": "Voting / Reactions",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "167 – Voting / Reactions\n\nStatus:   ⬜ TODO\nPermission\n\nACTIVE → erlaubt\n\nLIMITED → erlaubt\n\nBANNED → verboten\n\nMVP:\n\nLike\n\n\n\n"
+  },
+  {
+    "id": 168,
+    "title": "Kommentar Sortierung",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "168 – Kommentar Sortierung\n\nStatus:   ⬜ TODO\nNeueste\n\nÄlteste\n\nBeliebt\n\n"
+  },
+  {
+    "id": 169,
+    "title": "Pagination",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "169 – Pagination\n\nStatus:   ⬜ TODO\nCursor-basiert.\n\n\n\n"
+  },
+  {
+    "id": 170,
+    "title": "Reports",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "170 – Reports\n\nStatus:   ⬜ TODO\nMeldegründe definieren.\n\n\n\n"
+  },
+  {
+    "id": 171,
+    "title": "Spam Protection",
+    "phase": 19,
+    "phase_title": "COMMENTS & REACTIONS",
+    "requirements": "171 – Spam Protection\n\nStatus:   ⬜ TODO\n   ●   Rate Limit\n\n   ●   Duplicate Spam\n\n   ●   Link Limits\n\n   ●   Posting Frequency\n\n\n\nPHASE 20 – MODERATION & CARDS\n\n"
+  },
+  {
+    "id": 172,
+    "title": "Permission System",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "172 – Permission System\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nNicht überall Rollen manuell vergleichen.\n\nZentrale Permissions:\n\ncomment.create\n\ncomment.vote\n\ncomment.delete\n\ncomment.moderate\n\n\n\nthread.create\n\nthread.reply\n\nthread.lock\n\n\n\narticle.create\n\narticle.publish\n\n\n\nuser.warn\n\nuser.limit\n\nuser.ban\n\nuser.ipban\n\n\n\n"
+  },
+  {
+    "id": 173,
+    "title": "Account Status Guard",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "173 – Account Status Guard\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nZentrale Prüfung:\n\nACTIVE\n\nLIMITED\n\nBANNED\n\nNicht in jedem Controller separat improvisieren.\n\n\n\n"
+  },
+  {
+    "id": 174,
+    "title": "Yellow Card erstellen",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "174 – Yellow Card erstellen\n\nStatus:   ⬜ TODO\nModerator kann gelbe Karte vergeben.\n\nDabei speichern\n\n   ●   Grund\n\n   ●   interne Notiz\n\n   ●   betroffener Inhalt\n\n   ●   Moderator\n\n   ●   Zeitpunkt\n\nUser erhält Notification.\n\n\n\n"
+  },
+  {
+    "id": 175,
+    "title": "Yellow Card Counter",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "175 – Yellow Card Counter\n\nStatus:   ⬜ TODO\nRegel\n\nNach neuer gelber Karte automatisch Anzahl relevanter Karten prüfen.\n\n1 → Gelb\n\n2 → Gelb\n\n3 → Rot\n\n\n\n"
+  },
+  {
+    "id": 176,
+    "title": "automatische Rote Karte",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "176 – automatische Rote Karte\n\nStatus:   ⬜ TODO\nBei dritter Gelber:\n\nRED CARD\n\nAccountStatus = BANNED\n\nSessions widerrufen\n\nAudit Event erzeugen.\n\n\n\n"
+  },
+  {
+    "id": 177,
+    "title": "direkte Rote Karte",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "177 – direkte Rote Karte\n\nStatus:   ⬜ TODO\nModerator mit entsprechender Permission kann bei schwerem Verstoß direkt Rot\nvergeben.\n\nErfordert:\n\n   ●   Grund\n\n   ●   Notiz\n\n   ●   Audit Log\n\nOptional später Vier-Augen-Prinzip.\n\n"
+  },
+  {
+    "id": 178,
+    "title": "LIMITED Sanktion",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "178 – LIMITED Sanktion\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nModerator kann Benutzer zeitweise auf LIMITED setzen.\n\nBeispiele:\n\n24h\n\n3 Tage\n\n7 Tage\n\n30 Tage\n\n\n\n"
+  },
+  {
+    "id": 179,
+    "title": "LIMITED Permission Matrix",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "179 – LIMITED Permission Matrix\n\nStatus:   ⬜ TODO\nLIMITED darf:\n\nlesen\n\nsuchen\n\nSpiele ansehen\n\nvoten\n\nLIMITED darf nicht:\n\nKommentare schreiben\n\nKommentare beantworten\n\nThreads erstellen\n\nPosts erstellen\n\n\n\n"
+  },
+  {
+    "id": 180,
+    "title": "BANNED Handling",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "180 – BANNED Handling\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\nBei BANNED:\n\n   ●   Schreibzugriff komplett sperren\n\n   ●   Voting sperren\n\n   ●   Sessions widerrufen\n\n   ●   Loginstatus korrekt anzeigen\n\n   ●   Umgehungsversuche protokollieren\n\n\n\n"
+  },
+  {
+    "id": 181,
+    "title": "IP Hashing",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "181 – IP Hashing\n\nStatus:   ⬜ TODO\nIP soweit möglich per keyed HMAC pseudonymisieren.\n\n\n\n"
+  },
+  {
+    "id": 182,
+    "title": "IP Rate Limits",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "182 – IP Rate Limits\n\nStatus:   ⬜ TODO\nFür:\n\nLogin\n\nRegister\n\nReset\n\nComments\n\nForum\n\nReports\n\n\n\n"
+  },
+  {
+    "id": 183,
+    "title": "temporärer IP Block",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "183 – temporärer IP Block\n\nStatus:   ⬜ TODO\nAutomatisch oder manuell.\n\nMit Ablaufzeit.\n\n\n\n"
+  },
+  {
+    "id": 184,
+    "title": "manueller IP Ban",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "184 – manueller IP Ban\n\nStatus:   ⬜ TODO\nNur berechtigte Moderatoren/Admins.\n\nAuditpflichtig.\n\n"
+  },
+  {
+    "id": 185,
+    "title": "Red Card + IP Protection",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "185 – Red Card + IP Protection\n\nStatus:   ⬜ TODO\nBei schweren Fällen kann zusätzlich zum Accountban eine bekannte IP temporär\ngesperrt werden.\n\nNicht automatisch jede rote Karte mit dauerhafter IP-Sperre verbinden.\n\n\n\n"
+  },
+  {
+    "id": 186,
+    "title": "Session Revoke",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "186 – Session Revoke\n\nStatus:   ⬜ TODO\nBei BANNED sofort aktive Keycloak Sessions widerrufen.\n\n\n\n"
+  },
+  {
+    "id": 187,
+    "title": "Moderation Dashboard",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "187 – Moderation Dashboard\n\nStatus:   ⬜ TODO\nAnzeigen:\n\nReports\n\nYellow Cards\n\nRed Cards\n\nLimited Users\n\nBanned Users\n\nIP Blocks\n\nAppeals\n\n\n\n"
+  },
+  {
+    "id": 188,
+    "title": "User Moderation History",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "188 – User Moderation History\n\nStatus:   ⬜ TODO\nModerator sieht:\n\n   ●   Reports\n\n   ●   Karten\n\n   ●   Sanktionen\n\n   ●    vorherige Sperren\n\n   ●    interne Notizen\n\n\n\n"
+  },
+  {
+    "id": 189,
+    "title": "Appeals",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "189 – Appeals\n\nStatus:   ⬜ TODO\nBenutzer kann Sanktion anfechten.\n\n\n\n"
+  },
+  {
+    "id": 190,
+    "title": "Vier-Augen-Prinzip",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "190 – Vier-Augen-Prinzip\n\nStatus:   ⬜ TODO\nFür besonders kritische Entscheidungen optional verpflichtend.\n\n\n\n"
+  },
+  {
+    "id": 191,
+    "title": "Sanction Expiration Worker",
+    "phase": 20,
+    "phase_title": "MODERATION & CARDS",
+    "requirements": "191 – Sanction Expiration Worker\n\nStatus:   ⬜ TODO\nWorker prüft abgelaufene:\n\nLIMITED\n\nComment Blocks\n\nForum Blocks\n\nIP Blocks\n\nund hebt sie automatisch auf.\n\n\n\nPHASE 21 – SPORT DATA\n\n"
+  },
+  {
+    "id": 192,
+    "title": "Competition Management",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "192 – Competition Management\n\nStatus:   ⬜ TODO\nStart:\n\nÖsterreichische Bundesliga\n\n\n\n"
+  },
+  {
+    "id": 193,
+    "title": "Season Management",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "193 – Season Management\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 194,
+    "title": "Club Management",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "194 – Club Management\n\nStatus:   ⬜ TODO\nInklusive Vereinsfarben für Branding.\n\n\n\n"
+  },
+  {
+    "id": 195,
+    "title": "Match Management",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "195 – Match Management\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 196,
+    "title": "Results",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "196 – Results\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 197,
+    "title": "Standings",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "197 – Standings\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 198,
+    "title": "Standings Calculation",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "198 – Standings Calculation\n\nStatus:   ⬜ TODO\nKurvenfunk soll Tabelle aus Spieldaten berechnen können.\n\n\n\n"
+  },
+  {
+    "id": 199,
+    "title": "Sports Provider Interface",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "199 – Sports Provider Interface\n\nStatus:   ⬜ TODO\nExterne API von interner Logik entkoppeln.\n\n\n\n"
+  },
+  {
+    "id": 200,
+    "title": "Fake Sports Provider",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "200 – Fake Sports Provider\n\nStatus:   ⬜ TODO\nPipeline ohne echten Anbieter testen.\n\n\n\n"
+  },
+  {
+    "id": 201,
+    "title": "Sports Import Queue",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "201 – Sports Import Queue\n\nStatus:   ⬜ TODO\n\nsports-import\n\n\n\n"
+  },
+  {
+    "id": 202,
+    "title": "Club Matching",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "202 – Club Matching\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 203,
+    "title": "Match Matching",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "203 – Match Matching\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 204,
+    "title": "Sports Scheduler",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "204 – Sports Scheduler\n\nStatus:   ⬜ TODO\nUnterschiedliche Intervalle für Fixtures, Ergebnisse und ggf. Live Status.\n\n\n\n"
+  },
+  {
+    "id": 205,
+    "title": "Correction Interface",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "205 – Correction Interface\n\nStatus:   ⬜ TODO\nAdmin kann falsche Providerdaten korrigieren.\n\n\n\n"
+  },
+  {
+    "id": 206,
+    "title": "echte Vereinsseiten",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "206 – echte Vereinsseiten\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 207,
+    "title": "echte Spielseiten",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "207 – echte Spielseiten\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 208,
+    "title": "echte Tabelle",
+    "phase": 21,
+    "phase_title": "SPORT DATA",
+    "requirements": "208 – echte Tabelle\n\nStatus:   ⬜ TODO\nPHASE 22 – FORUM\n\n"
+  },
+  {
+    "id": 209,
+    "title": "Forum Kategorien",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "209 – Forum Kategorien\n\nStatus:   ⬜ TODO\n\nBeispiele:\n\nBundesliga\n\nVereine\n\nNationalteam\n\nInternational\n\nOff Topic\n\n\n\n"
+  },
+  {
+    "id": 210,
+    "title": "Vereinsforen",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "210 – Vereinsforen\n\nStatus:   ⬜ TODO\nAutomatisch mit Club verbinden.\n\n\n\n"
+  },
+  {
+    "id": 211,
+    "title": "Threads",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "211 – Threads\n\nStatus:   ⬜ TODO\nPermission\n\nACTIVE → erlaubt\n\nLIMITED → verboten\n\nBANNED → verboten\n\n\n\n"
+  },
+  {
+    "id": 212,
+    "title": "Posts",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "212 – Posts\n\nStatus:   ⬜ TODO\nGleiche Statusregeln.\n\n\n\n"
+  },
+  {
+    "id": 213,
+    "title": "Replies",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "213 – Replies\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 214,
+    "title": "Thread Pagination",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "214 – Thread Pagination\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 215,
+    "title": "Thread Subscriptions",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "215 – Thread Subscriptions\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 216,
+    "title": "Unread Tracking",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "216 – Unread Tracking\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 217,
+    "title": "Last Read Position",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "217 – Last Read Position\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 218,
+    "title": "Thread Pinning",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "218 – Thread Pinning\n\nStatus:   ⬜ TODO\nModerator Permission.\n\n\n\n"
+  },
+  {
+    "id": 219,
+    "title": "Thread Locking",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "219 – Thread Locking\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 220,
+    "title": "Thread Moving",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "220 – Thread Moving\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 221,
+    "title": "Thread Merging",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "221 – Thread Merging\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 222,
+    "title": "Forum Reports",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "222 – Forum Reports\n\nStatus:   ⬜ TODO\nGleiches Report-/Moderationssystem wie Kommentare verwenden.\n\n\n\n"
+  },
+  {
+    "id": 223,
+    "title": "Article / Forum Integration",
+    "phase": 22,
+    "phase_title": "FORUM",
+    "requirements": "223 – Article / Forum Integration\n\nStatus:   ⬜ TODO\n\nZiel:\n\nArtikel\n\n↓\n\nDiskussion\n\n↓\n\nForum-Kontext\n\nKeine unnötigen getrennten Communitysysteme.\n\n\n\nPHASE 23 – NOTIFICATIONS\n\n"
+  },
+  {
+    "id": 224,
+    "title": "Notification Types",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "224 – Notification Types\n\nStatus:   ⬜ TODO\ncomment_reply\n\nthread_reply\n\nyellow_card\n\nred_card\n\nlimited\n\nban\n\nappeal\n\nsystem\n\n\n\n"
+  },
+  {
+    "id": 225,
+    "title": "Notification Queue",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "225 – Notification Queue\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 226,
+    "title": "In-App Notifications",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "226 – In-App Notifications\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 227,
+    "title": "Read / Unread",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "227 – Read / Unread\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 228,
+    "title": "E-Mail Notifications",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "228 – E-Mail Notifications\n\nStatus:   ⬜ TODO\nAsynchron über Worker.\n\n\n\n"
+  },
+  {
+    "id": 229,
+    "title": "Notification Preferences",
+    "phase": 23,
+    "phase_title": "NOTIFICATIONS",
+    "requirements": "229 – Notification Preferences\n\nStatus:   ⬜ TODO\nBenutzer kann pro Typ entscheiden:\n\nIn App\n\nE-Mail\n\nAus\n\nSicherheits-/Moderationsnachrichten dürfen nicht komplett deaktivierbar sein.\n\n\n\nPHASE 24 – SEARCH\n\n"
+  },
+  {
+    "id": 230,
+    "title": "Article Index",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "230 – Article Index\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 231,
+    "title": "Club Index",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "231 – Club Index\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 232,
+    "title": "Forum Index",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "232 – Forum Index\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 233,
+    "title": "Global Search",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "233 – Global Search\n\nStatus:   ⬜ TODO\nErgebnisse gruppieren:\n\nArtikel\n\nVereine\n\nForum\n\n\n\n"
+  },
+  {
+    "id": 234,
+    "title": "Search Ranking",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "234 – Search Ranking\n\nStatus:   ⬜ TODO\nBei eingeloggten Fans kann Lieblingsverein leicht höher gewichtet werden.\n\nSuche darf trotzdem relevante allgemeine Ergebnisse anzeigen.\n\n\n\n"
+  },
+  {
+    "id": 235,
+    "title": "Search Index Queue",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "235 – Search Index Queue\n\nStatus:   ⬜ TODO\nAlle Indexänderungen über Worker.\n\n\n\n"
+  },
+  {
+    "id": 236,
+    "title": "Full Reindex",
+    "phase": 24,
+    "phase_title": "SEARCH",
+    "requirements": "236 – Full Reindex\n\nStatus:   ⬜ TODO\nMeilisearch muss vollständig aus PostgreSQL rekonstruiert werden können.\n\n\n\nPHASE 25 – ADMIN SYSTEM\n\n"
+  },
+  {
+    "id": 237,
+    "title": "Admin Dashboard",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "237 – Admin Dashboard\n\nStatus:   ⬜ TODO\nAnzeigen:\n\n   ●   User\n\n   ●   Artikel\n\n   ●   Reports\n\n   ●   aktive LIMITED User\n\n   ●   BANNED User\n\n   ●   gelbe Karten\n\n   ●   rote Karten\n\n   ●   Imports\n\n   ●   Systemstatus\n\n"
+  },
+  {
+    "id": 238,
+    "title": "User Search",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "238 – User Search\n\nStatus:   ⬜ TODO\nSuchen nach:\n\nNickname\n\nE-Mail\n\nUser ID\n\n\n\n"
+  },
+  {
+    "id": 239,
+    "title": "User Detail",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "239 – User Detail\n\nStatus:   ⬜ TODO\nAnzeigen:\n\nProfil\n\nLieblingsverein\n\nStatus\n\nRollen\n\nGelbe Karten\n\nRote Karten\n\nSanktionen\n\nIP Blocks\n\nReports\n\nAudit History\n\n\n\n"
+  },
+  {
+    "id": 240,
+    "title": "Editorial Admin",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "240 – Editorial Admin\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 241,
+    "title": "Import Admin",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "241 – Import Admin\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 242,
+    "title": "Sports Admin",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "242 – Sports Admin\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 243,
+    "title": "Moderation Admin",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "243 – Moderation Admin\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 244,
+    "title": "Audit Viewer",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "244 – Audit Viewer\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 245,
+    "title": "System Status",
+    "phase": 25,
+    "phase_title": "ADMIN SYSTEM",
+    "requirements": "245 – System Status\n\nStatus:   ⬜ TODO\nAnzeigen:\n\nPostgreSQL\n\nRedis\n\nKeycloak\n\nMeilisearch\n\nWorker\n\nQueues\n\nImports\n\n\n\nPHASE 26 – PRIVACY & SECURITY\n\n"
+  },
+  {
+    "id": 246,
+    "title": "Data Classification",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "246 – Data Classification\n\nStatus:   ⬜ TODO\nDaten kategorisieren.\n\n\n\n"
+  },
+  {
+    "id": 247,
+    "title": "Data Minimization",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "247 – Data Minimization\n\nStatus:   ⬜ TODO\nNur wirklich notwendige personenbezogene Daten speichern.\n\n"
+  },
+  {
+    "id": 248,
+    "title": "IP Retention Policy",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "248 – IP Retention Policy\n\nStatus:   ⬜ TODO\nFestlegen:\n\n   ●   wie lange IP-bezogene Hashes gespeichert werden\n\n   ●   wann sie gelöscht werden\n\n   ●   wofür sie verwendet werden\n\n\n\n"
+  },
+  {
+    "id": 249,
+    "title": "Moderation Retention",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "249 – Moderation Retention\n\nStatus:   ⬜ TODO\nFestlegen, wie lange Karten, Sanktionen und Auditdaten gespeichert werden.\n\n\n\n"
+  },
+  {
+    "id": 250,
+    "title": "Datenexport",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "250 – Datenexport\n\nStatus:   ⬜ TODO\nBenutzer kann personenbezogene Daten exportieren.\n\n\n\n"
+  },
+  {
+    "id": 251,
+    "title": "Accountlöschung",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "251 – Accountlöschung\n\nStatus:   ⬜ TODO\nWas gemacht werden muss\n\n   ●   Keycloak Account\n\n   ●   Profil\n\n   ●   Preferences\n\n   ●   persönliche Daten\n\nbearbeiten.\n\nCommunitybeiträge können, sofern rechtlich/inhaltlich sinnvoll, anonymisiert werden:\n\nGelöschter Benutzer\n\n\n\n"
+  },
+  {
+    "id": 252,
+    "title": "Security Headers",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "252 – Security Headers\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 253,
+    "title": "Content Security Policy",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "253 – Content Security Policy\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 254,
+    "title": "CORS",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "254 – CORS\n\nStatus:   ⬜ TODO\nNur erlaubte Kurvenfunk Origins.\n\n\n\n"
+  },
+  {
+    "id": 255,
+    "title": "XSS Protection",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "255 – XSS Protection\n\nStatus:   ⬜ TODO\nBesonders für:\n\n   ●   Kommentare\n\n   ●   Forum\n\n   ●   Artikel Editor\n\n\n\n"
+  },
+  {
+    "id": 256,
+    "title": "Upload Security",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "256 – Upload Security\n\nStatus:   ⬜ TODO\nPrüfen:\n\n   ●   MIME\n\n   ●   Größe\n\n   ●   Dateityp\n\n   ●   Extension\n\n   ●   gefährliche Inhalte\n\n\n\n"
+  },
+  {
+    "id": 257,
+    "title": "Rate Limits",
+    "phase": 26,
+    "phase_title": "PRIVACY & SECURITY",
+    "requirements": "257 – Rate Limits\n\nStatus:   ⬜ TODO\nSeparate Limits für:\n\nLogin\n\nRegister\n\nReset\n\nComment\n\nVote\n\nForum\n\nSearch\n\nReports\n\n\n\nPHASE 27 – PERFORMANCE\n\n"
+  },
+  {
+    "id": 258,
+    "title": "Redis Cache Strategy",
+    "phase": 27,
+    "phase_title": "PERFORMANCE",
+    "requirements": "258 – Redis Cache Strategy\n\nStatus:   ⬜ TODO\nGeeignet:\n\n   ●   Tabelle\n\n   ●   Vereinsinfos\n\n   ●   häufige Ligaabfragen\n\nNicht blind alles cachen.\n\n\n\n"
+  },
+  {
+    "id": 259,
+    "title": "Personalized Feed Performance",
+    "phase": 27,
+    "phase_title": "PERFORMANCE",
+    "requirements": "259 – Personalized Feed Performance\n\nStatus:   ⬜ TODO\nVereinspriorisierung so umsetzen, dass nicht für jeden Benutzer komplette\nindividuelle Newslisten gespeichert werden müssen.\n\nRanking zur Anfragezeit oder mit effizienten vorbereiteten Querys.\n\n\n\n"
+  },
+  {
+    "id": 260,
+    "title": "Database Indexes",
+    "phase": 27,
+    "phase_title": "PERFORMANCE",
+    "requirements": "260 – Database Indexes\n\nStatus:   ⬜ TODO\nBesonders:\n\nArticle.publishedAt\n\nArticleClub.clubId\n\nComment.articleId\n\nComment.createdAt\n\nPost.threadId\n\nMatch.kickoff\n\nNotification.userId\n\nUser.nickname\n\nUser.favoriteClubId\n\n\n\n"
+  },
+  {
+    "id": 261,
+    "title": "Slow Query Monitoring",
+    "phase": 27,
+    "phase_title": "PERFORMANCE",
+    "requirements": "261 – Slow Query Monitoring\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 262,
+    "title": "Frontend Performance",
+    "phase": 27,
+    "phase_title": "PERFORMANCE",
+    "requirements": "262 – Frontend Performance\n\nStatus:   ⬜ TODO\nPHASE 28 – TESTING\n\n"
+  },
+  {
+    "id": 263,
+    "title": "Unit Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "263 – Unit Tests\n\nStatus:   ⬜ TODO\nBesonders testen:\n\n   ●   Permission System\n\n   ●   ACTIVE/LIMITED/BANNED\n\n   ●   drei Gelbe → Rot\n\n   ●   direkte Rote\n\n   ●   Club Matching\n\n   ●   News Ranking\n\n   ●   Tabellenberechnung\n\n\n\n"
+  },
+  {
+    "id": 264,
+    "title": "Integration Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "264 – Integration Tests\n\nStatus:   ⬜ TODO\nTesten:\n\n   ●   PostgreSQL\n\n   ●   Redis\n\n   ●   BullMQ\n\n   ●   Prisma\n\n\n\n"
+  },
+  {
+    "id": 265,
+    "title": "Auth Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "265 – Auth Tests\n\nStatus:   ⬜ TODO\nTestfälle:\n\nE-Mail Register\n\nVerification\n\nLogin\n\nGoogle Login\n\nOnboarding\n\nNickname\n\nClub Selection\n\nNeutral Selection\n\nLogout\n\nReset\n\n\n\n"
+  },
+  {
+    "id": 266,
+    "title": "Moderation Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "266 – Moderation Tests\n\nStatus:   ⬜ TODO\nTestfälle:\n\n1x Gelb\n\n2x Gelb\n\n3x Gelb → Rot\n\ndirekt Rot\n\nLIMITED\n\nLIMITED Ablauf\n\nBANNED\n\nSession Revoke\n\nIP Block\n\n\n\n"
+  },
+  {
+    "id": 267,
+    "title": "Personalization Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "267 – Personalization Tests\n\nStatus:   ⬜ TODO\nTesten:\n\nNeutral → Standard Theme\n\nRapid Fan → Rapid Theme\n\nClub News priorisiert\n\nClubwechsel\n\nNeutralwechsel\n\n\n\n"
+  },
+  {
+    "id": 268,
+    "title": "Import Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "268 – Import Tests\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 269,
+    "title": "Sports Tests",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "269 – Sports Tests\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 270,
+    "title": "E2E User Flow",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "270 – E2E User Flow\n\nStatus:   ⬜ TODO\nE-Mail User\n\nRegister\n\n→ Verification Mail\n\n→ Verify\n\n→ Login\n\n→ Nickname wählen\n\n→ Verein/Neutral wählen\n\n→ Startseite\n\n→ Kommentar\n\nGoogle User\n\nGoogle Login\n\n→ User wird angelegt\n\n→ Nickname\n\n→ Verein/Neutral\n\n→ personalisierte Startseite\n\n\n\n"
+  },
+  {
+    "id": 271,
+    "title": "E2E Moderation Flow",
+    "phase": 28,
+    "phase_title": "TESTING",
+    "requirements": "271 – E2E Moderation Flow\n\nStatus:   ⬜ TODO\nKommentar\n\n→ Report\n\n→ Moderator\n\n→ Gelbe Karte\n\n→ Notification\n\n→ weitere Verstöße\n\n→ dritte Gelbe\n\n→ Rot\n\n→ Session Revoke\n\n\n\nPHASE 29 – MONITORING\n\n"
+  },
+  {
+    "id": 272,
+    "title": "API Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "272 – API Monitoring\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 273,
+    "title": "Worker Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "273 – Worker Monitoring\n\nStatus:   ⬜ TODO\nQueues überwachen:\n\nwaiting\n\nactive\n\ncompleted\n\nfailed\n\ndelayed\n\n\n\n"
+  },
+  {
+    "id": 274,
+    "title": "Import Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "274 – Import Monitoring\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 275,
+    "title": "Moderation Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "275 – Moderation Monitoring\n\nStatus:   ⬜ TODO\nBeobachten:\n\n   ●    Reports\n\n   ●    Karten\n\n   ●    Sperren\n\n   ●    IP Blocks\n\n   ●    Fehlalarme\n\n\n\n"
+  },
+  {
+    "id": 276,
+    "title": "CPU / RAM Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "276 – CPU / RAM Monitoring\n\nStatus:   ⬜ TODO\nGerade wegen DEV/STAGING/PROD auf demselben VPS wichtig.\n\n\n\n"
+  },
+  {
+    "id": 277,
+    "title": "Disk Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "277 – Disk Monitoring\n\nStatus:   ⬜ TODO\nBesonders:\n\nPostgreSQL\n\nMeilisearch\n\nBackups\n\nUploads\n\n\n\n"
+  },
+  {
+    "id": 278,
+    "title": "Backup Monitoring",
+    "phase": 29,
+    "phase_title": "MONITORING",
+    "requirements": "278 – Backup Monitoring\n\nStatus:   ⬜ TODO\nFehlgeschlagene Backups müssen erkannt werden.\n\n\n\nPHASE 30 – SEO & ACCESSIBILITY\n\n"
+  },
+  {
+    "id": 279,
+    "title": "Semantic HTML",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "279 – Semantic HTML\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 280,
+    "title": "Keyboard Navigation",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "280 – Keyboard Navigation\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 281,
+    "title": "Screenreader Support",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "281 – Screenreader Support\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 282,
+    "title": "Club Branding Accessibility",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "282 – Club Branding Accessibility\n\nStatus:   ⬜ TODO\nVereinsfarben dürfen Kontrast und Lesbarkeit nicht zerstören.\n\nTheme muss automatisch sichere Textfarben verwenden.\n\n\n\n"
+  },
+  {
+    "id": 283,
+    "title": "Sitemap",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "283 – Sitemap\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 284,
+    "title": "robots.txt",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "284 – robots.txt\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 285,
+    "title": "Canonicals",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "285 – Canonicals\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 286,
+    "title": "OpenGraph",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "286 – OpenGraph\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 287,
+    "title": "Structured Data",
+    "phase": 30,
+    "phase_title": "SEO & ACCESSIBILITY",
+    "requirements": "287 – Structured Data\n\nStatus:   ⬜ TODO\nUnter anderem:\n\nNewsArticle\n\nSportsEvent\n\nBreadcrumbList\n\nOrganization\n\n\n\nPHASE 31 – PRODUCTION PREPARATION\n\n"
+  },
+  {
+    "id": 288,
+    "title": "Production Secrets erzeugen",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "288 – Production Secrets erzeugen\n\nStatus:   ⬜ TODO\nAlle Entwicklungs-Secrets ersetzen.\n\n\n\n"
+  },
+  {
+    "id": 289,
+    "title": "Production Keycloak finalisieren",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "289 – Production Keycloak finalisieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 290,
+    "title": "Production PostgreSQL finalisieren",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "290 – Production PostgreSQL finalisieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 291,
+    "title": "Production Redis finalisieren",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "291 – Production Redis finalisieren\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 292,
+    "title": "Production Meilisearch finalisieren",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "292 – Production Meilisearch finalisieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 293,
+    "title": "Production R2",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "293 – Production R2\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 294,
+    "title": "Backup Restore Test",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "294 – Backup Restore Test\n\nStatus:   ⬜ TODO\nKompletten realistischen Restore durchführen.\n\n\n\n"
+  },
+  {
+    "id": 295,
+    "title": "Security Audit",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "295 – Security Audit\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 296,
+    "title": "Privacy Audit",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "296 – Privacy Audit\n\nStatus:   ⬜ TODO\nInsbesondere:\n\n   ●   IP Hashing\n\n   ●   Moderationsdaten\n\n   ●   Accountlöschung\n\n   ●   Datenexport\n\n   ●   Retention\n\n\n\n"
+  },
+  {
+    "id": 297,
+    "title": "Load Test",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "297 – Load Test\n\nStatus:   ⬜ TODO\nRealistische Matchday-Szenarien:\n\n100\n\n250\n\n500\n\n1000\n\ngleichzeitige Benutzer schrittweise testen.\n\n\n\n"
+  },
+  {
+    "id": 298,
+    "title": "Impressum",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "298 – Impressum\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 299,
+    "title": "Datenschutzerklärung",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "299 – Datenschutzerklärung\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 300,
+    "title": "Nutzungsbedingungen",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "300 – Nutzungsbedingungen\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 301,
+    "title": "Community Guidelines",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "301 – Community Guidelines\n\nStatus:   ⬜ TODO\nMuss erklären\n\n   ●   erlaubtes Verhalten\n\n   ●   gelbe Karten\n\n   ●   rote Karten\n\n   ●   LIMITED\n\n   ●   BANNED\n\n   ●   direkte rote Karte\n\n   ●   Einsprüche\n\n\n\n"
+  },
+  {
+    "id": 302,
+    "title": "Moderationsrichtlinien intern",
+    "phase": 31,
+    "phase_title": "PRODUCTION PREPARATION",
+    "requirements": "302 – Moderationsrichtlinien intern\n\nStatus:   ⬜ TODO\nMuss definieren\n\nWann:\n\nHinweis\n\nGelb\n\nLIMITED\n\nRot\n\nIP Block\n\nangewendet wird.\n\n\n\nPHASE 32 – BETA\n\n"
+  },
+  {
+    "id": 303,
+    "title": "Testdaten entfernen",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "303 – Testdaten entfernen\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 304,
+    "title": "echte Vereine importieren",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "304 – echte Vereine importieren\n\nStatus:   ⬜ TODO\nInklusive:\n\n   ●   Logos\n\n   ●   Vereinsfarben\n\n   ●   Aliases\n\n\n\n"
+  },
+  {
+    "id": 305,
+    "title": "Saison importieren",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "305 – Saison importieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 306,
+    "title": "Spiele importieren",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "306 – Spiele importieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 307,
+    "title": "echten Newsprovider aktivieren",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "307 – echten Newsprovider aktivieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 308,
+    "title": "Initial Content",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "308 – Initial Content\n\nStatus:   ⬜ TODO\nStartseite darf beim Beta-Start nicht leer wirken.\n\n\n\n"
+  },
+  {
+    "id": 309,
+    "title": "Closed Beta",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "309 – Closed Beta\n\nStatus:   ⬜ TODO\nZiel:\n\n10–30 Benutzer\n\nMöglichst Fans unterschiedlicher Vereine sowie neutrale Benutzer.\n\n\n\n"
+  },
+  {
+    "id": 310,
+    "title": "Personalization Feedback",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "310 – Personalization Feedback\n\nStatus:   ⬜ TODO\nPrüfen:\n\n   ●   gefällt Vereinsbranding?\n\n   ●   ist es zu dominant?\n\n   ●   werden Vereinsnews sinnvoll priorisiert?\n\n   ●   funktioniert Neutral gut?\n\n\n\n"
+  },
+  {
+    "id": 311,
+    "title": "Moderation Beta Test",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "311 – Moderation Beta Test\n\nStatus:   ⬜ TODO\nKarten-/LIMITED-/Ban-System gezielt testen.\n\n\n\n"
+  },
+  {
+    "id": 312,
+    "title": "Bugs klassifizieren",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "312 – Bugs klassifizieren\n\nStatus:   ⬜ TODO\nCRITICAL\n\nHIGH\n\nMEDIUM\n\nLOW\n\n"
+  },
+  {
+    "id": 313,
+    "title": "Critical Bugs beheben",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "313 – Critical Bugs beheben\n\nStatus:   ⬜ TODO\nAlle vor Launch.\n\n\n\n"
+  },
+  {
+    "id": 314,
+    "title": "High Bugs beheben",
+    "phase": 32,
+    "phase_title": "BETA",
+    "requirements": "314 – High Bugs beheben\n\nStatus:   ⬜ TODO\nLaunch-relevante vollständig beheben.\n\n\n\nPHASE 33 – SOFT LAUNCH\n\n"
+  },
+  {
+    "id": 315,
+    "title": "Production Deployment",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "315 – Production Deployment\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 316,
+    "title": "kurvenfunk.at aktivieren",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "316 – kurvenfunk.at aktivieren\n\nStatus:   ⬜ TODO\nNoch ohne große öffentliche Bewerbung.\n\n\n\n"
+  },
+  {
+    "id": 317,
+    "title": "Registrierung öffnen",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "317 – Registrierung öffnen\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 318,
+    "title": "Onboarding überwachen",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "318 – Onboarding überwachen\n\nStatus:   ⬜ TODO\nMetriken:\n\n   ●   Registrierung erfolgreich\n\n   ●   Verifizierung erfolgreich\n\n   ●   Onboarding gestartet\n\n   ●   Nickname gewählt\n\n   ●   Verein gewählt\n\n   ●   Neutral gewählt\n\n   ●   Onboarding abgebrochen\n\n\n\n"
+  },
+  {
+    "id": 319,
+    "title": "Personalization überwachen",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "319 – Personalization überwachen\n\nStatus:   ⬜ TODO\nAnalysieren:\n\n   ●   Vereinsverteilung\n\n   ●   Neutral-Anteil\n\n   ●   Nutzung Vereinsnews\n\n\n\n"
+  },
+  {
+    "id": 320,
+    "title": "Moderation überwachen",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "320 – Moderation überwachen\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 321,
+    "title": "Infrastruktur überwachen",
+    "phase": 33,
+    "phase_title": "SOFT LAUNCH",
+    "requirements": "321 – Infrastruktur überwachen\n\nStatus:   ⬜ TODO\nPHASE 34 – PUBLIC LAUNCH\n\n"
+  },
+  {
+    "id": 322,
+    "title": "Public Launch",
+    "phase": 34,
+    "phase_title": "PUBLIC LAUNCH",
+    "requirements": "322 – Public Launch\n\nStatus:   ⬜ TODO\nKurvenfunk offiziell veröffentlichen.\n\n\n\n"
+  },
+  {
+    "id": 323,
+    "title": "Suchmaschinenindexierung aktivieren",
+    "phase": 34,
+    "phase_title": "PUBLIC LAUNCH",
+    "requirements": "323 – Suchmaschinenindexierung aktivieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 324,
+    "title": "Marketing starten",
+    "phase": 34,
+    "phase_title": "PUBLIC LAUNCH",
+    "requirements": "324 – Marketing starten\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 325,
+    "title": "Community Aufbau",
+    "phase": 34,
+    "phase_title": "PUBLIC LAUNCH",
+    "requirements": "325 – Community Aufbau\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 326,
+    "title": "KPIs erfassen",
+    "phase": 34,
+    "phase_title": "PUBLIC LAUNCH",
+    "requirements": "326 – KPIs erfassen\n\nStatus:   ⬜ TODO\nBeobachten:\n\nRegistrierungen\n\nVerified Accounts\n\nOnboarding Completion\n\nClub Selection\n\nNeutral Selection\n\nDaily Active Users\n\nMonthly Active Users\n\nKommentare\n\nVotes\n\nThreads\n\nPosts\n\nReports\n\nYellow Cards\n\nRed Cards\n\nLimited Accounts\n\nRetention\n\nArtikelaufrufe\n\n\n\nPHASE 35 – STABILIZATION\n\n"
+  },
+  {
+    "id": 327,
+    "title": "Bugfixing",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "327 – Bugfixing\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 328,
+    "title": "Performance",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "328 – Performance\n\nStatus:   ⬜ TODO\n\n"
+  },
+  {
+    "id": 329,
+    "title": "Moderationsaufwand analysieren",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "329 – Moderationsaufwand analysieren\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 330,
+    "title": "Karten-System analysieren",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "330 – Karten-System analysieren\n\nStatus:   ⬜ TODO\nPrüfen:\n\n   ●   werden zu viele gelbe Karten vergeben?\n\n   ●   sind drei Gelbe sinnvoll?\n\n   ●   sollte Gelb irgendwann verfallen?\n\n   ●   wie oft wird direkt Rot benötigt?\n\n\n\n"
+  },
+  {
+    "id": 331,
+    "title": "IP Block Effektivität prüfen",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "331 – IP Block Effektivität prüfen\n\nStatus:   ⬜ TODO\nFehlalarme und Umgehbarkeit beobachten.\n\n\n\n"
+  },
+  {
+    "id": 332,
+    "title": "Personalisierung analysieren",
+    "phase": 35,
+    "phase_title": "STABILIZATION",
+    "requirements": "332 – Personalisierung analysieren\n\nStatus:   ⬜ TODO\nPrüfen, ob Vereinsfans tatsächlich stärker mit Kurvenfunk interagieren.\n\n\n\nPHASE 36 – VERSION 1.1\n\n"
+  },
+  {
+    "id": 333,
+    "title": "Produktdaten auswerten",
+    "phase": 36,
+    "phase_title": "VERSION 1.1",
+    "requirements": "333 – Produktdaten auswerten\n\nStatus:   ⬜ TODO\n"
+  },
+  {
+    "id": 334,
+    "title": "Version 1.1 planen",
+    "phase": 36,
+    "phase_title": "VERSION 1.1",
+    "requirements": "334 – Version 1.1 planen\n\nStatus:   ⬜ TODO\nMögliche Erweiterungen:\n\n2. Liga\n\nÖFB Cup\n\nNationalteam\n\nweitere Wettbewerbe\n\nMentions\n\nBookmarks\n\nFollowing\n\nPWA\n\nPush Notifications\n\nweitere Social Logins\n\nweitere Länder\n\n\n\n"
+  }
+]

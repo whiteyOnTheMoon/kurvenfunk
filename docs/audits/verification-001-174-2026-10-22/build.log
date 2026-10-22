@@ -1,0 +1,77 @@
+• turbo 2.10.9
+
+   • Packages in scope: @kurvenfunk/config, @kurvenfunk/database, @kurvenfunk/logger, @kurvenfunk/types, @kurvenfunk/ui, @kurvenfunk/validation, api, web, worker
+   • Running build in 9 packages
+   • Remote caching disabled
+
+@kurvenfunk/database:build: cache bypass, force executing 1fe314ded8850a51
+@kurvenfunk/validation:build: cache bypass, force executing 6a2c7e6fc0a9946e
+@kurvenfunk/database:build: $ tsc
+@kurvenfunk/validation:build: $ tsc
+@kurvenfunk/logger:build: cache bypass, force executing 03a3bdb1893a3965
+@kurvenfunk/logger:build: $ tsc
+@kurvenfunk/types:build: cache bypass, force executing 4ad3f81aa435540c
+web:build: cache bypass, force executing 149c652b3ea5d75c
+@kurvenfunk/types:build: $ tsc
+api:build: cache bypass, force executing 6504f5959436875d
+web:build: $ next build
+api:build: $ nest build
+web:build: ▲ Next.js 16.3.0 (Turbopack)
+web:build: ✓ Running next.config.ts took 198ms
+web:build: 
+web:build:   Creating an optimized production build ...
+web:build: ✓ Compiled successfully in 574ms
+web:build:   Running TypeScript ...
+web:build:   Finished TypeScript in 1625ms ...
+web:build:   Collecting page data using 4 workers ...
+web:build:   Generating static pages using 4 workers (0/28) ...
+web:build:   Generating static pages using 4 workers (7/28) 
+web:build:   Generating static pages using 4 workers (14/28) 
+web:build:   Generating static pages using 4 workers (21/28) 
+web:build: ✓ Generating static pages using 4 workers (28/28) in 627ms
+web:build:   Finalizing page optimization ...
+web:build: 
+web:build: Route (app)
+web:build: ┌ ○ /
+web:build: ├ ○ /_not-found
+web:build: ├ ○ /403
+web:build: ├ ○ /429
+web:build: ├ ○ /500
+web:build: ├ ○ /admin
+web:build: ├ ○ /admin/artikel
+web:build: ├ ƒ /admin/artikel/[id]
+web:build: ├ ○ /admin/artikel/neu
+web:build: ├ ○ /admin/benutzer
+web:build: ├ ○ /admin/forum
+web:build: ├ ○ /admin/importe
+web:build: ├ ○ /admin/kategorien
+web:build: ├ ○ /admin/medien
+web:build: ├ ○ /admin/moderation
+web:build: ├ ○ /admin/sportdaten
+web:build: ├ ○ /admin/system
+web:build: ├ ○ /admin/tags
+web:build: ├ ƒ /artikel/[slug]
+web:build: ├ ○ /design-system
+web:build: ├ ○ /einstellungen
+web:build: ├ ƒ /health
+web:build: ├ ○ /login
+web:build: ├ ○ /news
+web:build: ├ ○ /onboarding
+web:build: ├ ○ /profil
+web:build: ├ ○ /settings/profile
+web:build: ├ ○ /spiele
+web:build: ├ ƒ /spiele/[id]
+web:build: ├ ○ /tabelle
+web:build: └ ƒ /vereine/[slug]
+web:build: 
+web:build: 
+web:build: ○  (Static)   prerendered as static content
+web:build: ƒ  (Dynamic)  server-rendered on demand
+web:build: 
+worker:build: cache bypass, force executing 9f313efd84b219e8
+worker:build: $ nest build
+
+ Tasks:    7 successful, 7 total
+Cached:    0 cached, 7 total
+  Time:    15.157s 
+

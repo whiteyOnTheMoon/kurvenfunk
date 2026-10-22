@@ -1,0 +1,6101 @@
+KURVENFUNK – MASTER PROJECT PLAN
+
+Version: 1.1​
+Projekt: Kurvenfunk​
+Domain: kurvenfunk.at​
+Initialer Markt: Österreich​
+Initialer Wettbewerb: Österreichische Bundesliga​
+Architektur: Modularer Monolith​
+Deployment: Docker Compose auf VPS​
+Umgebungen: Development / Staging / Production
+
+
+
+0. PROJEKTZIEL
+
+Kurvenfunk wird ein modernes österreichisches Fußballportal mit News, Sportdaten,
+Community und Forum.
+
+Der Schwerpunkt liegt nicht nur auf klassischen Fußballnachrichten, sondern auf
+einer starken Community rund um Vereine, Spiele und aktuelle Themen.
+
+Kurvenfunk soll dabei:
+
+   ●​   schnell sein
+
+   ●​   modular aufgebaut sein
+
+   ●​   einfach wartbar sein
+
+   ●​   automatisierte Newsimporte ermöglichen
+
+   ●​   automatisierte Sportdatenimporte ermöglichen
+
+   ●​   starke Moderationswerkzeuge besitzen
+
+   ●​   Vereinsfans personalisierte Inhalte zeigen
+
+   ●​   datenschutzbewusst aufgebaut sein
+
+   ●​   später auf weitere Wettbewerbe und Länder erweitert werden können
+
+
+
+1. ZENTRALE PRODUKTIDEE
+
+Kurvenfunk besteht langfristig aus fünf miteinander verbundenen Bereichen:
+
+NEWS
+
+  │
+
+  ├── Vereine
+  ├── Wettbewerbe
+
+  └── Spiele
+
+        │
+
+        ▼
+
+   DISKUSSION
+
+        │
+
+        ▼
+
+     FORUM
+
+        │
+
+        ▼
+
+   COMMUNITY
+
+News, Sportdaten und Community sollen nicht als getrennte Produkte wirken.
+
+Ein Benutzer soll beispielsweise auf einer Vereinsseite gleichzeitig sehen:
+
+SK Rapid Wien
+
+
+
+→ nächste Spiele
+
+→ letzte Ergebnisse
+
+→ Tabellenposition
+
+→ Rapid-News
+
+→ aktuelle Rapid-Diskussionen
+
+→ Rapid-Forum
+
+
+
+2. TECHNOLOGY STACK
+
+2.1 Frontend
+
+Next.js
+
+React
+
+TypeScript
+
+App Router
+Umsetzung
+
+Das Frontend übernimmt:
+
+   ●​   öffentliche Seiten
+
+   ●​   personalisierte Startseite
+
+   ●​   Vereinsbranding
+
+   ●​   Benutzerbereich
+
+   ●​   Community
+
+   ●​   Forum
+
+   ●​   Administration
+
+   ●​   SEO
+
+   ●​   SSR / Server Components, wo sinnvoll
+
+
+
+2.2 Backend
+
+NestJS
+
+TypeScript
+
+REST API
+
+Umsetzung
+
+Die API übernimmt:
+
+   ●​   Business Logic
+
+   ●​   Datenbankzugriff
+
+   ●​   Permissions
+
+   ●​   Benutzerprofile
+
+   ●​   Artikel
+
+   ●​   Kommentare
+
+   ●​   Forum
+
+   ●​   Sportdaten
+
+   ●​   Moderation
+
+   ●​   Importe
+   ●​   Suche
+
+   ●​   Administration
+
+
+
+2.3 Background Worker
+
+NestJS / Node.js
+
+BullMQ
+
+Redis
+
+Umsetzung
+
+Der Worker verarbeitet alles, was nicht während eines HTTP-Requests ausgeführt
+werden sollte.
+
+Dazu gehören:
+
+   ●​   Newsimporte
+
+   ●​   Sportdatenimporte
+
+   ●​   Suchindexierung
+
+   ●​   E-Mail-Versand
+
+   ●​   Benachrichtigungen
+
+   ●​   geplante Artikelveröffentlichung
+
+   ●​   Datenexport
+
+   ●​   Karten-/Sperr-Ablauf
+
+   ●​   Cleanup Jobs
+
+   ●​   Retry Jobs
+
+
+
+2.4 Datenbank
+
+PostgreSQL
+
+Prisma ORM
+
+Umsetzung
+
+PostgreSQL wird die zentrale Source of Truth.
+
+Alle relevanten Originaldaten müssen aus PostgreSQL wiederherstellbar sein.
+2.5 Authentifizierung
+
+Keycloak
+
+Umsetzung
+
+Keycloak übernimmt:
+
+   ●​   E-Mail-Registrierung
+
+   ●​   E-Mail-Verifizierung
+
+   ●​   Passwortverwaltung
+
+   ●​   Login
+
+   ●​   Passwort Reset
+
+   ●​   Google Login
+
+   ●​   später Apple/Facebook
+
+   ●​   Identity Provider
+
+   ●​   Sessions
+
+Kurvenfunk selbst speichert keine Passwörter.
+
+
+
+2.6 Redis
+
+Redis übernimmt:
+
+   ●​   BullMQ Queues
+
+   ●​   Cache
+
+   ●​   Rate Limits
+
+   ●​   temporäre Locks
+
+   ●​   technische Kurzzeitdaten
+
+Redis darf nicht Source of Truth für wichtige Geschäftsdaten sein.
+
+
+
+2.7 Suche
+
+Meilisearch
+
+Umsetzung
+
+Meilisearch indexiert:
+   ●​   Artikel
+
+   ●​   Vereine
+
+   ●​   Threads
+
+   ●​   später eventuell Forenbeiträge
+
+Der komplette Index muss jederzeit aus PostgreSQL neu aufgebaut werden können.
+
+
+
+2.8 Storage
+
+Development / Staging:
+
+MinIO
+
+Production:
+
+Cloudflare R2
+
+Umsetzung
+
+Die Anwendung erhält ein abstrahiertes Storage Interface.
+
+Dadurch weiß die Fachlogik nicht, ob MinIO oder R2 verwendet wird.
+
+
+
+3. UMGEBUNGEN
+
+Es werden drei logisch und technisch getrennte Umgebungen aufgebaut.
+
+DEV
+
+STAGING
+
+PRODUCTION
+
+
+
+4. DEVELOPMENT
+
+Zweck
+
+Development wird für aktive Entwicklung und technische Tests verwendet.
+
+Muss ermöglichen
+
+   ●​   experimentelle Änderungen
+
+   ●​   Migrationstests
+
+   ●​   Testdaten
+   ●​   Fake Provider
+
+   ●​   Debugging
+
+   ●​   Queue Tests
+
+   ●​   Auth Tests
+
+Domains
+
+dev.kurvenfunk.at
+
+api-dev.kurvenfunk.at
+
+auth-dev.kurvenfunk.at
+
+Development muss nicht dauerhaft laufen.
+
+
+
+5. STAGING
+
+Zweck
+
+Staging soll Production möglichst ähnlich sein.
+
+Muss ermöglichen
+
+   ●​   Release Tests
+
+   ●​   E2E Tests
+
+   ●​   Migrationstests
+
+   ●​   externe Provider Tests
+
+   ●​   Auth Tests
+
+   ●​   geschlossene Beta
+
+   ●​   manuelle Abnahme
+
+Domains
+
+staging.kurvenfunk.at
+
+api-staging.kurvenfunk.at
+
+auth-staging.kurvenfunk.at
+
+Staging sollte dauerhaft verfügbar sein.
+
+Optional Zugriff über Cloudflare Access schützen.
+6. PRODUCTION
+
+Zweck
+
+Öffentliches Live-System.
+
+Domains
+
+kurvenfunk.at
+
+www.kurvenfunk.at
+
+api.kurvenfunk.at
+
+auth.kurvenfunk.at
+
+Production verwendet:
+
+   ●​   eigene PostgreSQL-Instanz
+
+   ●​   eigene Redis-Instanz
+
+   ●​   eigenes Keycloak
+
+   ●​   eigenes Meilisearch
+
+   ●​   eigene Secrets
+
+   ●​   eigenen Storage
+
+   ●​   eigene Backups
+
+Keine Produktionsdaten werden mit DEV oder STAGING geteilt.
+
+
+
+7. DOCKER ENVIRONMENT SEPARATION
+
+Compose-Projekte:
+
+kurvenfunk-dev
+
+kurvenfunk-staging
+
+kurvenfunk-prod
+
+Umsetzung
+
+Keine festen container_name: Werte verwenden.
+
+Dadurch kann Docker die Services automatisch pro Projekt trennen.
+
+Beispiel:
+
+kurvenfunk-dev-web
+kurvenfunk-dev-api
+
+kurvenfunk-dev-worker
+
+
+
+kurvenfunk-staging-web
+
+kurvenfunk-staging-api
+
+kurvenfunk-staging-worker
+
+
+
+kurvenfunk-prod-web
+
+kurvenfunk-prod-api
+
+kurvenfunk-prod-worker
+
+
+
+8. PROJECT STRUCTURE
+
+kurvenfunk/
+
+│
+
+├── apps/
+
+│ ├── web/                   # Next.js Frontend
+
+│ ├── api/                  # NestJS HTTP API
+
+│ └── worker/                # Background Jobs / Imports
+
+│
+
+├── packages/
+
+│ ├── database/                # Prisma
+
+│ │ ├── prisma/
+
+│ │ │ ├── schema.prisma
+
+│ │ │ ├── migrations/
+
+│ │ │ └── seed.ts
+
+│ │ └── src/
+
+│ │
+
+│ ├── ui/                   # gemeinsame UI-Komponenten
+│ ├── config/          # ESLint, TS, gemeinsame Config
+
+│ ├── types/           # gemeinsame TypeScript Types
+
+│ ├── validation/       # gemeinsame Zod Schemas
+
+│ └── logger/          # Logging-Konfiguration
+
+│
+
+├── infrastructure/
+
+│ ├── docker/
+
+│ │ ├── api/
+
+│ │ ├── web/
+
+│ │ ├── worker/
+
+│ │ ├── postgres/
+
+│ │ ├── redis/
+
+│ │ ├── keycloak/
+
+│ │ ├── meilisearch/
+
+│ │ └── minio/
+
+│ │
+
+│ ├── keycloak/
+
+│ │ ├── realms/
+
+│ │ └── themes/
+
+│ │
+
+│ ├── scripts/
+
+│ │ ├── backup/
+
+│ │ ├── restore/
+
+│ │ ├── deploy/
+
+│ │ └── maintenance/
+
+│ │
+
+│ └── monitoring/
+│
+
+├── docs/
+
+│ ├── product/
+
+│ ├── architecture/
+
+│ ├── api/
+
+│ ├── database/
+
+│ ├── deployment/
+
+│ ├── security/
+
+│ └── decisions/
+
+│
+
+├── tests/
+
+│ ├── e2e/
+
+│ ├── integration/
+
+│ └── fixtures/
+
+│
+
+├── .github/
+
+│ └── workflows/
+
+│
+
+├── .env.example
+
+├── .gitignore
+
+│
+
+├── compose.yml
+
+├── compose.dev.yml
+
+├── compose.staging.yml
+
+├── compose.prod.yml
+
+│
+
+├── package.json
+├── pnpm-lock.yaml
+
+├── pnpm-workspace.yaml
+
+├── turbo.json
+
+└── README.md
+
+
+
+9. FRONTEND STRUCTURE
+
+apps/web/src/
+
+│
+
+├── app/
+
+│ ├── (public)/
+
+│ │ ├── page.tsx
+
+│ │ ├── news/
+
+│ │ ├── artikel/
+
+│ │ ├── vereine/
+
+│ │ ├── spiele/
+
+│ │ ├── tabelle/
+
+│ │ └── forum/
+
+│ │
+
+│ ├── (auth)/
+
+│ │ ├── login/
+
+│ │ ├── register/
+
+│ │ ├── password-reset/
+
+│ │ └── onboarding/
+
+│ │
+
+│ ├── (user)/
+
+│ │ ├── profil/
+
+│ │ ├── einstellungen/
+│ │ ├── benachrichtigungen/
+
+│ │ └── datenschutz/
+
+│ │
+
+│ └── admin/
+
+│
+
+├── components/
+
+│ ├── layout/
+
+│ ├── navigation/
+
+│ ├── articles/
+
+│ ├── comments/
+
+│ ├── forum/
+
+│ ├── football/
+
+│ ├── moderation/
+
+│ └── common/
+
+│
+
+├── features/
+
+│ ├── auth/
+
+│ ├── onboarding/
+
+│ ├── personalization/
+
+│ ├── articles/
+
+│ ├── clubs/
+
+│ ├── matches/
+
+│ ├── comments/
+
+│ ├── forum/
+
+│ ├── search/
+
+│ └── notifications/
+
+│
+├── hooks/
+
+├── lib/
+
+├── services/
+
+├── stores/
+
+├── styles/
+
+└── types/
+
+
+
+10. BACKEND STRUCTURE
+
+apps/api/src/
+
+│
+
+├── main.ts
+
+├── app.module.ts
+
+│
+
+├── common/
+
+│ ├── decorators/
+
+│ ├── exceptions/
+
+│ ├── filters/
+
+│ ├── guards/
+
+│ ├── interceptors/
+
+│ ├── middleware/
+
+│ ├── pipes/
+
+│ └── utils/
+
+│
+
+├── config/
+
+│
+
+├── modules/
+
+│ ├── auth/
+│ ├── users/
+
+│ ├── profiles/
+
+│ ├── onboarding/
+
+│ ├── personalization/
+
+│ │
+
+│ ├── clubs/
+
+│ ├── competitions/
+
+│ ├── seasons/
+
+│ ├── matches/
+
+│ ├── standings/
+
+│ │
+
+│ ├── articles/
+
+│ ├── categories/
+
+│ ├── tags/
+
+│ ├── media/
+
+│ │
+
+│ ├── comments/
+
+│ ├── reactions/
+
+│ ├── reports/
+
+│ │
+
+│ ├── forums/
+
+│ ├── threads/
+
+│ ├── posts/
+
+│ │
+
+│ ├── notifications/
+
+│ ├── moderation/
+
+│ ├── sanctions/
+│ ├── bans/
+
+│ ├── audit/
+
+│ │
+
+│ ├── imports/
+
+│ ├── providers/
+
+│ ├── search/
+
+│ │
+
+│ ├── admin/
+
+│ └── health/
+
+│
+
+└── infrastructure/
+
+    ├── database/
+
+    ├── redis/
+
+    ├── queue/
+
+    ├── storage/
+
+    ├── mail/
+
+    └── search/
+
+
+
+11. WORKER STRUCTURE
+
+apps/worker/src/
+
+│
+
+├── main.ts
+
+│
+
+├── processors/
+
+│ ├── imports/
+
+│ ├── search/
+
+│ ├── notifications/
+│ ├── cleanup/
+
+│ ├── sanctions/
+
+│ └── moderation/
+
+│
+
+├── jobs/
+
+├── schedulers/
+
+└── providers/
+
+
+
+12. USER ROLE & ACCOUNT STATUS MODEL
+
+Rollen und Accountstatus werden getrennt behandelt.
+
+Rollen
+
+USER
+
+TRUSTED_USER
+
+MODERATOR
+
+EDITOR
+
+ADMIN
+
+SUPERADMIN
+
+Bedeutung
+
+USER
+
+Normaler registrierter Benutzer.
+
+TRUSTED_USER
+
+Vertrauenswürdiger Benutzer; später eventuell weniger Spamlimits oder zusätzliche
+Communityrechte.
+
+MODERATOR
+
+Kann Communityinhalte moderieren.
+
+EDITOR
+
+Kann redaktionelle Inhalte verwalten.
+
+ADMIN
+Kann große Teile der Plattform administrieren.
+
+SUPERADMIN
+
+Technische und vollständige administrative Rechte.
+
+
+
+Accountstatus
+
+ACTIVE
+
+LIMITED
+
+BANNED
+
+ACTIVE
+
+Normaler Zustand.
+
+Darf entsprechend seiner Rolle alle erlaubten Funktionen verwenden.
+
+LIMITED
+
+Benutzer darf weiterhin:
+
+   ●​   Portal lesen
+
+   ●​   News lesen
+
+   ●​   Spiele ansehen
+
+   ●​   Forum lesen
+
+   ●​   voten/reagieren
+
+Benutzer darf nicht:
+
+   ●​   Kommentare erstellen
+
+   ●​   auf Kommentare antworten
+
+   ●​   Threads erstellen
+
+   ●​   Forum Posts erstellen
+
+Optional können einzelne Rechte später granular eingeschränkt werden.
+
+BANNED
+
+Account ist vollständig gesperrt.
+
+Der Benutzer darf:
+
+   ●​   keine authentifizierten Aktionen durchführen
+   ●​    keine Communityfunktionen verwenden
+
+Sessions werden widerrufen.
+
+Login kann blockiert bzw. auf eine Sperrinformation umgeleitet werden.
+
+
+
+13. YELLOW / RED CARD SYSTEM
+
+Moderation verwendet ein Fußball-inspiriertes Kartensystem.
+
+Gelbe Karte
+
+Eine gelbe Karte stellt eine formelle Verwarnung dar.
+
+Speichern:
+
+userId
+
+moderatorId
+
+reason
+
+description
+
+relatedContentId
+
+createdAt
+
+expiresAt optional
+
+Regel
+
+Standard:
+
+1 Gelbe Karte → Verwarnung
+
+2 Gelbe Karten → deutliche Warnung
+
+3 Gelbe Karten → automatisch Rote Karte
+
+
+
+Rote Karte
+
+Rote Karte bedeutet:
+
+AccountStatus = BANNED
+
+Eine rote Karte kann entstehen durch:
+
+3x Gelb
+
+oder direkt bei einem schweren Verstoß.
+Beispiele für mögliche direkte rote Karte:
+
+   ●​   massive Drohungen
+
+   ●​   schwerer Missbrauch
+
+   ●​   gezielte Veröffentlichung privater Daten
+
+   ●​   automatisierter Spam/Bot-Angriff
+
+   ●​   bewusste Umgehung bestehender Sperren
+
+Die tatsächlichen Moderationsregeln werden später in den Community Guidelines
+festgelegt.
+
+
+
+LIMITED Status
+
+Zusätzlich zum Kartensystem kann ein Moderator den Benutzer temporär auf:
+
+LIMITED
+
+setzen.
+
+Beispielsweise:
+
+24 Stunden
+
+3 Tage
+
+7 Tage
+
+30 Tage
+
+Danach wird der Status automatisch wieder auf ACTIVE gesetzt, sofern keine
+andere Sanktion aktiv ist.
+
+
+
+14. IP PROTECTION MODEL
+
+IP-Sperren werden nicht als einziges Identifikationsmittel verwendet.
+
+Sie ergänzen Account- und Session-Sperren.
+
+Speichern
+
+Wenn möglich:
+
+HMAC(IP + secret)
+
+anstatt dauerhaft Klartext-IP zu speichern.
+
+Einsatz
+IP-basierte Schutzmaßnahmen für:
+
+    ●​   Registrierung
+
+    ●​   Login
+
+    ●​   Password Reset
+
+    ●​   Kommentare
+
+    ●​   Forum Posts
+
+    ●​   Reports
+
+    ●​   Sperrumgehung
+
+    ●​   Bots
+
+    ●​   Spam
+
+Sperrtypen
+
+Rate Limit
+
+Temporary IP Block
+
+Extended IP Block
+
+Manual IP Ban
+
+Bei roter Karte
+
+Optional:
+
+Account Banned
+
++
+
+Sessions revoked
+
++
+
+bekannte IP Hashes temporär blockiert
+
+IP-Sperren müssen wegen Shared IPs, Mobilfunk, VPN usw. vorsichtig eingesetzt
+werden.
+
+
+
+PHASE 01 – PRODUCT FOUNDATION
+
+001 – MVP Dokument erstellen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+   ●​   Zielgruppe definieren
+
+   ●​   Portalziel dokumentieren
+
+   ●​   Kernfunktionen festlegen
+
+   ●​   Nicht-MVP-Funktionen festlegen
+
+   ●​   Communityidee beschreiben
+
+   ●​   Personalisierung beschreiben
+
+   ●​   Moderationsidee beschreiben
+
+   ●​   Monetarisierung grob festhalten
+
+Ergebnis
+
+docs/product/mvp.md
+
+Warum jetzt?
+
+Alle späteren Architekturentscheidungen benötigen einen klaren Scope.
+
+
+
+002 – Community Konzept dokumentieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Festlegen:
+
+   ●​   Artikel besitzen Diskussionen
+
+   ●​   Vereinsforen
+
+   ●​   allgemeine Foren
+
+   ●​   Benutzerprofile
+
+   ●​   Reaktionen
+
+   ●​   Reports
+
+   ●​   gelbe Karten
+
+   ●​   rote Karten
+
+   ●​   LIMITED
+
+   ●​   BANNED
+
+   ●​   Moderatorenrechte
+Ergebnis
+
+docs/product/community.md
+
+
+
+003 – Personalisierungskonzept dokumentieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Festlegen:
+
+   ●​   Benutzer kann Lieblingsverein wählen
+
+   ●​   Benutzer kann "Neutral" wählen
+
+   ●​   Vereinswahl ist später änderbar
+
+   ●​   Vereinswahl beeinflusst Startseite
+
+   ●​   Vereinsnews werden priorisiert
+
+   ●​   Vereinsbranding wird angewendet
+
+   ●​   neutrale Nutzer sehen Standardbranding
+
+Ergebnis
+
+docs/product/personalization.md
+
+
+
+004 – technische Architektur dokumentieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Dokumentieren:
+
+   ●​   Web
+
+   ●​   API
+
+   ●​   Worker
+
+   ●​   PostgreSQL
+
+   ●​   Redis
+
+   ●​   Keycloak
+
+   ●​   Meilisearch
+   ●​   MinIO/R2
+
+   ●​   Datenflüsse
+
+   ●​   Netzwerke
+
+   ●​   Environment Separation
+
+Ergebnis
+
+docs/architecture/system.md
+
+
+
+005 – Architecture Decision Records einführen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Für wichtige Entscheidungen kurze ADR-Dateien erstellen.
+
+Beispiele:
+
+001-modular-monolith.md
+
+002-keycloak-auth.md
+
+003-postgres-source-of-truth.md
+
+004-dev-staging-prod.md
+
+005-provider-adapters.md
+
+Warum?
+
+Später lässt sich nachvollziehen, warum etwas so gebaut wurde.
+
+
+
+PHASE 02 – REPOSITORY & MONOREPO
+
+006 – Git Repository prüfen / erstellen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Repository initialisieren
+
+   ●​   Remote prüfen
+
+   ●​   .gitignore
+
+   ●​   README
+       ●​   Branch-Konzept
+
+Branches
+
+main
+
+develop
+
+feature/*
+
+fix/*
+
+chore/*
+
+
+
+007 – pnpm Workspace konfigurieren
+
+Status:     ✅ TODO
+Was gemacht werden muss
+
+Workspace definieren:
+
+packages:
+
+ - apps/*
+
+ - packages/*
+
+Testen:
+
+pnpm install
+
+
+
+008 – Turborepo konfigurieren
+
+Status:     ✅ TODO
+Was gemacht werden muss
+
+Tasks:
+
+dev
+
+build
+
+lint
+
+typecheck
+
+test
+
+Abnahmetest:
+pnpm turbo build
+
+
+
+009 – Shared Config Package
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unter:
+
+packages/config
+
+bereitstellen:
+
+   ●​    TypeScript Config
+
+   ●​    ESLint Config
+
+   ●​    Prettier
+
+   ●​    gemeinsame Node-Konventionen
+
+
+
+PHASE 03 – DEV / STAGING / PRODUCTION
+
+010 – Environment Separation definieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Compose-Dateien:
+
+compose.yml
+
+compose.dev.yml
+
+compose.staging.yml
+
+compose.prod.yml
+
+Environment-Dateien:
+
+.env.dev
+
+.env.staging
+
+.env.prod
+
+Nur:
+
+.env.example
+kommt in Git.
+
+
+
+011 – Docker Projektnamen definieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+kurvenfunk-dev
+
+kurvenfunk-staging
+
+kurvenfunk-prod
+
+Keine festen container_name mehr verwenden.
+
+
+
+012 – VPS Persistenzstruktur erstellen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+/srv/kurvenfunk/
+
+├── dev/
+
+├── staging/
+
+└── prod/
+
+Je Environment:
+
+postgres
+
+redis
+
+meilisearch
+
+minio
+
+logs
+
+backups
+
+Wichtig
+
+Repository und persistente Daten müssen vollständig getrennt sein.
+
+
+
+013 – Dateirechte definieren
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Owner festlegen
+
+   ●​   Gruppen festlegen
+
+   ●​   unnötige Schreibrechte entfernen
+
+   ●​   Secrets nur für notwendigen Benutzer lesbar machen
+
+
+
+014 – Docker Networks erstellen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Logical Networks:
+
+frontend
+
+backend
+
+Nur notwendige Services dürfen in beiden Netzwerken hängen.
+
+PostgreSQL, Redis und Meilisearch dürfen nicht öffentlich erreichbar sein.
+
+
+
+PHASE 04 – DATABASE & CORE INFRASTRUCTURE
+
+015 – PostgreSQL DEV
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   postgres:17-alpine
+
+   ●​   Persistence
+
+   ●​   Healthcheck
+
+   ●​   Kurvenfunk DB
+
+   ●​   Keycloak DB
+
+   ●​   DB User
+
+   ●​   Restart Test
+016 – PostgreSQL STAGING
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Eigene Instanz mit:
+
+   ●​   eigener Datenbank
+
+   ●​   eigenen Credentials
+
+   ●​   eigenem Storage
+
+   ●​   eigenem Backup
+
+
+
+017 – PostgreSQL PRODUCTION vorbereiten
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Production-Konfiguration vorbereiten, aber noch keine echten Produktionsdaten
+verwenden.
+
+
+
+018 – Redis DEV
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Redis Container
+
+   ●​   Passwort
+
+   ●​   Persistenz
+
+   ●​   Healthcheck
+
+   ●​   Speicherlimit
+
+   ●​   PING/SET/GET Test
+
+
+
+019 – Redis STAGING
+
+Status:   ✅ TODO
+Was gemacht werden muss
+Eigene Instanz und eigene Credentials.
+
+
+
+020 – Redis PRODUCTION vorbereiten
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Separate Production-Konfiguration inklusive Limits und Persistence.
+
+
+
+021 – Keycloak DEV
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Container
+
+   ●​   PostgreSQL DB
+
+   ●​   Realm kurvenfunk
+
+   ●​   Web Client
+
+   ●​   API Client
+
+   ●​   Redirect URLs
+
+   ●​   Web Origins
+
+   ●​   Healthcheck
+
+
+
+022 – Keycloak STAGING
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Eigene Instanz mit:
+
+   ●​   eigenen Benutzern
+
+   ●​   eigenen Secrets
+
+   ●​   eigenen Redirect URLs
+
+
+
+023 – Keycloak PRODUCTION vorbereiten
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Production Realm und Clients vorbereiten.
+
+Produktions-Secrets werden erst vor Launch erzeugt.
+
+
+
+024 – Meilisearch DEV
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Container
+
+   ●​   Master Key
+
+   ●​   Persistence
+
+   ●​   Healthcheck
+
+   ●​   Testindex
+
+   ●​   Testsuche
+
+
+
+025 – Meilisearch STAGING
+
+Status:   ✅ TODO
+Eigene Instanz und eigener Index.
+
+
+
+026 – Meilisearch PRODUCTION vorbereiten
+
+Status:   ✅ TODO
+Separate Instanz vorbereiten.
+
+
+
+027 – MinIO DEV
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+   ●​   Container
+
+   ●​   Credentials
+   ●​    Bucket kurvenfunk-media
+
+   ●​    Upload
+
+   ●​    Download
+
+   ●​    Delete Test
+
+
+
+028 – MinIO STAGING
+
+Status:   ✅ TODO
+Eigener Bucket/Storage.
+
+
+
+PHASE 05 – APPLICATION SERVICES
+
+029 – Next.js Web App
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unter:
+
+apps/web
+
+   ●​    Next.js initialisieren
+
+   ●​    TypeScript
+
+   ●​    App Router
+
+   ●​    Environment Validation
+
+   ●​    Health Endpoint
+
+   ●​    Dockerfile
+
+   ●​    .dockerignore
+
+
+
+030 – NestJS API
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unter:
+
+apps/api
+   ●​     NestJS initialisieren
+
+   ●​     Config Module
+
+   ●​     globale Validation
+
+   ●​     globales Error Handling
+
+   ●​     API Prefix
+
+   ●​     Health Endpoint
+
+   ●​     Dockerfile
+
+API Prefix:
+
+/api/v1
+
+
+
+031 – Worker Service
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unter:
+
+apps/worker
+
+   ●​     Worker initialisieren
+
+   ●​     Redis verbinden
+
+   ●​     BullMQ installieren
+
+   ●​     Test Queue
+
+   ●​     Test Job
+
+   ●​     Graceful Shutdown
+
+   ●​     Dockerfile
+
+
+
+PHASE 06 – SHARED PACKAGES
+
+032 – Database Package
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+packages/database
+enthält:
+
+   ●​    Prisma
+
+   ●​    Prisma Client
+
+   ●​    Schema
+
+   ●​    Migrations
+
+   ●​    Seeds
+
+
+
+033 – Types Package
+
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Gemeinsam benötigte TypeScript-Typen zentral bereitstellen.
+
+Keine Business Logic dort ablegen.
+
+
+
+034 – Validation Package
+
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Zod Schemas für gemeinsam genutzte Datenstrukturen erstellen.
+
+
+
+035 – Logger Package
+
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Standardfelder:
+
+timestamp
+
+level
+
+service
+
+requestId
+
+userId
+
+event
+message
+
+Keine Passwörter, Tokens oder unnötige personenbezogene Daten loggen.
+
+
+
+036 – UI Package
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Basiskomponenten vorbereiten, die innerhalb des Frontends wiederverwendet
+werden.
+
+
+
+PHASE 07 – TECHNICAL FOUNDATION
+
+037 – Environment Validation
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Beim Start prüfen, ob alle notwendigen Environment-Variablen vorhanden und gültig
+sind.
+
+Anwendung soll bei falscher Konfiguration kontrolliert abbrechen.
+
+
+
+038 – Secrets Management
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Trennen:
+
+DEV Secrets
+
+STAGING Secrets
+
+PRODUCTION Secrets
+
+Secrets niemals committen.
+
+
+
+039 – Request ID System
+
+Status:   ✅ TODO
+Was gemacht werden muss
+Jeder Request erhält eindeutige ID.
+
+Weiterreichen:
+
+Web
+
+→ API
+
+→ Queue
+
+→ Worker
+
+
+
+040 – Structured Logging
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Development:
+
+lesbare Console Logs.
+
+Production:
+
+strukturierte Logs.
+
+
+
+041 – Healthchecks
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Endpoints:
+
+/health
+
+/health/live
+
+/health/ready
+
+Readiness prüft mindestens:
+
+   ●​   PostgreSQL
+
+   ●​   Redis
+
+
+
+042 – Queue Infrastruktur
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Queues definieren:
+
+news-import
+
+sports-import
+
+search-index
+
+notifications
+
+scheduled-publishing
+
+cleanup
+
+moderation
+
+sanctions
+
+
+
+PHASE 08 – DEPLOYMENT
+
+043 – Docker Compose finalisieren
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Alle Services müssen einzeln steuerbar sein.
+
+Beispiel:
+
+docker compose restart api
+
+docker compose restart worker
+
+docker compose restart meilisearch
+
+
+
+044 – Cloudflare DEV Routing
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+DEV Domains auf entsprechende Container routen.
+
+DEV optional über Cloudflare Access schützen.
+
+
+
+045 – Cloudflare STAGING Routing
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Staging Domains konfigurieren und Zugriff ggf. schützen.
+
+
+
+046 – Production Routing vorbereiten
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Live Domains vorbereiten, aber noch nicht öffentlich freigeben.
+
+
+
+047 – CI Pipeline
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Bei Push:
+
+Install
+
+→ Lint
+
+→ Typecheck
+
+→ Tests
+
+→ Build
+
+
+
+048 – DEV Deployment
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+develop kann DEV automatisch aktualisieren.
+
+
+
+049 – STAGING Deployment
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Release Candidate:
+Build
+
+→ Deploy
+
+→ Migration
+
+→ Healthcheck
+
+→ E2E
+
+
+
+050 – PRODUCTION Deployment
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Nur manuell freigegeben:
+
+Backup
+
+→ Migration
+
+→ Deployment
+
+→ Healthcheck
+
+→ Smoke Test
+
+
+
+051 – Rollback Konzept
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Vorheriges Image bzw. vorheriger Release muss schnell wieder gestartet werden
+können.
+
+
+
+PHASE 09 – BACKUPS
+
+052 – PostgreSQL Backup
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Automatisierte Dumps für Staging und Production.
+053 – Backup Rotation
+
+Status:   ✅ TODO
+Beispiel:
+
+7 Daily
+
+4 Weekly
+
+6 Monthly
+
+
+
+054 – Keycloak Backup
+
+Status:   ✅ TODO
+Realm-Konfiguration und relevante Einstellungen sichern.
+
+
+
+055 – Object Storage Backup Strategie
+
+Status:   ✅ TODO
+Festlegen, welche Uploads zusätzlich gesichert werden müssen.
+
+
+
+056 – Restore Scripts
+
+Status:   ✅ TODO
+Scripts unter:
+
+infrastructure/scripts/restore/
+
+
+
+057 – Restore Test
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Backup tatsächlich auf leerer Testumgebung wiederherstellen.
+
+Ein Backup ohne getesteten Restore zählt nicht als funktionierendes Backup.
+
+
+
+PHASE 10 – DOMAIN MODEL
+
+058 – User Model
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Entity:
+
+User
+
+enthält z. B.:
+
+id
+
+keycloakSubject
+
+nickname
+
+status
+
+favoriteClubId
+
+onboardingCompleted
+
+createdAt
+
+updatedAt
+
+
+
+059 – Profile Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Zusätzliche öffentliche Profildaten von Accountdaten trennen.
+
+Beispielsweise:
+
+displayName
+
+bio
+
+avatar
+
+favoriteClub
+
+
+
+060 – User Status Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Enum:
+ACTIVE
+
+LIMITED
+
+BANNED
+
+Status muss von Permissions berücksichtigt werden.
+
+
+
+061 – User Roles Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Rollen:
+
+USER
+
+TRUSTED_USER
+
+MODERATOR
+
+EDITOR
+
+ADMIN
+
+SUPERADMIN
+
+Rolle und Status getrennt speichern.
+
+
+
+062 – Club Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Speichern:
+
+name
+
+shortName
+
+slug
+
+logo
+
+primaryColor
+
+secondaryColor
+
+accentColor
+website
+
+active
+
+Farben werden später für Personalisierung verwendet.
+
+
+
+063 – Club Alias Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Aliases wie:
+
+SK Rapid
+
+Rapid Wien
+
+Rapid
+
+SCR
+
+einem Club zuordnen.
+
+Wichtig für News- und Sportdatenmatching.
+
+
+
+064 – Neutral Preference
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Benutzer muss ausdrücklich:
+
+Lieblingsverein
+
+oder:
+
+Neutral
+
+wählen können.
+
+Nicht einfach favoriteClub = NULL verwenden, weil NULL auch "noch nicht gewählt"
+bedeuten könnte.
+
+Beispielsweise:
+
+FanPreference:
+CLUB
+
+NEUTRAL
+
+UNSET
+
+
+
+065 – Competition Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Wettbewerbe unabhängig von einzelnen Saisons modellieren.
+
+
+
+066 – Season Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Saisons einem Wettbewerb zuordnen.
+
+
+
+067 – Match Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Speichern:
+
+homeClub
+
+awayClub
+
+kickoff
+
+competition
+
+season
+
+matchday
+
+status
+
+score
+
+
+
+068 – Standing Model
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Tabellenstände und Tabellenzeilen modellieren.
+
+
+
+069 – Article Model
+
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Artikel mit:
+
+      ●​   Kategorien
+
+      ●​   Tags
+
+      ●​   Vereinen
+
+      ●​   Wettbewerb
+
+      ●​   Spiel
+
+      ●​   Quelle
+
+      ●​   Autor
+
+verknüpfen können.
+
+
+
+070 – Media Model
+
+Status:    ✅ TODO
+Was gemacht werden muss
+
+Speichern:
+
+storageKey
+
+url
+
+mime
+
+size
+
+copyright
+
+source
+
+altText
+071 – Comment Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unterstützen:
+
+   ●​   Artikelbezug
+
+   ●​   Autor
+
+   ●​   Antworten
+
+   ●​   Soft Delete
+
+   ●​   Edit History
+
+   ●​   Moderation
+
+
+
+072 – Reaction Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+MVP zunächst:
+
+LIKE
+
+LIMITED User dürfen weiterhin voten.
+
+
+
+073 – Forum Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Entities:
+
+ForumCategory
+
+Forum
+
+Thread
+
+Post
+
+ThreadSubscription
+ThreadReadState
+
+
+
+074 – Moderation Report Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Reports müssen sowohl Kommentare als auch Forenbeiträge und Benutzer
+referenzieren können.
+
+
+
+075 – Yellow Card Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Entity:
+
+ModerationCard
+
+mit Typ:
+
+YELLOW
+
+RED
+
+Speichern:
+
+   ●​     Benutzer
+
+   ●​     Moderator
+
+   ●​     Grund
+
+   ●​     Kommentar
+
+   ●​     Bezug zu Inhalt
+
+   ●​     Zeitpunkt
+
+   ●​     Ablauf optional
+
+
+
+076 – Sanction Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+Sanktionen getrennt von Karten speichern.
+
+Beispiele:
+
+LIMITED
+
+COMMENT_BLOCK
+
+FORUM_BLOCK
+
+ACCOUNT_BAN
+
+IP_BLOCK
+
+Dadurch können Karten und technische Sperren flexibel kombiniert werden.
+
+
+
+077 – IP Block Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Speichern:
+
+ipHash
+
+reason
+
+createdAt
+
+expiresAt
+
+createdBy
+
+active
+
+
+
+078 – Audit Log Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Kritische Admin-/Moderationsaktionen nachvollziehbar speichern.
+
+
+
+079 – Notification Model
+
+Status:   ✅ TODO
+Was gemacht werden muss
+Benachrichtigungen pro Benutzer speichern.
+
+
+
+080 – Import Models
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Provider
+
+ImportJob
+
+ImportRecord
+
+RawPayload
+
+EntityMatch
+
+
+
+081 – Prisma Schema erstellen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Alle zuvor definierten Domains sauber in Prisma abbilden.
+
+
+
+082 – Initial Migration
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Migration zuerst DEV, danach STAGING testen.
+
+
+
+083 – Seed System
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Testdaten:
+
+   ●​   Bundesliga
+
+   ●​   Saison
+
+   ●​   Vereine
+   ●​     Vereinsfarben
+
+   ●​     Aliases
+
+   ●​     Testuser
+
+   ●​     Testartikel
+
+   ●​     Testspiele
+
+
+
+PHASE 11 – API FOUNDATION
+
+084 – NestJS Module anlegen
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Module entsprechend Backendstruktur erzeugen.
+
+Nicht sofort komplett implementieren.
+
+
+
+085 – API Versionierung
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Alle öffentlichen Endpoints unter:
+
+/api/v1
+
+
+
+086 – Response Standard
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Einheitliche Responses definieren.
+
+
+
+087 – Error Standard
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Fehler enthalten:
+code
+
+message
+
+requestId
+
+
+
+088 – Validation
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Alle Benutzereingaben serverseitig validieren.
+
+
+
+089 – Pagination
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Cursor Pagination für große Listen.
+
+
+
+090 – Filtering
+
+Status:   ✅ TODO
+Standard für API Filter festlegen.
+
+
+
+091 – Sorting
+
+Status:   ✅ TODO
+Einheitliche Sortierparameter definieren.
+
+
+
+092 – Swagger / OpenAPI
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+API Dokumentation auf Staging bereitstellen.
+
+
+
+PHASE 12 – AUTHENTICATION
+093 – Keycloak ↔ API
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+JWT prüfen:
+
+   ●​   Signature
+
+   ●​   Issuer
+
+   ●​   Audience
+
+   ●​   Expiry
+
+NestJS Auth Guard erstellen.
+
+
+
+094 – User Sync
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Nach erfolgreichem Keycloak Login prüfen:
+
+existiert Kurvenfunk User?
+
+Nein:
+
+User anlegen
+
+onboardingCompleted = false
+
+FanPreference = UNSET
+
+
+
+095 – E-Mail Registrierung
+
+Status:   ✅ TODO
+Ablauf
+
+E-Mail + Passwort
+
+→ Keycloak Account
+
+→ Verification Mail
+
+→ E-Mail bestätigen
+
+→ erster erfolgreicher Login
+→ Kurvenfunk Onboarding
+
+
+
+096 – E-Mail Verifizierung
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Ohne bestätigte Mail kein vollständiger Kurvenfunk Account.
+
+Nach erfolgreicher Verifizierung beim nächsten Login:
+
+onboardingCompleted == false
+
+→ Onboarding öffnen.
+
+
+
+097 – Login mit E-Mail
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Behandeln:
+
+   ●​   falsches Passwort
+
+   ●​   Account existiert nicht
+
+   ●​   E-Mail nicht bestätigt
+
+   ●​   LIMITED
+
+   ●​   BANNED
+
+
+
+098 – Google Login
+
+Status:   ✅ TODO
+Ablauf
+
+Google
+
+→ Keycloak
+
+→ erfolgreicher Login
+
+→ User Sync
+
+→ Onboarding falls neu
+Google-Benutzer benötigen keine zusätzliche Kurvenfunk-Mail-Verifizierung, wenn
+die Identität entsprechend vom Provider bestätigt wurde.
+
+
+
+099 – Logout
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Lokale und Keycloak Session sauber beenden.
+
+
+
+100 – Password Reset
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Keycloak Passwort-Reset-Flow integrieren.
+
+
+
+101 – Account Linking
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Verhindern, dass derselbe Benutzer durch E-Mail und Google unbeabsichtigt zwei
+Profile bekommt.
+
+
+
+PHASE 13 – USER ONBOARDING
+
+102 – Onboarding Gate
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Nach jedem erfolgreichen Login prüfen:
+
+onboardingCompleted
+
+Bei false darf der Benutzer noch nicht normal ins Portal gelangen.
+
+Weiterleitung:
+
+/onboarding
+103 – Nickname Auswahl
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Benutzer muss einen Nickname wählen.
+
+Prüfen:
+
+   ●​   eindeutig
+
+   ●​   case-insensitive eindeutig
+
+   ●​   Mindestlänge
+
+   ●​   Maximallänge
+
+   ●​   erlaubte Zeichen
+
+   ●​   verbotene Begriffe
+
+   ●​   reservierte Namen
+
+Reserviert z. B.:
+
+admin
+
+moderator
+
+kurvenfunk
+
+support
+
+system
+
+
+
+104 – Nickname Live Validation
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Während Eingabe prüfen:
+
+Nickname verfügbar?
+
+Klare Benutzerinformation anzeigen.
+
+
+
+105 – Vereinsauswahl
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Alle aktiven Vereine visuell anzeigen:
+
+Logo
+
+Vereinsname
+
+Zusätzliche Auswahl:
+
+Neutral
+
+
+
+106 – Neutral Auswahl
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Neutral muss eine echte Preference sein und darf nicht mit "Onboarding noch nicht
+erledigt" verwechselt werden.
+
+
+
+107 – Onboarding abschließen
+
+Status:   ✅ TODO
+Speichern
+
+nickname
+
+fanPreference
+
+favoriteClubId optional
+
+onboardingCompleted = true
+
+Danach Weiterleitung auf personalisierte Startseite.
+
+
+
+108 – Vereinswahl später ändern
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Unter Profileinstellungen:
+
+Lieblingsverein ändern
+
+oder:
+Neutral
+
+
+
+PHASE 14 – PERSONALIZATION & CLUB BRANDING
+
+109 – Club Theme System
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Pro Verein definieren:
+
+primaryColor
+
+secondaryColor
+
+accentColor
+
+logo
+
+Daraus Frontend Theme Tokens generieren.
+
+
+
+110 – Default Kurvenfunk Theme
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Für:
+
+   ●​   Gäste
+
+   ●​   neutrale Benutzer
+
+   ●​   unbekannte Preference
+
+wird das normale Kurvenfunk Branding verwendet.
+
+
+
+111 – Personalized Club Theme
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Bei gewähltem Lieblingsverein dürfen ausgewählte UI-Elemente Vereinsfarben
+übernehmen.
+
+Beispielsweise:
+   ●​   Header Akzent
+
+   ●​   aktive Navigation
+
+   ●​   Buttons/Akzente
+
+   ●​   Badges
+
+   ●​   Vereinsbereich
+
+Die Seite soll trotzdem klar als Kurvenfunk erkennbar bleiben.
+
+
+
+112 – News Priorisierung
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Für Fan eines Vereins:
+
+1. relevante News des Lieblingsvereins
+
+2. wichtige Bundesliga News
+
+3. restliche News
+
+Nicht ausschließlich Vereinsnews anzeigen.
+
+
+
+113 – Neutral News Ranking
+
+Status:   ✅ TODO
+Was gemacht werden muss
+
+Neutrale Benutzer bekommen:
+
+   ●​   Top News
+
+   ●​   aktuelle News
+
+   ●​   relevante Liga News
+
+ohne Vereinspriorisierung.
+
+
+
+114 – Personalized Startpage
+
+Status:   ✅ TODO
+Fan-Version
+Beispielsweise:
+
+Mein Verein
+
+↓
+
+Vereinsnews
+
+↓
+
+nächstes Spiel
+
+↓
+
+letztes Ergebnis
+
+↓
+
+Tabellenposition
+
+↓
+
+Liga News
+
+↓
+
+Diskussionen
+
+Neutral-Version
+
+Top News
+
+↓
+
+aktuelle Spiele
+
+↓
+
+Liga New
+
+↓
+
+Tabelle
+
+↓
+
+Diskussionen
+
+
+
+PHASE 15 – DESIGN SYSTEM
+
+115 – Design Tokens
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Definieren:
+
+   ●​     Kurvenfunk Farben
+
+   ●​     Vereins-Theme Tokens
+
+   ●​     Typografie
+
+   ●​     Spacing
+
+   ●​     Borders
+
+   ●​     Radius
+
+   ●​     Breakpoints
+
+   ●​     Icons
+
+
+
+116 – UI Components
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Button
+
+Input
+
+Textarea
+
+Select
+
+Checkbox
+
+Switch
+
+Card
+
+Badge
+
+Avatar
+
+Modal
+
+Dialog
+
+Dropdown
+
+Tabs
+
+Tooltip
+Toast
+
+Alert
+
+Pagination
+
+Skeleton
+
+EmptyState
+
+Alle müssen Theme Tokens unterstützen.
+
+
+
+PHASE 16 – FRONTEND BASE
+
+117 – App Shell
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+   ●​   Header
+
+   ●​   Desktop Navigation
+
+   ●​   Mobile Navigation
+
+   ●​   Content Container
+
+   ●​   Footer
+
+   ●​   User Menu
+
+   ●​   Club Theme
+
+
+
+118 – Startseite Mock
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Beide Varianten mit Mock-Daten erstellen:
+
+Neutral
+
+Club Fan
+
+
+
+119 – Newsübersicht
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+   ●​    News Cards
+
+   ●​    Pagination
+
+   ●​    Filter
+
+   ●​    Vereinsfilter
+
+   ●​    Wettbewerbsfilter
+
+
+
+120 – Artikelseite
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Anzeigen:
+
+   ●​    Titel
+
+   ●​    Lead
+
+   ●​    Bild
+
+   ●​    Quelle
+
+   ●​    Autor
+
+   ●​    Datum
+
+   ●​    Artikel
+
+   ●​    Clubs
+
+   ●​    Tags
+
+   ●​    Diskussion
+
+
+
+121 – Vereinsseite
+
+Status:   ⬜ TODO
+Bereiche
+
+Übersicht
+
+News
+
+Spiele
+Tabelle
+
+Forum
+
+
+
+122 – Spielseite
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+   ●​   Teams
+
+   ●​   Vereinslogos
+
+   ●​   Ergebnis
+
+   ●​   Status
+
+   ●​   Wettbewerb
+
+   ●​   Spieltag
+
+   ●​   Datum
+
+   ●​   News
+
+   ●​   Diskussion
+
+
+
+123 – Tabelle
+
+Status:   ⬜ TODO
+Desktop und Mobile optimieren.
+
+Lieblingsverein visuell hervorheben.
+
+
+
+124 – Spielplan
+
+Status:   ⬜ TODO
+Lieblingsverein ebenfalls hervorheben.
+
+
+
+125 – Profilseite
+
+Status:   ⬜ TODO
+Anzeigen
+   ●​     Nickname
+
+   ●​     Avatar
+
+   ●​     Lieblingsverein
+
+   ●​     Bio
+
+   ●​     Communityaktivität
+
+
+
+126 – User Settings
+
+Status:   ⬜ TODO
+Bereiche:
+
+Profil
+
+Lieblingsverein
+
+Account
+
+Datenschutz
+
+Benachrichtigungen
+
+Sessions
+
+
+
+127 – Admin Layout
+
+Status:   ⬜ TODO
+Navigation:
+
+Dashboard
+
+Artikel
+
+Medien
+
+Importe
+
+Sportdaten
+
+Benutzer
+
+Moderation
+
+Forum
+
+System
+128 – Loading States
+
+Status:   ⬜ TODO
+Skeletons für alle wichtigen Inhalte.
+
+
+
+129 – Empty States
+
+Status:   ⬜ TODO
+Klare Zustände für leere Listen.
+
+
+
+130 – Error States
+
+Status:   ⬜ TODO
+403
+
+404
+
+429
+
+500
+
+
+
+PHASE 17 – EDITORIAL SYSTEM
+
+131 – Article CRUD
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+   ●​   Create
+
+   ●​   Read
+
+   ●​   Edit
+
+   ●​   Archive
+
+   ●​   Delete
+
+   ●​   Restore
+
+
+
+132 – Publication Workflow
+Status:   ⬜ TODO
+draft
+
+review
+
+scheduled
+
+published
+
+archived
+
+
+
+133 – Article Editor
+
+Status:   ⬜ TODO
+Unterstützen:
+
+   ●​    Text
+
+   ●​    Überschriften
+
+   ●​    Links
+
+   ●​    Listen
+
+   ●​    Zitate
+
+   ●​    Bilder
+
+
+
+134 – Kategorien
+
+Status:   ⬜ TODO
+CRUD und Artikelzuordnung.
+
+
+
+135 – Tags
+
+Status:   ⬜ TODO
+CRUD und Artikelzuordnung.
+
+
+
+136 – Club Assignment
+
+Status:   ⬜ TODO
+Mehrere Vereine pro Artikel ermöglichen.
+Extrem wichtig für Personalisierung.
+
+
+
+137 – Competition Assignment
+
+Status:   ⬜ TODO
+138 – Match Assignment
+
+Status:   ⬜ TODO
+139 – Media Upload
+
+Status:   ⬜ TODO
+Upload über Storage Abstraction.
+
+
+
+140 – Media Library
+
+Status:   ⬜ TODO
+Verwalten:
+
+   ●​   Bild
+
+   ●​   Alt Text
+
+   ●​   Copyright
+
+   ●​   Quelle
+
+   ●​   Verwendung
+
+
+
+141 – SEO Fields
+
+Status:   ⬜ TODO
+slug
+
+seoTitle
+
+seoDescription
+
+canonicalUrl
+
+ogImage
+142 – Revisions
+
+Status:   ⬜ TODO
+Änderungshistorie speichern.
+
+
+
+143 – Scheduled Publishing
+
+Status:   ⬜ TODO
+Worker veröffentlicht Artikel zum geplanten Zeitpunkt.
+
+
+
+PHASE 18 – NEWS IMPORT
+
+144 – Provider Interface
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Standard definieren, den jeder Newsprovider implementieren muss.
+
+
+
+145 – Fake Provider
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Importpipeline vollständig mit Testdaten entwickeln.
+
+
+
+146 – Scheduler
+
+Status:   ⬜ TODO
+Provider regelmäßig abrufen.
+
+
+
+147 – Import Queue
+
+Status:   ⬜ TODO
+news-import
+148 – Raw Payload
+
+Status:   ⬜ TODO
+Originaldaten speichern, um Importprobleme reproduzieren zu können.
+
+
+
+149 – Normalization
+
+Status:   ⬜ TODO
+Providerdaten auf internes Kurvenfunk-Format abbilden.
+
+
+
+150 – Validation
+
+Status:   ⬜ TODO
+Pflichtfelder und Datenqualität prüfen.
+
+
+
+151 – Duplicate Detection
+
+Status:   ⬜ TODO
+Prüfen:
+
+   ●​   Provider ID
+
+   ●​   URL
+
+   ●​   Hash
+
+   ●​   Titel
+
+   ●​   Ähnlichkeit
+
+
+
+152 – Club Matching
+
+Status:   ⬜ TODO
+Club Aliases verwenden.
+
+
+
+153 – Competition Matching
+
+Status:   ⬜ TODO
+154 – Match Matching
+
+Status:   ⬜ TODO
+155 – Confidence Score
+
+Status:   ⬜ TODO
+exact
+
+high
+
+medium
+
+low
+
+unknown
+
+
+
+156 – Retry Logic
+
+Status:   ⬜ TODO
+Fehlgeschlagene Imports automatisch erneut versuchen.
+
+
+
+157 – Dead Letter Queue
+
+Status:   ⬜ TODO
+Dauerhaft fehlgeschlagene Jobs isolieren.
+
+
+
+158 – Import Admin
+
+Status:   ⬜ TODO
+Anzeigen:
+
+   ●​   Provider
+
+   ●​   Job
+
+   ●​   Status
+
+   ●​   importierte Artikel
+
+   ●​   Duplikate
+
+   ●​   Matchingprobleme
+   ●​   Fehler
+
+
+
+159 – Review Workflow
+
+Status:   ⬜ TODO
+Unsichere Artikel werden manuell geprüft.
+
+
+
+160 – Auto Publish
+
+Status:   ⬜ TODO
+Nur vertrauenswürdige Provider und sichere Matches automatisch veröffentlichen.
+
+
+
+161 – erster echter Newsprovider
+
+Status:   ⬜ TODO
+Erst nach funktionierender Testpipeline anbinden.
+
+
+
+PHASE 19 – COMMENTS & REACTIONS
+
+162 – Kommentar erstellen
+
+Status:   ⬜ TODO
+Permission
+
+ACTIVE → erlaubt
+
+LIMITED → verboten
+
+BANNED → verboten
+
+
+
+163 – Antworten
+
+Status:   ⬜ TODO
+Gleiche Statusprüfung wie Kommentare.
+
+
+
+164 – Comment Depth
+
+Status:   ⬜ TODO
+Technisch Parent Relation.
+
+Darstellung auf wenige Ebenen begrenzen.
+
+
+
+165 – Kommentar bearbeiten
+
+Status:   ⬜ TODO
+Nur eigener Kommentar innerhalb definierter Regeln.
+
+Bearbeitung markieren.
+
+
+
+166 – Kommentar löschen
+
+Status:   ⬜ TODO
+Soft Delete für User.
+
+Moderatoraktionen separat auditieren.
+
+
+
+167 – Voting / Reactions
+
+Status:   ⬜ TODO
+Permission
+
+ACTIVE → erlaubt
+
+LIMITED → erlaubt
+
+BANNED → verboten
+
+MVP:
+
+Like
+
+
+
+168 – Kommentar Sortierung
+
+Status:   ⬜ TODO
+Neueste
+
+Älteste
+
+Beliebt
+169 – Pagination
+
+Status:   ⬜ TODO
+Cursor-basiert.
+
+
+
+170 – Reports
+
+Status:   ⬜ TODO
+Meldegründe definieren.
+
+
+
+171 – Spam Protection
+
+Status:   ⬜ TODO
+   ●​   Rate Limit
+
+   ●​   Duplicate Spam
+
+   ●​   Link Limits
+
+   ●​   Posting Frequency
+
+
+
+PHASE 20 – MODERATION & CARDS
+
+172 – Permission System
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Nicht überall Rollen manuell vergleichen.
+
+Zentrale Permissions:
+
+comment.create
+
+comment.vote
+
+comment.delete
+
+comment.moderate
+
+
+
+thread.create
+
+thread.reply
+thread.lock
+
+
+
+article.create
+
+article.publish
+
+
+
+user.warn
+
+user.limit
+
+user.ban
+
+user.ipban
+
+
+
+173 – Account Status Guard
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Zentrale Prüfung:
+
+ACTIVE
+
+LIMITED
+
+BANNED
+
+Nicht in jedem Controller separat improvisieren.
+
+
+
+174 – Yellow Card erstellen
+
+Status:   ⬜ TODO
+Moderator kann gelbe Karte vergeben.
+
+Dabei speichern
+
+   ●​   Grund
+
+   ●​   interne Notiz
+
+   ●​   betroffener Inhalt
+
+   ●​   Moderator
+
+   ●​   Zeitpunkt
+User erhält Notification.
+
+
+
+175 – Yellow Card Counter
+
+Status:   ⬜ TODO
+Regel
+
+Nach neuer gelber Karte automatisch Anzahl relevanter Karten prüfen.
+
+1 → Gelb
+
+2 → Gelb
+
+3 → Rot
+
+
+
+176 – automatische Rote Karte
+
+Status:   ⬜ TODO
+Bei dritter Gelber:
+
+RED CARD
+
+AccountStatus = BANNED
+
+Sessions widerrufen
+
+Audit Event erzeugen.
+
+
+
+177 – direkte Rote Karte
+
+Status:   ⬜ TODO
+Moderator mit entsprechender Permission kann bei schwerem Verstoß direkt Rot
+vergeben.
+
+Erfordert:
+
+   ●​   Grund
+
+   ●​   Notiz
+
+   ●​   Audit Log
+
+Optional später Vier-Augen-Prinzip.
+178 – LIMITED Sanktion
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Moderator kann Benutzer zeitweise auf LIMITED setzen.
+
+Beispiele:
+
+24h
+
+3 Tage
+
+7 Tage
+
+30 Tage
+
+
+
+179 – LIMITED Permission Matrix
+
+Status:   ⬜ TODO
+LIMITED darf:
+
+lesen
+
+suchen
+
+Spiele ansehen
+
+voten
+
+LIMITED darf nicht:
+
+Kommentare schreiben
+
+Kommentare beantworten
+
+Threads erstellen
+
+Posts erstellen
+
+
+
+180 – BANNED Handling
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+Bei BANNED:
+
+   ●​   Schreibzugriff komplett sperren
+   ●​   Voting sperren
+
+   ●​   Sessions widerrufen
+
+   ●​   Loginstatus korrekt anzeigen
+
+   ●​   Umgehungsversuche protokollieren
+
+
+
+181 – IP Hashing
+
+Status:   ⬜ TODO
+IP soweit möglich per keyed HMAC pseudonymisieren.
+
+
+
+182 – IP Rate Limits
+
+Status:   ⬜ TODO
+Für:
+
+Login
+
+Register
+
+Reset
+
+Comments
+
+Forum
+
+Reports
+
+
+
+183 – temporärer IP Block
+
+Status:   ⬜ TODO
+Automatisch oder manuell.
+
+Mit Ablaufzeit.
+
+
+
+184 – manueller IP Ban
+
+Status:   ⬜ TODO
+Nur berechtigte Moderatoren/Admins.
+
+Auditpflichtig.
+185 – Red Card + IP Protection
+
+Status:   ⬜ TODO
+Bei schweren Fällen kann zusätzlich zum Accountban eine bekannte IP temporär
+gesperrt werden.
+
+Nicht automatisch jede rote Karte mit dauerhafter IP-Sperre verbinden.
+
+
+
+186 – Session Revoke
+
+Status:   ⬜ TODO
+Bei BANNED sofort aktive Keycloak Sessions widerrufen.
+
+
+
+187 – Moderation Dashboard
+
+Status:   ⬜ TODO
+Anzeigen:
+
+Reports
+
+Yellow Cards
+
+Red Cards
+
+Limited Users
+
+Banned Users
+
+IP Blocks
+
+Appeals
+
+
+
+188 – User Moderation History
+
+Status:   ⬜ TODO
+Moderator sieht:
+
+   ●​   Reports
+
+   ●​   Karten
+
+   ●​   Sanktionen
+   ●​    vorherige Sperren
+
+   ●​    interne Notizen
+
+
+
+189 – Appeals
+
+Status:   ⬜ TODO
+Benutzer kann Sanktion anfechten.
+
+
+
+190 – Vier-Augen-Prinzip
+
+Status:   ⬜ TODO
+Für besonders kritische Entscheidungen optional verpflichtend.
+
+
+
+191 – Sanction Expiration Worker
+
+Status:   ⬜ TODO
+Worker prüft abgelaufene:
+
+LIMITED
+
+Comment Blocks
+
+Forum Blocks
+
+IP Blocks
+
+und hebt sie automatisch auf.
+
+
+
+PHASE 21 – SPORT DATA
+
+192 – Competition Management
+
+Status:   ⬜ TODO
+Start:
+
+Österreichische Bundesliga
+
+
+
+193 – Season Management
+
+Status:   ⬜ TODO
+194 – Club Management
+
+Status:   ⬜ TODO
+Inklusive Vereinsfarben für Branding.
+
+
+
+195 – Match Management
+
+Status:   ⬜ TODO
+196 – Results
+
+Status:   ⬜ TODO
+197 – Standings
+
+Status:   ⬜ TODO
+198 – Standings Calculation
+
+Status:   ⬜ TODO
+Kurvenfunk soll Tabelle aus Spieldaten berechnen können.
+
+
+
+199 – Sports Provider Interface
+
+Status:   ⬜ TODO
+Externe API von interner Logik entkoppeln.
+
+
+
+200 – Fake Sports Provider
+
+Status:   ⬜ TODO
+Pipeline ohne echten Anbieter testen.
+
+
+
+201 – Sports Import Queue
+
+Status:   ⬜ TODO
+sports-import
+
+
+
+202 – Club Matching
+
+Status:   ⬜ TODO
+203 – Match Matching
+
+Status:   ⬜ TODO
+204 – Sports Scheduler
+
+Status:   ⬜ TODO
+Unterschiedliche Intervalle für Fixtures, Ergebnisse und ggf. Live Status.
+
+
+
+205 – Correction Interface
+
+Status:   ⬜ TODO
+Admin kann falsche Providerdaten korrigieren.
+
+
+
+206 – echte Vereinsseiten
+
+Status:   ⬜ TODO
+207 – echte Spielseiten
+
+Status:   ⬜ TODO
+208 – echte Tabelle
+
+Status:   ⬜ TODO
+PHASE 22 – FORUM
+
+209 – Forum Kategorien
+
+Status:   ⬜ TODO
+Beispiele:
+
+Bundesliga
+
+Vereine
+
+Nationalteam
+
+International
+
+Off Topic
+
+
+
+210 – Vereinsforen
+
+Status:   ⬜ TODO
+Automatisch mit Club verbinden.
+
+
+
+211 – Threads
+
+Status:   ⬜ TODO
+Permission
+
+ACTIVE → erlaubt
+
+LIMITED → verboten
+
+BANNED → verboten
+
+
+
+212 – Posts
+
+Status:   ⬜ TODO
+Gleiche Statusregeln.
+
+
+
+213 – Replies
+
+Status:   ⬜ TODO
+214 – Thread Pagination
+
+Status:   ⬜ TODO
+215 – Thread Subscriptions
+
+Status:   ⬜ TODO
+216 – Unread Tracking
+
+Status:   ⬜ TODO
+217 – Last Read Position
+
+Status:   ⬜ TODO
+218 – Thread Pinning
+
+Status:   ⬜ TODO
+Moderator Permission.
+
+
+
+219 – Thread Locking
+
+Status:   ⬜ TODO
+220 – Thread Moving
+
+Status:   ⬜ TODO
+221 – Thread Merging
+
+Status:   ⬜ TODO
+222 – Forum Reports
+
+Status:   ⬜ TODO
+Gleiches Report-/Moderationssystem wie Kommentare verwenden.
+
+
+
+223 – Article / Forum Integration
+
+Status:   ⬜ TODO
+Ziel:
+
+Artikel
+
+↓
+
+Diskussion
+
+↓
+
+Forum-Kontext
+
+Keine unnötigen getrennten Communitysysteme.
+
+
+
+PHASE 23 – NOTIFICATIONS
+
+224 – Notification Types
+
+Status:   ⬜ TODO
+comment_reply
+
+thread_reply
+
+yellow_card
+
+red_card
+
+limited
+
+ban
+
+appeal
+
+system
+
+
+
+225 – Notification Queue
+
+Status:   ⬜ TODO
+226 – In-App Notifications
+
+Status:   ⬜ TODO
+227 – Read / Unread
+
+Status:   ⬜ TODO
+228 – E-Mail Notifications
+
+Status:   ⬜ TODO
+Asynchron über Worker.
+
+
+
+229 – Notification Preferences
+
+Status:   ⬜ TODO
+Benutzer kann pro Typ entscheiden:
+
+In App
+
+E-Mail
+
+Aus
+
+Sicherheits-/Moderationsnachrichten dürfen nicht komplett deaktivierbar sein.
+
+
+
+PHASE 24 – SEARCH
+
+230 – Article Index
+
+Status:   ⬜ TODO
+231 – Club Index
+
+Status:   ⬜ TODO
+232 – Forum Index
+
+Status:   ⬜ TODO
+233 – Global Search
+
+Status:   ⬜ TODO
+Ergebnisse gruppieren:
+
+Artikel
+
+Vereine
+Forum
+
+
+
+234 – Search Ranking
+
+Status:   ⬜ TODO
+Bei eingeloggten Fans kann Lieblingsverein leicht höher gewichtet werden.
+
+Suche darf trotzdem relevante allgemeine Ergebnisse anzeigen.
+
+
+
+235 – Search Index Queue
+
+Status:   ⬜ TODO
+Alle Indexänderungen über Worker.
+
+
+
+236 – Full Reindex
+
+Status:   ⬜ TODO
+Meilisearch muss vollständig aus PostgreSQL rekonstruiert werden können.
+
+
+
+PHASE 25 – ADMIN SYSTEM
+
+237 – Admin Dashboard
+
+Status:   ⬜ TODO
+Anzeigen:
+
+   ●​   User
+
+   ●​   Artikel
+
+   ●​   Reports
+
+   ●​   aktive LIMITED User
+
+   ●​   BANNED User
+
+   ●​   gelbe Karten
+
+   ●​   rote Karten
+
+   ●​   Imports
+
+   ●​   Systemstatus
+238 – User Search
+
+Status:   ⬜ TODO
+Suchen nach:
+
+Nickname
+
+E-Mail
+
+User ID
+
+
+
+239 – User Detail
+
+Status:   ⬜ TODO
+Anzeigen:
+
+Profil
+
+Lieblingsverein
+
+Status
+
+Rollen
+
+Gelbe Karten
+
+Rote Karten
+
+Sanktionen
+
+IP Blocks
+
+Reports
+
+Audit History
+
+
+
+240 – Editorial Admin
+
+Status:   ⬜ TODO
+241 – Import Admin
+
+Status:   ⬜ TODO
+242 – Sports Admin
+
+Status:   ⬜ TODO
+243 – Moderation Admin
+
+Status:   ⬜ TODO
+244 – Audit Viewer
+
+Status:   ⬜ TODO
+245 – System Status
+
+Status:   ⬜ TODO
+Anzeigen:
+
+PostgreSQL
+
+Redis
+
+Keycloak
+
+Meilisearch
+
+Worker
+
+Queues
+
+Imports
+
+
+
+PHASE 26 – PRIVACY & SECURITY
+
+246 – Data Classification
+
+Status:   ⬜ TODO
+Daten kategorisieren.
+
+
+
+247 – Data Minimization
+
+Status:   ⬜ TODO
+Nur wirklich notwendige personenbezogene Daten speichern.
+248 – IP Retention Policy
+
+Status:   ⬜ TODO
+Festlegen:
+
+   ●​   wie lange IP-bezogene Hashes gespeichert werden
+
+   ●​   wann sie gelöscht werden
+
+   ●​   wofür sie verwendet werden
+
+
+
+249 – Moderation Retention
+
+Status:   ⬜ TODO
+Festlegen, wie lange Karten, Sanktionen und Auditdaten gespeichert werden.
+
+
+
+250 – Datenexport
+
+Status:   ⬜ TODO
+Benutzer kann personenbezogene Daten exportieren.
+
+
+
+251 – Accountlöschung
+
+Status:   ⬜ TODO
+Was gemacht werden muss
+
+   ●​   Keycloak Account
+
+   ●​   Profil
+
+   ●​   Preferences
+
+   ●​   persönliche Daten
+
+bearbeiten.
+
+Communitybeiträge können, sofern rechtlich/inhaltlich sinnvoll, anonymisiert werden:
+
+Gelöschter Benutzer
+
+
+
+252 – Security Headers
+Status:   ⬜ TODO
+253 – Content Security Policy
+
+Status:   ⬜ TODO
+254 – CORS
+
+Status:   ⬜ TODO
+Nur erlaubte Kurvenfunk Origins.
+
+
+
+255 – XSS Protection
+
+Status:   ⬜ TODO
+Besonders für:
+
+   ●​   Kommentare
+
+   ●​   Forum
+
+   ●​   Artikel Editor
+
+
+
+256 – Upload Security
+
+Status:   ⬜ TODO
+Prüfen:
+
+   ●​   MIME
+
+   ●​   Größe
+
+   ●​   Dateityp
+
+   ●​   Extension
+
+   ●​   gefährliche Inhalte
+
+
+
+257 – Rate Limits
+
+Status:   ⬜ TODO
+Separate Limits für:
+Login
+
+Register
+
+Reset
+
+Comment
+
+Vote
+
+Forum
+
+Search
+
+Reports
+
+
+
+PHASE 27 – PERFORMANCE
+
+258 – Redis Cache Strategy
+
+Status:   ⬜ TODO
+Geeignet:
+
+   ●​   Tabelle
+
+   ●​   Vereinsinfos
+
+   ●​   häufige Ligaabfragen
+
+Nicht blind alles cachen.
+
+
+
+259 – Personalized Feed Performance
+
+Status:   ⬜ TODO
+Vereinspriorisierung so umsetzen, dass nicht für jeden Benutzer komplette
+individuelle Newslisten gespeichert werden müssen.
+
+Ranking zur Anfragezeit oder mit effizienten vorbereiteten Querys.
+
+
+
+260 – Database Indexes
+
+Status:   ⬜ TODO
+Besonders:
+
+Article.publishedAt
+ArticleClub.clubId
+
+Comment.articleId
+
+Comment.createdAt
+
+Post.threadId
+
+Match.kickoff
+
+Notification.userId
+
+User.nickname
+
+User.favoriteClubId
+
+
+
+261 – Slow Query Monitoring
+
+Status:   ⬜ TODO
+262 – Frontend Performance
+
+Status:   ⬜ TODO
+PHASE 28 – TESTING
+
+263 – Unit Tests
+
+Status:   ⬜ TODO
+Besonders testen:
+
+   ●​   Permission System
+
+   ●​   ACTIVE/LIMITED/BANNED
+
+   ●​   drei Gelbe → Rot
+
+   ●​   direkte Rote
+
+   ●​   Club Matching
+
+   ●​   News Ranking
+
+   ●​   Tabellenberechnung
+
+
+
+264 – Integration Tests
+Status:   ⬜ TODO
+Testen:
+
+   ●​   PostgreSQL
+
+   ●​   Redis
+
+   ●​   BullMQ
+
+   ●​   Prisma
+
+
+
+265 – Auth Tests
+
+Status:   ⬜ TODO
+Testfälle:
+
+E-Mail Register
+
+Verification
+
+Login
+
+Google Login
+
+Onboarding
+
+Nickname
+
+Club Selection
+
+Neutral Selection
+
+Logout
+
+Reset
+
+
+
+266 – Moderation Tests
+
+Status:   ⬜ TODO
+Testfälle:
+
+1x Gelb
+
+2x Gelb
+
+3x Gelb → Rot
+
+direkt Rot
+LIMITED
+
+LIMITED Ablauf
+
+BANNED
+
+Session Revoke
+
+IP Block
+
+
+
+267 – Personalization Tests
+
+Status:   ⬜ TODO
+Testen:
+
+Neutral → Standard Theme
+
+Rapid Fan → Rapid Theme
+
+Club News priorisiert
+
+Clubwechsel
+
+Neutralwechsel
+
+
+
+268 – Import Tests
+
+Status:   ⬜ TODO
+269 – Sports Tests
+
+Status:   ⬜ TODO
+270 – E2E User Flow
+
+Status:   ⬜ TODO
+E-Mail User
+
+Register
+
+→ Verification Mail
+
+→ Verify
+
+→ Login
+→ Nickname wählen
+
+→ Verein/Neutral wählen
+
+→ Startseite
+
+→ Kommentar
+
+Google User
+
+Google Login
+
+→ User wird angelegt
+
+→ Nickname
+
+→ Verein/Neutral
+
+→ personalisierte Startseite
+
+
+
+271 – E2E Moderation Flow
+
+Status:   ⬜ TODO
+Kommentar
+
+→ Report
+
+→ Moderator
+
+→ Gelbe Karte
+
+→ Notification
+
+→ weitere Verstöße
+
+→ dritte Gelbe
+
+→ Rot
+
+→ Session Revoke
+
+
+
+PHASE 29 – MONITORING
+
+272 – API Monitoring
+
+Status:   ⬜ TODO
+273 – Worker Monitoring
+Status:   ⬜ TODO
+Queues überwachen:
+
+waiting
+
+active
+
+completed
+
+failed
+
+delayed
+
+
+
+274 – Import Monitoring
+
+Status:   ⬜ TODO
+275 – Moderation Monitoring
+
+Status:   ⬜ TODO
+Beobachten:
+
+   ●​    Reports
+
+   ●​    Karten
+
+   ●​    Sperren
+
+   ●​    IP Blocks
+
+   ●​    Fehlalarme
+
+
+
+276 – CPU / RAM Monitoring
+
+Status:   ⬜ TODO
+Gerade wegen DEV/STAGING/PROD auf demselben VPS wichtig.
+
+
+
+277 – Disk Monitoring
+
+Status:   ⬜ TODO
+Besonders:
+
+PostgreSQL
+Meilisearch
+
+Backups
+
+Uploads
+
+
+
+278 – Backup Monitoring
+
+Status:   ⬜ TODO
+Fehlgeschlagene Backups müssen erkannt werden.
+
+
+
+PHASE 30 – SEO & ACCESSIBILITY
+
+279 – Semantic HTML
+
+Status:   ⬜ TODO
+280 – Keyboard Navigation
+
+Status:   ⬜ TODO
+281 – Screenreader Support
+
+Status:   ⬜ TODO
+282 – Club Branding Accessibility
+
+Status:   ⬜ TODO
+Vereinsfarben dürfen Kontrast und Lesbarkeit nicht zerstören.
+
+Theme muss automatisch sichere Textfarben verwenden.
+
+
+
+283 – Sitemap
+
+Status:   ⬜ TODO
+284 – robots.txt
+
+Status:   ⬜ TODO
+285 – Canonicals
+
+Status:   ⬜ TODO
+286 – OpenGraph
+
+Status:   ⬜ TODO
+287 – Structured Data
+
+Status:   ⬜ TODO
+Unter anderem:
+
+NewsArticle
+
+SportsEvent
+
+BreadcrumbList
+
+Organization
+
+
+
+PHASE 31 – PRODUCTION PREPARATION
+
+288 – Production Secrets erzeugen
+
+Status:   ⬜ TODO
+Alle Entwicklungs-Secrets ersetzen.
+
+
+
+289 – Production Keycloak finalisieren
+
+Status:   ⬜ TODO
+290 – Production PostgreSQL finalisieren
+
+Status:   ⬜ TODO
+291 – Production Redis finalisieren
+
+Status:   ⬜ TODO
+292 – Production Meilisearch finalisieren
+
+Status:   ⬜ TODO
+293 – Production R2
+
+Status:   ⬜ TODO
+294 – Backup Restore Test
+
+Status:   ⬜ TODO
+Kompletten realistischen Restore durchführen.
+
+
+
+295 – Security Audit
+
+Status:   ⬜ TODO
+296 – Privacy Audit
+
+Status:   ⬜ TODO
+Insbesondere:
+
+   ●​   IP Hashing
+
+   ●​   Moderationsdaten
+
+   ●​   Accountlöschung
+
+   ●​   Datenexport
+
+   ●​   Retention
+
+
+
+297 – Load Test
+
+Status:   ⬜ TODO
+Realistische Matchday-Szenarien:
+
+100
+
+250
+500
+
+1000
+
+gleichzeitige Benutzer schrittweise testen.
+
+
+
+298 – Impressum
+
+Status:   ⬜ TODO
+299 – Datenschutzerklärung
+
+Status:   ⬜ TODO
+300 – Nutzungsbedingungen
+
+Status:   ⬜ TODO
+301 – Community Guidelines
+
+Status:   ⬜ TODO
+Muss erklären
+
+   ●​   erlaubtes Verhalten
+
+   ●​   gelbe Karten
+
+   ●​   rote Karten
+
+   ●​   LIMITED
+
+   ●​   BANNED
+
+   ●​   direkte rote Karte
+
+   ●​   Einsprüche
+
+
+
+302 – Moderationsrichtlinien intern
+
+Status:   ⬜ TODO
+Muss definieren
+
+Wann:
+Hinweis
+
+Gelb
+
+LIMITED
+
+Rot
+
+IP Block
+
+angewendet wird.
+
+
+
+PHASE 32 – BETA
+
+303 – Testdaten entfernen
+
+Status:   ⬜ TODO
+304 – echte Vereine importieren
+
+Status:   ⬜ TODO
+Inklusive:
+
+   ●​   Logos
+
+   ●​   Vereinsfarben
+
+   ●​   Aliases
+
+
+
+305 – Saison importieren
+
+Status:   ⬜ TODO
+306 – Spiele importieren
+
+Status:   ⬜ TODO
+307 – echten Newsprovider aktivieren
+
+Status:   ⬜ TODO
+308 – Initial Content
+Status:   ⬜ TODO
+Startseite darf beim Beta-Start nicht leer wirken.
+
+
+
+309 – Closed Beta
+
+Status:   ⬜ TODO
+Ziel:
+
+10–30 Benutzer
+
+Möglichst Fans unterschiedlicher Vereine sowie neutrale Benutzer.
+
+
+
+310 – Personalization Feedback
+
+Status:   ⬜ TODO
+Prüfen:
+
+   ●​   gefällt Vereinsbranding?
+
+   ●​   ist es zu dominant?
+
+   ●​   werden Vereinsnews sinnvoll priorisiert?
+
+   ●​   funktioniert Neutral gut?
+
+
+
+311 – Moderation Beta Test
+
+Status:   ⬜ TODO
+Karten-/LIMITED-/Ban-System gezielt testen.
+
+
+
+312 – Bugs klassifizieren
+
+Status:   ⬜ TODO
+CRITICAL
+
+HIGH
+
+MEDIUM
+
+LOW
+313 – Critical Bugs beheben
+
+Status:   ⬜ TODO
+Alle vor Launch.
+
+
+
+314 – High Bugs beheben
+
+Status:   ⬜ TODO
+Launch-relevante vollständig beheben.
+
+
+
+PHASE 33 – SOFT LAUNCH
+
+315 – Production Deployment
+
+Status:   ⬜ TODO
+316 – kurvenfunk.at aktivieren
+
+Status:   ⬜ TODO
+Noch ohne große öffentliche Bewerbung.
+
+
+
+317 – Registrierung öffnen
+
+Status:   ⬜ TODO
+318 – Onboarding überwachen
+
+Status:   ⬜ TODO
+Metriken:
+
+   ●​   Registrierung erfolgreich
+
+   ●​   Verifizierung erfolgreich
+
+   ●​   Onboarding gestartet
+
+   ●​   Nickname gewählt
+
+   ●​   Verein gewählt
+
+   ●​   Neutral gewählt
+   ●​   Onboarding abgebrochen
+
+
+
+319 – Personalization überwachen
+
+Status:   ⬜ TODO
+Analysieren:
+
+   ●​   Vereinsverteilung
+
+   ●​   Neutral-Anteil
+
+   ●​   Nutzung Vereinsnews
+
+
+
+320 – Moderation überwachen
+
+Status:   ⬜ TODO
+321 – Infrastruktur überwachen
+
+Status:   ⬜ TODO
+PHASE 34 – PUBLIC LAUNCH
+
+322 – Public Launch
+
+Status:   ⬜ TODO
+Kurvenfunk offiziell veröffentlichen.
+
+
+
+323 – Suchmaschinenindexierung aktivieren
+
+Status:   ⬜ TODO
+324 – Marketing starten
+
+Status:   ⬜ TODO
+325 – Community Aufbau
+
+Status:   ⬜ TODO
+326 – KPIs erfassen
+
+Status:   ⬜ TODO
+Beobachten:
+
+Registrierungen
+
+Verified Accounts
+
+Onboarding Completion
+
+Club Selection
+
+Neutral Selection
+
+Daily Active Users
+
+Monthly Active Users
+
+Kommentare
+
+Votes
+
+Threads
+
+Posts
+
+Reports
+
+Yellow Cards
+
+Red Cards
+
+Limited Accounts
+
+Retention
+
+Artikelaufrufe
+
+
+
+PHASE 35 – STABILIZATION
+
+327 – Bugfixing
+
+Status:   ⬜ TODO
+328 – Performance
+
+Status:   ⬜ TODO
+329 – Moderationsaufwand analysieren
+
+Status:   ⬜ TODO
+330 – Karten-System analysieren
+
+Status:   ⬜ TODO
+Prüfen:
+
+   ●​   werden zu viele gelbe Karten vergeben?
+
+   ●​   sind drei Gelbe sinnvoll?
+
+   ●​   sollte Gelb irgendwann verfallen?
+
+   ●​   wie oft wird direkt Rot benötigt?
+
+
+
+331 – IP Block Effektivität prüfen
+
+Status:   ⬜ TODO
+Fehlalarme und Umgehbarkeit beobachten.
+
+
+
+332 – Personalisierung analysieren
+
+Status:   ⬜ TODO
+Prüfen, ob Vereinsfans tatsächlich stärker mit Kurvenfunk interagieren.
+
+
+
+PHASE 36 – VERSION 1.1
+
+333 – Produktdaten auswerten
+
+Status:   ⬜ TODO
+334 – Version 1.1 planen
+
+Status:   ⬜ TODO
+Mögliche Erweiterungen:
+
+2. Liga
+ÖFB Cup
+
+Nationalteam
+
+weitere Wettbewerbe
+
+Mentions
+
+Bookmarks
+
+Following
+
+PWA
+
+Push Notifications
+
+weitere Social Logins
+
+weitere Länder
+
+
+
+DEVELOPMENT ORDER
+
+Die Reihenfolge ist technisch bewusst so gewählt:
+
+Produktdefinition
+
+     ↓
+
+Repository
+
+     ↓
+
+DEV / STAGING / PROD
+
+     ↓
+
+VPS Persistenz
+
+     ↓
+
+Docker
+
+     ↓
+
+PostgreSQL
+
+     ↓
+
+Redis
+
+     ↓
+
+Keycloak
+    ↓
+
+Meilisearch / MinIO
+
+    ↓
+
+Web / API / Worker
+
+    ↓
+
+Shared Packages
+
+    ↓
+
+Logging / Health / Queues
+
+    ↓
+
+Deployment / Backups
+
+    ↓
+
+Domain Model
+
+    ↓
+
+Prisma / Migration
+
+    ↓
+
+API Foundation
+
+    ↓
+
+Authentication
+
+    ↓
+
+Onboarding
+
+    ↓
+
+Nickname / Vereinswahl
+
+    ↓
+
+Personalisierung
+
+    ↓
+
+Designsystem
+
+    ↓
+
+Frontend
+       ↓
+
+Editorial System
+
+       ↓
+
+News Import
+
+       ↓
+
+Comments
+
+       ↓
+
+Moderation / Karten / Sperren
+
+       ↓
+
+Sportdaten
+
+       ↓
+
+Forum
+
+       ↓
+
+Notifications
+
+       ↓
+
+Search
+
+       ↓
+
+Admin
+
+       ↓
+
+Security / Privacy
+
+       ↓
+
+Testing
+
+       ↓
+
+Monitoring
+
+       ↓
+
+Production
+
+       ↓
+
+Beta
+     ↓
+
+Soft Launch
+
+     ↓
+
+Public Launch
+
+
+
+STANDARD FEATURE DEVELOPMENT FLOW
+
+Jedes Feature wird nach derselben Reihenfolge umgesetzt:
+
+1 Anforderungen definieren
+
+2 Datenmodell prüfen/erstellen
+
+3 Prisma Schema ändern
+
+4 Migration erstellen
+
+5 Database Layer
+
+6 NestJS Module
+
+7 Service
+
+8 Controller/API
+
+9 Input Validation
+
+10 Permission Checks
+
+11 Status-/Ban Checks
+
+12 Logging
+
+13 Audit Logging falls relevant
+
+14 Unit Tests
+
+15 Integration Tests
+
+16 Frontend API Service
+
+17 Frontend UI
+
+18 Loading State
+
+19 Empty State
+
+20 Error State
+
+21 Mobile Test
+22 E2E Test
+
+23 Staging Test
+
+24 Dokumentation
+
+
+
+DEFINITION OF DONE – FEATURE
+
+Ein Feature ist erst DONE, wenn:
+
+[ ] Anforderungen definiert
+
+[ ] Datenmodell vorhanden
+
+[ ] Prisma Schema vorhanden
+
+[ ] Migration vorhanden
+
+[ ] Backend implementiert
+
+[ ] Validation vorhanden
+
+[ ] Permissions vorhanden
+
+[ ] ACTIVE/LIMITED/BANNED berücksichtigt
+
+[ ] Fehlerfälle behandelt
+
+[ ] Logging vorhanden
+
+[ ] Audit Logging falls nötig
+
+[ ] Tests vorhanden
+
+[ ] Frontend vorhanden
+
+[ ] Loading State vorhanden
+
+[ ] Empty State vorhanden
+
+[ ] Error State vorhanden
+
+[ ] Mobile getestet
+
+[ ] Staging getestet
+
+[ ] Dokumentation aktualisiert
+
+
+
+DEFINITION OF DONE – INFRASTRUCTURE
+
+[ ] Container startet
+[ ] Container einzeln startbar
+
+[ ] Container einzeln restartbar
+
+[ ] Healthcheck funktioniert
+
+[ ] Persistenz funktioniert
+
+[ ] Restart getestet
+
+[ ] Secrets nicht in Git
+
+[ ] Netzwerkzugriff korrekt
+
+[ ] DEV/STAGING/PROD getrennt
+
+[ ] Backup berücksichtigt
+
+[ ] Restore berücksichtigt
+
+[ ] Dokumentation vorhanden
+
+
+
+CORE RULE 1 – ROLE != STATUS
+
+Rolle:
+
+USER
+
+MODERATOR
+
+EDITOR
+
+...
+
+ist nicht dasselbe wie:
+
+ACTIVE
+
+LIMITED
+
+BANNED
+
+Beide werden getrennt geprüft.
+
+
+
+CORE RULE 2 – THREE YELLOW = RED
+
+Standard:
+
+Gelb
+
++
+Gelb
+
++
+
+Gelb
+
+=
+
+Rot
+
+Schwerer Verstoß:
+
+Direkt Rot
+
+
+
+CORE RULE 3 – BANNED REVOKES SESSIONS
+
+Bei Rot/BANNED:
+
+Status setzen
+
+→ Sessions widerrufen
+
+→ Zugriff blockieren
+
+→ Audit Log
+
+→ Notification
+
+
+
+CORE RULE 4 – LIMITED CAN READ AND VOTE
+
+LIMITED:
+
+
+
+READ       ✓
+
+SEARCH       ✓
+
+VOTE       ✓
+
+
+
+COMMENT ✗
+
+REPLY        ✗
+
+THREAD       ✗
+
+POST       ✗
+CORE RULE 5 – ONBOARDING IS REQUIRED
+
+Ein neuer Benutzer gilt erst nach:
+
+Login
+
++
+
+Nickname
+
++
+
+Verein oder Neutral
+
+als vollständig eingerichtet.
+
+
+
+CORE RULE 6 – CLUB PREFERENCE DRIVES PERSONALIZATION
+
+Fan:
+
+Lieblingsverein
+
+→ Vereinsbranding
+
+→ Vereinsnews priorisiert
+
+→ Lieblingsverein in Tabelle hervorgehoben
+
+→ Lieblingsverein im Spielplan hervorgehoben
+
+Neutral:
+
+Kurvenfunk Branding
+
+→ allgemeines Newsranking
+
+
+
+CORE RULE 7 – POSTGRESQL IS SOURCE OF TRUTH
+
+Redis und Meilisearch dürfen jederzeit rekonstruierbar sein.
+
+
+
+CORE RULE 8 – EXTERNAL PROVIDERS USE ADAPTERS
+
+External API
+
+↓
+
+Provider Adapter
+
+↓
+Normalization
+
+↓
+
+Validation
+
+↓
+
+Entity Matching
+
+↓
+
+Kurvenfunk Domain
+
+
+
+CORE RULE 9 – BACKGROUND TASKS GO TO WORKER
+
+Nicht synchron durchführen:
+
+News Import
+
+Sports Import
+
+Search Index
+
+Mail
+
+Notifications
+
+Data Export
+
+Scheduled Publishing
+
+Cleanup
+
+Sanction Expiration
+
+
+
+CORE RULE 10 – PRODUCTION DATA NEVER SHARES ENVIRONMENT
+
+DEV, STAGING und PRODUCTION teilen niemals:
+
+PostgreSQL
+
+Redis
+
+Keycloak User Data
+
+Meilisearch Data
+
+Secrets
+MILESTONES
+
+M1 – Architecture Ready
+
+Fertig wenn:
+
+   ●​   Projektstruktur feststeht
+
+   ●​   DEV/STAGING/PROD definiert
+
+   ●​   VPS-Struktur feststeht
+
+
+
+M2 – Infrastructure Ready
+
+Fertig wenn:
+
+   ●​   PostgreSQL
+
+   ●​   Redis
+
+   ●​   Keycloak
+
+   ●​   Meilisearch
+
+   ●​   MinIO
+
+   ●​   Networks
+
+   ●​   Persistence
+
+funktionieren.
+
+
+
+M3 – Application Foundation Ready
+
+Fertig wenn:
+
+   ●​   Web
+
+   ●​   API
+
+   ●​   Worker
+
+   ●​   Queues
+
+   ●​   Logging
+
+   ●​   Healthchecks
+
+funktionieren.
+M4 – Deployment Ready
+
+Fertig wenn:
+
+   ●​     DEV Deployment
+
+   ●​     STAGING Deployment
+
+   ●​     CI
+
+   ●​     Backups
+
+   ●​     Restore
+
+funktionieren.
+
+
+
+M5 – Core Backend Ready
+
+Fertig wenn:
+
+   ●​     Domain Model
+
+   ●​     Prisma
+
+   ●​     Migrationen
+
+   ●​     API
+
+   ●​     Permissions
+
+stehen.
+
+
+
+M6 – Authentication & Onboarding Ready
+
+Fertig wenn:
+
+E-Mail Register
+
+E-Mail Verify
+
+Login
+
+Google Login
+
+Nickname
+
+Club/Neutral Selection
+
+Profile
+
+Sessions
+Logout
+
+funktionieren.
+
+
+
+M7 – Personalization Ready
+
+Fertig wenn:
+
+   ●​   Vereinsbranding
+
+   ●​   neutrale Variante
+
+   ●​   personalisierte News
+
+   ●​   Vereinspriorisierung
+
+   ●​   Lieblingsverein in Sportansichten
+
+funktionieren.
+
+
+
+M8 – Editorial Ready
+
+Fertig wenn:
+
+   ●​   Article CRUD
+
+   ●​   Editor
+
+   ●​   Media
+
+   ●​   Publish Workflow
+
+   ●​   Scheduling
+
+funktionieren.
+
+
+
+M9 – News Automation Ready
+
+Fertig wenn:
+
+   ●​   Provider
+
+   ●​   Queue
+
+   ●​   Worker
+
+   ●​   Normalization
+
+   ●​   Matching
+   ●​   Review
+
+   ●​   Auto Publish
+
+funktionieren.
+
+
+
+M10 – Community Ready
+
+Fertig wenn:
+
+   ●​   Comments
+
+   ●​   Replies
+
+   ●​   Votes
+
+   ●​   Reports
+
+funktionieren.
+
+
+
+M11 – Moderation Ready
+
+Fertig wenn:
+
+Gelbe Karten
+
+3x Gelb → Rot
+
+direkte Rote Karte
+
+LIMITED
+
+BANNED
+
+IP Protection
+
+Session Revoke
+
+Audit
+
+funktionieren.
+
+
+
+M12 – Football Data Ready
+
+Fertig wenn:
+
+   ●​   Clubs
+
+   ●​   Matches
+   ●​   Results
+
+   ●​   Standings
+
+   ●​   Import
+
+funktionieren.
+
+
+
+M13 – Forum Ready
+
+Fertig wenn:
+
+   ●​   Kategorien
+
+   ●​   Vereinsforen
+
+   ●​   Threads
+
+   ●​   Posts
+
+   ●​   Abos
+
+   ●​   Unread Tracking
+
+   ●​   Moderation
+
+funktionieren.
+
+
+
+M14 – Platform Ready
+
+Fertig wenn:
+
+   ●​   Notifications
+
+   ●​   Search
+
+   ●​   Admin
+
+   ●​   Cache
+
+   ●​   Monitoring
+
+funktionieren.
+
+
+
+M15 – Launch Ready
+
+Fertig wenn:
+
+   ●​   Security
+   ●​   Datenschutz
+
+   ●​   Accessibility
+
+   ●​   E2E
+
+   ●​   Load Tests
+
+   ●​   Restore Test
+
+   ●​   Beta
+
+abgeschlossen sind.
+
+
+
+M16 – KURVENFUNK LIVE
+
+https://kurvenfunk.at
+
+ist öffentlich erreichbar und News, Sportdaten, Personalisierung, Community, Forum
+und Moderation laufen stabil.
+
