@@ -28,6 +28,16 @@ import { AuthGuard } from '../auth/auth.guard';
 import { MediaService, type UploadedMediaFile } from './media.service';
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+// Metadata is flat. Multer's patched bracket-index protection is opt-in;
+// reject nesting before append-field can allocate attacker-sized sparse arrays.
+const uploadLimits = {
+  files: 1,
+  fileSize: MAX_UPLOAD_SIZE_BYTES,
+  fields: 4,
+  parts: 5,
+  fieldNestingDepth: 0,
+  fieldArrayIndexLimit: 0,
+};
 
 @Controller('media')
 export class MediaController {
@@ -37,10 +47,7 @@ export class MediaController {
   @UseGuards(AuthGuard, ArticleEditorialGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: {
-        files: 1,
-        fileSize: MAX_UPLOAD_SIZE_BYTES,
-      },
+      limits: uploadLimits,
     }),
   )
   upload(
