@@ -1,0 +1,11 @@
+Owned containers removed
+Traceback (most recent call last):
+  File "/workspace/kurvenfunk-verification-2026-10-22/run-isolated.py", line 18, in <module>
+    with open(out/'integration.log','w') as f:run(['node',str(out/'integration.cjs')],env=env,stdout=f,stderr=subprocess.STDOUT,cwd='/workspace/kurvenfunk')
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/kurvenfunk-verification-2026-10-22/run-isolated.py", line 6, in run
+    def run(a,**kw):return subprocess.run(a,check=True,**kw)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '/workspace/kurvenfunk-verification-2026-10-22/integration.cjs']' returned non-zero exit status 1.

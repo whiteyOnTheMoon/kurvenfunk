@@ -1,0 +1,14 @@
+{
+  "current": {
+    "TODO": 6,
+    "DONE": 42,
+    "PARTIAL": 124,
+    "UNKNOWN": 2
+  },
+  "previous_001_174": {
+    "TODO": 5,
+    "DONE": 37,
+    "PARTIAL": 130,
+    "UNKNOWN": 2
+  }
+}
