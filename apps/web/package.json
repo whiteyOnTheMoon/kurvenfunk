@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/features/personalization/*.spec.mjs src/features/articles/comment-sort.spec.mjs src/features/articles/comment-spam-error.spec.mjs"
+    "test": "node --experimental-strip-types --test \"src/**/*.spec.mjs\""
   },
   "dependencies": {
     "@kurvenfunk/ui": "workspace:*",
