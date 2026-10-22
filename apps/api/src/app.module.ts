@@ -101,7 +101,7 @@ import { UsersModule } from './modules/users/users.module';
     AdminModule,
 
     HealthModule,
-    RequestIdTestModule,
+    RequestIdTestModule.register(),
   ],
 })
 export class AppModule implements NestModule {
