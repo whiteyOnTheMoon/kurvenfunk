@@ -1,0 +1,17 @@
+[
+  {
+    "configuration": "dev",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "configuration": "staging",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "configuration": "prod",
+    "exit": 0,
+    "stderr": ""
+  }
+]

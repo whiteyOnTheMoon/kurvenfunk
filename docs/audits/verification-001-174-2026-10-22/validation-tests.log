@@ -1,0 +1,137 @@
+$ node --experimental-strip-types --test src/*.spec.ts
+▶ article validation
+  ✔ accepts a valid article draft (3.510071ms)
+  ✔ rejects JSON null as article content (1.038426ms)
+  ✔ rejects an invalid slug (0.584078ms)
+  ✔ allows partial article updates (2.271236ms)
+✔ article validation (9.092217ms)
+▶ article publication workflow validation
+  ✔ accepts moving an article to review (0.78496ms)
+  ✔ accepts scheduling with an ISO timestamp (0.766582ms)
+  ✔ rejects scheduling without scheduledAt (0.466675ms)
+  ✔ rejects scheduledAt for non-scheduled states (0.631587ms)
+  ✔ rejects unknown publication states (0.388782ms)
+✔ article publication workflow validation (3.539685ms)
+▶ articleContentSchema
+  ✔ accepts structured article editor content (4.916458ms)
+  ✔ rejects unsupported editor nodes (0.402396ms)
+  ✔ rejects unsafe image URLs (0.431445ms)
+✔ articleContentSchema (6.012992ms)
+▶ article category assignment validation
+  ✔ does not inject categoryIds into an unrelated partial update (0.234157ms)
+  ✔ accepts category ids on article updates (0.328751ms)
+  ✔ accepts removing all categories explicitly (0.106274ms)
+✔ article category assignment validation (0.789803ms)
+▶ article tag assignment validation
+  ✔ does not inject tagIds into an unrelated partial update (0.119865ms)
+  ✔ accepts tag ids on article updates (0.231782ms)
+  ✔ accepts removing all tags explicitly (0.170901ms)
+✔ article tag assignment validation (0.64042ms)
+▶ article club assignment validation
+  ✔ does not inject clubIds into an unrelated partial update (0.222754ms)
+  ✔ accepts club ids on article updates (0.288374ms)
+  ✔ accepts removing all clubs explicitly (0.243328ms)
+✔ article club assignment validation (0.923459ms)
+▶ article lead media assignment validation
+  ✔ does not inject leadMediaId into an unrelated partial update (0.266754ms)
+  ✔ accepts a lead media id on article updates (0.121502ms)
+  ✔ accepts removing the lead media explicitly (1.323768ms)
+  ✔ rejects an invalid lead media id (0.350374ms)
+✔ article lead media assignment validation (2.206019ms)
+▶ article competition assignment validation
+  ✔ does not inject competitionId into an unrelated partial update (0.125884ms)
+  ✔ accepts a competition id on article updates (0.092901ms)
+  ✔ accepts removing the competition explicitly (0.245766ms)
+  ✔ rejects an invalid competition id (0.335872ms)
+✔ article competition assignment validation (0.93242ms)
+▶ article match assignment validation
+  ✔ does not inject matchId into an unrelated partial update (0.255265ms)
+  ✔ accepts a match id on article updates (0.22401ms)
+  ✔ accepts removing the match explicitly (0.077768ms)
+  ✔ rejects an invalid match id (0.216014ms)
+✔ article match assignment validation (1.055402ms)
+▶ article SEO validation
+  ✔ accepts valid SEO fields (0.177783ms)
+  ✔ accepts clearing SEO fields explicitly (0.083226ms)
+  ✔ rejects unsafe canonical URLs (0.254264ms)
+  ✔ rejects invalid og image ids (0.213719ms)
+  ✔ rejects overly long SEO fields (3.67828ms)
+✔ article SEO validation (4.599608ms)
+▶ category validation
+  ✔ accepts a valid category (2.357813ms)
+  ✔ trims the category name (0.271753ms)
+  ✔ accepts the optional active flag (0.184243ms)
+  ✔ rejects an empty category name (0.627955ms)
+  ✔ rejects an invalid slug (0.354261ms)
+  ✔ allows partial category updates (0.574516ms)
+✔ category validation (5.695389ms)
+▶ comment validation
+  ✔ accepts and trims a valid comment (2.039741ms)
+  ✔ rejects an empty comment (0.773756ms)
+  ✔ rejects comments above the maximum length (0.230708ms)
+✔ comment validation (4.030721ms)
+▶ fan preference validation
+  ✔ accepts an explicit neutral preference (1.687633ms)
+  ✔ accepts a club preference with a club id (0.647776ms)
+  ✔ rejects CLUB without a club id (0.640792ms)
+  ✔ rejects NEUTRAL with a club id (0.178742ms)
+  ✔ does not accept UNSET as a completed selection (0.157855ms)
+✔ fan preference validation (4.269347ms)
+▶ media upload metadata validation
+  ✔ accepts valid media metadata (2.373712ms)
+  ✔ normalizes omitted metadata to null (0.340926ms)
+  ✔ normalizes empty metadata to null (0.255338ms)
+  ✔ rejects an invalid source URL (0.684768ms)
+  ✔ rejects overly long alt text (0.242707ms)
+✔ media upload metadata validation (5.221337ms)
+▶ media metadata update validation
+  ✔ accepts and normalizes editable metadata (0.38444ms)
+  ✔ rejects an invalid source URL (0.443657ms)
+✔ media metadata update validation (1.009918ms)
+▶ media list query validation
+  ✔ provides the default page size (0.591492ms)
+  ✔ coerces the page size from query parameters (0.365732ms)
+  ✔ accepts a cursor (0.413223ms)
+  ✔ rejects invalid cursors and excessive page sizes (0.399149ms)
+✔ media list query validation (2.111064ms)
+▶ nickname validation
+  ✔ accepts a valid nickname (1.506483ms)
+  ✔ trims surrounding whitespace (0.237857ms)
+  ✔ rejects nicknames shorter than the minimum length (1.19118ms)
+  ✔ rejects nicknames longer than the maximum length (0.523598ms)
+  ✔ rejects invalid characters in rapid fan (0.320877ms)
+  ✔ rejects invalid characters in rapid.fan (0.380339ms)
+  ✔ rejects invalid characters in rapid@fan (0.298578ms)
+  ✔ rejects invalid characters in rapid! (0.379523ms)
+  ✔ rejects invalid characters in stürmer (0.435197ms)
+  ✔ rejects reserved nickname admin case-insensitively (0.740045ms)
+  ✔ rejects reserved nickname ADMIN case-insensitively (0.534901ms)
+  ✔ rejects reserved nickname Moderator case-insensitively (0.209913ms)
+  ✔ rejects reserved nickname KURVENFUNK case-insensitively (0.172967ms)
+  ✔ rejects reserved nickname Support case-insensitively (0.442665ms)
+  ✔ rejects reserved nickname SYSTEM case-insensitively (0.321888ms)
+  ✔ validates the nickname selection payload (1.896484ms)
+✔ nickname validation (12.071478ms)
+▶ updateProfileSchema
+  ✔ accepts and trims profile values (1.96612ms)
+  ✔ normalizes empty values to null (0.210803ms)
+  ✔ accepts explicit null values (0.109188ms)
+  ✔ rejects an overly long display name (0.562751ms)
+  ✔ rejects an overly long bio (0.273673ms)
+✔ updateProfileSchema (4.245237ms)
+▶ tag validation
+  ✔ accepts a valid tag (2.208287ms)
+  ✔ trims the tag name (0.228423ms)
+  ✔ accepts the optional active flag (0.299171ms)
+  ✔ rejects an empty tag name (0.58887ms)
+  ✔ rejects an invalid slug (0.438506ms)
+  ✔ allows partial tag updates (0.50216ms)
+✔ tag validation (5.544099ms)
+ℹ tests 90
+ℹ suites 19
+ℹ pass 90
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 538.543816

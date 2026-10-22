@@ -1,0 +1,45 @@
+• turbo 2.10.9
+
+   • Packages in scope: @kurvenfunk/config, @kurvenfunk/database, @kurvenfunk/logger, @kurvenfunk/types, @kurvenfunk/ui, @kurvenfunk/validation, api, web, worker
+   • Running lint, typecheck in 9 packages
+   • Remote caching disabled
+
+@kurvenfunk/ui:typecheck: cache bypass, force executing a34cd04da8301f5b
+@kurvenfunk/database:typecheck: cache bypass, force executing 65df7519373c9db3
+@kurvenfunk/validation:typecheck: cache bypass, force executing 8ca83add3442d12a
+@kurvenfunk/types:typecheck: cache bypass, force executing 8839fe53eeabdfb1
+@kurvenfunk/logger:typecheck: cache bypass, force executing 47cbe55cd3a1a426
+api:lint: cache bypass, force executing 419ad8e24f2f3a15
+worker:lint: cache bypass, force executing aa11ddbcf2d84ec8
+web:lint: cache bypass, force executing 233067bde312a1f9
+api:lint: $ eslint "{src,apps,libs,test}/**/*.ts"
+web:lint: $ eslint
+@kurvenfunk/logger:typecheck: $ tsc --noEmit
+worker:lint: $ eslint "{src,test}/**/*.ts"
+@kurvenfunk/ui:typecheck: $ tsc --noEmit
+@kurvenfunk/validation:typecheck: $ tsc --noEmit
+@kurvenfunk/types:typecheck: $ tsc --noEmit
+@kurvenfunk/database:typecheck: $ tsc --noEmit
+web:lint: 
+web:lint: /workspace/kurvenfunk/apps/web/src/app/design-system/design-system-client.tsx
+web:lint:   370:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+web:lint: 
+web:lint: /workspace/kurvenfunk/apps/web/src/features/onboarding/club-selection.tsx
+web:lint:   147:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+web:lint: 
+web:lint: /workspace/kurvenfunk/apps/web/src/features/profile/club-combobox.tsx
+web:lint:   105:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+web:lint: 
+web:lint: ✖ 3 problems (0 errors, 3 warnings)
+web:lint: 
+api:lint: 
+api:lint: /workspace/kurvenfunk/apps/api/src/modules/request-id-test/request-id-test.spec.ts
+api:lint:   156:34  warning  Unsafe argument of type `Queue<any, any, string, any, any, string, RedisQueueBackend>` assigned to a parameter of type `Queue<TestJobPayload, any, string, TestJobPayload, any, string, RedisQueueBackend>`  @typescript-eslint/no-unsafe-argument
+api:lint: 
+api:lint: ✖ 1 problem (0 errors, 1 warning)
+api:lint: 
+
+ Tasks:    8 successful, 8 total
+Cached:    0 cached, 8 total
+  Time:    14.464s 
+

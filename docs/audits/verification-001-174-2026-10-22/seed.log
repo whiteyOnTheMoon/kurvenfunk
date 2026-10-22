@@ -1,0 +1,23 @@
+$ prisma db seed
+Loaded Prisma config from prisma.config.ts.
+
+Running seed command `tsx prisma/seed.ts` ...
+Starting Kurvenfunk database seed...
+
+Seeding clubs...
+Seeding competitions, seasons and stages...
+Seeding test users...
+Seeding test matches...
+Seeding test articles...
+
+Kurvenfunk seed completed.
+Clubs:        28
+Club aliases: 90
+Competitions: 3
+Seasons:      3
+Stages:       3
+Test users:   3
+Test matches: 9
+Test articles:18
+
+🌱  The seed command has been executed.

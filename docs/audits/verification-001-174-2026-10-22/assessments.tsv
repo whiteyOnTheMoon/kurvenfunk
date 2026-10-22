@@ -1,0 +1,174 @@
+001|TODO|README enthält Produktabriss.|Gefordertes MVP-Dokument mit Zielgruppe, Scope, Nicht-MVP und Monetarisierung fehlt.|Keine Dokumentabnahme.
+002|TODO|Community-Datenmodelle vorhanden.|Verbindliches Communitykonzept einschließlich Moderationsregeln fehlt.|Keine Produktfreigabe dokumentiert.
+003|TODO|Personalisierungs-Code vorhanden.|Eigenständiges Konzept mit Auswahl-, Branding- und Rankingregeln fehlt.|Keine Konzeptfreigabe.
+004|TODO|Compose und README beschreiben Teile des Stacks.|Gefordertes Systemdokument mit Datenflüssen und Netz-/Environmentarchitektur fehlt.|Keine Architekturabnahme.
+005|TODO|Kein ADR-Verzeichnis im aktuellen Dateiinventar.|ADRs zu Architektur, Keycloak, Datenhoheit und Umgebungen fehlen.|Keine Entscheidungsprotokolle.
+006|DONE|Git, Remote, Ignore, README und Branchkonvention vorhanden; develop/Commit geprüft.|—|—
+007|DONE|Workspace apps/* und packages/*; frozen Install erfolgreich.|—|—
+008|DONE|Turbo dev/build/lint/typecheck/test konfiguriert; sieben Builds frisch erfolgreich.|—|—
+009|DONE|Shared TypeScript-, ESLint-, Prettierkonfiguration mit Packageexports; Checks laufen.|—|—
+010|PARTIAL|Basis und drei Compose-Overlays; unterschiedliche Pfade und Envdateien vorgesehen.|Kein bestätigter fehlender Konfigurationsbaustein; x-kurvenfunk-environment.env_file ist nur Metadatum, Skripte müssen --env-file setzen.|Drei laufende getrennte Umgebungen/Credentials nicht geprüft.
+011|DONE|Drei unterschiedliche Compose-Projektnamen, keine festen container_name.|—|—
+012|UNKNOWN|Compose referenziert getrennte /srv/kurvenfunk-Pfade.|Kein VPS-Zustand aus Repository ableitbar.|Existenz/Persistenz/Trennung auf Zielhosts unbekannt; kein Zugriff vorgenommen.
+013|PARTIAL|Owner-/Gruppen-/Secret-Rechte dokumentiert; chmod in Betriebsskripten.|Keine aus Code bestätigte Rechteverletzung.|Tatsächliche Hostrechte nicht geprüft.
+014|PARTIAL|frontend/backend-Netze; DB/Redis ohne Hostports, DEV-Meili nur Loopback.|Kein Codebeleg für öffentlich exponierte DB; Netzdefinition allein ist kein Expositionstest.|Zielnetz-/Tunnelisolation und Restart fehlen als Nachweis.
+015|PARTIAL|Postgres 17, Healthcheck und Persistenz konfiguriert; frische isolierte DB migriert und genutzt.|Keycloak-DB/User-Erzeugung nicht durch Basiscompose automatisiert sichtbar.|Compose-DEV mit Keycloak-DB, Persistenz nach Restart, Backup/Restore nicht vollständig geprüft.
+016|PARTIAL|Staging-Overlay mit eigenem Postgrespfad, Backup-Timer vorhanden.|Kein belegter Funktionsdefekt aus statischer Konfiguration.|Eigene Staging-Credentials, Laufbetrieb und Restore unbewiesen.
+017|PARTIAL|Production-Postgres als separater Compose-Projekt-/Storagekontext vorbereitet.|Kein bestätigter Konfigurationsdefekt.|Infrastruktur-DoD einschließlich isolierter Start-/Restart-/Restoreprüfung offen; Production bewusst unberührt.
+018|PARTIAL|Redis Passwort/AOF/256MB/noeviction/Healthcheck; echte Redis-Lua- und Queue-Nutzung erfolgreich.|Kein bestätigter Laufzeitdefekt im geprüften Slice.|Repository-Compose-Persistenz, Restart und SET/GET-Abnahme nicht vollständig ausgeführt.
+019|PARTIAL|Staging-Redis mit eigenem Projekt und Persistenzpfad konfiguriert.|Kein bestätigter Konfigurationsdefekt.|Eigene Credentials und Lauf-/Restartnachweis fehlen.
+020|PARTIAL|Production-Redis übernimmt Limits/AOF und eigenen Pfad.|Kein bestätigter Konfigurationsdefekt.|Isolierte Konfigurations-/Containerabnahme offen; kein Produktionszugriff.
+021|PARTIAL|Keycloak 26.6.3/Postgres/Healthcheck und Realm-Konfigurationsskripte vorhanden.|Realm-/Client-Bootstrap nicht vollständig deklarativ im Repository enthalten.|Kein realer Keycloak-Container/Client-/Redirect-/Origin-Test in diesem Audit.
+022|PARTIAL|Eigener Keycloak-Hostname/Compose-Projektkontext für Staging.|Kein belegter Defekt; externe Einstellungen unbekannt.|Benutzer-, Secret-, Redirecttrennung nicht ausgeführt geprüft.
+023|PARTIAL|Production-Hostname und start-Konfiguration vorbereitet.|Vollständiger versionierter Realm-/Client-Export fehlt als reproduzierbare Vorbereitung.|Production bewusst nicht kontaktiert; isolierter Realmimport nicht getestet.
+024|PARTIAL|Meili-Container mit Masterkey, Healthcheck und Volume vorbereitet.|Testindex-/Suchfixture nicht als reproduzierbarer Prüfpfad vorhanden.|Kein Index-/Suchlauf in diesem Audit.
+025|PARTIAL|Staging-Meili erhält getrennten Projekt-/Persistenzkontext.|Kein bestätigter Konfigurationsdefekt.|Eigener Index/Credentials/Laufbetrieb nicht geprüft.
+026|PARTIAL|Production-Meili separat konfiguriert.|Kein bestätigter Konfigurationsdefekt.|Isolierter Start-/Persistenz-/Restartnachweis offen.
+027|PARTIAL|DEV-MinIO mit Volume/Healthcheck/Loopbackports; S3-Abstraktion vorhanden.|MINIO_BUCKET-Variable allein provisioniert keinen Bucket; kein Init-Service im Compose.|Kein echter Bucket-/Upload-/Download-/Delete-Roundtrip.
+028|PARTIAL|Staging-MinIO mit eigenem Datenpfad.|Bucket-Provisionierung nicht automatisiert nachgewiesen.|Storage- und Credentialisolation nicht getestet.
+029|PARTIAL|Next/TypeScript/AppRouter/Envparser/Healthroute/Dockerfile; Next-Build erfolgreich.|Kein fehlendes Grundgerüst gefunden.|Dockerimage-/Runtime-/Restart-Abnahme fehlt.
+030|PARTIAL|Nest Config, Zod-Pipes, Prefix, Errorfilter, Health; echte HTTP-App gestartet.|Nicht alle Eingaben validiert: öffentliche ungültige Media-ID erzeugt 500.|Dockerimage-/Containerabnahme und reguläres API-E2E-Gate fehlen.
+031|PARTIAL|BullMQ-Worker mit Shutdownhooks, Testjob und Dockerfile; echter Importjob verarbeitet.|Kein im Slice bestätigter Queue-Defekt.|SIGTERM-/Container-/Restartabnahme fehlt.
+032|DONE|Prisma-Client generiert; Schema validiert, elf Migrationen auf leerer DB und Seed erfolgreich.|—|—
+033|DONE|Geteilte Typen, Queuekonstanten und Providerverträge; keine ausführbaren Fachservices im Types-Package.|—|—
+034|DONE|Geteilte Zodschemas werden von API/Web konsumiert; 90 Validationtests bestanden.|—|—
+035|PARTIAL|Strukturierte Standardfelder und schlüsselbasierte rekursive Redaction vorhanden.|Freitext-/Error-/URL-Werte werden nicht inhaltlich redigiert; originalUrl enthält Querystrings.|Kein dediziertes Logger-Regressionssuite-/Log-Datenschutzgate.
+036|PARTIAL|Wiederverwendbare Basis-UI und Tokenstyles; Build erfolgreich.|Kein eindeutig fehlender Basisbaustein gefunden.|Keine Komponenten-/Browser-/A11yabnahme.
+037|PARTIAL|Zodparser für Web/API/Worker mit kontrollierten Fehlern.|OTS-Key ist auch bei gewähltem OTS-Provider nur optional; falsche Providerkonfiguration wird nicht vollständig beim Start abgefangen.|Systematische Start-Negativtests fehlen.
+038|PARTIAL|Ignore-Regeln und getrennte Env-/Secretskonvention dokumentiert.|Keine aktuelle Secretpreisgabe festgestellt; Rotation ist kein implementierter reproduzierbarer Workflow.|Vollständige Git-Historienprüfung/externes Secretbinding nicht erfolgt.
+039|PARTIAL|API-Request-ID-Middleware, Queuepayload und Workercontext vorhanden; Diagnoseroute jetzt opt-in/lokal.|Web→API-Weitergabe nicht durchgängig vereinheitlicht.|Neue lokale Queueprobe prüft Import, keinen vollständigen Browser→API→Worker-Trace.
+040|PARTIAL|Pretty in development, JSON sonst; strukturierte HTTP-/Jobereignisse.|Querystrings und Errorfreitext können sensible Werte enthalten.|Keine Redaction-Negativ-/Retentionabnahme.
+041|PARTIAL|API /health/live und /health/ready mit echten DB/Redis geprüft; Web /health implementiert.|Workerhealth prüft nur Redis; keine eigene DB-Readiness des Workers.|Vollständige serviceübergreifende Ausfall-/Containerhealthabnahme fehlt.
+042|DONE|Alle acht im Aufgabenwortlaut verlangten Queue-Namen definiert und in API/Worker registriert.|—|Consumer für Sports/Suche/Notifications/Moderation sind separate Aufgaben und hier kein Abnahmekriterium.
+043|PARTIAL|Alle Services separat in Compose adressierbar.|Kein bestätigter Strukturdefekt.|Nicht alle Compose-Services einzeln gestartet/restartet; App-Dockerimages nicht gebaut.
+044|PARTIAL|DEV-cloudflared/Tunnel und Hostnamekonfiguration vorhanden.|DNS-/Tunnelrouting liegt außerhalb des Codes.|Kein DEV-Domain-/Accessnachweis; keine externen Dienste kontaktiert.
+045|PARTIAL|Staging-cloudflared und Hostnamen vorbereitet.|Externe Routen-/Accessregeln unbekannt.|Kein Staging-Routingtest.
+046|PARTIAL|Production-Overlay mit Livehostnamen und Tunnel vorbereitet.|Externe Domainfreigabe nicht im Code nachweisbar.|Kein Produktionsrouting geprüft, entsprechend Auftrag.
+047|PARTIAL|CI führt Install/Format/Prisma/sharedBuild/Lint/Typecheck/Test/Build aus.|Webtestliste lässt 22 Tests aus; API-E2E wird nicht ausgeführt; App-Typechecks fehlen im Turbo-Gate. Separater Worker-tsc scheitert an fehlendem trustedForAutoPublish in Testfixture; keine echte DB/Redis-Fachsuite in CI.|Lokale Gates bestanden, aktueller GitHub-CI-Lauf nicht als Nachweis erhoben.
+048|PARTIAL|develop-Push triggert DEV-Deploy nach CI; Script prüft Commit/Health.|Keine bestätigte zusätzliche Codelücke.|Deployment-/Host-/Restartnachweise nicht erhoben; kein Deployment ausgeführt.
+049|PARTIAL|Staging-Script build→migrate→deploy→health→Shell-E2E vorhanden.|Shell-E2E prüft nur Infrastruktur/Realm, keine Produktabläufe.|Realer Stagingrelease nicht ausgeführt.
+050|PARTIAL|Manueller Workflow mit Bestätigung, main-Commitprüfung, Dump/Migration/Deploy/Smoke.|Kein Nachweis eines vollständigen Releasefreigabe-/Rollbackdrills.|Keine Produktion kontaktiert oder deployt.
+051|PARTIAL|Rollbackscript mit aktuellem/vorherigem Commit und Wiederanlauf vorhanden.|Migrations-Rückwärtskompatibilität nicht durch Strategie/Test abgesichert.|Kein tatsächlicher Rollbackdrill.
+052|PARTIAL|PG-Dumpskripte und getrennte Staging/Production-Timer vorhanden.|Kein bestätigter Skriptdefekt durch Syntaxprüfung.|Timerbetrieb, aktueller Dump und Wiederherstellbarkeit nicht getestet.
+053|PARTIAL|Rotation für Daily/Weekly/Monthly implementiert.|Kein bestätigter Defekt aus Quellprüfung.|Keine Fixtureprüfung zu Retention, Monatswechsel, beschädigten Backups.
+054|PARTIAL|Keycloak-Export-/Backupscript und Timer vorhanden.|Kein bestätigter Skriptdefekt.|Aktuelle Realmexport-/Restore-Abnahme fehlt.
+055|DONE|Eigenständige Objectstorage-Backupstrategie dokumentiert; Aufgabe verlangt Festlegung.|—|Praktische Kopie/Restore ist damit nicht als abgenommen ausgewiesen.
+056|PARTIAL|Postgres- und Keycloak-Restoreskripte mit Fehlerabbruch vorhanden.|Kein bestätigter Skriptdefekt.|Keine Ausführung mit aktuellem Backup in isolierter vollständiger Umgebung.
+057|UNKNOWN|Historischer Restorebericht vom 14.08.2026 vorhanden.|Kein aktueller Restorefehler nachgewiesen.|Historische Behauptung ohne aktuelle Artefakte nicht unabhängig bestätigt; frische Migration ist kein Restore.
+058|DONE|Userfelder/Defaults/Relationen migriert; realer User-Sync bestätigt UNSET und incomplete.|—|—
+059|DONE|Profile ist getrennte 1:1-Tabelle mit öffentlichem Namen/Bio/Avatarrelation; Migration erfolgreich.|—|—
+060|DONE|Enum ACTIVE/LIMITED/BANNED und Statusprüfung in Auth/Permissions; echte HTTP-Negativ-/Votingprobe.|—|Sanktionsvergabe und Sessionrevoke sind andere Aufgaben, durch dieses Modell nicht behauptet.
+061|DONE|Rollenenum und getrennte UserRoleAssignment mit Ablauf/Grantrelation; Migration/Permissionssuites grün.|—|—
+062|DONE|Club mit Namen/Slug/Logo/Website/active und äquivalenten Farb-/RGBAfeldern; Seed erfolgreich.|—|primaryColor etc. heißen im aktuellen Modell color1Hex/color2Hex/color3Hex/accentColorHex; funktionale Zuordnung explizit.
+063|DONE|ClubAlias mit Clubrelation/Index migriert; Aliasfixtures in Seed und Matchingtests.|—|—
+064|DONE|Explizites UNSET/CLUB/NEUTRAL; keine Gleichsetzung von NULL und Neutral; HTTP-Onboarding bestätigt.|—|—
+065|DONE|Competition unabhängig von Season mit Slug/Name/Typ und Relationen; Migration/Seed grün.|—|—
+066|DONE|Season mit Wettbewerb und Stagebezug; Seed enthält Saisons und Stages.|—|—
+067|DONE|Match mit Heim/Auswärts/Kickoff/Wettbewerb/Saison/Spieltag/Status/Score; Seedspiele persistiert.|—|—
+068|DONE|Standing-Zeilenmodell mit Wettbewerb-/Saison-/Club-/Stagebezug und Zahlenfeldern; Migration und Seed grün.|—|Keine Berechnungsfunktion durch Modell-DONE behauptet.
+069|DONE|Article mit Autoren/Quelle/Kategorien/Tags/Clubs/Wettbewerb/Spiel; Migration und reale Datenzugriffe.|—|—
+070|DONE|Media mit Storagekey/URL/MIME/Größe/Copyright/Quelle/Alttext migriert.|—|Kein Storage-Roundtrip allein durch Modellnachweis behauptet.
+071|DONE|Comment/CommentRevision mit Artikel/Autor/Parent/Status/Softdelete; echte Edit-/Reply-/Deleteprobe.|—|—
+072|PARTIAL|ReactionType enthält LIKE und zusätzliche UPVOTE/DOWNVOTE; LIMITED-Permission real geprüft.|API akzeptiert ausschließlich UPVOTE/DOWNVOTE; gefordertes MVP-LIKE nicht im vertikalen Vertrag umgesetzt.|Produktentscheidung zur Abweichung fehlt.
+073|DONE|Alle sechs geforderten Forumentitäten samt Relationen im migrierten Schema.|—|Forumfunktionen bleiben außerhalb dieses Modellauftrags unimplementiert.
+074|DONE|ModerationReport referenziert Kommentar/Post/User und Moderator; SQL migriert; Kommentarreport real gespeichert.|—|Post-/Userreportendpoints werden hierdurch nicht als fertig bezeichnet.
+075|DONE|ModerationCard enthält YELLOW/RED, Ziel/Moderator/Grund/Notiz/Inhaltsreferenz/Zeit/Ablauf; Migration grün.|—|Vergabe/Benachrichtigung aus 174 wird nicht durch Modell erfüllt.
+076|DONE|Sanction getrennt von Card; benötigte Sperrtypen und Gültigkeits-/Widerrufsfelder migriert.|—|Keine technische Durchsetzung beliebiger Sanktionen durch Modell-DONE behauptet.
+077|DONE|IPBlock mit Hash/Grund/Ersteller/Zeit/Gültigkeit/active im migrierten Schema.|—|—
+078|PARTIAL|AuditLog-Modell mit Akteur/Ziel/Ereignis/Metadaten vorhanden und migriert.|Anforderung kritische Admin-/Moderationsaktionen nachvollziehbar speichern wird von den bestehenden Mutationen nicht durch Auditwrites erfüllt.|Kein tatsächlicher Auditdatensatzfluss geprüft; Schema allein reicht für den Speicherauftrag nicht.
+079|DONE|Notification und NotificationPreference pro Benutzer mit Read-/Typ-/Inhaltsdaten migriert.|—|Keine Zustellung oder Notification-UI durch Modell-DONE behauptet.
+080|DONE|Provider/ImportJob/ImportRecord/RawPayload/EntityMatch migriert und im echten Import genutzt.|—|—
+081|DONE|Alle zuvor geforderten Domains in validiertem, generiertem und erfolgreich migriertem Schema.|—|—
+082|PARTIAL|Elf Migrationen einschließlich Initialmigration auf leerem isoliertem PostgreSQL erfolgreich.|Kein lokaler Migrationsfehler.|Explizit verlangter Staging-Migrationsnachweis fehlt.
+083|DONE|Seed legt Wettbewerbe/Saisons/28 Clubs/Farben/Aliases/3 Testuser/18 Artikel/9 Spiele an; frische Ausführung erfolgreich.|—|Nur lokale Testdaten; keine Produktivbereinigung als zusätzliches Kriterium erfunden.
+084|DONE|Module der Backendstruktur angelegt; Wortlaut erlaubt ausdrücklich zunächst leere Module.|—|Fachfunktionalität leerer Module separat bewertet.
+085|DONE|main setzt api/v1; echte HTTP-Feature-/Healthrouten dort erreichbar.|—|Swagger /docs ist eine separate Dokumentationsroute.
+086|PARTIAL|Responseinterceptor kapselt data/meta/requestId; reale HTTP-Probe nutzt denselben Interceptor.|Keine belegte Vertragslücke im geprüften Slice; Binärmedien sind bewusst roh.|Keine systematische Vertragsabnahme aller Endpoints und Staging.
+087|DONE|Zentraler Filter mit code/message/requestId, 500-Masking; Filtertests und echte Fehlerantworten geprüft.|—|—
+088|PARTIAL|Bodies/Queries überwiegend per Zod validiert; UUID-Pipes bei Kommentaren.|Ungültige öffentliche Media-UUID erzeugt 500 statt 400; einige redaktionelle IDs ebenfalls ungeprüft.|Vollständige Endpoint-Negativmatrix fehlt.
+089|PARTIAL|Cursorparser und Paging für Artikel/Kommentare/Medien/Importjobs implementiert.|Unbegrenzte redaktionelle Artikelliste; kein durchgängiger Standard für alle großen Listen.|Reale Kommentar-Cursorprobe deckt statische Seiten ab, keine konkurrierenden Änderungen.
+090|DONE|Zentrale wiederverwendbare Filterparser und Unitprüfungen bestehen.|—|Kein universeller Filter für jeden Endpoint im schmalen Standardauftrag verlangt.
+091|DONE|Zentraler Sortierparser mit Whitelist und Tests besteht.|—|—
+092|PARTIAL|Swagger optional konfiguriert; Generator und docs/openapi.json vorgesehen.|Vollständige Fachschemas/Responses nicht überall annotiert.|Explizite Stagingbereitstellung/Schutz/Vertragsabnahme nicht geprüft.
+093|PARTIAL|Realer jose/JWKS/RS256-Pfad prüft Signatur/Issuer/Audience/Expiry; HTTP-Negativfälle erfolgreich.|Kein Defekt in geprüfter Tokenprüfung.|Test-JWKS ist kein echter Keycloak; Rotation und Staging nicht geprüft.
+094|PARTIAL|Subject-Upsert und Standardpräferenzen real durch signierten HTTP-Request persistiert.|Kein Defekt im geprüften Erstlogin-Slice.|Gleichzeitige Erstlogins, echter IdP-Flow und Staging unbewiesen.
+095|PARTIAL|Registrierung/verifyEmail/resetPassword per Keycloakscript vorbereitet; Web delegiert Anmeldung.|Kein vollständiger reproduzierbarer Realm-/SMTP-Testaufbau im Repository.|E-Mail+Passwort→Mail→Bestätigung→Login→Onboarding nicht real geprüft.
+096|PARTIAL|email_verified=false per echtem JWT/HTTP abgelehnt; UI-Fehlerbehandlung vorhanden.|Kein belegter Defekt des API-Verifygates.|Mailzustellung/Bestätigungslink/anschließende Browserweiterleitung offen.
+097|PARTIAL|KeycloakJS-Login und BANNED/LIMITED-Behandlung in API/UI vorhanden.|Keine Tokenrefresh-/Expirystrategie im AuthProvider; React-Token kann veralten.|Passwortfehler/Nichtexistenz/echter KC-Login/Sessionablauf im Browser nicht geprüft.
+098|PARTIAL|Google-idpHint und Brokerkonfiguration vorhanden.|Kein im Repository vollständig provisionierter Google-Testprovider.|OAuth-/Googleidentität und deren Emailverified-Vertrag nicht real geprüft.
+099|PARTIAL|Lokaler State wird gelöscht und Keycloak logout aufgerufen.|Kein im Code belegter Defekt des einfachen Logoutpfads.|SSO-/Browser-/Keycloak-Sessionende nicht getestet.
+100|PARTIAL|Keycloakscript aktiviert resetPasswordAllowed.|Kein Nachweis fehlender Keycloak-Resetfunktion; sie wird an den IdP delegiert.|Mail-/Einmallink-/Ablauf-/Passwortwechsel-Abnahme fehlt.
+101|PARTIAL|duplicateEmailsAllowed=false und First-Broker-Linking-Flow konfiguriert.|Keine bestätigte Dublettenfreiheit aus Script allein ableitbar.|Reales Email+Google-Linking inklusive Übernahme-/Fehlerfälle fehlt als Nachweis.
+102|PARTIAL|Client-OnboardingGate leitet incomplete Nutzer um.|Server erlaubt incomplete ACTIVE-Usern Kommentarerstellung; HTTP 201 real bestätigt.|Browserweiterleitung und Ausnahmen noch nicht E2E abgenommen.
+103|PARTIAL|Länge/Zeichen/fünf reservierte Namen; case-insensitiver Index; realer Konflikt 409.|Verbotene Begriffe über reservierte Namen hinaus nicht implementiert.|Browser-/Konkurrenztest fehlt.
+104|PARTIAL|Availabilityendpoint und Debounce/AbortController im UI vorhanden.|Kein bestätigter Funktionsdefekt.|Echte UI-Rennen/Abbrüche und Mobile/Staging nicht geprüft.
+105|PARTIAL|Aktive Clubs mit Logos/Name und Neutraloption im UI.|Kein bestätigter Defekt der Auswahlfunktion.|Kein authentifizierter Browser-/Mobile-/Stagingdurchlauf.
+106|DONE|Neutral explizit im Modell und diskriminierten Schema; reale Completion speichert NEUTRAL ohne Club.|—|—
+107|PARTIAL|HTTP-Completion speichert Nickname/Preference/Completion; UI refresh/Redirect implementiert.|Servergate aus 102 fehlt außerhalb Completion.|Vollständiger Login→Onboarding→personalisierte Seite im Browser offen.
+108|PARTIAL|Reale HTTP-Änderung CLUB→NEUTRAL mit DB-Nachweis erfolgreich; SettingsUI vorhanden.|Kein bestätigter Persistenzdefekt.|Theme-/Feedwechsel und Mobile/Staging im Browser nicht geprüft.
+109|PARTIAL|Farb-/Kontrastmapping zu CSS-Themeproperties; Helpertests grün.|Kein bestätigter Tokenmappingdefekt.|Alle Clubfarben/Kontraste/Komponenten im Browser nicht abgenommen.
+110|PARTIAL|Standardtheme für Gast/NEUTRAL/UNSET mit getesteten Helperdefaults.|Kein bestätigter Defaultdefekt.|Gerenderte Gast-/Neutral-/UNSET-Zustände nicht im Browser abgenommen.
+111|PARTIAL|Clubtheme setzt CSSvariablen auf Grundlage der Präferenz; Komponenten konsumieren Tokens.|Kein bestätigter Defekt im Mapping.|Realer Login-/Clubwechsel-/Kontrast-/Mobile-/Stagingtest fehlt.
+112|PARTIAL|API priorisiert Lieblingsclub, Wettbewerb, allgemeine News statt reinem Clubfilter; Unitfälle vorhanden.|Keine fehlende Rankingstufe festgestellt.|Reale repräsentative Rankingfixtures, Browser und Staging fehlen.
+113|PARTIAL|Neutralranking mit Top/Recent/Competition ohne Lieblingsclubfilter vorhanden.|Kein bestätigter Rankingdefekt.|Repräsentative DB- und Browserabnahme fehlt.
+114|PARTIAL|Fan-/Neutralstartseite und echte News-API integriert.|Spiele/Ergebnisse/Tabelle/Diskussionen werden weiter aus Mockdaten bezogen.|Kein vollständiger authentifizierter Produkt-/Mobile-/Stagingflow.
+115|PARTIAL|CSS-/TS-Tokens für Farben/Typografie/Spacing/Border/Radius/Breakpoints/Icons vorhanden.|Keine eindeutig fehlende Tokenkategorie; Icons sind Größen/Stroke-Konvention, kein vollständiger Iconsatz.|Visuelle/Theming-/A11y-/Mobileabnahme fehlt.
+116|PARTIAL|Geforderte Form-/Display-/Overlay-/Interaktionskomponenten samt Theme-CSS vorhanden.|Keine bestätigte fehlende Komponente aus Exportinventar.|Keine Keyboard-/Screenreader-/Komponentensuite.
+117|PARTIAL|Header/Desktop-/Mobilemenü/Container/Footer/Usermenü/Clubtheme implementiert.|Kein bestätigter Shell-Funktionsdefekt.|Responsive Auth-/Keyboard-/Mobile-/Stagingnachweis fehlt.
+118|PARTIAL|Beide ausdrücklich verlangten Mockvarianten implementiert; Mockdaten sind hier beabsichtigt.|Kein API-Anschluss für diese reine Mockaufgabe verlangt.|Interaktive/visuelle Fan-/Neutral-/Mobileabnahme fehlt.
+119|PARTIAL|News-API mit Cards, Pagination und Club-/Wettbewerbsfilter angeschlossen.|Kein aus Code bestätigter fehlender Filter.|Browser-/Mobile-/Filterseitenwechsel-Abnahme fehlt.
+120|PARTIAL|Artikelansicht zeigt Inhalt/Metadaten/Clubs/Tags und Kommentarbereich.|Kein im statischen Slice fehlendes Kernelement bestätigt.|Editor→öffentliche Seite→Kommentar nicht als kompletter Browserflow geprüft.
+121|PARTIAL|Clubstammdaten aus API, Tabs und Bereichslayout vorhanden.|News/Spiele/Tabelle/Diskussionen aus getClubPageMockData; kein echtes Forum.|Browser-/Mobileabnahme und echte Bereichsintegration fehlen.
+122|PARTIAL|Matchdetail mit Teams/Score/Status/Datum/Wettbewerb/News vorhanden.|Spieldiskussion ist kein vollständig angebundener Communityflow.|Browser-/Mobile- und echte Importdatenprüfung fehlen; Import selbst ist andere Aufgabe.
+123|PARTIAL|DB-LeseAPI, Tabellenlayout, Lieblingsclubhighlight und Vorschau/Fallback vorhanden.|Fallbackdaten können echte Fehler verdecken; kein echter laufender Datenversorgungsnachweis.|Desktop/Mobile-Highlightabnahme fehlt; Tabellenberechnung ist separater späterer Auftrag.
+124|PARTIAL|API-Spielplan mit Spieltagswahl/Favoritenmarkierung und Vorschaufallback.|Fallback bei Datenproblemen fachlich nicht klar vom Produktbetrieb getrennt.|Browser-/Mobileabnahme fehlt; Liveimport nicht durch LeseUI behauptet.
+125|PARTIAL|Eigene Profilseite mit Nickname/Bio/Avatar/Club/Aktivitätszählern und API vorhanden.|Keine belegte vollständige öffentliche Profil-/Avatarbedienung.|Echter Profil-/Avatarbrowserflow und Staging fehlen.
+126|PARTIAL|Profil- und Clubsettings funktionieren API-seitig; Account-/Sessionsabschnitte vorhanden.|Datenschutz/Notifications sind explizit geplant; Sessions zeigt statische aktuelle Session statt Liste/Management.|Browser-/Stagingabnahme fehlt.
+127|PARTIAL|Alle verlangten Admin-Navigationspunkte vorhanden.|Keine zentrale Rollenprüfung im Adminlayout; mehrere Fachseiten Platzhalter.|Kein Nachweis unberechtigter API-Mutation; Menüanzeige allein ist kein API-Bypass. Browser-/Stagingabnahme fehlt.
+128|PARTIAL|Skeletons und Loadingkomponenten für Kernseiten vorhanden.|Keine aus Inventar allein behauptete vollständige Zustandsabdeckung.|Langsame/abgebrochene Requests nicht systematisch im Browser geprüft.
+129|PARTIAL|EmptyState und fachliche Leerhinweise vorhanden.|Keine vollständig nachgewiesene Abdeckung jeder Liste.|Leere Fixtures pro Kernseite/Browser/Mobile fehlen.
+130|PARTIAL|403/404/429/500-Ansichten und Errorboundary vorhanden.|Vorhandene UI ist kein Beleg korrekter HTTPstatus-/Recoverysemantik.|Fehlerseitenstatus, Retry/Navigation und Mobile/Staging nicht systematisch geprüft.
+131|PARTIAL|CRUD/Archive/Softdelete/Restore in Service/API/UI; realer HTTP-/DB-Durchlauf geprüft.|Keine durchgängige Auditspur redaktioneller Mutationen.|Browser-/Mobile-/Stagingworkflow fehlt.
+132|PARTIAL|DRAFT/REVIEW/SCHEDULED/PUBLISHED/ARCHIVED; Permissionchecks und reale Review/Publishtransition geprüft.|Keine durchgängigen Fach-/Auditevents der Transitionen.|Vollständiger UI-/Worker-/Stagingflow und verbotene Transitionen nicht real abgenommen.
+133|PARTIAL|Tiptap mit Text/Heading/Link/Listen/Zitat/Bild; serverseitiges Inhaltsschema vorhanden.|Kein bestätigter fehlender Editorbaustein.|Echte Tastatur-/Paste-/Bild-/Security-/Browserabnahme fehlt.
+134|PARTIAL|Category CRUD/Validation/Admin und Artikelzuordnung vorhanden.|Kein bestätigter fehlender CRUDpfad.|Echter vollständiger CRUD-/UI-/Staginglauf fehlt.
+135|PARTIAL|Tag CRUD/Validation/Admin und Artikelzuordnung vorhanden.|Kein bestätigter fehlender CRUDpfad.|Echter vollständiger CRUD-/UI-/Staginglauf fehlt.
+136|PARTIAL|Mehrfachclubzuordnung im Schema/Validation/Service/Editor; relationale HTTP-Erstellung geprüft.|Kein fehlender Mehrfachvertrag festgestellt.|Mehrere Clubs gleichzeitig plus personalisierter Feed im Browser nicht real abgenommen.
+137|PARTIAL|competitionId in Schema/Validation/Service/Editor; echte HTTP-Erstellung mit Wettbewerb geprüft.|Kein bestätigter fehlender Zuordnungspfad.|Fehlende/falsche Wettbewerbe und Browser-/Stagingfälle nicht vollständig geprüft.
+138|PARTIAL|matchId in Schema/Validation/Service/Editor; echte HTTP-Erstellung mit Spiel geprüft.|Kein bestätigter fehlender Zuordnungspfad.|Inkonsistente Spiel-/Wettbewerbskombination und Browser-/Stagingfälle offen.
+139|PARTIAL|S3-Storageabstraktion, Multipartgrenze 10MB und MIME-Allowlist implementiert.|Bildbytes werden nicht gegen Signatur/Dekodierung geprüft; Client-MIME reicht.|Kein echter MinIO/R2-Roundtrip und Browserupload.
+140|PARTIAL|Media Library mit Metadaten und Usagezählung vorhanden.|Usage zählt Profile/Clubs/Leadbilder, keine OG-Verwendungen.|Echte Storage-/UI-/Delete-/Errorabnahme fehlt.
+141|PARTIAL|Slug/seoTitle/seoDescription/canonicalUrl/ogImage im Modell/Editor und generateMetadata.|Kein aus Quellprüfung bestätigtes fehlendes Feld.|Crawler-/OG-/Canonical-/Browsernachweis fehlt.
+142|PARTIAL|Revisionen speichern Inhaltssnapshots; echte Articleupdateprobe erzeugt Revision.|Expliziter Änderungsakteur fehlt im Revisionsmodell.|History-/Concurrency-/Frontend-/Stagingabnahme fehlt.
+143|PARTIAL|Due-Scanner mit konditionalem Update; echte DB-Probe publiziert einen fälligen Artikel genau einmal.|Keine Audit-/Reindex-/Notificationfolgen implementiert.|Direkter Serviceaufruf beweist Übergang, nicht den kompletten zeitgesteuerten UI→Queue→Workerflow; Staging offen.
+144|DONE|NewsProvider-Interface mit Fähigkeiten, Fetch, Cursor und Trustvertrag; beide Adapter implementieren es.|—|—
+145|PARTIAL|Fakeprovider verarbeitet fünf Records real über BullMQ/Worker/DB; zweiter Lauf dedupliziert.|Vier Records gehen mit aktuellen Seedaliases in Review; Gesamtprozess endet dort ohne redaktionelle Übernahme.|Admin-/Browser-/Stagingabnahme fehlt.
+146|PARTIAL|Providerbezogene BullMQ-Schedulerregistrierung und Tests vorhanden.|Kein bestätigter Schedulerdefekt.|Auditjob manuell eingereiht; periodisches Abrufen über reale Zeitintervalle nicht geprüft.
+147|PARTIAL|news-import registriert; echte Queue verarbeitet zwei vollständige Fakeimportjobs.|Kein bestätigter Queuefehler im erfolgreichen Slice.|Restart-/Ausfall-/Stagingabnahme fehlt.
+148|PARTIAL|Originalpayloads/Hashes/Record-/Jobbezug real gespeichert; fünf pro Lauf.|Kein bestätigter Persistenzdefekt im Slice.|Replay-/Retention-/Fehler-/Stagingabnahme fehlt.
+149|PARTIAL|Fake/OTS-Normalizer und Persistenzpfad; echte Fakepipeline normalisiert Records.|Kein bestätigter Fake-Normalisierungsdefekt.|OTS-real/Fehlerqualität/Admin-/Stagingnachweis fehlt.
+150|PARTIAL|Pflichtfeld-/Qualitätsprüfung und Fehlerstatus mit Unitfällen; echte gültige Fakefixtures passieren.|Kein bestätigter Defekt bei geprüften gültigen Records.|Ungültige Providerrecords nicht real durch DB/Queue-Ende gefahren; Staging fehlt.
+151|PARTIAL|ProviderID/URL/Hash/Titel/Similarity implementiert; zweiter echter Import markiert fünf DUPLICATE.|Titelvergleich auf 200 Kandidaten begrenzt; keine starke einmalige Artikelzuordnung/Claim gegen Rennen.|Parallelitäts-/Abbruch-/Retryinvariante unbewiesen.
+152|PARTIAL|Aliasmatching und EntityMatchpersistenz vorhanden; echte Pipeline liefert Review und sicheren Treffer.|Keine fachlich freigegebene vollständige Aliasabdeckung; aktuelle Fakefixtures matchen nicht alle Seedclubs sicher.|Mehrdeutige Alias-/Browserreview-/Stagingabnahme fehlt.
+153|PARTIAL|Wettbewerbsmatching und gespeicherte Matches vorhanden; Unitfälle grün.|Kein bestätigter Defekt aus aktuellem Slice.|Repräsentative mehrdeutige/fehlende Wettbewerbe in echter Pipeline ungetestet.
+154|PARTIAL|Matchmatching über Clubs/Wettbewerb/Datum und Confidence vorhanden.|Kein bestätigter fehlender Algorithmus.|Echte positive/mehrdeutige Spielmatchingfixtures und Staging fehlen.
+155|PARTIAL|EXACT/HIGH/MEDIUM/LOW/UNKNOWN mit Reviewgate; Unitfälle und echter Pipelineeinsatz.|Kein bestätigter fehlender Scoretyp.|Fachliche Kalibrierung und alle Klassen durch reale Pipeline nicht abgenommen.
+156|PARTIAL|Drei Versuche/exponentieller Backoff/Fehlerpersistenz implementiert.|Kein bestätigter Retrydefekt.|Reale Störung/Retry-Erschöpfung/Restart nicht getestet.
+157|PARTIAL|Deadletterqueue und Failed-Eventweitergabe nach Erschöpfung implementiert.|Kein bestätigter DLQdefekt.|Genau einmalige reale DLQaufnahme, Replay und Fehleralarme nicht geprüft.
+158|PARTIAL|Admin zeigt Provider/Jobs/Records/Duplikate/Fehler/Matchingprobleme über echte APIverträge.|Kein bestätigter fehlender Anzeigebereich.|Nach echtem Import nicht im authentifizierten Browser abgenommen; Staging fehlt.
+159|PARTIAL|Reviewqueue mit Approve/Reject und Reviewer/Zeitpersistenz; echte DB-Freigabe ausgeführt.|Freigabe endet bei MATCHED/APPROVED; kein Folgejob oder Artikel entsteht. Quellprüfung bestätigt fehlenden Consumer.|Kompletter Review→Draft/Publishflow fehlt; kein Browser-/Stagingnachweis.
+160|PARTIAL|Trustedflag und sichere Matches vor AutoPublish; echter Fakeimport erzeugt einen Artikel.|Keine eindeutige Record→Artikel-Claiminvariante gegen paralleles Publish; Race als Risiko, nicht reproduzierter Defekt.|Echte untrusted-/Race-/Retry-/Stagingabnahme fehlt.
+161|PARTIAL|OTS-Adapter/Normalizer/Fehlerpfade und Unitfälle vorhanden; trusted=false.|Redaktioneller Übernahmeweg nach OTS-Review fehlt aus 159.|Kein Liveprovider-/Lizenz-/externes Zugangssignal; OTS nicht kontaktiert.
+162|PARTIAL|Echte HTTP-Kommentarerstellung mit DB und Redis funktioniert; LIMITED/BANNED-Guards vorhanden.|Onboardingcompletion serverseitig nicht erzwungen.|Browser-/Mobile-/Stagingflow fehlt.
+163|PARTIAL|Echte HTTP-Antwort speichert Parentrelation; Status-/Artikel-/Permissionchecks implementiert.|Kein bestätigter Replydefekt im Slice.|LIMITED/BANNED-Replyvarianten und kompletter Browserbaum nicht real abgenommen.
+164|PARTIAL|Parent/depth und UIbegrenzung auf fünf Ebenen vorhanden.|Kein bestätigter Defekt der sichtbaren Begrenzung.|Tiefer realer Baum, mobile Darstellung und Performance fehlen als Nachweis.
+165|PARTIAL|Eigener Kommentar editierbar; echte Fremdautorablehnung und Revision persistiert.|Kein bestätigter Ownershipdefekt.|Browsermarkierung/gleichzeitige Edits/Staging nicht getestet.
+166|PARTIAL|Eigener Kommentar wird real softgelöscht; Tombstone-/Replydarstellung im Code.|Separat auditierte Moderatorenlöschung fehlt.|Browser-/Mobile-/Stagingabnahme fehlt.
+167|PARTIAL|Votes mit Uniqueconstraints/Ownerregeln; real LIMITED auf fremden Kommentar erlaubt, BANNED blockiert.|UPVOTE/DOWNVOTE statt gefordertem MVP-Like; kein Vote-Ratelimit.|Browser-/Staging und parallele Votewechsel nicht vollständig geprüft.
+168|PARTIAL|newest/oldest/popular im UI/API; alle drei real mit SQL ausgeführt.|Kein bestätigter Sortierdefekt bei statischen Fixtures.|Vote-/Deleteänderungen zwischen Seiten und Browserabnahme offen.
+169|PARTIAL|Cursor mit Validierung, SQL-Rootpaging und Clientmerge; echte mehrseitige Probe für alle drei Sortierungen erfolgreich.|Kein aus Quellprüfung bestätigter Cursorfehler.|Nebenläufige Änderungen, tiefe Replygruppen und Browser-/Stagingabnahme fehlen.
+170|PARTIAL|Reportgründe/Details/Dedupe/Uniqueindex/UI; echter Report und Doppelreport409 bestätigt.|Moderationsbearbeitung fehlt; Report-Ratelimits fehlen. Andere Zieltypen sind Modell-/Folgeaufgaben.|Browser-/Stagingabnahme fehlt.
+171|PARTIAL|Reale Redis-Lua-Reservation liefert Duplicate409/Cooldown429; Rate10/min und Linklimit2 im Code.|Keine bestätigte fehlende der vier geforderten Regeln; weitergehender IP-Schutz ist anderer Auftrag.|Echtes Ratefenster/Linklimit/Redis-Ausfall/Parallelität und Browser-/Staging nicht vollständig geprüft.
+172|DONE|Zentraler Service/Guard/Decorator und alle verlangten Permissionkonstanten; ArticleEditorialGuard delegiert an PermissionsService; Unit- und reale Status-/HTTP-Proben grün.|—|Fehlende Moderations-/Forumaktionen sind separate Featureaufträge; der zentrale Permissionkern ist dadurch nicht unimplementiert.
+173|DONE|Zentraler AccountStatusGuard wird von AuthGuard benutzt; ACTIVE/LIMITED weiter, BANNED403; Unit- und echte HTTP-Probe.|—|Sessionrevoke und Onboarding sind separate Anforderungen, keine fehlenden Guard-Kriterien dieser Aufgabe.
+174|TODO|Nur ModerationCard-/Notificationmodell, user.warn-Konstante und leere Module vorhanden.|Kein ausführbarer Kartenvergabeservice/Endpoint/UI; keine transaktionale Speicherung durch Moderator, Auditspur oder Usernotification.|Keine Vergabetests. Modell 075 ist nicht Feature 174; lokale Arbeit an Karte/Notification ist möglich, daher nicht pauschal BLOCKED.

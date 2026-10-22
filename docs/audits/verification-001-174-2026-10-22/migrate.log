@@ -1,0 +1,46 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "audit", schema "public" at "127.0.0.1:32784"
+
+11 migrations found in prisma/migrations
+
+Applying migration `20260814035327_initial`
+Applying migration `20260814220000_nickname_case_insensitive_unique`
+Applying migration `20260814223000_club_color_model`
+Applying migration `20260815050000_add_article_top_news`
+Applying migration `20260825001334_add_article_seo_fields`
+Applying migration `20260825004332_add_article_revisions`
+Applying migration `20260826220000_add_import_record_normalization`
+Applying migration `20260827010000_add_import_review_workflow`
+Applying migration `20261014030000_add_vote_types`
+Applying migration `20261014030100_reaction_vote_constraints`
+Applying migration `20261015000000_unique_comment_reports`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260814035327_initial/
+    └─ migration.sql
+  └─ 20260814220000_nickname_case_insensitive_unique/
+    └─ migration.sql
+  └─ 20260814223000_club_color_model/
+    └─ migration.sql
+  └─ 20260815050000_add_article_top_news/
+    └─ migration.sql
+  └─ 20260825001334_add_article_seo_fields/
+    └─ migration.sql
+  └─ 20260825004332_add_article_revisions/
+    └─ migration.sql
+  └─ 20260826220000_add_import_record_normalization/
+    └─ migration.sql
+  └─ 20260827010000_add_import_review_workflow/
+    └─ migration.sql
+  └─ 20261014030000_add_vote_types/
+    └─ migration.sql
+  └─ 20261014030100_reaction_vote_constraints/
+    └─ migration.sql
+  └─ 20261015000000_unique_comment_reports/
+    └─ migration.sql
+
+All migrations have been successfully applied.

@@ -1,0 +1,111 @@
+[
+  {
+    "name": "HTTP live/ready real PostgreSQL and Redis",
+    "pass": true
+  },
+  {
+    "name": "Auth rejects missing malformed unverified expired wrong issuer audience signature",
+    "pass": true
+  },
+  {
+    "name": "Real JWT user sync persists UNSET incomplete defaults",
+    "pass": true
+  },
+  {
+    "name": "DEFECT: incomplete onboarding user can create comment via HTTP",
+    "pass": true,
+    "detail": "201 confirms missing server onboarding gate, not acceptance success"
+  },
+  {
+    "name": "Comment spam actual Redis rejects duplicate and cooldown",
+    "pass": true
+  },
+  {
+    "name": "Onboarding neutral persisted and nickname case insensitive conflict",
+    "pass": true
+  },
+  {
+    "name": "Favorite club changes persisted then neutral restored",
+    "pass": true
+  },
+  {
+    "name": "Comment edit revision and foreign author denial real DB",
+    "pass": true
+  },
+  {
+    "name": "ACTIVE reply real parent relation",
+    "pass": true
+  },
+  {
+    "name": "LIMITED cannot post but can vote; BANNED cannot authenticate",
+    "pass": true
+  },
+  {
+    "name": "Reports persisted and duplicate rejected",
+    "pass": true
+  },
+  {
+    "name": "Comments all sort SQL and invalid cursor validation",
+    "pass": true
+  },
+  {
+    "name": "Soft delete persists tombstone",
+    "pass": true
+  },
+  {
+    "name": "Diagnostic route disabled before queue action",
+    "pass": true
+  },
+  {
+    "name": "Editorial real HTTP CRUD relations workflow revisions archive delete restore",
+    "pass": true
+  },
+  {
+    "name": "DEFECT: invalid public media UUID returns 500",
+    "pass": true
+  },
+  {
+    "name": "Real BullMQ fake provider full pipeline and second-run duplicate detection",
+    "pass": true,
+    "detail": {
+      "state1": [
+        {
+          "_count": 4,
+          "status": "REVIEW_REQUIRED"
+        },
+        {
+          "_count": 1,
+          "status": "CREATED"
+        }
+      ],
+      "state2": [
+        {
+          "_count": 4,
+          "status": "REVIEW_REQUIRED"
+        },
+        {
+          "_count": 5,
+          "status": "DUPLICATE"
+        },
+        {
+          "_count": 1,
+          "status": "CREATED"
+        }
+      ],
+      "articles": 20
+    }
+  },
+  {
+    "name": "DEFECT: review approval persists decision but creates no article",
+    "pass": true,
+    "detail": "Approved record has no canonical article; no continuation exists in source"
+  },
+  {
+    "name": "Real SQL cursor traverses more than one page without repeated root IDs",
+    "pass": true
+  },
+  {
+    "name": "Scheduled publishing updates due article once real DB",
+    "pass": true
+  }
+]
