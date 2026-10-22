@@ -4,6 +4,14 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  }
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": "<rootDir>/tsconfig.e2e.json"
+      }
+    ]
+  },
+  "extensionsToTreatAsEsm": [".ts"],
+  "testTimeout": 15000
 }
