@@ -1,9 +1,4 @@
-export {
-  createLogEntry,
-  createLogger,
-  resolveLogFormat,
-  sanitizeMetadata,
-} from './logger.js';
+export { createLogEntry, createLogger, resolveLogFormat, sanitizeMetadata } from './logger.js';
 
 export type {
   CreateLoggerOptions,

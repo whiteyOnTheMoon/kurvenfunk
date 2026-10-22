@@ -4,6 +4,11 @@
   "private": true,
   "packageManager": "pnpm@11.20.0",
   "devDependencies": {
+    "prettier": "3.9.6",
     "turbo": "2.10.9"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   }
 }

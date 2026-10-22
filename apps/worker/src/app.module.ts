@@ -1,14 +1,31 @@
+import { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS, QUEUE_NAMES } from '@kurvenfunk/types';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {
-  APPLICATION_QUEUE_NAMES,
-  DEFAULT_JOB_OPTIONS,
-  QUEUE_NAMES,
-} from '@kurvenfunk/types';
-import { TestJobService } from './jobs/test-job.service';
-import { TestProcessor } from './processors/test.processor';
 import { validateEnvironment } from './config/env.validation';
+import { DatabaseService } from './database/database.service';
+import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
+import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
+import { TestJobService } from './jobs/test-job.service';
+import { NewsImportProcessor } from './processors/news-import.processor';
+import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
+import { TestProcessor } from './processors/test.processor';
+import { FakeNewsNormalizer } from './providers/fake-news-normalizer';
+import { FakeNewsProvider } from './providers/fake-news-provider';
+import { OtsNewsNormalizer } from './providers/ots-news-normalizer';
+import { OtsNewsProvider } from './providers/ots-news-provider';
+import { NewsAutoPublishingService } from './services/news-auto-publishing.service';
+import { NewsClubMatchingService } from './services/news-club-matching.service';
+import { NewsCompetitionMatchingService } from './services/news-competition-matching.service';
+import { NewsConfidenceScoreService } from './services/news-confidence-score.service';
+import { NewsDuplicateDetectionService } from './services/news-duplicate-detection.service';
+import { NewsImportDeadLetterService } from './services/news-import-dead-letter.service';
+import { NewsMatchMatchingService } from './services/news-match-matching.service';
+import { NewsReviewWorkflowService } from './services/news-review-workflow.service';
+import { NewsNormalizationService } from './services/news-normalization.service';
+import { NewsValidationService } from './services/news-validation.service';
+import { RawPayloadService } from './services/raw-payload.service';
+import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
   imports: [
@@ -38,7 +55,39 @@ import { validateEnvironment } from './config/env.validation';
         defaultJobOptions: DEFAULT_JOB_OPTIONS,
       })),
     ),
+
+    BullModule.registerQueue({
+      name: QUEUE_NAMES.NEWS_IMPORT_DEAD_LETTER,
+      defaultJobOptions: {
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    }),
   ],
-  providers: [TestProcessor, TestJobService],
+  providers: [
+    DatabaseService,
+    FakeNewsProvider,
+    FakeNewsNormalizer,
+    OtsNewsProvider,
+    OtsNewsNormalizer,
+    NewsImportSchedulerService,
+    NewsAutoPublishingService,
+    NewsClubMatchingService,
+    NewsCompetitionMatchingService,
+    NewsConfidenceScoreService,
+    NewsDuplicateDetectionService,
+    NewsImportDeadLetterService,
+    NewsMatchMatchingService,
+    NewsReviewWorkflowService,
+    NewsNormalizationService,
+    NewsValidationService,
+    RawPayloadService,
+    ScheduledPublishingService,
+    NewsImportProcessor,
+    ScheduledPublishingProcessor,
+    ScheduledPublishingJobService,
+    TestProcessor,
+    TestJobService,
+  ],
 })
 export class AppModule {}

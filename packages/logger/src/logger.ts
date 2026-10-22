@@ -29,9 +29,7 @@ const SENSITIVE_KEYS = [
   'api_key',
 ] as const;
 
-const sensitiveKeys = new Set(
-  SENSITIVE_KEYS.map((key) => key.toLowerCase()),
-);
+const sensitiveKeys = new Set(SENSITIVE_KEYS.map((key) => key.toLowerCase()));
 
 function isSensitiveKey(key: string): boolean {
   return sensitiveKeys.has(key.toLowerCase());
@@ -61,9 +59,7 @@ function sanitizeValue(value: unknown): unknown {
   return value;
 }
 
-export function sanitizeMetadata(
-  metadata: LogMetadata,
-): LogMetadata {
+export function sanitizeMetadata(metadata: LogMetadata): LogMetadata {
   return Object.fromEntries(
     Object.entries(metadata).map(([key, value]) => [
       key,
@@ -86,18 +82,12 @@ export function createLogEntry(
     ...(options.userId ? { userId: options.userId } : {}),
     ...(options.event ? { event: options.event } : {}),
     message,
-    ...(options.metadata
-      ? { metadata: sanitizeMetadata(options.metadata) }
-      : {}),
+    ...(options.metadata ? { metadata: sanitizeMetadata(options.metadata) } : {}),
   };
 }
 
 function formatPretty(entry: LogEntry): string {
-  const parts = [
-    entry.timestamp,
-    entry.level.toUpperCase().padEnd(5),
-    `[${entry.service}]`,
-  ];
+  const parts = [entry.timestamp, entry.level.toUpperCase().padEnd(5), `[${entry.service}]`];
 
   if (entry.requestId) {
     parts.push(`[request:${entry.requestId}]`);
@@ -122,10 +112,7 @@ function formatPretty(entry: LogEntry): string {
 
 function createConsoleSink(format: LogFormat): LogSink {
   return (entry) => {
-    const output =
-      format === 'pretty'
-        ? formatPretty(entry)
-        : JSON.stringify(entry);
+    const output = format === 'pretty' ? formatPretty(entry) : JSON.stringify(entry);
 
     switch (entry.level) {
       case 'error':
@@ -140,9 +127,7 @@ function createConsoleSink(format: LogFormat): LogSink {
   };
 }
 
-export function resolveLogFormat(
-  nodeEnv = process.env.NODE_ENV,
-): LogFormat {
+export function resolveLogFormat(nodeEnv = process.env.NODE_ENV): LogFormat {
   return nodeEnv === 'development' ? 'pretty' : 'json';
 }
 
@@ -153,11 +138,7 @@ export function createLogger({
 }: CreateLoggerOptions): Logger {
   const targetSink = sink ?? createConsoleSink(format);
 
-  const write = (
-    level: LogLevel,
-    message: string,
-    options?: LogOptions,
-  ): void => {
+  const write = (level: LogLevel, message: string, options?: LogOptions): void => {
     targetSink(createLogEntry(service, level, message, options));
   };
 

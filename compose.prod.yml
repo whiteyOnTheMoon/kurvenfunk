@@ -36,12 +36,12 @@ services:
     environment:
       KC_HOSTNAME: https://auth.kurvenfunk.at
       KC_PROXY_HEADERS: xforwarded
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
 
   meilisearch:
     ports:
-      - "127.0.0.1:3104:7700"
+      - '127.0.0.1:3104:7700'
     volumes:
       - /srv/kurvenfunk/prod/meilisearch:/meili_data
 

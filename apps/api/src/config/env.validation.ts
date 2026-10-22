@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 const apiEnvSchema = z
   .object({
-    NODE_ENV: z
-      .enum(['development', 'test', 'production'])
-      .default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
@@ -15,14 +13,31 @@ const apiEnvSchema = z
     REDIS_PASSWORD: z.string().min(1),
 
     DATABASE_URL: z.string().url(),
+    WEB_URL: z.string().url(),
+    KEYCLOAK_ISSUER: z.string().url(),
+    KEYCLOAK_JWKS_URL: z.string().url(),
+    KEYCLOAK_AUDIENCE: z.string().min(1),
+
+    STORAGE_ENDPOINT: z.string().url(),
+    STORAGE_REGION: z.string().min(1).default('us-east-1'),
+    STORAGE_BUCKET: z.string().min(1),
+    STORAGE_ACCESS_KEY: z.string().min(1),
+    STORAGE_SECRET_KEY: z.string().min(1),
+    STORAGE_FORCE_PATH_STYLE: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+
+    SWAGGER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
   })
   .passthrough();
 
 export type ApiEnvironment = z.infer<typeof apiEnvSchema>;
 
-export function validateEnvironment(
-  config: Record<string, unknown>,
-): ApiEnvironment {
+export function validateEnvironment(config: Record<string, unknown>): ApiEnvironment {
   const result = apiEnvSchema.safeParse(config);
 
   if (!result.success) {

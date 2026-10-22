@@ -1,0 +1,213 @@
+/*
+ * Kurvenfunk Design Tokens
+ *
+ * Primitive tokens contain fixed design values.
+ * Semantic tokens define how those values are used.
+ *
+ * Dynamic club colors are supplied by the Phase 14 club theme system.
+ */
+
+:root {
+  /* Kurvenfunk product palette */
+  --kf-color-brand: #a8e63e;
+  --kf-color-brand-on: #0f1113;
+
+  --kf-color-ink: #0f1113;
+  --kf-color-charcoal: #2a2d31;
+  --kf-color-muted-gray: #6b7177;
+  --kf-color-light-gray: #e6e8ea;
+  --kf-color-white: #ffffff;
+
+  /* Neutral palette */
+  --kf-color-neutral-0: #ffffff;
+  --kf-color-neutral-50: #fafafa;
+  --kf-color-neutral-100: #f5f5f5;
+  --kf-color-neutral-200: #e5e5e5;
+  --kf-color-neutral-300: #d4d4d4;
+  --kf-color-neutral-400: #a3a3a3;
+  --kf-color-neutral-500: #737373;
+  --kf-color-neutral-600: #525252;
+  --kf-color-neutral-700: #404040;
+  --kf-color-neutral-800: #262626;
+  --kf-color-neutral-900: #171717;
+  --kf-color-neutral-950: #0a0a0a;
+  --kf-color-neutral-1000: #000000;
+
+  /* Feedback colors */
+  --kf-color-success: #16803a;
+  --kf-color-success-on: #ffffff;
+  --kf-color-warning: #b45309;
+  --kf-color-warning-on: #ffffff;
+  --kf-color-danger: #c81e1e;
+  --kf-color-danger-on: #ffffff;
+  --kf-color-info: #2563eb;
+  --kf-color-info-on: #ffffff;
+
+  /* Typography */
+  --kf-font-family-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --kf-font-family-mono: var(--font-geist-mono), 'SFMono-Regular', Consolas, monospace;
+
+  --kf-font-size-xs: 0.75rem;
+  --kf-font-size-sm: 0.875rem;
+  --kf-font-size-md: 1rem;
+  --kf-font-size-lg: 1.125rem;
+  --kf-font-size-xl: 1.25rem;
+  --kf-font-size-2xl: 1.5rem;
+  --kf-font-size-3xl: 1.875rem;
+  --kf-font-size-4xl: 2.25rem;
+  --kf-font-size-5xl: 3rem;
+
+  --kf-font-weight-regular: 400;
+  --kf-font-weight-medium: 500;
+  --kf-font-weight-semibold: 600;
+  --kf-font-weight-bold: 700;
+
+  --kf-line-height-tight: 1.2;
+  --kf-line-height-snug: 1.35;
+  --kf-line-height-normal: 1.5;
+  --kf-line-height-relaxed: 1.65;
+
+  /* Spacing — 4px base unit */
+  --kf-space-0: 0;
+  --kf-space-1: 0.25rem;
+  --kf-space-2: 0.5rem;
+  --kf-space-3: 0.75rem;
+  --kf-space-4: 1rem;
+  --kf-space-5: 1.25rem;
+  --kf-space-6: 1.5rem;
+  --kf-space-8: 2rem;
+  --kf-space-10: 2.5rem;
+  --kf-space-12: 3rem;
+  --kf-space-16: 4rem;
+  --kf-space-20: 5rem;
+  --kf-space-24: 6rem;
+
+  /* Borders */
+  --kf-border-width-0: 0;
+  --kf-border-width-1: 1px;
+  --kf-border-width-2: 2px;
+
+  /* Radius */
+  --kf-radius-none: 0;
+  --kf-radius-sm: 0.25rem;
+  --kf-radius-md: 0.5rem;
+  --kf-radius-lg: 0.75rem;
+  --kf-radius-xl: 1rem;
+  --kf-radius-2xl: 1.5rem;
+  --kf-radius-full: 9999px;
+
+  /*
+   * Breakpoints
+   *
+   * Mirrored in tokens.ts because custom properties cannot be used as
+   * media-query breakpoint values.
+   */
+  --kf-breakpoint-xs: 30rem;
+  --kf-breakpoint-sm: 40rem;
+  --kf-breakpoint-md: 48rem;
+  --kf-breakpoint-lg: 64rem;
+  --kf-breakpoint-xl: 80rem;
+  --kf-breakpoint-2xl: 96rem;
+
+  /* Icons */
+  --kf-icon-size-sm: 1rem;
+  --kf-icon-size-md: 1.25rem;
+  --kf-icon-size-lg: 1.5rem;
+  --kf-icon-size-xl: 2rem;
+  --kf-icon-stroke-width: 2;
+
+  /*
+   * Club color aliases.
+   *
+   * The raw --kf-club-color-* values are populated by the existing
+   * personalization system. These aliases give the design system stable
+   * names without changing the database/API representation.
+   */
+  --kf-club-primary: var(--kf-club-color-1, var(--kf-color-brand));
+  --kf-club-primary-on: var(--kf-club-on-color-1, var(--kf-color-brand-on));
+
+  --kf-club-secondary: var(--kf-club-color-2, transparent);
+  --kf-club-secondary-on: var(--kf-club-on-color-2, currentColor);
+
+  --kf-club-tertiary: var(--kf-club-color-3, transparent);
+  --kf-club-tertiary-on: var(--kf-club-on-color-3, currentColor);
+
+  /* Semantic colors */
+  --kf-background: var(--kf-color-white);
+  --kf-background-subtle: #f8f9f9;
+  --kf-background-muted: var(--kf-color-light-gray);
+
+  --kf-surface: var(--kf-color-white);
+  --kf-surface-muted: #f3f4f4;
+
+  --kf-text: var(--kf-color-ink);
+  --kf-text-muted: var(--kf-color-muted-gray);
+  --kf-text-subtle: #8a8f94;
+  --kf-text-inverse: var(--kf-color-white);
+
+  --kf-border: var(--kf-color-light-gray);
+  --kf-border-strong: #c9cdd0;
+
+  /*
+   * The semantic accent automatically follows the active club theme.
+   * Neutral/default users receive the Kurvenfunk accent from Phase 14.
+   */
+  --kf-accent: var(--kf-club-accent, var(--kf-color-brand));
+  --kf-accent-on: var(--kf-club-on-accent, var(--kf-color-brand-on));
+  --kf-accent-muted: color-mix(in srgb, var(--kf-accent) 12%, transparent);
+  --kf-accent-hover: color-mix(in srgb, var(--kf-accent) 86%, black);
+
+  /*
+   * High-contrast theme emphasis.
+   *
+   * Prefers club color 1, but the theme resolver can fall back to another
+   * club color when color 1 would disappear against the current surface.
+   */
+  --kf-theme-emphasis: var(--kf-club-emphasis-light, var(--kf-color-ink));
+  --kf-theme-emphasis-on: var(--kf-club-emphasis-light-on, var(--kf-color-white));
+
+  --kf-focus-ring: var(--kf-accent);
+
+  /*
+   * Links remain visually tied to club color1.
+   * The resolver adjusts color1 only when required to reach WCAG AA.
+   */
+  --kf-link: var(--kf-club-link-light, var(--kf-color-ink));
+  --kf-link-hover: color-mix(in srgb, var(--kf-link) 82%, black);
+
+  --kf-status-success: var(--kf-color-success);
+  --kf-status-success-on: var(--kf-color-success-on);
+  --kf-status-warning: var(--kf-color-warning);
+  --kf-status-warning-on: var(--kf-color-warning-on);
+  --kf-status-danger: var(--kf-color-danger);
+  --kf-status-danger-on: var(--kf-color-danger-on);
+  --kf-status-info: var(--kf-color-info);
+  --kf-status-info-on: var(--kf-color-info-on);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kf-background: var(--kf-color-ink);
+    --kf-background-subtle: #15181b;
+    --kf-background-muted: var(--kf-color-charcoal);
+
+    --kf-surface: #171a1d;
+    --kf-surface-muted: var(--kf-color-charcoal);
+
+    --kf-text: var(--kf-color-white);
+    --kf-text-muted: #aeb3b7;
+    --kf-text-subtle: var(--kf-color-muted-gray);
+    --kf-text-inverse: var(--kf-color-ink);
+
+    --kf-border: #303438;
+    --kf-border-strong: #454a4f;
+
+    --kf-theme-emphasis: var(--kf-club-emphasis-dark, var(--kf-color-brand));
+    --kf-theme-emphasis-on: var(--kf-club-emphasis-dark-on, var(--kf-color-brand-on));
+
+    --kf-link: var(--kf-club-link-dark, var(--kf-color-brand));
+    --kf-link-hover: color-mix(in srgb, var(--kf-link) 84%, white);
+
+    color-scheme: dark;
+  }
+}

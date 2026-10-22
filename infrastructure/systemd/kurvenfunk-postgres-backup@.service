@@ -1,0 +1,11 @@
+[Unit]
+Description=Kurvenfunk PostgreSQL backup (%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ap
+Group=ap
+ExecStart=/srv/kurvenfunk/bin/postgres-backup.sh %i
+ExecStartPost=/srv/kurvenfunk/bin/postgres-backup-rotation.sh %i --apply

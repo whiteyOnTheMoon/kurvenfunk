@@ -6,3 +6,1522 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// -----------------------------------------------------------------------------
+// User domain
+// -----------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  LIMITED
+  BANNED
+}
+
+enum FanPreference {
+  UNSET
+  CLUB
+  NEUTRAL
+}
+
+enum UserRole {
+  USER
+  TRUSTED_USER
+  MODERATOR
+  EDITOR
+  ADMIN
+  SUPERADMIN
+}
+
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  keycloakSubject     String        @unique
+  nickname            String?
+  status              UserStatus    @default(ACTIVE)
+  fanPreference       FanPreference @default(UNSET)
+  favoriteClubId      String?       @db.Uuid
+  onboardingCompleted Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  favoriteClub Club?    @relation("UserFavoriteClub", fields: [favoriteClubId], references: [id], onDelete: SetNull)
+  profile      Profile?
+
+  roleAssignments UserRoleAssignment[] @relation("AssignedUserRoles")
+  rolesGranted    UserRoleAssignment[] @relation("GrantedUserRoles")
+
+  articles Article[] @relation("ArticleAuthor")
+
+  comments         Comment[]
+  reactions        Reaction[]
+  forumThreads     Thread[]             @relation("ThreadAuthor")
+  forumPosts       Post[]               @relation("PostAuthor")
+  postsDeleted     Post[]               @relation("PostDeletedBy")
+  threadsPinned    Thread[]             @relation("ThreadPinnedBy")
+  threadsLocked    Thread[]             @relation("ThreadLockedBy")
+  subscriptions    ThreadSubscription[]
+  threadReadStates ThreadReadState[]
+
+  reportsCreated  ModerationReport[] @relation("ReportReporter")
+  reportsReceived ModerationReport[] @relation("ReportTargetUser")
+  reportsAssigned ModerationReport[] @relation("ReportAssignedModerator")
+
+  moderationCardsReceived ModerationCard[] @relation("CardTargetUser")
+  moderationCardsIssued   ModerationCard[] @relation("CardModerator")
+  moderationCardsRevoked  ModerationCard[] @relation("CardRevokedBy")
+
+  sanctionsReceived Sanction[] @relation("SanctionTargetUser")
+  sanctionsCreated  Sanction[] @relation("SanctionCreatedBy")
+  sanctionsRevoked  Sanction[] @relation("SanctionRevokedBy")
+
+  ipBlocksCreated     IPBlock[] @relation("IPBlockCreatedBy")
+  ipBlocksDeactivated IPBlock[] @relation("IPBlockDeactivatedBy")
+
+  auditEventsAsActor  AuditLog[] @relation("AuditActorUser")
+  auditEventsAsTarget AuditLog[] @relation("AuditTargetUser")
+
+  notificationsReceived   Notification[]           @relation("NotificationRecipient")
+  notificationActions     Notification[]           @relation("NotificationActor")
+  notificationPreferences NotificationPreference[]
+
+  entityMatchesReviewed EntityMatch[]  @relation("EntityMatchReviewedBy")
+  importRecordsReviewed ImportRecord[] @relation("ImportRecordReviewedBy")
+
+  @@index([status])
+  @@index([favoriteClubId])
+}
+
+model Profile {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @db.Uuid
+  displayName   String?
+  bio           String?
+  avatarMediaId String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarMedia Media? @relation("ProfileAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
+
+  @@index([avatarMediaId])
+}
+
+model UserRoleAssignment {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  role        UserRole
+  grantedById String?   @db.Uuid
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+
+  user      User  @relation("AssignedUserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User? @relation("GrantedUserRoles", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@index([grantedById])
+  @@index([expiresAt])
+}
+
+// -----------------------------------------------------------------------------
+// Club domain
+// -----------------------------------------------------------------------------
+
+enum ClubAliasType {
+  OFFICIAL_VARIANT
+  SHORT_NAME
+  ABBREVIATION
+  ALTERNATIVE
+  HISTORICAL
+}
+
+model Club {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  shortName       String?
+  slug            String   @unique
+  logoMediaId     String?  @db.Uuid
+  color1Hex       String
+  color1Rgba      String
+  color2Hex       String?
+  color2Rgba      String?
+  color3Hex       String?
+  color3Rgba      String?
+  accentColorHex  String?
+  accentColorRgba String?
+  website         String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  logoMedia Media? @relation("ClubLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+
+  aliases       ClubAlias[]
+  favoriteUsers User[]      @relation("UserFavoriteClub")
+
+  homeMatches Match[] @relation("MatchHomeClub")
+  awayMatches Match[] @relation("MatchAwayClub")
+
+  standings Standing[]
+  articles  ArticleClub[]
+  forums    Forum[]
+
+  entityMatches EntityMatch[]
+
+  @@index([active])
+  @@index([logoMediaId])
+}
+
+model ClubAlias {
+  id              String        @id @default(uuid()) @db.Uuid
+  clubId          String        @db.Uuid
+  alias           String
+  normalizedAlias String
+  type            ClubAliasType
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Restrict)
+
+  @@unique([clubId, normalizedAlias])
+  @@index([clubId])
+  @@index([normalizedAlias])
+  @@index([active])
+}
+
+// -----------------------------------------------------------------------------
+// Football domain
+// -----------------------------------------------------------------------------
+
+enum CompetitionType {
+  LEAGUE
+  CUP
+}
+
+enum SeasonStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum StageType {
+  REGULAR
+  GROUP
+  KNOCKOUT
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+  CANCELLED
+  ABANDONED
+}
+
+model Competition {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String
+  shortName   String?
+  slug        String          @unique
+  type        CompetitionType
+  countryCode String?
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  seasons   Season[]
+  matches   Match[]
+  standings Standing[]
+  articles  Article[]
+
+  entityMatches EntityMatch[]
+
+  @@index([active])
+  @@index([type])
+}
+
+model Season {
+  id            String       @id @default(uuid()) @db.Uuid
+  competitionId String       @db.Uuid
+  name          String
+  slug          String
+  startDate     DateTime     @db.Date
+  endDate       DateTime     @db.Date
+  status        SeasonStatus
+  active        Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+
+  stages    Stage[]
+  matches   Match[]
+  standings Standing[]
+
+  entityMatches EntityMatch[]
+
+  @@unique([competitionId, slug])
+  @@index([competitionId, active])
+  @@index([status])
+}
+
+model Stage {
+  id            String    @id @default(uuid()) @db.Uuid
+  seasonId      String    @db.Uuid
+  parentStageId String?   @db.Uuid
+  name          String
+  slug          String
+  type          StageType
+  sequence      Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  season      Season  @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+  parentStage Stage?  @relation("StageHierarchy", fields: [parentStageId], references: [id], onDelete: Restrict)
+  childStages Stage[] @relation("StageHierarchy")
+
+  matches   Match[]
+  standings Standing[]
+
+  @@unique([seasonId, slug])
+  @@index([seasonId, sequence])
+  @@index([parentStageId])
+}
+
+model Match {
+  id            String      @id @default(uuid()) @db.Uuid
+  homeClubId    String      @db.Uuid
+  awayClubId    String      @db.Uuid
+  competitionId String      @db.Uuid
+  seasonId      String      @db.Uuid
+  stageId       String?     @db.Uuid
+  kickoff       DateTime
+  matchday      Int?
+  status        MatchStatus @default(SCHEDULED)
+  homeScore     Int?
+  awayScore     Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  homeClub    Club        @relation("MatchHomeClub", fields: [homeClubId], references: [id], onDelete: Restrict)
+  awayClub    Club        @relation("MatchAwayClub", fields: [awayClubId], references: [id], onDelete: Restrict)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  season      Season      @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+  stage       Stage?      @relation(fields: [stageId], references: [id], onDelete: Restrict)
+
+  articles      Article[]
+  entityMatches EntityMatch[]
+
+  @@index([kickoff])
+  @@index([competitionId, kickoff])
+  @@index([seasonId, kickoff])
+  @@index([stageId, kickoff])
+  @@index([homeClubId, kickoff])
+  @@index([awayClubId, kickoff])
+  @@index([status, kickoff])
+}
+
+model Standing {
+  id              String   @id @default(uuid()) @db.Uuid
+  competitionId   String   @db.Uuid
+  seasonId        String   @db.Uuid
+  stageId         String?  @db.Uuid
+  clubId          String   @db.Uuid
+  position        Int
+  played          Int
+  won             Int
+  drawn           Int
+  lost            Int
+  goalsFor        Int
+  goalsAgainst    Int
+  goalDifference  Int
+  points          Int
+  deductionPoints Int      @default(0)
+  sortOrder       Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  season      Season      @relation(fields: [seasonId], references: [id], onDelete: Restrict)
+  stage       Stage?      @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  club        Club        @relation(fields: [clubId], references: [id], onDelete: Restrict)
+
+  @@unique([seasonId, stageId, clubId])
+  @@index([seasonId, position])
+  @@index([stageId, position])
+  @@index([clubId, seasonId])
+  @@index([competitionId, seasonId])
+}
+
+// -----------------------------------------------------------------------------
+// Media and editorial domain
+// -----------------------------------------------------------------------------
+
+enum MediaStorageType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum MediaStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Media {
+  id               String           @id @default(uuid()) @db.Uuid
+  storageType      MediaStorageType
+  storageKey       String?          @unique
+  externalUrl      String?
+  originalFileName String?
+  mimeType         String
+  sizeBytes        BigInt
+  width            Int?
+  height           Int?
+  altText          String?
+  copyright        String?
+  source           String?
+  sourceUrl        String?
+  status           MediaStatus      @default(ACTIVE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  profileAvatars  Profile[] @relation("ProfileAvatar")
+  clubLogos       Club[]    @relation("ClubLogo")
+  articleLeads    Article[] @relation("ArticleLeadMedia")
+  articleOgImages Article[] @relation("ArticleOgImage")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([mimeType])
+}
+
+model ArticleSource {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  website   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles Article[]
+
+  @@index([active])
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles ArticleCategory[]
+
+  @@index([active])
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles ArticleTag[]
+
+  @@index([active])
+}
+
+model Article {
+  id                 String        @id @default(uuid()) @db.Uuid
+  title              String
+  slug               String        @unique
+  lead               String?
+  content            Json
+  status             ArticleStatus @default(DRAFT)
+  isTopNews          Boolean       @default(false)
+  authorId           String?       @db.Uuid
+  externalAuthorName String?
+  sourceId           String?       @db.Uuid
+  originalUrl        String?
+  competitionId      String?       @db.Uuid
+  matchId            String?       @db.Uuid
+  leadMediaId        String?       @db.Uuid
+  seoTitle           String?
+  seoDescription     String?
+  canonicalUrl       String?
+  ogImageId          String?       @db.Uuid
+  scheduledAt        DateTime?
+  publishedAt        DateTime?
+  archivedAt         DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  author      User?          @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  source      ArticleSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  competition Competition?   @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  match       Match?         @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  leadMedia   Media?         @relation("ArticleLeadMedia", fields: [leadMediaId], references: [id], onDelete: SetNull)
+  ogImage     Media?         @relation("ArticleOgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+
+  clubs      ArticleClub[]
+  categories ArticleCategory[]
+  tags       ArticleTag[]
+  comments   Comment[]
+  revisions  ArticleRevision[]
+
+  entityMatches EntityMatch[]
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([scheduledAt])
+  @@index([authorId])
+  @@index([sourceId])
+  @@index([competitionId])
+  @@index([matchId])
+  @@index([ogImageId])
+  @@index([isTopNews, publishedAt])
+  @@index([status, publishedAt])
+}
+
+model ArticleRevision {
+  id             String   @id @default(uuid()) @db.Uuid
+  articleId      String   @db.Uuid
+  title          String
+  slug           String
+  lead           String?
+  content        Json
+  isTopNews      Boolean
+  competitionId  String?  @db.Uuid
+  matchId        String?  @db.Uuid
+  leadMediaId    String?  @db.Uuid
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  ogImageId      String?  @db.Uuid
+  clubIds        Json
+  categoryIds    Json
+  tagIds         Json
+  createdAt      DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, createdAt])
+}
+
+model ArticleClub {
+  articleId String   @db.Uuid
+  clubId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  club    Club    @relation(fields: [clubId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, clubId])
+  @@index([clubId])
+}
+
+model ArticleCategory {
+  articleId  String   @db.Uuid
+  categoryId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  article  Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, categoryId])
+  @@index([categoryId])
+}
+
+model ArticleTag {
+  articleId String   @db.Uuid
+  tagId     String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+}
+
+// -----------------------------------------------------------------------------
+// Comments and reactions
+// -----------------------------------------------------------------------------
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+  MODERATED
+}
+
+enum ReactionType {
+  LIKE
+  UPVOTE
+  DOWNVOTE
+}
+
+model Comment {
+  id          String        @id @default(uuid()) @db.Uuid
+  articleId   String        @db.Uuid
+  authorId    String?       @db.Uuid
+  parentId    String?       @db.Uuid
+  body        String
+  depth       Int           @default(0)
+  status      CommentStatus @default(VISIBLE)
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  moderatedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  author  User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Restrict)
+  replies Comment[] @relation("CommentReplies")
+
+  revisions CommentRevision[]
+  reactions Reaction[]
+  reports   ModerationReport[]
+
+  @@index([articleId, createdAt])
+  @@index([parentId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([status])
+}
+
+model CommentRevision {
+  id        String   @id @default(uuid()) @db.Uuid
+  commentId String   @db.Uuid
+  body      String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, createdAt])
+}
+
+model Reaction {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @db.Uuid
+  type      ReactionType @default(LIKE)
+  commentId String?      @db.Uuid
+  postId    String?      @db.Uuid
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@unique([userId, postId])
+  @@index([commentId])
+  @@index([postId])
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// Forum domain
+// -----------------------------------------------------------------------------
+
+enum ThreadStatus {
+  OPEN
+  LOCKED
+  MERGED
+  ARCHIVED
+}
+
+model ForumCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  forums Forum[]
+
+  @@index([active, sortOrder])
+}
+
+model Forum {
+  id                    String   @id @default(uuid()) @db.Uuid
+  categoryId            String   @db.Uuid
+  clubId                String?  @db.Uuid
+  name                  String
+  slug                  String   @unique
+  description           String?
+  sortOrder             Int      @default(0)
+  active                Boolean  @default(true)
+  threadCreationEnabled Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  category ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  club     Club?         @relation(fields: [clubId], references: [id], onDelete: Restrict)
+
+  threads Thread[]
+
+  @@index([categoryId, active, sortOrder])
+  @@index([clubId])
+}
+
+model Thread {
+  id                     String       @id @default(uuid()) @db.Uuid
+  forumId                String       @db.Uuid
+  authorId               String       @db.Uuid
+  title                  String
+  slug                   String
+  status                 ThreadStatus @default(OPEN)
+  pinnedAt               DateTime?
+  pinnedByUserId         String?      @db.Uuid
+  lockedAt               DateTime?
+  lockedByUserId         String?      @db.Uuid
+  lockReason             String?
+  mergedIntoThreadId     String?      @db.Uuid
+  postCount              Int          @default(0)
+  lastPostAt             DateTime?
+  lastPostId             String?      @db.Uuid
+  lastPostSequenceNumber Int          @default(0)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  forum  Forum @relation(fields: [forumId], references: [id], onDelete: Restrict)
+  author User  @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  pinnedBy User? @relation("ThreadPinnedBy", fields: [pinnedByUserId], references: [id], onDelete: SetNull)
+  lockedBy User? @relation("ThreadLockedBy", fields: [lockedByUserId], references: [id], onDelete: SetNull)
+
+  mergedInto    Thread?  @relation("ThreadMerge", fields: [mergedIntoThreadId], references: [id], onDelete: Restrict)
+  mergedThreads Thread[] @relation("ThreadMerge")
+
+  lastPost Post? @relation("ThreadLastPost", fields: [lastPostId], references: [id], onDelete: SetNull)
+
+  posts         Post[]               @relation("ThreadPosts")
+  subscriptions ThreadSubscription[]
+  readStates    ThreadReadState[]
+
+  @@unique([forumId, slug])
+  @@index([forumId, status, pinnedAt, lastPostAt])
+  @@index([authorId])
+  @@index([mergedIntoThreadId])
+  @@index([lastPostAt])
+}
+
+model Post {
+  id              String    @id @default(uuid()) @db.Uuid
+  threadId        String    @db.Uuid
+  authorId        String    @db.Uuid
+  parentPostId    String?   @db.Uuid
+  sequenceNumber  Int
+  content         String
+  deletedAt       DateTime?
+  deletedByUserId String?   @db.Uuid
+  editedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  thread Thread @relation("ThreadPosts", fields: [threadId], references: [id], onDelete: Restrict)
+  author User   @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  parentPost Post?  @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Restrict)
+  replies    Post[] @relation("PostReplies")
+
+  deletedBy User? @relation("PostDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  lastPostForThreads Thread[]           @relation("ThreadLastPost")
+  readStates         ThreadReadState[]  @relation("ThreadReadLastPost")
+  reactions          Reaction[]
+  reports            ModerationReport[]
+
+  @@unique([threadId, sequenceNumber])
+  @@index([threadId, createdAt])
+  @@index([parentPostId])
+  @@index([authorId, createdAt])
+}
+
+model ThreadSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  threadId  String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
+  @@index([threadId])
+}
+
+model ThreadReadState {
+  id                     String    @id @default(uuid()) @db.Uuid
+  threadId               String    @db.Uuid
+  userId                 String    @db.Uuid
+  lastReadPostId         String?   @db.Uuid
+  lastReadSequenceNumber Int       @default(0)
+  lastReadAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  thread       Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadPost Post?  @relation("ThreadReadLastPost", fields: [lastReadPostId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, threadId])
+  @@index([threadId])
+  @@index([lastReadPostId])
+}
+
+// -----------------------------------------------------------------------------
+// Moderation domain
+// -----------------------------------------------------------------------------
+
+enum ReportTargetType {
+  COMMENT
+  FORUM_POST
+  USER
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_OR_ABUSE
+  THREAT_OR_VIOLENCE
+  PRIVACY
+  IMPERSONATION
+  ILLEGAL_CONTENT
+  OFF_TOPIC
+  MISINFORMATION
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportResolution {
+  ACTION_TAKEN
+  NO_VIOLATION
+  INSUFFICIENT_EVIDENCE
+  DUPLICATE
+  ALREADY_HANDLED
+  INVALID_REPORT
+  OTHER
+}
+
+enum ModerationCardType {
+  YELLOW
+  BLUE
+  RED
+}
+
+enum ModerationCardStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum ModerationCardEscalationSource {
+  MANUAL
+  THREE_YELLOW_CARDS
+}
+
+enum ModerationCardSourceType {
+  COMMENT
+  FORUM_POST
+  THREAD
+  ARTICLE
+  USER
+  NONE
+}
+
+enum SanctionType {
+  LIMITED
+  COMMENT_BLOCK
+  FORUM_BLOCK
+  ACCOUNT_BAN
+  IP_BLOCK
+}
+
+enum SanctionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum IPBlockSource {
+  MANUAL
+  SANCTION
+  AUTOMATED_SECURITY
+  RATE_LIMIT_ESCALATION
+}
+
+model ModerationReport {
+  id                  String            @id @default(uuid()) @db.Uuid
+  reporterId          String            @db.Uuid
+  targetType          ReportTargetType
+  commentId           String?           @db.Uuid
+  postId              String?           @db.Uuid
+  reportedUserId      String?           @db.Uuid
+  reason              ReportReason
+  details             String?
+  status              ReportStatus      @default(OPEN)
+  assignedModeratorId String?           @db.Uuid
+  resolution          ReportResolution?
+  moderatorNote       String?
+  assignedAt          DateTime?
+  resolvedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  reporter          User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  reportedUser      User? @relation("ReportTargetUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  assignedModerator User? @relation("ReportAssignedModerator", fields: [assignedModeratorId], references: [id], onDelete: SetNull)
+
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  sanctions Sanction[]
+  auditLogs AuditLog[]
+
+  @@index([status, createdAt])
+  @@index([assignedModeratorId, status, createdAt])
+  @@index([reporterId, createdAt])
+  @@index([commentId])
+  @@index([postId])
+  @@index([reportedUserId])
+  @@index([reason, createdAt])
+}
+
+model ModerationCard {
+  id               String                         @id @default(uuid()) @db.Uuid
+  userId           String                         @db.Uuid
+  moderatorId      String?                        @db.Uuid
+  type             ModerationCardType
+  status           ModerationCardStatus           @default(ACTIVE)
+  reasonCode       String
+  userMessage      String?
+  moderatorNote    String?
+  sourceType       ModerationCardSourceType       @default(NONE)
+  sourceId         String?                        @db.Uuid
+  issuedAt         DateTime                       @default(now())
+  expiresAt        DateTime?
+  escalationSource ModerationCardEscalationSource @default(MANUAL)
+  revokedAt        DateTime?
+  revokedById      String?                        @db.Uuid
+  revocationReason String?
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+
+  user      User  @relation("CardTargetUser", fields: [userId], references: [id], onDelete: Restrict)
+  moderator User? @relation("CardModerator", fields: [moderatorId], references: [id], onDelete: SetNull)
+  revokedBy User? @relation("CardRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  sanctions Sanction[]
+  auditLogs AuditLog[]
+
+  @@index([userId, type])
+  @@index([userId, status])
+  @@index([userId, type, status, expiresAt])
+  @@index([moderatorId, issuedAt])
+  @@index([sourceType, sourceId])
+  @@index([issuedAt])
+  @@index([expiresAt])
+}
+
+model Sanction {
+  id               String         @id @default(uuid()) @db.Uuid
+  type             SanctionType
+  status           SanctionStatus @default(ACTIVE)
+  userId           String?        @db.Uuid
+  createdById      String?        @db.Uuid
+  revokedById      String?        @db.Uuid
+  sourceCardId     String?        @db.Uuid
+  sourceReportId   String?        @db.Uuid
+  ipBlockId        String?        @unique @db.Uuid
+  reasonCode       String
+  userMessage      String?
+  internalNote     String?
+  startsAt         DateTime       @default(now())
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  revocationReason String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user      User? @relation("SanctionTargetUser", fields: [userId], references: [id], onDelete: SetNull)
+  createdBy User? @relation("SanctionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  revokedBy User? @relation("SanctionRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  sourceCard   ModerationCard?   @relation(fields: [sourceCardId], references: [id], onDelete: SetNull)
+  sourceReport ModerationReport? @relation(fields: [sourceReportId], references: [id], onDelete: SetNull)
+  ipBlock      IPBlock?          @relation(fields: [ipBlockId], references: [id], onDelete: SetNull)
+
+  auditLogs AuditLog[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, type, status])
+  @@index([type, status])
+  @@index([status, expiresAt])
+  @@index([sourceCardId])
+  @@index([sourceReportId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model IPBlock {
+  id                 String        @id @default(uuid()) @db.Uuid
+  ipHash             String
+  hashKeyVersion     String
+  reasonCode         String
+  internalNote       String?
+  source             IPBlockSource
+  createdById        String?       @db.Uuid
+  active             Boolean       @default(true)
+  startsAt           DateTime      @default(now())
+  expiresAt          DateTime?
+  deactivatedAt      DateTime?
+  deactivatedById    String?       @db.Uuid
+  deactivationReason String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  createdBy     User? @relation("IPBlockCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deactivatedBy User? @relation("IPBlockDeactivatedBy", fields: [deactivatedById], references: [id], onDelete: SetNull)
+
+  sanction  Sanction?
+  auditLogs AuditLog[]
+
+  @@index([ipHash, hashKeyVersion])
+  @@index([active, expiresAt])
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([source])
+  @@index([reasonCode])
+}
+
+// -----------------------------------------------------------------------------
+// Audit domain
+// -----------------------------------------------------------------------------
+
+enum AuditActorType {
+  USER
+  SYSTEM
+  WORKER
+  SECURITY_AUTOMATION
+}
+
+enum AuditCategory {
+  AUTHORIZATION
+  ACCOUNT
+  MODERATION
+  SANCTION
+  IP_PROTECTION
+  CONTENT
+  FORUM
+  EDITORIAL
+  SECURITY
+  SYSTEM
+}
+
+enum AuditTargetType {
+  USER
+  MODERATION_REPORT
+  MODERATION_CARD
+  SANCTION
+  IP_BLOCK
+  COMMENT
+  FORUM
+  THREAD
+  FORUM_POST
+  ARTICLE
+  MEDIA
+  CLUB
+  MATCH
+  SYSTEM
+}
+
+enum AuditAction {
+  USER_ROLE_GRANTED
+  USER_ROLE_REVOKED
+  USER_STATUS_CHANGED
+
+  MODERATION_REPORT_ASSIGNED
+  MODERATION_REPORT_RESOLVED
+  MODERATION_REPORT_DISMISSED
+
+  MODERATION_CARD_CREATED
+  MODERATION_CARD_REVOKED
+  MODERATION_CARD_EXPIRED
+  MODERATION_CARD_NOTE_CHANGED
+
+  SANCTION_CREATED
+  SANCTION_EXTENDED
+  SANCTION_REVOKED
+  SANCTION_EXPIRED
+
+  IP_BLOCK_CREATED
+  IP_BLOCK_EXTENDED
+  IP_BLOCK_DEACTIVATED
+  IP_BLOCK_EXPIRED
+  IP_BLOCK_REACTIVATED
+
+  COMMENT_MODERATED
+  COMMENT_DELETED_BY_MODERATOR
+  COMMENT_RESTORED_BY_MODERATOR
+
+  THREAD_PINNED
+  THREAD_UNPINNED
+  THREAD_LOCKED
+  THREAD_UNLOCKED
+  THREAD_MOVED
+  THREAD_MERGED
+
+  POST_MODERATED
+  POST_DELETED_BY_MODERATOR
+  POST_RESTORED_BY_MODERATOR
+
+  ARTICLE_PUBLISHED
+  ARTICLE_UNPUBLISHED
+  ARTICLE_ARCHIVED
+
+  ADMIN_CORRECTION
+}
+
+model AuditLog {
+  id                 String          @id @default(uuid()) @db.Uuid
+  occurredAt         DateTime        @default(now())
+  actorType          AuditActorType
+  actorUserId        String?         @db.Uuid
+  actorLabel         String?
+  action             AuditAction
+  category           AuditCategory
+  targetType         AuditTargetType
+  targetId           String?         @db.Uuid
+  targetUserId       String?         @db.Uuid
+  requestId          String?
+  correlationId      String?
+  moderationReportId String?         @db.Uuid
+  moderationCardId   String?         @db.Uuid
+  sanctionId         String?         @db.Uuid
+  ipBlockId          String?         @db.Uuid
+  reason             String?
+  metadata           Json?
+  schemaVersion      Int             @default(1)
+  createdAt          DateTime        @default(now())
+
+  actorUser  User? @relation("AuditActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("AuditTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  moderationReport ModerationReport? @relation(fields: [moderationReportId], references: [id], onDelete: SetNull)
+  moderationCard   ModerationCard?   @relation(fields: [moderationCardId], references: [id], onDelete: SetNull)
+  sanction         Sanction?         @relation(fields: [sanctionId], references: [id], onDelete: SetNull)
+  ipBlock          IPBlock?          @relation(fields: [ipBlockId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([targetUserId, occurredAt])
+  @@index([action, occurredAt])
+  @@index([category, occurredAt])
+  @@index([targetType, targetId, occurredAt])
+  @@index([moderationReportId, occurredAt])
+  @@index([moderationCardId, occurredAt])
+  @@index([sanctionId, occurredAt])
+  @@index([ipBlockId, occurredAt])
+  @@index([requestId])
+  @@index([correlationId])
+}
+
+// -----------------------------------------------------------------------------
+// Notification domain
+// -----------------------------------------------------------------------------
+
+enum NotificationType {
+  COMMENT_REPLY
+  THREAD_REPLY
+  YELLOW_CARD
+  BLUE_CARD
+  RED_CARD
+  LIMITED
+  BAN
+  APPEAL
+  SYSTEM
+}
+
+enum NotificationSourceType {
+  COMMENT
+  POST
+  THREAD
+  MODERATION_CARD
+  SANCTION
+  APPEAL
+  SYSTEM
+}
+
+model Notification {
+  id          String                  @id @default(uuid()) @db.Uuid
+  userId      String                  @db.Uuid
+  type        NotificationType
+  title       String
+  body        String
+  url         String?
+  sourceType  NotificationSourceType?
+  sourceId    String?                 @db.Uuid
+  actorUserId String?                 @db.Uuid
+  metadata    Json?
+  dedupeKey   String?                 @unique
+  readAt      DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  user      User  @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([type])
+  @@index([sourceType, sourceId])
+  @@index([actorUserId])
+  @@index([expiresAt])
+}
+
+model NotificationPreference {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  type         NotificationType
+  inAppEnabled Boolean          @default(true)
+  emailEnabled Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// Import domain
+// -----------------------------------------------------------------------------
+
+enum ProviderType {
+  NEWS
+  SPORTS
+  HYBRID
+}
+
+enum ProviderStatus {
+  ACTIVE
+  DISABLED
+  DEGRADED
+}
+
+enum ImportTrigger {
+  SCHEDULED
+  MANUAL
+  RETRY
+  REPLAY
+  SYSTEM
+}
+
+enum ImportJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  PARTIALLY_SUCCEEDED
+  FAILED
+  CANCELLED
+  DEAD_LETTER
+}
+
+enum ImportJobKind {
+  NEWS_FETCH
+  NEWS_REPLAY
+
+  SPORTS_COMPETITIONS
+  SPORTS_SEASONS
+  SPORTS_CLUBS
+  SPORTS_FIXTURES
+  SPORTS_RESULTS
+  SPORTS_STANDINGS
+
+  ENTITY_REPROCESS
+  RAW_PAYLOAD_REPROCESS
+  MANUAL_REPLAY
+}
+
+enum ImportRecordType {
+  NEWS_ARTICLE
+
+  SPORTS_COMPETITION
+  SPORTS_SEASON
+  SPORTS_CLUB
+  SPORTS_MATCH
+  SPORTS_RESULT
+  SPORTS_STANDING
+
+  UNKNOWN
+}
+
+enum ImportRecordStatus {
+  RECEIVED
+  NORMALIZED
+  VALIDATED
+  MATCHED
+  CREATED
+  UPDATED
+  DUPLICATE
+  SKIPPED
+  REVIEW_REQUIRED
+  FAILED
+}
+
+enum ImportReviewDecision {
+  APPROVED
+  REJECTED
+}
+
+enum RawPayloadType {
+  RESPONSE
+  RECORD
+  PAGE
+  WEBHOOK
+  REPLAY
+}
+
+enum MatchEntityType {
+  CLUB
+  COMPETITION
+  SEASON
+  MATCH
+  ARTICLE
+}
+
+enum EntityMatchStatus {
+  PENDING
+  MATCHED
+  UNMATCHED
+  AMBIGUOUS
+  REVIEW_REQUIRED
+  REJECTED
+}
+
+enum MatchConfidence {
+  EXACT
+  HIGH
+  MEDIUM
+  LOW
+  UNKNOWN
+}
+
+enum MatchMethod {
+  EXTERNAL_ID
+  MANUAL
+  CANONICAL_NAME
+  ALIAS
+  COMPOSITE
+  HEURISTIC
+  IMPORT_HISTORY
+}
+
+model Provider {
+  id            String         @id @default(uuid()) @db.Uuid
+  key           String         @unique
+  name          String
+  type          ProviderType
+  status        ProviderStatus @default(ACTIVE)
+  capabilities  Json?
+  configuration Json?
+  lastImportAt  DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  importJobs    ImportJob[]
+  importRecords ImportRecord[]
+  rawPayloads   RawPayload[]
+  entityMatches EntityMatch[]
+
+  @@index([status])
+  @@index([type])
+}
+
+model ImportJob {
+  id             String          @id @default(uuid()) @db.Uuid
+  providerId     String          @db.Uuid
+  kind           ImportJobKind
+  status         ImportJobStatus @default(QUEUED)
+  trigger        ImportTrigger
+  queueJobId     String?
+  requestId      String?
+  correlationId  String?
+  retryOfJobId   String?         @db.Uuid
+  cursor         String?
+  windowStart    DateTime?
+  windowEnd      DateTime?
+  receivedCount  Int             @default(0)
+  processedCount Int             @default(0)
+  createdCount   Int             @default(0)
+  updatedCount   Int             @default(0)
+  duplicateCount Int             @default(0)
+  failedCount    Int             @default(0)
+  errorCode      String?
+  errorMessage   String?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+
+  retryOf   ImportJob?  @relation("ImportJobRetries", fields: [retryOfJobId], references: [id], onDelete: SetNull)
+  retryJobs ImportJob[] @relation("ImportJobRetries")
+
+  records     ImportRecord[]
+  rawPayloads RawPayload[]
+
+  @@index([providerId])
+  @@index([status])
+  @@index([kind])
+  @@index([createdAt])
+  @@index([startedAt])
+  @@index([retryOfJobId])
+  @@index([queueJobId])
+}
+
+model ImportRecord {
+  id                  String                @id @default(uuid()) @db.Uuid
+  importJobId         String                @db.Uuid
+  providerId          String                @db.Uuid
+  rawPayloadId        String?               @db.Uuid
+  recordType          ImportRecordType
+  status              ImportRecordStatus    @default(RECEIVED)
+  externalId          String?
+  externalUrl         String?
+  contentHash         String?
+  normalizedPayload   Json?
+  normalizedAt        DateTime?
+  canonicalEntityType MatchEntityType?
+  canonicalEntityId   String?               @db.Uuid
+  duplicateOfRecordId String?               @db.Uuid
+  errorCode           String?
+  errorMessage        String?
+  reviewDecision      ImportReviewDecision?
+  reviewedById        String?               @db.Uuid
+  reviewedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  importJob  ImportJob   @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  provider   Provider    @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  rawPayload RawPayload? @relation(fields: [rawPayloadId], references: [id], onDelete: SetNull)
+  reviewedBy User?       @relation("ImportRecordReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  duplicateOf ImportRecord?  @relation("ImportRecordDuplicates", fields: [duplicateOfRecordId], references: [id], onDelete: SetNull)
+  duplicates  ImportRecord[] @relation("ImportRecordDuplicates")
+
+  @@index([importJobId])
+  @@index([providerId, recordType, externalId])
+  @@index([status])
+  @@index([status, createdAt])
+  @@index([reviewDecision])
+  @@index([reviewedById])
+  @@index([canonicalEntityType, canonicalEntityId])
+  @@index([createdAt])
+  @@index([rawPayloadId])
+}
+
+model RawPayload {
+  id          String         @id @default(uuid()) @db.Uuid
+  providerId  String         @db.Uuid
+  importJobId String?        @db.Uuid
+  type        RawPayloadType
+  externalId  String?
+  payload     Json
+  payloadHash String
+  sizeBytes   BigInt?
+  metadata    Json?
+  receivedAt  DateTime       @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime       @default(now())
+
+  provider  Provider   @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  importJob ImportJob? @relation(fields: [importJobId], references: [id], onDelete: SetNull)
+
+  importRecords ImportRecord[]
+
+  @@index([providerId, payloadHash])
+  @@index([providerId])
+  @@index([importJobId])
+  @@index([externalId])
+  @@index([receivedAt])
+  @@index([expiresAt])
+}
+
+model EntityMatch {
+  id            String            @id @default(uuid()) @db.Uuid
+  providerId    String            @db.Uuid
+  entityType    MatchEntityType
+  externalId    String
+  externalName  String?
+  clubId        String?           @db.Uuid
+  competitionId String?           @db.Uuid
+  seasonId      String?           @db.Uuid
+  matchId       String?           @db.Uuid
+  articleId     String?           @db.Uuid
+  status        EntityMatchStatus @default(PENDING)
+  confidence    MatchConfidence   @default(UNKNOWN)
+  method        MatchMethod?
+  evidence      Json?
+  reviewedById  String?           @db.Uuid
+  reviewedAt    DateTime?
+  firstSeenAt   DateTime          @default(now())
+  lastSeenAt    DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+
+  club        Club?        @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  competition Competition? @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  season      Season?      @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  match       Match?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  article     Article?     @relation(fields: [articleId], references: [id], onDelete: SetNull)
+
+  reviewedBy User? @relation("EntityMatchReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([providerId, entityType, externalId])
+  @@index([providerId])
+  @@index([entityType])
+  @@index([externalId])
+  @@index([status])
+  @@index([clubId])
+  @@index([competitionId])
+  @@index([seasonId])
+  @@index([matchId])
+  @@index([articleId])
+  @@index([lastSeenAt])
+}

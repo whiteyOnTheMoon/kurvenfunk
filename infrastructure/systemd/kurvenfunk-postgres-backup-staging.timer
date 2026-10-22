@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kurvenfunk STAGING PostgreSQL backup
+
+[Timer]
+OnCalendar=*-*-* 02:10:00 Europe/Vienna
+Persistent=true
+Unit=kurvenfunk-postgres-backup@staging.service
+
+[Install]
+WantedBy=timers.target

@@ -25,10 +25,7 @@ export class TestJobService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const runStartupTest = this.configService.get<boolean>(
-      'WORKER_RUN_STARTUP_TEST',
-      false,
-    );
+    const runStartupTest = this.configService.get<boolean>('WORKER_RUN_STARTUP_TEST', false);
 
     if (!runStartupTest) {
       return;

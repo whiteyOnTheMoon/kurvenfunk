@@ -1,4 +1,5 @@
 name: CI
+run-name: ${{ github.event.head_commit.message || github.event.pull_request.title || github.ref_name }}
 
 on:
   push:
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   ci:
-    name: Lint, Typecheck, Test & Build
+    name: Format, Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -44,17 +45,27 @@ jobs:
 
       - name: Show versions
         run: |
+          echo "event=${{ github.event_name }}"
+          echo "sha=${{ github.sha }}"
+          echo "ref=${{ github.ref }}"
+          echo "head_ref=${{ github.head_ref }}"
+          echo "base_ref=${{ github.base_ref }}"
+          echo "checked_out=$(git rev-parse HEAD)"
           node --version
           pnpm --version
+          sha256sum apps/web/src/components/layout/app-shell.tsx
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
 
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
 
       - name: Build shared packages
-        run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
+        run: pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database --filter=@kurvenfunk/validation
 
       - name: Lint
         run: pnpm turbo lint

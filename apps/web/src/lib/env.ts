@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 const webEnvSchema = z
   .object({
-    NODE_ENV: z
-      .enum(['development', 'test', 'production'])
-      .default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
     WEB_URL: z.url(),
     API_URL: z.url(),

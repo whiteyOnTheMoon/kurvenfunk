@@ -29,7 +29,7 @@ services:
     command:
       - redis-server
       - --appendonly
-      - "yes"
+      - 'yes'
       - --requirepass
       - ${REDIS_PASSWORD}
       - --maxmemory
@@ -51,9 +51,6 @@ services:
 
     networks:
       - backend
-
-
-
 
   web:
     build:
@@ -84,7 +81,6 @@ services:
       - frontend
       - backend
 
-
   api:
     build:
       context: .
@@ -98,6 +94,17 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       DATABASE_URL: ${DATABASE_URL}
+      WEB_URL: ${WEB_URL}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER}
+      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_BUCKET: ${STORAGE_BUCKET}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
 
     depends_on:
       postgres:
@@ -130,7 +137,7 @@ services:
       - backend
     profiles:
       - deployment
-    restart: "no"
+    restart: 'no'
 
   worker:
     build:
@@ -145,6 +152,16 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       DATABASE_URL: ${DATABASE_URL}
 
+      NEWS_IMPORT_PROVIDER: ${NEWS_IMPORT_PROVIDER:-fake}
+      NEWS_IMPORT_SCHEDULER_ENABLED: ${NEWS_IMPORT_SCHEDULER_ENABLED:-false}
+      NEWS_IMPORT_SCHEDULER_INTERVAL_MS: ${NEWS_IMPORT_SCHEDULER_INTERVAL_MS:-300000}
+
+      NEWS_OTS_API_KEY: ${NEWS_OTS_API_KEY:-}
+      NEWS_OTS_API_BASE_URL: ${NEWS_OTS_API_BASE_URL:-https://www.ots.at/api}
+      NEWS_OTS_QUERY: ${NEWS_OTS_QUERY:-Fußball}
+      NEWS_OTS_PAGE_SIZE: ${NEWS_OTS_PAGE_SIZE:-20}
+      NEWS_OTS_MAX_PAGES: ${NEWS_OTS_MAX_PAGES:-5}
+      NEWS_OTS_LOOKBACK_MINUTES: ${NEWS_OTS_LOOKBACK_MINUTES:-15}
     depends_on:
       postgres:
         condition: service_healthy
@@ -196,8 +213,8 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
 
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
 
     depends_on:
       postgres:
@@ -214,7 +231,6 @@ services:
 
     networks:
       - backend
-
 
   meilisearch:
     image: getmeili/meilisearch:v1.15

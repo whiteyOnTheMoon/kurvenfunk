@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+build
+coverage
+.turbo
+
+# Generated files
+packages/database/generated
+apps/web/next-env.d.ts
+
+# Dependency lockfile
+pnpm-lock.yaml
+
+# Existing long-form documentation
+docs
