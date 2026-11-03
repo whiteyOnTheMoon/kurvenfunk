@@ -1,0 +1,176 @@
+name: Task 176 - DEV identity diagnostics (read-only)
+
+on:
+  push:
+    branches:
+      - diag/task-176-dev-accounts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: task-176-dev-identity-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    name: Read-only DEV identity and user mapping checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure existing DEV SSH access
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Check only DEV; no writes
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh -T \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
+          set -Eeuo pipefail
+          set +x
+          cd /home/ap/www/kurvenfunk
+          test "$(id -un)" = "ap"
+          test "$(git branch --show-current)" = "develop"
+          test "$(git rev-parse HEAD)" = "3c6289cfca8fc8032980b1f94d63f3fd3900036b"
+          test -z "$(git status --porcelain)"
+          test -f .env.dev
+          test -f compose.dev.yml
+          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q api)"
+          test -n "$CID"
+          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = "kurvenfunk-dev"
+          echo "DEV_REPOSITORY_AND_CONTAINER: OK"
+          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
+            exec -T api node --input-type=module - <<'JS'
+          import { createPrismaClient } from '@kurvenfunk/database';
+
+          const db = createPrismaClient();
+          const identities = [
+            { username: 'kurvenfunk-e2e-176-target', nickname: 'kf176target' },
+            { username: 'kurvenfunk-e2e-176-moderator', nickname: 'kf176mod' },
+          ];
+          const fail = (message) => { throw new Error(message); };
+          const requireTrue = (condition, message) => { if (!condition) fail(message); };
+
+          async function main() {
+            const realm = process.env.KEYCLOAK_REVOKER_REALM;
+            const client = process.env.KEYCLOAK_REVOKER_CLIENT_ID;
+            const secret = process.env.KEYCLOAK_REVOKER_CLIENT_SECRET;
+            const baseString = process.env.KEYCLOAK_ADMIN_INTERNAL_URL;
+            requireTrue(realm === 'kurvenfunk', 'Unexpected realm');
+            requireTrue(client === 'kurvenfunk-session-revoker' && Boolean(secret), 'Unexpected client');
+            requireTrue(Boolean(baseString), 'Missing DEV endpoint');
+            const base = new URL(baseString);
+            const validInternal = base.protocol === 'http:' &&
+              ['keycloak', 'kurvenfunk-dev-keycloak-1'].includes(base.hostname) &&
+              base.port === '8080';
+            const validExternal = base.protocol === 'https:' &&
+              base.hostname === 'auth-dev.kurvenfunk.at' &&
+              (!base.port || base.port === '443');
+            requireTrue((validInternal || validExternal) &&
+              base.pathname === '/' && !base.username && !base.password &&
+              !base.search && !base.hash, 'Not a recognized DEV Keycloak endpoint');
+            const tokenResponse = await fetch(
+              new URL('/realms/kurvenfunk/protocol/openid-connect/token', base),
+              {
+                method: 'POST',
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  grant_type: 'client_credentials', client_id: client, client_secret: secret,
+                }),
+                signal: AbortSignal.timeout(10000),
+              }
+            );
+            requireTrue(tokenResponse.status === 200, 'Service token HTTP status ' + tokenResponse.status);
+            const token = (await tokenResponse.json()).access_token;
+            requireTrue(typeof token === 'string' && token.length > 0, 'Missing service token');
+            console.log('DEV_KEYCLOAK_AUTH: OK');
+
+            await db.$connect();
+            for (const identity of identities) {
+              console.log('ACCOUNT: ' + identity.username);
+              const subjects = new Set();
+              for (const [label, entries] of [
+                ['USERNAME_EXACT', { username: identity.username, exact: 'true' }],
+                ['USERNAME_DEFAULT', { username: identity.username }],
+                ['GENERAL_SEARCH', { search: identity.username }],
+              ]) {
+                const url = new URL('/admin/realms/kurvenfunk/users', base);
+                for (const [key, value] of Object.entries(entries)) url.searchParams.set(key, value);
+                url.searchParams.set('max', '50');
+                const response = await fetch(url, {
+                  headers: { authorization: 'Bearer ' + token },
+                  signal: AbortSignal.timeout(10000),
+                });
+                if (response.status !== 200) {
+                  console.log(label + ': HTTP=' + response.status);
+                  continue;
+                }
+                const users = await response.json();
+                requireTrue(Array.isArray(users), 'Unexpected Keycloak response');
+                const exact = users.filter((u) =>
+                  typeof u.username === 'string' &&
+                  u.username.toLowerCase() === identity.username.toLowerCase()
+                );
+                exact.forEach(u => subjects.add(u.id));
+                console.log(label + ': HTTP=200, RETURNED=' + users.length + ', MATCHES=' + exact.length);
+              }
+              const mappedByNickname = await db.user.findMany({
+                where: { nickname: { equals: identity.nickname, mode: 'insensitive' } },
+                select: {
+                  keycloakSubject: true, status: true, onboardingCompleted: true,
+                  roleAssignments: { select: { role: true } },
+                  _count: { select: { moderationCardsReceived: true } },
+                },
+                take: 2,
+              });
+              console.log('DB_NICKNAME_MATCHES: ' + mappedByNickname.length);
+              for (const user of mappedByNickname) {
+                console.log('DB_STATUS: ' + user.status);
+                console.log('DB_ONBOARDING: ' + user.onboardingCompleted);
+                console.log('DB_ROLES: ' + user.roleAssignments.map(r => r.role).join(','));
+                console.log('DB_CARD_COUNT: ' + user._count.moderationCardsReceived);
+                console.log('DB_SUBJECT_MATCH: ' + (subjects.size ? subjects.has(user.keycloakSubject) : 'NOT_VERIFIABLE'));
+              }
+              if (subjects.size === 1) {
+                const bySubject = await db.user.findUnique({
+                  where: { keycloakSubject: [...subjects][0] },
+                  select: { status: true, onboardingCompleted: true, nickname: true }
+                });
+                console.log('DB_SUBJECT_EXISTS: ' + Boolean(bySubject));
+                if (bySubject) {
+                  console.log('DB_NICKNAME_EXPECTED: ' + (bySubject.nickname === identity.nickname));
+                  console.log('DB_SUBJECT_STATUS: ' + bySubject.status);
+                  console.log('DB_SUBJECT_ONBOARDING: ' + bySubject.onboardingCompleted);
+                }
+              }
+              console.log('KEYCLOAK_UNIQUE_SUBJECTS: ' + subjects.size);
+            }
+            console.log('TASK_176_DIAGNOSTICS: COMPLETE_READ_ONLY');
+          }
+          try {
+            await main();
+          } catch (error) {
+            console.error('TASK_176_DIAGNOSTICS: FAILED - ' +
+              (error instanceof Error ? error.message : 'Unexpected error'));
+            process.exitCode = 1;
+          } finally {
+            await db.$disconnect();
+          }
+          JS
+          REMOTE
