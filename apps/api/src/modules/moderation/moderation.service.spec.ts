@@ -417,7 +417,6 @@ describe('ModerationService – Yellow Cards', () => {
 
     expect(result.redCardRequired).toBe(true);
     expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
-
   });
 
   it('disconnects the database during shutdown', async () => {
