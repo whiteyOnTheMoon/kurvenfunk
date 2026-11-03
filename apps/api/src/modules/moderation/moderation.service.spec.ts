@@ -27,11 +27,13 @@ function command(overrides: Partial<CreateYellowCardCommand> = {}): CreateYellow
 
 function createTransactionClient() {
   return {
-    $queryRaw: jest.fn().mockResolvedValue([{
-      id: USER_ID,
-      status: 'ACTIVE',
-      keycloakSubject: SOURCE_ID,
-    }]),
+    $queryRaw: jest.fn().mockResolvedValue([
+      {
+        id: USER_ID,
+        status: 'ACTIVE',
+        keycloakSubject: SOURCE_ID,
+      },
+    ]),
     user: {
       update: jest.fn().mockResolvedValue({ id: USER_ID, status: 'BANNED' }),
     },
@@ -58,18 +60,21 @@ function createTransactionClient() {
     moderationCard: {
       count: jest.fn().mockResolvedValue(1),
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue({ id: RED_CARD_ID }).mockResolvedValueOnce({
-        id: CARD_ID,
-        userId: USER_ID,
-        moderatorId: MODERATOR_ID,
-        type: 'YELLOW',
-        status: 'ACTIVE',
-        reasonCode: 'SPAM',
-        sourceType: 'NONE',
-        sourceId: null,
-        issuedAt: new Date('2026-10-16T12:00:00Z'),
-        expiresAt: null,
-      }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: RED_CARD_ID })
+        .mockResolvedValueOnce({
+          id: CARD_ID,
+          userId: USER_ID,
+          moderatorId: MODERATOR_ID,
+          type: 'YELLOW',
+          status: 'ACTIVE',
+          reasonCode: 'SPAM',
+          sourceType: 'NONE',
+          sourceId: null,
+          issuedAt: new Date('2026-10-16T12:00:00Z'),
+          expiresAt: null,
+        }),
     },
     auditLog: {
       create: jest.fn().mockResolvedValue({
@@ -77,9 +82,10 @@ function createTransactionClient() {
       }),
     },
     notification: {
-      create: jest.fn().mockResolvedValue({
-        id: 'red-notification-id',
-      }).mockResolvedValueOnce({ id: 'notification-id' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'red-notification-id' })
+        .mockResolvedValueOnce({ id: 'notification-id' }),
     },
   };
 }
@@ -480,11 +486,13 @@ describe('ModerationService – Yellow Cards', () => {
   });
 
   it('prevents repeated warnings for banned accounts', async () => {
-    tx.$queryRaw.mockResolvedValueOnce([{
-      id: USER_ID,
-      status: 'BANNED',
-      keycloakSubject: SOURCE_ID,
-    }]);
+    tx.$queryRaw.mockResolvedValueOnce([
+      {
+        id: USER_ID,
+        status: 'BANNED',
+        keycloakSubject: SOURCE_ID,
+      },
+    ]);
 
     await expect(service.createYellowCard(command())).rejects.toBeInstanceOf(ConflictException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
