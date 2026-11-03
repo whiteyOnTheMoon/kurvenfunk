@@ -291,3 +291,38 @@ jobs:
           print('DEV_MASTER_TOKEN_HAS_ADMIN_ROLE:', 'admin' in master_roles)
           print('TASK_176_ADMIN_LOOKUP: COMPLETE_READ_ONLY')
           PY
+
+      - name: Inspect DEV Keycloak database for the two exact E2E usernames (read-only)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh -T \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
+          set -Eeuo pipefail
+          set +x
+          cd /home/ap/www/kurvenfunk
+          test "$(id -un)" = "ap"
+          test "$(git branch --show-current)" = "develop"
+          test "$(git rev-parse HEAD)" = "3c6289cfca8fc8032980b1f94d63f3fd3900036b"
+          test -z "$(git status --porcelain)"
+          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q postgres)"
+          test -n "$CID"
+          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = "kurvenfunk-dev"
+          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
+            exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d keycloak -A -t' <<'SQL'
+          SELECT 'KEYCLOAK_DB_E2E_USERS=' || count(*)
+          FROM public.user_entity
+          WHERE lower(username) IN ('kurvenfunk-e2e-176-target', 'kurvenfunk-e2e-176-moderator');
+          SELECT 'KEYCLOAK_DB_E2E_USER=' || u.username || ';REALM=' || r.name
+          FROM public.user_entity u
+          JOIN public.realm r ON r.id = u.realm_id
+          WHERE lower(u.username) IN ('kurvenfunk-e2e-176-target', 'kurvenfunk-e2e-176-moderator')
+          ORDER BY u.username;
+          SQL
+          echo "TASK_176_KEYCLOAK_DB_READ_ONLY: COMPLETE"
+          REMOTE
