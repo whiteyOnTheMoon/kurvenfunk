@@ -1,3 +1,8 @@
+// Isolate worker scheduling tests from the ESM Prisma database package.
+jest.mock('../database/database.service', () => ({
+  DatabaseService: jest.fn(),
+}));
+
 import type { DatabaseClient } from '@kurvenfunk/database';
 
 import type { DatabaseService } from '../database/database.service';
