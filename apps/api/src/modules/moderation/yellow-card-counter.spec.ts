@@ -58,8 +58,8 @@ describe('Yellow Card Counter', () => {
       moderationCard: { count },
     } as unknown as Pick<DatabaseClient, 'moderationCard'>;
 
-    await expect(
-      countRelevantYellowCards(database, USER_ID, new Date()),
-    ).rejects.toThrow('Database unavailable');
+    await expect(countRelevantYellowCards(database, USER_ID, new Date())).rejects.toThrow(
+      'Database unavailable',
+    );
   });
 });
