@@ -56,6 +56,12 @@ export class AppealsController {
     });
   }
 
+  @Get('eligible')
+  @UseGuards(AppealIdentityGuard)
+  eligible(@Req() request: AuthenticatedRequest) {
+    return this.appeals.eligible(request.user!.kurvenfunkUserId);
+  }
+
   @Get('mine')
   @UseGuards(AppealIdentityGuard)
   listMine(@Req() request: AuthenticatedRequest) {
