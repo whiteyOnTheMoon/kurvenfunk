@@ -56,6 +56,18 @@ describe('AccountStatusGuard', () => {
     }
   });
 
+  it('logs BANNED access denial without any bearer token or IP address', () => {
+    const warn = jest.spyOn(guard['logger'], 'warn').mockImplementation();
+
+    try {
+      expect(() => guard.canActivate(createContext('BANNED'))).toThrow(ForbiddenException);
+      expect(warn).toHaveBeenCalledWith('ACCOUNT_BANNED_ACCESS_DENIED userId=test-user');
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('Bearer ');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('rejects missing authentication', () => {
     expect(() => guard.canActivate(createContext())).toThrow(UnauthorizedException);
   });
