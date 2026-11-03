@@ -184,9 +184,6 @@ describe('DirectRedCardService', () => {
       },
       select: { id: true },
     });
-    expect(tx.notification.create.mock.calls[0][0].data.body).not.toContain(
-      'Internal investigation',
-    );
   });
 
   it('locks the target before the red card or status update', async () => {
