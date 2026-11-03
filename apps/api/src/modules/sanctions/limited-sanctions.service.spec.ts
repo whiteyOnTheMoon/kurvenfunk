@@ -35,7 +35,7 @@ function transactionClient() {
       findFirst: jest.fn().mockResolvedValue(null),
       create: jest
         .fn()
-        .mockImplementation(async ({ data }: { data: { expiresAt: Date; startsAt: Date } }) => ({
+        .mockImplementation(({ data }: { data: { expiresAt: Date; startsAt: Date } }) => ({
           id: SANCTION,
           type: 'LIMITED',
           status: 'ACTIVE',
@@ -102,36 +102,34 @@ describe('LimitedSanctionsService', () => {
   it('persists the internal note on the sanction, but never returns it or notifies it', async () => {
     const issued = await service.issue(command({ userMessage: 'Bitte beachte die Regeln.' }));
 
-    expect(tx.sanction.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          internalNote: 'Private investigation evidence',
-          userMessage: 'Bitte beachte die Regeln.',
-          createdById: ACTOR,
-          type: 'LIMITED',
-        }),
-      }),
-    );
+    const createCalls = tx.sanction.create.mock.calls as unknown[][];
+    expect(createCalls[0]?.[0]).toMatchObject({
+      data: {
+        internalNote: 'Private investigation evidence',
+        userMessage: 'Bitte beachte die Regeln.',
+        createdById: ACTOR,
+        type: 'LIMITED',
+      },
+    });
     expect(issued).not.toHaveProperty('internalNote');
     expect(issued).not.toHaveProperty('moderatorNote');
-    expect(tx.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          type: 'LIMITED',
-          sourceType: 'SANCTION',
-          sourceId: SANCTION,
-        }),
-      }),
-    );
+    const notifyCalls = tx.notification.create.mock.calls as unknown[][];
+    expect(notifyCalls[0]?.[0]).toMatchObject({
+      data: {
+        type: 'LIMITED',
+        sourceType: 'SANCTION',
+        sourceId: SANCTION,
+      },
+    });
   });
 
   it('records sanction creation and account status change before notifying', async () => {
     await service.issue(command());
 
-    const auditCalls = tx.auditLog.create.mock.calls;
+    const auditCalls = tx.auditLog.create.mock.calls as unknown[][];
     expect(auditCalls).toHaveLength(2);
-    expect(auditCalls[0]).toEqual({
-      data: expect.objectContaining({
+    expect(auditCalls[0]?.[0]).toMatchObject({
+      data: {
         actorType: 'USER',
         actorUserId: ACTOR,
         action: 'SANCTION_CREATED',
@@ -139,16 +137,16 @@ describe('LimitedSanctionsService', () => {
         targetType: 'SANCTION',
         targetUserId: TARGET,
         sanctionId: SANCTION,
-      }),
+      },
     });
-    expect(auditCalls[1]).toEqual({
-      data: expect.objectContaining({
+    expect(auditCalls[1]?.[0]).toMatchObject({
+      data: {
         actorType: 'USER',
         actorUserId: ACTOR,
         action: 'USER_STATUS_CHANGED',
         category: 'ACCOUNT',
         metadata: { previousStatus: 'ACTIVE', newStatus: 'LIMITED' },
-      }),
+      },
     });
   });
 
