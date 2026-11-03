@@ -384,7 +384,7 @@ describe('ModerationService – Yellow Cards', () => {
   });
 
   it('fails if notification creation fails', async () => {
-    tx.notification.create.mockRejectedValueOnce(new Error('Notification write failed'));
+    tx.notification.create.mockReset().mockRejectedValueOnce(new Error('Notification write failed'));
 
     await expect(service.createYellowCard(command())).rejects.toThrow('Notification write failed');
   });
