@@ -40,14 +40,27 @@ describe('KeycloakSessionRevoker', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     const [tokenUrl, tokenOptions] = fetchMock.mock.calls[0];
-    expect(String(tokenUrl)).toBe(
+    expect(tokenUrl).toBeInstanceOf(URL);
+    if (!(tokenUrl instanceof URL)) {
+      throw new Error('Expected URL');
+    }
+    expect(tokenUrl.href).toBe(
       'http://keycloak:8080/realms/kurvenfunk/protocol/openid-connect/token',
     );
     expect(tokenOptions?.method).toBe('POST');
-    expect(String(tokenOptions?.body)).toContain('grant_type=client_credentials');
+    const tokenBody = tokenOptions?.body;
+    expect(tokenBody).toBeInstanceOf(URLSearchParams);
+    if (!(tokenBody instanceof URLSearchParams)) {
+      throw new Error('Expected URLSearchParams');
+    }
+    expect(tokenBody.get('grant_type')).toBe('client_credentials');
 
     const [logoutUrl, logoutOptions] = fetchMock.mock.calls[1];
-    expect(String(logoutUrl)).toBe(
+    expect(logoutUrl).toBeInstanceOf(URL);
+    if (!(logoutUrl instanceof URL)) {
+      throw new Error('Expected URL');
+    }
+    expect(logoutUrl.href).toBe(
       `http://keycloak:8080/admin/realms/kurvenfunk/users/${SUBJECT}/logout`,
     );
     expect(logoutOptions?.method).toBe('POST');
