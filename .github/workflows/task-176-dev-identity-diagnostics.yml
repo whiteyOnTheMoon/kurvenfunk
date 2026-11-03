@@ -327,7 +327,8 @@ jobs:
           echo "TASK_176_KEYCLOAK_DB_READ_ONLY: COMPLETE"
           REMOTE
 
-      - name: Provision only the two reserved DEV Keycloak test identities, verify DB persistence
+
+      - name: Diagnose DEV Keycloak uniqueness conflict - no writes
         env:
           SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
           SSH_USER: ${{ secrets.DEV_SSH_USER }}
@@ -337,105 +338,35 @@ jobs:
             -i ~/.ssh/kurvenfunk_dev \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
-            "$SSH_USER@$SSH_HOST" 'python3 -' <<'PY'
-          import json
-          import os
-          import subprocess
-          import urllib.request
-          import urllib.parse
-          import urllib.error
-          from pathlib import Path
-
-          root = Path('/home/ap/www/kurvenfunk')
-          if os.geteuid() == 0 or os.environ.get('USER') != 'ap':
-              raise SystemExit('Refusing privileged or unexpected user')
-          def git(*args):
-              return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
-          assert git('branch','--show-current') == 'develop', 'Wrong branch'
-          assert git('rev-parse','HEAD') == '3c6289cfca8fc8032980b1f94d63f3fd3900036b', 'Wrong commit'
-          assert not git('status','--porcelain'), 'Working tree not clean'
-          envfile = root / '.env.dev'
-          assert envfile.is_file()
-          def read_env(key):
-              prefix=key+'='
-              matches=[]
-              for row in envfile.read_text().splitlines():
-                  if row.startswith(prefix):
-                      value=row[len(prefix):].strip()
-                      if len(value)>=2 and value[0] in ('"', "'") and value[-1]==value[0]:
-                          value=value[1:-1]
-                      matches.append(value)
-              assert len(matches)==1 and matches[0], 'Missing or duplicated DEV setting: '+key
-              return matches[0]
-          username = read_env('KEYCLOAK_CONFIG_ADMIN_USERNAME')
-          password = read_env('KEYCLOAK_CONFIG_ADMIN_PASSWORD')
-
-          compose = ['docker','compose','-p','kurvenfunk-dev','--env-file','.env.dev','-f','compose.yml','-f','compose.dev.yml']
-          for service in ('postgres','keycloak'):
-              cid=subprocess.check_output(compose+['ps','-q',service],cwd=root,text=True).strip()
-              assert cid, service+' container missing'
-              label=subprocess.check_output(['docker','inspect','--format','{{index .Config.Labels "com.docker.compose.project"}}',cid],text=True).strip()
-              assert label=='kurvenfunk-dev', 'Wrong Docker project'
-          def sql_count(name):
-              assert name in ('kurvenfunk-e2e-176-target','kurvenfunk-e2e-176-moderator')
-              stmt = "SELECT count(*) FROM public.user_entity u JOIN public.realm r ON r.id=u.realm_id WHERE r.name='kurvenfunk' AND lower(u.username)='"+name+"';"
-              cmd=compose+['exec','-T','postgres','sh','-lc','psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d keycloak -A -t']
-              result=subprocess.run(cmd,cwd=root,input=stmt,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
-              value=result.stdout.strip()
-              assert value in ('0','1'), 'Unexpected identity count'
-              return int(value)
-
-          base='http://127.0.0.1:3102'
-          def call(method,uri,headers=None,data=None):
-              try:
-                  req=urllib.request.Request(base+uri,data=data,headers=headers or {},method=method)
-                  with urllib.request.urlopen(req,timeout=10) as response:
-                      return response.status,response.read()
-              except urllib.error.HTTPError as error:
-                  return error.code,b''
-          form=urllib.parse.urlencode({'grant_type':'password','client_id':'admin-cli','username':username,'password':password}).encode()
-          token_status,token_body=call('POST','/realms/master/protocol/openid-connect/token',{'content-type':'application/x-www-form-urlencoded'},form)
-          assert token_status==200,'DEV admin authentication failed'
-          token=json.loads(token_body)['access_token']
-          headers={'authorization':'Bearer '+token}
-
-          expected=[
-              ('kurvenfunk-e2e-176-target','e2e-176-target@dev.kurvenfunk.invalid','E2E 176 Target'),
-              ('kurvenfunk-e2e-176-moderator','e2e-176-moderator@dev.kurvenfunk.invalid','E2E 176 Moderator'),
-          ]
-          def lookup(name):
-              uri='/admin/realms/kurvenfunk/users?'+urllib.parse.urlencode({'username':name,'exact':'true','max':'50'})
-              status,data=call('GET',uri,headers)
-              assert status==200,'Keycloak lookup failed HTTP='+str(status)
-              users=json.loads(data)
-              return [u for u in users if u.get('username','').lower()==name]
-          # Refuse to begin if any test identity exists in only one of the two stores.
-          for name,email,last in expected:
-              api_matches=lookup(name)
-              stored=sql_count(name)
-              assert len(api_matches)==stored, 'API/DB identity mismatch: '+name
-              assert stored in (0,1), 'Duplicate identity: '+name
-              if stored==1:
-                  assert api_matches[0].get('email','').lower()==email, 'Unexpected matching identity attributes'
-                  print('DEV_IDENTITY_ALREADY_PRESENT:',name)
-          for name,email,last in expected:
-              if sql_count(name)==1:
-                  continue
-              body=json.dumps({
-                  'username':name,
-                  'email':email,
-                  'firstName':'Kurvenfunk',
-                  'lastName':last,
-                  'enabled':True,
-                  'emailVerified':True,
-                  'requiredActions':[],
-              }).encode()
-              status,_=call('POST','/admin/realms/kurvenfunk/users',
-                  {**headers,'content-type':'application/json'},body)
-              assert status==201,'DEV test identity creation HTTP='+str(status)+' for '+name
-              now=lookup(name)
-              assert len(now)==1 and now[0].get('email','').lower()==email, 'Identity creation not confirmed by admin API'
-              assert sql_count(name)==1, 'Identity creation not confirmed by Keycloak PostgreSQL'
-              print('DEV_TEST_IDENTITY_CREATED_AND_VERIFIED:',name)
-          print('TASK_176_DEV_KEYCLOAK_IDENTITIES: VERIFIED')
-          PY
+            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
+          set -Eeuo pipefail
+          set +x
+          cd /home/ap/www/kurvenfunk
+          test "$(id -un)" = ap
+          test "$(git branch --show-current)" = develop
+          test "$(git rev-parse HEAD)" = 3c6289cfca8fc8032980b1f94d63f3fd3900036b
+          test -z "$(git status --porcelain)"
+          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q postgres)"
+          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = kurvenfunk-dev
+          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
+            exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d keycloak -A -t' <<'SQL'
+          SELECT 'KC_ALL_USERS=' || count(*) FROM public.user_entity;
+          SELECT 'KC_KURVENFUNK_REALM_USERS=' || count(*)
+          FROM public.user_entity u JOIN public.realm r ON r.id=u.realm_id WHERE r.name='kurvenfunk';
+          SELECT 'KC_E2E_NAME_PREFIX=' || count(*)
+          FROM public.user_entity WHERE lower(username) LIKE '%e2e%176%';
+          SELECT 'KC_TEST_EMAIL_TARGET=' || count(*)
+          FROM public.user_entity
+          WHERE lower(email) = 'e2e-176-target@dev.kurvenfunk.invalid';
+          SELECT 'KC_TEST_EMAIL_MODERATOR=' || count(*)
+          FROM public.user_entity
+          WHERE lower(email) = 'e2e-176-moderator@dev.kurvenfunk.invalid';
+          SELECT 'KC_EMAIL_COLLISION_USERNAME=' || username
+          FROM public.user_entity
+          WHERE lower(email) IN (
+             'e2e-176-target@dev.kurvenfunk.invalid',
+             'e2e-176-moderator@dev.kurvenfunk.invalid'
+          );
+          SQL
+          echo "TASK_176_UNIQUENESS_DIAG: COMPLETE_READ_ONLY"
+          REMOTE
