@@ -168,8 +168,8 @@ describe('SanctionExpirationService', () => {
     let release!: () => void;
     db.sanction.findMany.mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
-          release = resolve;
+        new Promise<[]>((resolve) => {
+          release = () => resolve([]);
         }),
     );
     const first = service.expireDueSanctions(now);
