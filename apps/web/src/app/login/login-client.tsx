@@ -19,6 +19,9 @@ export function LoginClient() {
         </p>
         <p>Öffentliche Nachrichten, Ergebnisse und Tabellen bleiben zugänglich.</p>
         <p>
+          <Link href="/appeals">Einspruch einreichen oder verfolgen</Link>
+        </p>
+        <p>
           <Link href="/">Zur Startseite</Link>
         </p>
       </main>
