@@ -79,6 +79,44 @@ describe('PermissionsService', () => {
     expect(can(PERMISSIONS.COMMENT_MODERATE, ['EDITOR', 'MODERATOR'])).toBe(true);
   });
 
+  it.each(['USER', 'TRUSTED_USER', 'MODERATOR', 'EDITOR', 'ADMIN', 'SUPERADMIN'] as const)(
+    'allows LIMITED %s to vote while forbidding publication and community writes',
+    (role) => {
+      expect(can(PERMISSIONS.COMMENT_VOTE, [role], 'LIMITED')).toBe(true);
+      for (const denied of [
+        PERMISSIONS.COMMENT_CREATE,
+        PERMISSIONS.COMMENT_EDIT,
+        PERMISSIONS.THREAD_CREATE,
+        PERMISSIONS.THREAD_REPLY,
+        PERMISSIONS.ARTICLE_CREATE,
+        PERMISSIONS.ARTICLE_PUBLISH,
+        PERMISSIONS.USER_WARN,
+        PERMISSIONS.USER_LIMIT,
+        PERMISSIONS.USER_BAN,
+        PERMISSIONS.USER_IPBAN,
+        PERMISSIONS.COMMENT_MODERATE,
+        PERMISSIONS.THREAD_LOCK,
+      ]) {
+        expect(can(denied, [role], 'LIMITED')).toBe(false);
+      }
+    },
+  );
+
+  it.each(['USER', 'TRUSTED_USER', 'MODERATOR', 'EDITOR', 'ADMIN', 'SUPERADMIN'] as const)(
+    'blocks every authenticated permission for BANNED %s',
+    (role) => {
+      for (const permission of Object.values(PERMISSIONS)) {
+        expect(can(permission, [role], 'BANNED')).toBe(false);
+      }
+    },
+  );
+
+  it('allows deleting one\'s own previous content in LIMITED without allowing new content', () => {
+    expect(can(PERMISSIONS.COMMENT_DELETE, ['USER'], 'LIMITED')).toBe(true);
+    expect(can(PERMISSIONS.COMMENT_CREATE, ['USER'], 'LIMITED')).toBe(false);
+    expect(can(PERMISSIONS.COMMENT_EDIT, ['USER'], 'LIMITED')).toBe(false);
+  });
+
   it('requires all requested permissions', () => {
     expect(
       service.hasAllPermissions(
