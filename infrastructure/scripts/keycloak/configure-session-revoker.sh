@@ -24,14 +24,53 @@ compose=(
 
 echo "=== DEV Keycloak session-revoker provisioning ==="
 
-# The admin password is read inside the Keycloak container, not passed to the API.
-"${compose[@]}" exec -T keycloak sh -lc '
-  /opt/keycloak/bin/kcadm.sh config credentials \
-    --server http://127.0.0.1:8080 \
-    --realm master \
-    --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
-    --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
-' >/dev/null
+# Bootstrap credentials may no longer be valid after initial Keycloak setup.
+# Use the existing persistent configuration administrator from .env.dev.
+# Credentials are never echoed to the terminal or passed into the API container.
+mapfile -t CONFIG_ADMIN < <(
+  python3 - .env.dev <<'PYADMIN'
+from pathlib import Path
+import sys
+
+values = {}
+for raw_line in Path(sys.argv[1]).read_text().splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    if key in ("KEYCLOAK_CONFIG_ADMIN_USERNAME", "KEYCLOAK_CONFIG_ADMIN_PASSWORD"):
+        if key in values:
+            raise SystemExit(f"Duplicate configuration variable: {key}")
+        values[key] = value.strip().strip('"').strip("'")
+
+for key in ("KEYCLOAK_CONFIG_ADMIN_USERNAME", "KEYCLOAK_CONFIG_ADMIN_PASSWORD"):
+    if not values.get(key):
+        raise SystemExit(f"Missing Keycloak configuration administrator: {key}")
+    print(values[key])
+PYADMIN
+)
+
+if [[ "${#CONFIG_ADMIN[@]}" -ne 2 ]]; then
+  echo "Keycloak configuration administrator is not available in .env.dev." >&2
+  exit 1
+fi
+
+echo "Authenticating the persistent Keycloak configuration administrator..."
+if ! "${compose[@]}" exec -T \
+  -e "KEYCLOAK_CONFIG_ADMIN_USERNAME=${CONFIG_ADMIN[0]}" \
+  -e "KEYCLOAK_CONFIG_ADMIN_PASSWORD=${CONFIG_ADMIN[1]}" \
+  keycloak sh -lc '
+    /opt/keycloak/bin/kcadm.sh config credentials \
+      --server http://127.0.0.1:8080 \
+      --realm master \
+      --user "$KEYCLOAK_CONFIG_ADMIN_USERNAME" \
+      --password "$KEYCLOAK_CONFIG_ADMIN_PASSWORD"
+  ' >/dev/null; then
+  unset CONFIG_ADMIN
+  echo "Authentication failed. Check the persistent Keycloak configuration account." >&2
+  exit 1
+fi
+unset CONFIG_ADMIN
 
 CLIENT_UUID="$(
   "${compose[@]}" exec -T keycloak /opt/keycloak/bin/kcadm.sh get clients \
