@@ -126,6 +126,58 @@ def main():
 
     verify_service_account()
 
+    # Do not remove recovery access until Task 176's DEV outcome still matches
+    # the exact reserved test identity (independent of GitHub job conclusions).
+    target_email = 'e2e-176-target@dev.kurvenfunk.invalid'
+    lookup_path = '/admin/realms/kurvenfunk/users?' + urllib.parse.urlencode(
+        {'email':target_email,'exact':'true','max':'20'})
+    target_status,target_body=call('GET',lookup_path,token)
+    require(target_status==200, 'Cannot verify Task 176 E2E identity')
+    targets=[u for u in json.loads(target_body)
+             if u.get('email','').lower()==target_email]
+    require(len(targets)==1 and targets[0].get('username','').lower()==target_email,
+            'Task 176 E2E identity mismatch')
+    target_sub=targets[0]['id']
+    session_status,session_body=call('GET',
+        '/admin/realms/kurvenfunk/users/'+urllib.parse.quote(target_sub)+'/sessions',token)
+    require(session_status==200 and json.loads(session_body)==[],
+            'E2E banned target still has Keycloak sessions')
+    state_js=r"""
+import { createPrismaClient } from '@kurvenfunk/database';
+const db=createPrismaClient();
+try {
+  const sub=process.env.E2E_EXPECTED_SUB;
+  if(!sub)throw Error('Missing E2E identity');
+  const u=await db.user.findUnique({
+    where:{keycloakSubject:sub},select:{id:true,nickname:true,status:true}
+  });
+  if(!u||u.nickname!=='kf176target'||u.status!=='BANNED')throw Error('Unexpected test target');
+  const cards=await db.moderationCard.findMany({
+    where:{userId:u.id},select:{type:true,escalationSource:true}
+  });
+  const audits=await db.auditLog.findMany({
+    where:{targetUserId:u.id},select:{action:true,actorType:true}
+  });
+  const notices=await db.notification.findMany({
+    where:{userId:u.id},select:{type:true,metadata:true}
+  });
+  const count=(items,f)=>items.filter(f).length;
+  if(count(cards,c=>c.type==='YELLOW')!==3||
+     count(cards,c=>c.type==='RED'&&c.escalationSource==='THREE_YELLOW_CARDS')!==1||
+     count(cards,c=>c.type==='RED')!==1||
+     count(audits,a=>a.actorType==='SECURITY_AUTOMATION'&&a.action==='USER_STATUS_CHANGED')!==1||
+     count(notices,n=>n.type==='RED_CARD'&&n.metadata?.sessionRevocation==='REVOKED')!==1)
+     throw Error('E2E persisted acceptance failed');
+  console.log('E2E_ACCEPTANCE_DB: CONFIRMED');
+}finally{await db.$disconnect();}
+"""
+    app_state=run(COMPOSE+['exec','-T','-e','E2E_EXPECTED_SUB='+target_sub,
+        'api','node','--input-type=module','-'],state_js)
+    require(app_state=='E2E_ACCEPTANCE_DB: CONFIRMED',
+            'E2E persisted acceptance was not confirmed')
+    print(app_state)
+    print('E2E_ACCEPTANCE_KEYCLOAK_SESSIONS: ZERO')
+
     found={}
     for realm in ('master','kurvenfunk'):
         path='/admin/realms/'+realm+'/users?'+urllib.parse.urlencode(
