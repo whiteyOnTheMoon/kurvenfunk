@@ -14,9 +14,13 @@ export function LoginClient() {
     return (
       <main>
         <h1>Konto gesperrt</h1>
-        <p>Dein Kurvenfunk-Konto ist gesperrt. Du kannst dich nicht an Community-Aktionen beteiligen.</p>
+        <p>
+          Dein Kurvenfunk-Konto ist gesperrt. Du kannst dich nicht an Community-Aktionen beteiligen.
+        </p>
         <p>Öffentliche Nachrichten, Ergebnisse und Tabellen bleiben zugänglich.</p>
-        <p><Link href="/">Zur Startseite</Link></p>
+        <p>
+          <Link href="/">Zur Startseite</Link>
+        </p>
       </main>
     );
   }
@@ -36,7 +40,10 @@ export function LoginClient() {
         <h1>Login erfolgreich</h1>
         <p>Kontostatus: {user.status === 'LIMITED' ? 'Vorübergehend eingeschränkt' : 'Aktiv'}</p>
         {user.status === 'LIMITED' && (
-          <p>Du kannst weiterhin lesen und abstimmen, aber derzeit keine Kommentare oder Beiträge schreiben.</p>
+          <p>
+            Du kannst weiterhin lesen und abstimmen, aber derzeit keine Kommentare oder Beiträge
+            schreiben.
+          </p>
         )}
         <p>
           <Link href="/">Continue to Kurvenfunk</Link>

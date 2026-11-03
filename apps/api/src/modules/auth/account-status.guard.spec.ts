@@ -1,4 +1,9 @@
-import { ForbiddenException, type ExecutionContext, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  type ExecutionContext,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import type { AuthenticatedUser } from './auth.types';
 import { AccountStatusGuard } from './account-status.guard';
