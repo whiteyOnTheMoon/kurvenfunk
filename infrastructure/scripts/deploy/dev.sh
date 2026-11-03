@@ -98,12 +98,22 @@ docker compose \
 
 echo
 echo "=== Update DEV environment ==="
-docker compose \
+if ! docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
   -f compose.yml \
   -f compose.dev.yml \
-  up -d --remove-orphans
+  up -d --remove-orphans; then
+  echo "ERROR: Docker Compose failed while starting DEV services."
+  echo "=== Recent API container logs ==="
+  docker compose \
+    -p "$COMPOSE_PROJECT" \
+    --env-file .env.dev \
+    -f compose.yml \
+    -f compose.dev.yml \
+    logs --tail=100 api || true
+  exit 1
+fi
 
 echo
 echo "=== Wait for application healthchecks ==="
