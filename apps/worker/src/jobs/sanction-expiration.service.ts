@@ -86,11 +86,7 @@ export class SanctionExpirationService implements OnModuleInit, OnModuleDestroy 
             },
           });
 
-          if (
-            sanction.type === 'LIMITED' &&
-            sanction.userId &&
-            lockedStatus === 'LIMITED'
-          ) {
+          if (sanction.type === 'LIMITED' && sanction.userId && lockedStatus === 'LIMITED') {
             const anotherActive = await tx.sanction.findFirst({
               where: {
                 userId: sanction.userId,

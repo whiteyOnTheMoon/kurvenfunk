@@ -36,8 +36,8 @@ export function LoginClient() {
         <p>Status: {user.status}</p>
         {user.status === 'LIMITED' ? (
           <p>
-            Dein Konto ist vorübergehend eingeschränkt. Lesen und Abstimmen sind weiterhin
-            möglich; neue Kommentare und Forenbeiträge sind derzeit nicht erlaubt.
+            Dein Konto ist vorübergehend eingeschränkt. Lesen und Abstimmen sind weiterhin möglich;
+            neue Kommentare und Forenbeiträge sind derzeit nicht erlaubt.
           </p>
         ) : null}
         <p>

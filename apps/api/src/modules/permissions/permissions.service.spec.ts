@@ -111,7 +111,7 @@ describe('PermissionsService', () => {
     },
   );
 
-  it('allows deleting one\'s own previous content in LIMITED without allowing new content', () => {
+  it("allows deleting one's own previous content in LIMITED without allowing new content", () => {
     expect(can(PERMISSIONS.COMMENT_DELETE, ['USER'], 'LIMITED')).toBe(true);
     expect(can(PERMISSIONS.COMMENT_CREATE, ['USER'], 'LIMITED')).toBe(false);
     expect(can(PERMISSIONS.COMMENT_EDIT, ['USER'], 'LIMITED')).toBe(false);

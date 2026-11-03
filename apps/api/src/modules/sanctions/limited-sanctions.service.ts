@@ -13,12 +13,13 @@ export interface IssueLimitedSanctionCommand extends CreateLimitedSanctionInput 
   moderatorId: string;
 }
 
-export const LIMITED_DURATION_MS: Readonly<Record<CreateLimitedSanctionInput['duration'], number>> = {
-  '24H': 24 * 60 * 60 * 1000,
-  '3D': 3 * 24 * 60 * 60 * 1000,
-  '7D': 7 * 24 * 60 * 60 * 1000,
-  '30D': 30 * 24 * 60 * 60 * 1000,
-};
+export const LIMITED_DURATION_MS: Readonly<Record<CreateLimitedSanctionInput['duration'], number>> =
+  {
+    '24H': 24 * 60 * 60 * 1000,
+    '3D': 3 * 24 * 60 * 60 * 1000,
+    '7D': 7 * 24 * 60 * 60 * 1000,
+    '30D': 30 * 24 * 60 * 60 * 1000,
+  };
 
 /** Temporarily limits a user. Expiration and return to ACTIVE are handled by Task 191. */
 @Injectable()
@@ -116,7 +117,11 @@ export class LimitedSanctionsService implements OnModuleDestroy {
             targetUserId: command.userId,
             sanctionId: sanction.id,
             reason: command.reasonCode,
-            metadata: { sanctionType: 'LIMITED', duration: command.duration, expiresAt: expiresAt.toISOString() },
+            metadata: {
+              sanctionType: 'LIMITED',
+              duration: command.duration,
+              expiresAt: expiresAt.toISOString(),
+            },
           },
         });
 

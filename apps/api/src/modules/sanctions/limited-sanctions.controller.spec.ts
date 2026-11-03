@@ -9,7 +9,10 @@ jest.mock('../auth/auth.guard', () => ({
 }));
 
 import type { AuthenticatedRequest } from '../auth/auth.types';
-import { PERMISSIONS, REQUIRED_PERMISSIONS_METADATA_KEY } from '../permissions/permissions.constants';
+import {
+  PERMISSIONS,
+  REQUIRED_PERMISSIONS_METADATA_KEY,
+} from '../permissions/permissions.constants';
 import {
   createLimitedSanctionSchema,
   LimitedSanctionsController,
@@ -29,7 +32,8 @@ const payload = {
 describe('Limited sanctions controller', () => {
   it('requires user.limit', () => {
     const handler: unknown = Object.getOwnPropertyDescriptor(
-      LimitedSanctionsController.prototype, 'create',
+      LimitedSanctionsController.prototype,
+      'create',
     )?.value;
     if (typeof handler !== 'function') {
       throw new Error('Limited sanction handler missing');
@@ -57,18 +61,23 @@ describe('Limited sanction input', () => {
   });
 
   it('rejects unknown duration', () => {
-    expect(createLimitedSanctionSchema.safeParse({ ...payload, duration: 'FOREVER' }).success)
-      .toBe(false);
+    expect(createLimitedSanctionSchema.safeParse({ ...payload, duration: 'FOREVER' }).success).toBe(
+      false,
+    );
   });
 
   it('rejects actor spoofing, extra fields, missing notes, and invalid reasons', () => {
-    expect(createLimitedSanctionSchema.safeParse({ ...payload, moderatorId: ACTOR }).success)
-      .toBe(false);
-    expect(createLimitedSanctionSchema.safeParse({ ...payload, moderatorNote: ' ' }).success)
-      .toBe(false);
-    expect(createLimitedSanctionSchema.safeParse({ ...payload, reasonCode: 'Invalid reason' }).success)
-      .toBe(false);
-    expect(createLimitedSanctionSchema.safeParse({ ...payload, expiresAt: '2028-01-01' }).success)
-      .toBe(false);
+    expect(createLimitedSanctionSchema.safeParse({ ...payload, moderatorId: ACTOR }).success).toBe(
+      false,
+    );
+    expect(createLimitedSanctionSchema.safeParse({ ...payload, moderatorNote: ' ' }).success).toBe(
+      false,
+    );
+    expect(
+      createLimitedSanctionSchema.safeParse({ ...payload, reasonCode: 'Invalid reason' }).success,
+    ).toBe(false);
+    expect(
+      createLimitedSanctionSchema.safeParse({ ...payload, expiresAt: '2028-01-01' }).success,
+    ).toBe(false);
   });
 });

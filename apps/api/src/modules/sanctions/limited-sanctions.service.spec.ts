@@ -15,7 +15,9 @@ const TARGET = '11111111-1111-4111-8111-111111111111';
 const ACTOR = '22222222-2222-4222-8222-222222222222';
 const SANCTION = '33333333-3333-4333-8333-333333333333';
 
-function command(overrides: Partial<IssueLimitedSanctionCommand> = {}): IssueLimitedSanctionCommand {
+function command(
+  overrides: Partial<IssueLimitedSanctionCommand> = {},
+): IssueLimitedSanctionCommand {
   return {
     userId: TARGET,
     moderatorId: ACTOR,
@@ -31,14 +33,16 @@ function transactionClient() {
     $queryRaw: jest.fn().mockResolvedValue([{ id: TARGET, status: 'ACTIVE' }]),
     sanction: {
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockImplementation(async ({ data }: { data: { expiresAt: Date; startsAt: Date } }) => ({
-        id: SANCTION,
-        type: 'LIMITED',
-        status: 'ACTIVE',
-        userId: TARGET,
-        startsAt: data.startsAt,
-        expiresAt: data.expiresAt,
-      })),
+      create: jest
+        .fn()
+        .mockImplementation(async ({ data }: { data: { expiresAt: Date; startsAt: Date } }) => ({
+          id: SANCTION,
+          type: 'LIMITED',
+          status: 'ACTIVE',
+          userId: TARGET,
+          startsAt: data.startsAt,
+          expiresAt: data.expiresAt,
+        })),
     },
     user: {
       update: jest.fn().mockResolvedValue({ id: TARGET, status: 'LIMITED' }),
