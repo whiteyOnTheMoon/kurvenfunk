@@ -6,6 +6,7 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 
+import { addCommentYellowCardBadges } from './comment-yellow-card';
 import { CommentSpamProtectionService } from './comment-spam-protection.service';
 
 import {
@@ -498,8 +499,10 @@ export class CommentsService implements OnModuleDestroy {
           })
         : null;
 
+    const items = selectedGroups.flatMap((group) => group.comments);
+
     return {
-      items: selectedGroups.flatMap((group) => group.comments),
+      items: await addCommentYellowCardBadges(this.database, items),
       pagination: {
         nextCursor,
         hasNextPage,

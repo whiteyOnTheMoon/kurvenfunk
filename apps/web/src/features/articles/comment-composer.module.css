@@ -462,3 +462,14 @@
   margin-top: 1rem;
   text-align: center;
 }
+
+/* Public moderation indicator for a warned comment. */
+.commentMeta .yellowCard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  line-height: 1;
+  vertical-align: middle;
+}

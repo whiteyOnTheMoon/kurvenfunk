@@ -20,6 +20,7 @@ interface CreatedComment {
   body: string;
   editedAt: string | null;
   createdAt: string;
+  hasYellowCard?: boolean;
   author: {
     id: string;
     nickname: string | null;
@@ -590,6 +591,16 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
           {!isDeleted ? (
             <div className={styles.commentMeta}>
               <strong>{comment.author?.nickname ?? 'Kurvenfunk User'}</strong>
+              {comment.hasYellowCard ? (
+                <span
+                  className={styles.yellowCard}
+                  role="img"
+                  aria-label="Gelbe Karte für diesen Kommentar"
+                  title="Dieser Kommentar wurde verwarnt"
+                >
+                  🟨
+                </span>
+              ) : null}
               <span>
                 {new Date(comment.createdAt).toLocaleString('de-AT', {
                   dateStyle: 'short',
