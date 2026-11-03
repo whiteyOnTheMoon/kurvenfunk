@@ -6,42 +6,44 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PERMISSIONS } from '../permissions/permissions.constants';
 import { RequirePermissions } from '../permissions/require-permissions.decorator';
 
+import { DirectRedCardService } from './direct-red-card.service';
 import { ModerationService } from './moderation.service';
 
-export const createYellowCardSchema = z
-  .object({
-    userId: z.string().uuid(),
+const moderationCardFields = z.object({
+  userId: z.string().uuid(),
+  reasonCode: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[A-Z][A-Z0-9_]*$/),
+  userMessage: z.string().trim().min(1).max(1000).optional(),
+  moderatorNote: z.string().trim().min(1).max(2000),
+  sourceType: z
+    .enum(['NONE', 'COMMENT', 'FORUM_POST', 'THREAD', 'ARTICLE', 'USER'])
+    .default('NONE'),
+  sourceId: z.string().uuid().optional(),
+});
 
-    reasonCode: z
-      .string()
-      .trim()
-      .min(2)
-      .max(80)
-      .regex(/^[A-Z][A-Z0-9_]*$/),
+const sourceMatchesType = (input: { sourceType: string; sourceId?: string }) =>
+  input.sourceType === 'NONE' ? input.sourceId === undefined : input.sourceId !== undefined;
 
-    userMessage: z.string().trim().min(1).max(1000).optional(),
+const sourceValidationError = {
+  message: 'sourceId must match sourceType',
+  path: ['sourceId'],
+};
 
-    moderatorNote: z.string().trim().min(1).max(2000),
-
-    sourceType: z
-      .enum(['NONE', 'COMMENT', 'FORUM_POST', 'THREAD', 'ARTICLE', 'USER'])
-      .default('NONE'),
-
-    sourceId: z.string().uuid().optional(),
-
-    expiresAt: z.string().datetime({ offset: true }).optional(),
-  })
+export const createYellowCardSchema = moderationCardFields
+  .extend({ expiresAt: z.string().datetime({ offset: true }).optional() })
   .strict()
-  .refine(
-    (input) =>
-      input.sourceType === 'NONE' ? input.sourceId === undefined : input.sourceId !== undefined,
-    {
-      message: 'sourceId must match sourceType',
-      path: ['sourceId'],
-    },
-  );
+  .refine(sourceMatchesType, sourceValidationError);
+
+export const createDirectRedCardSchema = moderationCardFields
+  .strict()
+  .refine(sourceMatchesType, sourceValidationError);
 
 export type CreateYellowCardInput = z.infer<typeof createYellowCardSchema>;
+export type CreateDirectRedCardInput = z.infer<typeof createDirectRedCardSchema>;
 
 @Controller('moderation/yellow-cards')
 export class ModerationController {
@@ -55,6 +57,25 @@ export class ModerationController {
     input: CreateYellowCardInput,
   ) {
     return this.moderationService.createYellowCard({
+      ...input,
+      moderatorId: request.user!.kurvenfunkUserId,
+    });
+  }
+}
+
+/** Task 177: direct RED cards require user.ban (not the moderator's user.warn). */
+@Controller('moderation/red-cards')
+export class DirectRedCardController {
+  constructor(private readonly directRedCardService: DirectRedCardService) {}
+
+  @Post()
+  @RequirePermissions(PERMISSIONS.USER_BAN)
+  createDirectRedCard(
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createDirectRedCardSchema))
+    input: CreateDirectRedCardInput,
+  ) {
+    return this.directRedCardService.createDirectRedCard({
       ...input,
       moderatorId: request.user!.kurvenfunkUserId,
     });

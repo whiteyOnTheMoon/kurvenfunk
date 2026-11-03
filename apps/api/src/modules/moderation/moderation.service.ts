@@ -48,6 +48,7 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
       },
       select: {
         id: true,
+        metadata: true,
         user: { select: { status: true, keycloakSubject: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -56,7 +57,20 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
 
     for (const notification of pending) {
       if (notification.user.status === 'BANNED') {
-        await this.revokeForNotification(notification.id, notification.user.keycloakSubject);
+        const metadata = notification.metadata;
+        const reasonCode =
+          metadata &&
+          typeof metadata === 'object' &&
+          !Array.isArray(metadata) &&
+          typeof metadata.reasonCode === 'string'
+            ? metadata.reasonCode
+            : 'THREE_YELLOW_CARDS';
+
+        await this.revokeForNotification(
+          notification.id,
+          notification.user.keycloakSubject,
+          reasonCode,
+        );
       }
     }
   }
@@ -64,6 +78,7 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
   private async revokeForNotification(
     notificationId: string,
     keycloakSubject: string,
+    reasonCode: string,
   ): Promise<'PENDING' | 'REVOKED'> {
     if (!this.sessionRevoker.isConfigured) {
       return 'PENDING';
@@ -77,7 +92,7 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
       await this.database.notification.update({
         where: { id: notificationId },
         data: {
-          metadata: { reasonCode: 'THREE_YELLOW_CARDS', sessionRevocation: 'REVOKED' },
+          metadata: { reasonCode, sessionRevocation: 'REVOKED' },
         },
       });
       return 'REVOKED';
@@ -414,7 +429,7 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
 
     const { redNotificationId, keycloakSubject, ...publicResult } = issued;
     const sessionRevocation = redNotificationId
-      ? await this.revokeForNotification(redNotificationId, keycloakSubject)
+      ? await this.revokeForNotification(redNotificationId, keycloakSubject, 'THREE_YELLOW_CARDS')
       : null;
 
     return { ...publicResult, sessionRevocation };

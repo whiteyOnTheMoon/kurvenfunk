@@ -3,13 +3,14 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 
+import { DirectRedCardService } from './direct-red-card.service';
 import { KeycloakSessionRevoker } from './keycloak-session-revoker';
-import { ModerationController } from './moderation.controller';
+import { DirectRedCardController, ModerationController } from './moderation.controller';
 import { ModerationService } from './moderation.service';
 
 @Module({
   imports: [AuthModule, UsersModule],
-  controllers: [ModerationController],
-  providers: [ModerationService, KeycloakSessionRevoker],
+  controllers: [ModerationController, DirectRedCardController],
+  providers: [ModerationService, DirectRedCardService, KeycloakSessionRevoker],
 })
 export class ModerationModule {}
