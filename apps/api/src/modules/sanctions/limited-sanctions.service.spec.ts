@@ -99,7 +99,7 @@ describe('LimitedSanctionsService', () => {
       type: 'LIMITED',
       status: 'ACTIVE',
       accountStatus: 'LIMITED',
-      expiresAt: expect.any(Date),
+      expiresAt: response.expiresAt,
     });
     expect(response).not.toHaveProperty('moderatorNote');
     expect(response).not.toHaveProperty('internalNote');
@@ -108,26 +108,25 @@ describe('LimitedSanctionsService', () => {
   it('persists internal notes but never publishes them in notifications', async () => {
     await service.create(command({ userMessage: 'Bitte beachte unsere Regeln.' }));
 
-    expect(tx.sanction.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          internalNote: 'Only moderators may see this evidence',
-          userMessage: 'Bitte beachte unsere Regeln.',
-          reasonCode: 'ABUSE',
-          createdById: ACTOR_ID,
-        }),
-      }),
-    );
-    expect(tx.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          type: 'LIMITED',
-          dedupeKey: `limited-sanction:${SANCTION_ID}`,
-          sourceType: 'SANCTION',
-          sourceId: SANCTION_ID,
-        }),
-      }),
-    );
+    const created: unknown = tx.sanction.create.mock.calls[0]?.[0];
+    const notice: unknown = tx.notification.create.mock.calls[0]?.[0];
+
+    expect(created).toMatchObject({
+      data: {
+        internalNote: 'Only moderators may see this evidence',
+        userMessage: 'Bitte beachte unsere Regeln.',
+        reasonCode: 'ABUSE',
+        createdById: ACTOR_ID,
+      },
+    });
+    expect(notice).toMatchObject({
+      data: {
+        type: 'LIMITED',
+        dedupeKey: `limited-sanction:${SANCTION_ID}`,
+        sourceType: 'SANCTION',
+        sourceId: SANCTION_ID,
+      },
+    });
   });
 
   it('locks the target before counting or creating sanctions', async () => {
