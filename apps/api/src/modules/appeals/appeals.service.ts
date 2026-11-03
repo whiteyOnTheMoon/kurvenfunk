@@ -119,6 +119,38 @@ export class AppealsService implements OnModuleDestroy {
     }
   }
 
+  async eligible(userId: string) {
+    const [cards, sanctions] = await Promise.all([
+      this.database.moderationCard.findMany({
+        where: { userId, type: { in: ['YELLOW', 'RED', 'BLUE'] } },
+        orderBy: { issuedAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          reasonCode: true,
+          issuedAt: true,
+        },
+      }),
+      this.database.sanction.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          reasonCode: true,
+          startsAt: true,
+          expiresAt: true,
+        },
+      }),
+    ]);
+
+    return { cards, sanctions };
+  }
+
   async listMine(userId: string) {
     return this.database.appeal.findMany({
       where: { userId },
