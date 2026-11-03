@@ -1,8 +1,12 @@
 const commentFindMany = jest.fn();
 const queryRaw = jest.fn();
+const moderationCardFindMany = jest.fn();
 
 jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: () => ({
+    moderationCard: {
+      findMany: moderationCardFindMany,
+    },
     comment: {
       findMany: commentFindMany,
     },
@@ -87,6 +91,9 @@ describe('Popular comment pagination', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    moderationCardFindMany.mockReset();
+    moderationCardFindMany.mockResolvedValue([]);
+
     service = new CommentsService({
       reserve: jest.fn().mockResolvedValue({
         keys: ['rate', 'cooldown', 'duplicate'],
