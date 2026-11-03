@@ -25,11 +25,7 @@ function command(overrides: Partial<CreateYellowCardCommand> = {}): CreateYellow
 
 function createTransactionClient() {
   return {
-    user: {
-      findUnique: jest.fn().mockResolvedValue({
-        id: USER_ID,
-      }),
-    },
+    $queryRaw: jest.fn().mockResolvedValue([{ id: USER_ID }]),
     comment: {
       findUnique: jest.fn().mockResolvedValue({
         authorId: USER_ID,
@@ -51,6 +47,7 @@ function createTransactionClient() {
       }),
     },
     moderationCard: {
+      count: jest.fn().mockResolvedValue(1),
       create: jest.fn().mockResolvedValue({
         id: CARD_ID,
         userId: USER_ID,
@@ -104,9 +101,17 @@ describe('ModerationService – Yellow Cards', () => {
     const result = await service.createYellowCard(command());
 
     expect(transaction).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'ReadCommitted',
+    });
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
     expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
+    expect(tx.moderationCard.count).toHaveBeenCalledTimes(1);
     expect(result.id).toBe(CARD_ID);
     expect(result.type).toBe('YELLOW');
+    expect(result.yellowCardCount).toBe(1);
+    expect(result.counterStage).toBe('YELLOW');
+    expect(result.redCardRequired).toBe(false);
 
     expect(tx.moderationCard.create).toHaveBeenCalledWith({
       data: {
@@ -200,7 +205,7 @@ describe('ModerationService – Yellow Cards', () => {
   });
 
   it('rejects unknown users', async () => {
-    tx.user.findUnique.mockResolvedValueOnce(null);
+    tx.$queryRaw.mockResolvedValueOnce([]);
 
     await expect(service.createYellowCard(command())).rejects.toBeInstanceOf(NotFoundException);
 
@@ -307,6 +312,70 @@ describe('ModerationService – Yellow Cards', () => {
     tx.notification.create.mockRejectedValueOnce(new Error('Notification write failed'));
 
     await expect(service.createYellowCard(command())).rejects.toThrow('Notification write failed');
+  });
+
+  it.each([
+    [0, 'NONE', false],
+    [1, 'YELLOW', false],
+    [2, 'SECOND_YELLOW', false],
+    [3, 'RED_CARD_REQUIRED', true],
+    [4, 'RED_CARD_REQUIRED', true],
+  ] as const)(
+    'returns %s active yellow cards as %s (red card required: %s)',
+    async (count, stage, redCardRequired) => {
+      tx.moderationCard.count.mockResolvedValueOnce(count);
+
+      const result = await service.createYellowCard(command());
+
+      expect(result.yellowCardCount).toBe(count);
+      expect(result.counterStage).toBe(stage);
+      expect(result.redCardRequired).toBe(redCardRequired);
+    },
+  );
+
+  it('locks the target user before creating or counting cards', async () => {
+    await service.createYellowCard(command());
+
+    const lockOrder = tx.$queryRaw.mock.invocationCallOrder[0];
+    const createOrder = tx.moderationCard.create.mock.invocationCallOrder[0];
+    const countOrder = tx.moderationCard.count.mock.invocationCallOrder[0];
+    const auditOrder = tx.auditLog.create.mock.invocationCallOrder[0];
+
+    expect(lockOrder).toBeLessThan(createOrder);
+    expect(createOrder).toBeLessThan(countOrder);
+    expect(countOrder).toBeLessThan(auditOrder);
+  });
+
+  it('does not create a card when the locked user does not exist', async () => {
+    tx.$queryRaw.mockResolvedValueOnce([]);
+
+    await expect(service.createYellowCard(command())).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(tx.moderationCard.create).not.toHaveBeenCalled();
+    expect(tx.moderationCard.count).not.toHaveBeenCalled();
+  });
+
+  it('does not write audit or notifications when the counter fails', async () => {
+    tx.moderationCard.count.mockRejectedValueOnce(new Error('Counter unavailable'));
+
+    await expect(service.createYellowCard(command())).rejects.toThrow('Counter unavailable');
+
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+  });
+
+  it('never persists an automatic red card or ban in Task 175', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(3);
+
+    const result = await service.createYellowCard(command());
+
+    expect(result.redCardRequired).toBe(true);
+    expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
+    expect(tx.moderationCard.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ type: 'YELLOW', status: 'ACTIVE' }),
+      }),
+    );
   });
 
   it('disconnects the database during shutdown', async () => {
