@@ -1,1 +1,0 @@
-Format source for limited sanctions and expiry worker only. Temporary trigger, no deployment.
