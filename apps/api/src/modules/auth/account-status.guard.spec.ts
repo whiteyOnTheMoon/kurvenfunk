@@ -1,4 +1,9 @@
-import { ForbiddenException, type ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  type ExecutionContext,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import type { AuthenticatedUser } from './auth.types';
 import { AccountStatusGuard } from './account-status.guard';
@@ -53,6 +58,18 @@ describe('AccountStatusGuard', () => {
         code: 'ACCOUNT_BANNED',
         message: 'Account is banned',
       });
+    }
+  });
+
+  it('logs BANNED access denial without any bearer token or IP address', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    try {
+      expect(() => guard.canActivate(createContext('BANNED'))).toThrow(ForbiddenException);
+      expect(warn).toHaveBeenCalledWith('ACCOUNT_BANNED_ACCESS_DENIED userId=test-user');
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('Bearer ');
+    } finally {
+      warn.mockRestore();
     }
   });
 
