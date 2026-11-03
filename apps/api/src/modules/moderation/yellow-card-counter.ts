@@ -4,11 +4,7 @@ type YellowCardDatabase = Pick<DatabaseClient, 'moderationCard'>;
 
 export const RED_CARD_YELLOW_THRESHOLD = 3;
 
-export type YellowCardCounterStage =
-  | 'NONE'
-  | 'YELLOW'
-  | 'SECOND_YELLOW'
-  | 'RED_CARD_REQUIRED';
+export type YellowCardCounterStage = 'NONE' | 'YELLOW' | 'SECOND_YELLOW' | 'RED_CARD_REQUIRED';
 
 /**
  * The counter signals escalation; issuing the red card and banning
