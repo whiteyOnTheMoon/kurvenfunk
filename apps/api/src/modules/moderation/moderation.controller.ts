@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PERMISSIONS } from '../permissions/permissions.constants';
 import { RequirePermissions } from '../permissions/require-permissions.decorator';
 
+import { DirectRedCardService } from './direct-red-card.service';
 import { ModerationService } from './moderation.service';
 
 const moderationCardFields = z.object({
@@ -63,7 +64,7 @@ export class ModerationController {
 /** Task 177: direct RED cards require user.ban (not the moderator's user.warn). */
 @Controller('moderation/red-cards')
 export class DirectRedCardController {
-  constructor(private readonly moderationService: ModerationService) {}
+  constructor(private readonly directRedCardService: DirectRedCardService) {}
 
   @Post()
   @RequirePermissions(PERMISSIONS.USER_BAN)
@@ -72,7 +73,7 @@ export class DirectRedCardController {
     @Body(new ZodValidationPipe(createDirectRedCardSchema))
     input: CreateDirectRedCardInput,
   ) {
-    return this.moderationService.createDirectRedCard({
+    return this.directRedCardService.createDirectRedCard({
       ...input,
       moderatorId: request.user!.kurvenfunkUserId,
     });
