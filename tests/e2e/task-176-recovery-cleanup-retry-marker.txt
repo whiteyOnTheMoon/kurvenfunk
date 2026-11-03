@@ -1,0 +1,1 @@
+Retry only after permanent-admin exact lookup fix; DEV-only recovery cleanup.
