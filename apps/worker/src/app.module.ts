@@ -6,6 +6,7 @@ import { validateEnvironment } from './config/env.validation';
 import { DatabaseService } from './database/database.service';
 import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
 import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
+import { SanctionExpirationService } from './jobs/sanction-expiration.service';
 import { TestJobService } from './jobs/test-job.service';
 import { NewsImportProcessor } from './processors/news-import.processor';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
@@ -86,6 +87,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsImportProcessor,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,
+    SanctionExpirationService,
     TestProcessor,
     TestJobService,
   ],
