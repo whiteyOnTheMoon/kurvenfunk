@@ -68,7 +68,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<PermissionRole, readonly Permissi
   SUPERADMIN: Object.values(PERMISSIONS),
 };
 
-export const LIMITED_PERMISSIONS: ReadonlySet<Permission> = new Set([
-  PERMISSIONS.COMMENT_VOTE,
-  PERMISSIONS.COMMENT_DELETE,
-]);
+// LIMITED may read public resources and vote, but cannot perform posting or
+// moderation actions. Reads do not require a write permission.
+export const LIMITED_PERMISSIONS: ReadonlySet<Permission> = new Set([PERMISSIONS.COMMENT_VOTE]);
