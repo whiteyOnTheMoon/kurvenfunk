@@ -63,7 +63,8 @@ describe('SanctionExpirationService', () => {
     await service.scan();
 
     expect(database.tx.$queryRaw).toHaveBeenCalledTimes(1);
-    const expirationCall: unknown = database.tx.sanction.updateMany.mock.calls[0]?.[0];
+    const expirationCalls = database.tx.sanction.updateMany.mock.calls as unknown[][];
+    const expirationCall: unknown = expirationCalls[0]?.[0];
     expect(expirationCall).toMatchObject({
       where: { id: SANCTION_ID, status: 'ACTIVE' },
       data: { status: 'EXPIRED' },
@@ -132,7 +133,8 @@ describe('SanctionExpirationService', () => {
 
     await service.scan();
 
-    const ipUpdateCall: unknown = database.tx.iPBlock.updateMany.mock.calls[0]?.[0];
+    const ipUpdateCalls = database.tx.iPBlock.updateMany.mock.calls as unknown[][];
+    const ipUpdateCall: unknown = ipUpdateCalls[0]?.[0];
     expect(ipUpdateCall).toMatchObject({
       where: { id: IP_BLOCK_ID, active: true },
       data: { active: false, deactivationReason: 'EXPIRED' },
