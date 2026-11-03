@@ -185,6 +185,8 @@ export class ModerationService implements OnModuleDestroy {
             cardType: 'YELLOW',
             sourceType: command.sourceType,
             sourceId: command.sourceId ?? null,
+            yellowCardCount,
+            counterStage,
           },
         },
       });
@@ -193,13 +195,20 @@ export class ModerationService implements OnModuleDestroy {
         ? `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}. ${command.userMessage}`
         : `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}.`;
 
+      const additionalWarning =
+        counterStage === 'SECOND_YELLOW'
+          ? ' Dies ist deine zweite aktive gelbe Karte. Eine weitere erreicht die Schwelle für Rot.'
+          : counterStage === 'RED_CARD_REQUIRED'
+            ? ' Die Schwelle für eine rote Karte ist erreicht.'
+            : '';
+
       await tx.notification.create({
         data: {
           userId: command.userId,
           type: 'YELLOW_CARD',
 
           title: 'Gelbe Karte',
-          body: notificationBody,
+          body: `${notificationBody}${additionalWarning}`,
 
           sourceType: 'MODERATION_CARD',
           sourceId: card.id,
