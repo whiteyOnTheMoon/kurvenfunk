@@ -54,10 +54,12 @@ describe('IpIdentityService – keyed HMAC', () => {
 
   it('rejects invalid IP values and missing/weak secret keys', () => {
     expect(() => createService().hash('not-an-ip')).toThrow(ServiceUnavailableException);
-    expect(() => createService({ IP_HASH_HMAC_SECRET: 'short' }).hash('203.0.113.2'))
-      .toThrow(ServiceUnavailableException);
-    expect(() => createService({ IP_HASH_KEY_VERSION: 'bad' }).hash('203.0.113.2'))
-      .toThrow(ServiceUnavailableException);
+    expect(() => createService({ IP_HASH_HMAC_SECRET: 'short' }).hash('203.0.113.2')).toThrow(
+      ServiceUnavailableException,
+    );
+    expect(() => createService({ IP_HASH_KEY_VERSION: 'bad' }).hash('203.0.113.2')).toThrow(
+      ServiceUnavailableException,
+    );
   });
 
   it('never trusts Cloudflare IP headers without explicit opt-in', () => {
@@ -69,16 +71,22 @@ describe('IpIdentityService – keyed HMAC', () => {
 
   it('only extracts a valid Cloudflare address when enabled; ignores X-Forwarded-For', () => {
     const identity = createService({ IP_TRUST_CLOUDFLARE: 'true' });
-    expect(identity.trustedAddress({
-      headers: { 'cf-connecting-ip': '203.0.113.9', 'x-forwarded-for': '198.51.100.7' },
-    } as unknown as Pick<Request, 'headers'>)).toBe('203.0.113.9');
+    expect(
+      identity.trustedAddress({
+        headers: { 'cf-connecting-ip': '203.0.113.9', 'x-forwarded-for': '198.51.100.7' },
+      } as unknown as Pick<Request, 'headers'>),
+    ).toBe('203.0.113.9');
 
-    expect(identity.trustedAddress({
-      headers: { 'x-forwarded-for': '198.51.100.7' },
-    } as unknown as Pick<Request, 'headers'>)).toBeNull();
+    expect(
+      identity.trustedAddress({
+        headers: { 'x-forwarded-for': '198.51.100.7' },
+      } as unknown as Pick<Request, 'headers'>),
+    ).toBeNull();
 
-    expect(identity.trustedAddress({
-      headers: { 'cf-connecting-ip': '203.0.113.9, 198.51.100.7' },
-    } as unknown as Pick<Request, 'headers'>)).toBeNull();
+    expect(
+      identity.trustedAddress({
+        headers: { 'cf-connecting-ip': '203.0.113.9, 198.51.100.7' },
+      } as unknown as Pick<Request, 'headers'>),
+    ).toBeNull();
   });
 });

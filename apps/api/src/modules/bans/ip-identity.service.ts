@@ -24,7 +24,9 @@ export class IpIdentityService {
   get isConfigured(): boolean {
     const key = this.config.get<string>('IP_HASH_HMAC_SECRET');
     const version = this.config.get<string>('IP_HASH_KEY_VERSION', 'v1');
-    return Boolean(key && Buffer.byteLength(key, 'utf8') >= 32 && /^v[1-9][0-9]{0,2}$/.test(version));
+    return Boolean(
+      key && Buffer.byteLength(key, 'utf8') >= 32 && /^v[1-9][0-9]{0,2}$/.test(version),
+    );
   }
 
   /**

@@ -14,7 +14,10 @@ const apiEnvSchema = z
 
     // IP protection is opt-in until the API ingress is verified to use Cloudflare Tunnel only.
     IP_HASH_HMAC_SECRET: z.string().min(32).optional(),
-    IP_HASH_KEY_VERSION: z.string().regex(/^v[1-9][0-9]{0,2}$/).default('v1'),
+    IP_HASH_KEY_VERSION: z
+      .string()
+      .regex(/^v[1-9][0-9]{0,2}$/)
+      .default('v1'),
     IP_TRUST_CLOUDFLARE: z.enum(['true', 'false']).default('false'),
 
     DATABASE_URL: z.string().url(),

@@ -1,7 +1,11 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 
-import { IpBlockService, type CreateIpBlockCommand, IP_BLOCK_DURATION_MS } from './ip-block.service';
+import {
+  IpBlockService,
+  type CreateIpBlockCommand,
+  IP_BLOCK_DURATION_MS,
+} from './ip-block.service';
 import type { IpIdentityService } from './ip-identity.service';
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -29,8 +33,10 @@ function txClient() {
       findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation((value: { data: { startsAt: Date; expiresAt: Date } }) =>
         Promise.resolve({
-          id: BLOCK, active: true,
-          startsAt: value.data.startsAt, expiresAt: value.data.expiresAt,
+          id: BLOCK,
+          active: true,
+          startsAt: value.data.startsAt,
+          expiresAt: value.data.expiresAt,
         }),
       ),
     },
@@ -42,7 +48,9 @@ function txClient() {
     },
     moderationCard: {
       findUnique: jest.fn().mockResolvedValue({
-        type: 'RED', status: 'ACTIVE', userId: USER,
+        type: 'RED',
+        status: 'ACTIVE',
+        userId: USER,
       }),
     },
     user: {
@@ -78,9 +86,11 @@ describe('IpBlockService – manual and RED-linked protection', () => {
   it.each(Object.entries(IP_BLOCK_DURATION_MS))(
     'creates an expiring IP block for %s without storing a raw IP',
     async (duration, ms) => {
-      const result = await service.create(input({
-        duration: duration as CreateIpBlockCommand['duration'],
-      }));
+      const result = await service.create(
+        input({
+          duration: duration as CreateIpBlockCommand['duration'],
+        }),
+      );
 
       expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
         isolationLevel: 'Serializable',
@@ -133,21 +143,24 @@ describe('IpBlockService – manual and RED-linked protection', () => {
 
   it('rejects a nonexistent RED card without IP writes', async () => {
     tx.moderationCard.findUnique.mockResolvedValueOnce(null);
-    await expect(service.create(input({ sourceCardId: CARD })))
-      .rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.create(input({ sourceCardId: CARD }))).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(tx.iPBlock.create).not.toHaveBeenCalled();
   });
 
   it('rejects an unbanned RED-card target', async () => {
     tx.user.findUnique.mockResolvedValueOnce({ status: 'ACTIVE' });
-    await expect(service.create(input({ sourceCardId: CARD })))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(service.create(input({ sourceCardId: CARD }))).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     expect(tx.iPBlock.create).not.toHaveBeenCalled();
   });
 
   it('rejects a user ID that does not match the associated RED card', async () => {
-    await expect(service.create(input({ userId: ACTOR, sourceCardId: CARD })))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.create(input({ userId: ACTOR, sourceCardId: CARD })),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('treats a concurrent serializable transaction conflict as a safe 409', async () => {

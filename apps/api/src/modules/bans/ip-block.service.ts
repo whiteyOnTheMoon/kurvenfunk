@@ -187,12 +187,7 @@ export class IpBlockService implements OnModuleDestroy {
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        error.code === 'P2034'
-      ) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
         throw new ConflictException({
           code: 'IP_BLOCK_CONCURRENT_UPDATE',
           message: 'IP protection changed concurrently; retry.',

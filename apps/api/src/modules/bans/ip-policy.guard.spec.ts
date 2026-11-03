@@ -64,8 +64,9 @@ describe('IpPolicyGuard – IP blocks and rate limits', () => {
 
   it('denies an IP with an active unexpired block without logging a raw address', async () => {
     findFirst.mockResolvedValueOnce({ id: 'block-id' });
-    await expect(guard.canActivate(context('GET', '/api/v1/news'))).rejects
-      .toBeInstanceOf(ForbiddenException);
+    await expect(guard.canActivate(context('GET', '/api/v1/news'))).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
     expect(mockRedisEval).not.toHaveBeenCalled();
   });
 
@@ -75,12 +76,15 @@ describe('IpPolicyGuard – IP blocks and rate limits', () => {
   });
 
   it('applies Redis rate controls to comments, reports, and forum posts', async () => {
-    await expect(guard.canActivate(context('POST', '/api/v1/articles/123/comments')))
-      .resolves.toBe(true);
-    await expect(guard.canActivate(context('POST', '/api/v1/comments/123/reports')))
-      .resolves.toBe(true);
-    await expect(guard.canActivate(context('POST', '/api/v1/forums/123/posts')))
-      .resolves.toBe(true);
+    await expect(guard.canActivate(context('POST', '/api/v1/articles/123/comments'))).resolves.toBe(
+      true,
+    );
+    await expect(guard.canActivate(context('POST', '/api/v1/comments/123/reports'))).resolves.toBe(
+      true,
+    );
+    await expect(guard.canActivate(context('POST', '/api/v1/forums/123/posts'))).resolves.toBe(
+      true,
+    );
     expect(mockRedisEval).toHaveBeenCalledTimes(3);
     const calls = mockRedisEval.mock.calls as unknown[][];
     expect(JSON.stringify(calls)).not.toContain('203.0.113.10');
@@ -89,14 +93,16 @@ describe('IpPolicyGuard – IP blocks and rate limits', () => {
 
   it('responds HTTP 429 when an IP exceeds the write limit', async () => {
     mockRedisEval.mockResolvedValueOnce(31);
-    await expect(guard.canActivate(context('POST', '/api/v1/articles/123/comments')))
-      .rejects.toBeInstanceOf(HttpException);
+    await expect(
+      guard.canActivate(context('POST', '/api/v1/articles/123/comments')),
+    ).rejects.toBeInstanceOf(HttpException);
     expect(mockRedisEval).toHaveBeenCalledTimes(1);
   });
 
   it('denies writes safely if the IP rate store is unavailable', async () => {
     mockRedisEval.mockRejectedValueOnce(new Error('Redis unavailable'));
-    await expect(guard.canActivate(context('POST', '/api/v1/comments/123/reports')))
-      .rejects.toThrow('Posting is temporarily unavailable.');
+    await expect(
+      guard.canActivate(context('POST', '/api/v1/comments/123/reports')),
+    ).rejects.toThrow('Posting is temporarily unavailable.');
   });
 });
