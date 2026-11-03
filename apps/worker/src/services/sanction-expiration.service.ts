@@ -1,5 +1,4 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { Prisma } from '@kurvenfunk/database';
 
 import { DatabaseService } from '../database/database.service';
 
@@ -136,7 +135,7 @@ export class SanctionExpirationService implements OnModuleInit, OnModuleDestroy 
             },
           });
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+        { isolationLevel: 'ReadCommitted' },
       );
     }
   }
@@ -203,7 +202,7 @@ export class SanctionExpirationService implements OnModuleInit, OnModuleDestroy 
             },
           });
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+        { isolationLevel: 'ReadCommitted' },
       );
     }
   }
