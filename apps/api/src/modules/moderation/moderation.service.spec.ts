@@ -552,6 +552,33 @@ describe('ModerationService – Yellow Cards', () => {
     expect(notificationUpdate).toHaveBeenCalledTimes(1);
   });
 
+  it('preserves a direct RED reason when retrying a PENDING Keycloak revocation', async () => {
+    revoker.isConfigured = true;
+    notificationFindMany.mockResolvedValueOnce([
+      {
+        id: 'pending-direct',
+        metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'PENDING' },
+        user: { status: 'BANNED', keycloakSubject: SOURCE_ID },
+      },
+    ]);
+
+    await service.retryPendingSessionRevocations();
+
+    expect(notificationFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          type: 'RED_CARD',
+          metadata: { path: ['sessionRevocation'], equals: 'PENDING' },
+        },
+      }),
+    );
+    expect(revoker.revokeSessions).toHaveBeenCalledWith(SOURCE_ID);
+    expect(notificationUpdate).toHaveBeenCalledWith({
+      where: { id: 'pending-direct' },
+      data: { metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'REVOKED' } },
+    });
+  });
+
   it('disconnects the database during shutdown', async () => {
     await service.onModuleDestroy();
 
