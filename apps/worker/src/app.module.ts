@@ -25,6 +25,7 @@ import { NewsReviewWorkflowService } from './services/news-review-workflow.servi
 import { NewsNormalizationService } from './services/news-normalization.service';
 import { NewsValidationService } from './services/news-validation.service';
 import { RawPayloadService } from './services/raw-payload.service';
+import { SanctionExpirationService } from './services/sanction-expiration.service';
 import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
@@ -83,6 +84,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsValidationService,
     RawPayloadService,
     ScheduledPublishingService,
+    SanctionExpirationService,
     NewsImportProcessor,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,
