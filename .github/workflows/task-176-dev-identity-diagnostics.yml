@@ -258,5 +258,36 @@ jobs:
                   if session_status == 200:
                       sessions = json.loads(sessions_content)
                       print('DEV_ADMIN_SESSIONS_COUNT:', username, len(sessions) if isinstance(sessions, list) else 'INVALID')
+
+          # Aggregate only; never print unrelated user names, IDs, or token contents.
+          count_status, count_content = request('GET',
+              'http://127.0.0.1:3102/admin/realms/kurvenfunk/users/count',
+              {'authorization':'Bearer '+token})
+          print('DEV_REALM_USERS_COUNT_HTTP:', count_status)
+          if count_status == 200:
+              print('DEV_REALM_USERS_COUNT:', count_content.decode('ascii', errors='replace')[:15])
+          all_url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users?first=0&max=1000'
+          all_status, all_body = request('GET', all_url, {'authorization':'Bearer '+token})
+          print('DEV_REALM_LIST_HTTP:', all_status)
+          if all_status == 200:
+              all_users = json.loads(all_body)
+              print('DEV_REALM_VISIBLE_USERS:', len(all_users) if isinstance(all_users, list) else 'INVALID')
+              for name, email in expected:
+                  matches = [x for x in all_users if x.get('username', '').lower() == name]
+                  print('DEV_REALM_UNFILTERED_MATCHES:', name, len(matches))
+          master_status, master_body = request('GET',
+              'http://127.0.0.1:3102/admin/realms/master/users?first=0&max=1000',
+              {'authorization':'Bearer '+token})
+          print('DEV_MASTER_LIST_HTTP:', master_status)
+          if master_status == 200:
+              master_users = json.loads(master_body)
+              for name, email in expected:
+                  print('DEV_MASTER_TEST_MATCHES:', name,
+                      sum(x.get('username','').lower() == name for x in master_users))
+          import base64
+          payload_segment = token.split('.')[1]
+          payload = json.loads(base64.urlsafe_b64decode(payload_segment + '=' * (-len(payload_segment) % 4)))
+          master_roles = payload.get('realm_access',{}).get('roles',[])
+          print('DEV_MASTER_TOKEN_HAS_ADMIN_ROLE:', 'admin' in master_roles)
           print('TASK_176_ADMIN_LOOKUP: COMPLETE_READ_ONLY')
           PY
