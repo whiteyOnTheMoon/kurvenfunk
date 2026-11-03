@@ -13,8 +13,10 @@ export function LoginClient() {
   if (error === 'ACCOUNT_BANNED') {
     return (
       <main>
-        <h1>Account blocked</h1>
-        <p>Your Kurvenfunk account is banned.</p>
+        <h1>Konto gesperrt</h1>
+        <p>Dein Kurvenfunk-Konto ist gesperrt. Du kannst dich nicht an Community-Aktionen beteiligen.</p>
+        <p>Öffentliche Nachrichten, Ergebnisse und Tabellen bleiben zugänglich.</p>
+        <p><Link href="/">Zur Startseite</Link></p>
       </main>
     );
   }
@@ -31,8 +33,11 @@ export function LoginClient() {
   if (authenticated && user) {
     return (
       <main>
-        <h1>Login successful</h1>
-        <p>Status: {user.status}</p>
+        <h1>Login erfolgreich</h1>
+        <p>Kontostatus: {user.status === 'LIMITED' ? 'Vorübergehend eingeschränkt' : 'Aktiv'}</p>
+        {user.status === 'LIMITED' && (
+          <p>Du kannst weiterhin lesen und abstimmen, aber derzeit keine Kommentare oder Beiträge schreiben.</p>
+        )}
         <p>
           <Link href="/">Continue to Kurvenfunk</Link>
         </p>
