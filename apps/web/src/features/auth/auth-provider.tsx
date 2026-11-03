@@ -144,7 +144,9 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
           const message = authError instanceof Error ? authError.message : 'AUTHENTICATION_FAILED';
 
           setAuthenticated(false);
-          setToken(undefined);
+          // Keep the token only for the narrowly restricted appeal-only API.
+          // Regular endpoints still block the banned account.
+          setToken(message === 'ACCOUNT_BANNED' ? client.token : undefined);
           setUser(undefined);
           setError(message);
         } finally {
