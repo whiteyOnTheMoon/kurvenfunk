@@ -107,3 +107,45 @@ jobs:
               print(run(compose+['exec','-T',service,'sh','-lc',cmd]))
           print('TASK_176_TEST_IDENTITIES_AND_OAUTH: VERIFIED_READ_ONLY')
           PY
+
+  lint-harness:
+    name: Validate DEV E2E Python harness (no DEV changes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m py_compile tests/e2e/task-176-dev.py
+
+  run-e2e:
+    name: One-shot DEV-only full E2E
+    if: contains(github.event.head_commit.message, '[RUN_TASK_176_E2E]')
+    needs: [diagnose, lint-harness]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure existing DEV SSH access
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Run isolated one-shot Task 176 DEV end-to-end
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh -T \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" 'python3 -' < tests/e2e/task-176-dev.py
