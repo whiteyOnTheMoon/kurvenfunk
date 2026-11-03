@@ -107,12 +107,14 @@ def main():
               'username':permanent_username,'password':permanent_password},form=True)
     require(st==200, 'Persistent DEV admin login failed')
     token=json.loads(raw)['access_token']
-    import base64
-    segment=token.split('.')[1]
-    claims=json.loads(base64.urlsafe_b64decode(segment+'='*(-len(segment)%4)))
-    permanent_sub=claims.get('sub')
-    require(isinstance(permanent_sub,str) and permanent_sub, 'Permanent admin token lacks sub')
-    h={'authorization':'Bearer '+token}
+    permanent_path='/admin/realms/master/users?'+urllib.parse.urlencode(
+        {'username':permanent_username,'exact':'true','max':'20'})
+    per_status,per_body=call('GET',permanent_path,token)
+    require(per_status==200,'Permanent Keycloak admin lookup denied')
+    permanent_matches=[u for u in json.loads(per_body)
+                       if u.get('username','').lower()==permanent_username.lower()]
+    require(len(permanent_matches)==1,'Permanent Keycloak admin identity not unique')
+    permanent_sub=permanent_matches[0]['id']
     own_st,own_body=call('GET','/admin/realms/master/users/'+urllib.parse.quote(permanent_sub),token)
     require(own_st==200, 'Persistent Keycloak administrator not readable')
     own=json.loads(own_body)
