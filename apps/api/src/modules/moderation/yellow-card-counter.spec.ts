@@ -9,27 +9,24 @@ import {
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 
 describe('Yellow Card Counter', () => {
-  it.each([
-    [0, 'NONE'],
-    [1, 'YELLOW'],
-    [2, 'SECOND_YELLOW'],
-    [3, 'RED_CARD_REQUIRED'],
-    [4, 'RED_CARD_REQUIRED'],
-    [12, 'RED_CARD_REQUIRED'],
-  ] as const)('maps %i relevant cards to %s', (count, stage) => {
-    expect(getYellowCardCounterStage(count)).toBe(stage);
+  it('maps all threshold levels to their escalation stage', () => {
+    expect(getYellowCardCounterStage(0)).toBe('NONE');
+    expect(getYellowCardCounterStage(1)).toBe('YELLOW');
+    expect(getYellowCardCounterStage(2)).toBe('SECOND_YELLOW');
+    expect(getYellowCardCounterStage(3)).toBe('RED_CARD_REQUIRED');
+    expect(getYellowCardCounterStage(4)).toBe('RED_CARD_REQUIRED');
+    expect(getYellowCardCounterStage(12)).toBe('RED_CARD_REQUIRED');
   });
 
   it('uses the three-yellow threshold', () => {
     expect(RED_CARD_YELLOW_THRESHOLD).toBe(3);
   });
 
-  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
-    'rejects invalid count %s',
-    (count) => {
+  it('rejects invalid counts', () => {
+    for (const count of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => getYellowCardCounterStage(count)).toThrow(RangeError);
-    },
-  );
+    }
+  });
 
   it('counts only active, non-expired and non-revoked yellow cards', async () => {
     const count = jest.fn().mockResolvedValue(2);
@@ -58,8 +55,8 @@ describe('Yellow Card Counter', () => {
       moderationCard: { count },
     } as unknown as Pick<DatabaseClient, 'moderationCard'>;
 
-    await expect(countRelevantYellowCards(database, USER_ID, new Date())).rejects.toThrow(
-      'Database unavailable',
-    );
+    const counter = countRelevantYellowCards(database, USER_ID, new Date());
+
+    await expect(counter).rejects.toThrow('Database unavailable');
   });
 });
