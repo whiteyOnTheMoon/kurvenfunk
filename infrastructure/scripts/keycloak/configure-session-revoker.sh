@@ -26,10 +26,10 @@ echo "=== DEV Keycloak session-revoker provisioning ==="
 
 # The admin password is read inside the Keycloak container, not passed to the API.
 "${compose[@]}" exec -T keycloak sh -lc '
-  /opt/keycloak/bin/kcadm.sh config credentials
-    --server http://127.0.0.1:8080
-    --realm master
-    --user "$KC_BOOTSTRAP_ADMIN_USERNAME"
+  /opt/keycloak/bin/kcadm.sh config credentials \
+    --server http://127.0.0.1:8080 \
+    --realm master \
+    --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
     --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 ' >/dev/null
 
