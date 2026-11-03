@@ -8,6 +8,7 @@ import {
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 
 import type { CreateYellowCardInput } from './moderation.controller';
+import { countRelevantYellowCards, getYellowCardCounterStage } from './yellow-card-counter';
 
 export interface CreateYellowCardCommand extends CreateYellowCardInput {
   moderatorId: string;
@@ -45,16 +46,13 @@ export class ModerationService implements OnModuleDestroy {
     }
 
     return this.database.$transaction(async (tx) => {
-      const targetUser = await tx.user.findUnique({
-        where: {
-          id: command.userId,
-        },
-        select: {
-          id: true,
-        },
-      });
+      // Serialize warnings for the same account. READ COMMITTED ensures
+      // a waiting transaction counts previously committed warnings.
+      const lockedUsers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "User" WHERE "id" = ${command.userId}::uuid FOR UPDATE
+      `;
 
-      if (!targetUser) {
+      if (lockedUsers.length === 0) {
         throw new NotFoundException({
           code: 'YELLOW_CARD_USER_NOT_FOUND',
           message: 'Target user not found.',
@@ -164,6 +162,10 @@ export class ModerationService implements OnModuleDestroy {
         },
       });
 
+      // Count within the issuance transaction, including the new yellow card.
+      const yellowCardCount = await countRelevantYellowCards(tx, command.userId, new Date());
+      const counterStage = getYellowCardCounterStage(yellowCardCount);
+
       await tx.auditLog.create({
         data: {
           actorType: 'USER',
@@ -212,8 +214,13 @@ export class ModerationService implements OnModuleDestroy {
         },
       });
 
-      return card;
-    });
+      return {
+        ...card,
+        yellowCardCount,
+        counterStage,
+        redCardRequired: counterStage === 'RED_CARD_REQUIRED',
+      };
+    }, { isolationLevel: 'ReadCommitted' });
   }
 
   async onModuleDestroy(): Promise<void> {
