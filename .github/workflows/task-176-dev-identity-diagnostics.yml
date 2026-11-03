@@ -31,342 +31,79 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Check only DEV; no writes
+
+      - name: Check exact DEV test identities and OAuth clients (read-only)
         env:
           SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
           SSH_USER: ${{ secrets.DEV_SSH_USER }}
         run: |
           set -Eeuo pipefail
-          ssh -T \
-            -i ~/.ssh/kurvenfunk_dev \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
-          set -Eeuo pipefail
-          set +x
-          cd /home/ap/www/kurvenfunk
-          test "$(id -un)" = "ap"
-          test "$(git branch --show-current)" = "develop"
-          test "$(git rev-parse HEAD)" = "3c6289cfca8fc8032980b1f94d63f3fd3900036b"
-          test -z "$(git status --porcelain)"
-          test -f .env.dev
-          test -f compose.dev.yml
-          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q api)"
-          test -n "$CID"
-          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = "kurvenfunk-dev"
-          echo "DEV_REPOSITORY_AND_CONTAINER: OK"
-          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
-            exec -T api node --input-type=module - <<'JS'
-          import { createPrismaClient } from '@kurvenfunk/database';
-
-          const db = createPrismaClient();
-          const identities = [
-            { username: 'kurvenfunk-e2e-176-target', nickname: 'kf176target' },
-            { username: 'kurvenfunk-e2e-176-moderator', nickname: 'kf176mod' },
-          ];
-          const fail = (message) => { throw new Error(message); };
-          const requireTrue = (condition, message) => { if (!condition) fail(message); };
-
-          async function main() {
-            const realm = process.env.KEYCLOAK_REVOKER_REALM;
-            const client = process.env.KEYCLOAK_REVOKER_CLIENT_ID;
-            const secret = process.env.KEYCLOAK_REVOKER_CLIENT_SECRET;
-            const baseString = process.env.KEYCLOAK_ADMIN_INTERNAL_URL;
-            requireTrue(realm === 'kurvenfunk', 'Unexpected realm');
-            requireTrue(client === 'kurvenfunk-session-revoker' && Boolean(secret), 'Unexpected client');
-            requireTrue(Boolean(baseString), 'Missing DEV endpoint');
-            const base = new URL(baseString);
-            const validInternal = base.protocol === 'http:' &&
-              ['keycloak', 'kurvenfunk-dev-keycloak-1'].includes(base.hostname) &&
-              base.port === '8080';
-            const validExternal = base.protocol === 'https:' &&
-              base.hostname === 'auth-dev.kurvenfunk.at' &&
-              (!base.port || base.port === '443');
-            requireTrue((validInternal || validExternal) &&
-              base.pathname === '/' && !base.username && !base.password &&
-              !base.search && !base.hash, 'Not a recognized DEV Keycloak endpoint');
-            const tokenResponse = await fetch(
-              new URL('/realms/kurvenfunk/protocol/openid-connect/token', base),
-              {
-                method: 'POST',
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                  grant_type: 'client_credentials', client_id: client, client_secret: secret,
-                }),
-                signal: AbortSignal.timeout(10000),
-              }
-            );
-            requireTrue(tokenResponse.status === 200, 'Service token HTTP status ' + tokenResponse.status);
-            const token = (await tokenResponse.json()).access_token;
-            requireTrue(typeof token === 'string' && token.length > 0, 'Missing service token');
-            console.log('DEV_KEYCLOAK_AUTH: OK');
-
-            await db.$connect();
-            for (const identity of identities) {
-              console.log('ACCOUNT: ' + identity.username);
-              const subjects = new Set();
-              for (const [label, entries] of [
-                ['USERNAME_EXACT', { username: identity.username, exact: 'true' }],
-                ['USERNAME_DEFAULT', { username: identity.username }],
-                ['GENERAL_SEARCH', { search: identity.username }],
-              ]) {
-                const url = new URL('/admin/realms/kurvenfunk/users', base);
-                for (const [key, value] of Object.entries(entries)) url.searchParams.set(key, value);
-                url.searchParams.set('max', '50');
-                const response = await fetch(url, {
-                  headers: { authorization: 'Bearer ' + token },
-                  signal: AbortSignal.timeout(10000),
-                });
-                if (response.status !== 200) {
-                  console.log(label + ': HTTP=' + response.status);
-                  continue;
-                }
-                const users = await response.json();
-                requireTrue(Array.isArray(users), 'Unexpected Keycloak response');
-                const exact = users.filter((u) =>
-                  typeof u.username === 'string' &&
-                  u.username.toLowerCase() === identity.username.toLowerCase()
-                );
-                exact.forEach(u => subjects.add(u.id));
-                console.log(label + ': HTTP=200, RETURNED=' + users.length + ', MATCHES=' + exact.length);
-              }
-              const mappedByNickname = await db.user.findMany({
-                where: { nickname: { equals: identity.nickname, mode: 'insensitive' } },
-                select: {
-                  keycloakSubject: true, status: true, onboardingCompleted: true,
-                  roleAssignments: { select: { role: true } },
-                  _count: { select: { moderationCardsReceived: true } },
-                },
-                take: 2,
-              });
-              console.log('DB_NICKNAME_MATCHES: ' + mappedByNickname.length);
-              for (const user of mappedByNickname) {
-                console.log('DB_STATUS: ' + user.status);
-                console.log('DB_ONBOARDING: ' + user.onboardingCompleted);
-                console.log('DB_ROLES: ' + user.roleAssignments.map(r => r.role).join(','));
-                console.log('DB_CARD_COUNT: ' + user._count.moderationCardsReceived);
-                console.log('DB_SUBJECT_MATCH: ' + (subjects.size ? subjects.has(user.keycloakSubject) : 'NOT_VERIFIABLE'));
-              }
-              if (subjects.size === 1) {
-                const bySubject = await db.user.findUnique({
-                  where: { keycloakSubject: [...subjects][0] },
-                  select: { status: true, onboardingCompleted: true, nickname: true }
-                });
-                console.log('DB_SUBJECT_EXISTS: ' + Boolean(bySubject));
-                if (bySubject) {
-                  console.log('DB_NICKNAME_EXPECTED: ' + (bySubject.nickname === identity.nickname));
-                  console.log('DB_SUBJECT_STATUS: ' + bySubject.status);
-                  console.log('DB_SUBJECT_ONBOARDING: ' + bySubject.onboardingCompleted);
-                }
-              }
-              console.log('KEYCLOAK_UNIQUE_SUBJECTS: ' + subjects.size);
-            }
-            console.log('TASK_176_DIAGNOSTICS: COMPLETE_READ_ONLY');
-          }
-          try {
-            await main();
-          } catch (error) {
-            console.error('TASK_176_DIAGNOSTICS: FAILED - ' +
-              (error instanceof Error ? error.message : 'Unexpected error'));
-            process.exitCode = 1;
-          } finally {
-            await db.$disconnect();
-          }
-          JS
-          REMOTE
-
-      - name: Check DEV identities with persistent Keycloak administrator (read-only)
-        env:
-          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          SSH_USER: ${{ secrets.DEV_SSH_USER }}
-        run: |
-          set -Eeuo pipefail
-          ssh -T \
-            -i ~/.ssh/kurvenfunk_dev \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
+          ssh -T -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "$SSH_USER@$SSH_HOST" 'python3 -' <<'PY'
-          import os
-          import subprocess
-          import urllib.request
-          import urllib.parse
-          import urllib.error
-          import json
+          import json, os, subprocess, urllib.request, urllib.parse, urllib.error
           from pathlib import Path
-
-          root = Path('/home/ap/www/kurvenfunk')
-          assert os.getlogin() == 'ap' if False else True
-          assert os.geteuid() != 0, 'Refusing root'
-          assert subprocess.check_output(['git', '-C', str(root), 'branch', '--show-current'], text=True).strip() == 'develop', 'Unexpected branch'
-          assert subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip() == '3c6289cfca8fc8032980b1f94d63f3fd3900036b', 'Unexpected commit'
-          assert not subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'], text=True).strip(), 'Dirty worktree'
-          assert (root / '.env.dev').is_file(), 'Missing DEV environment'
-          def read_env(key):
-              prefix = key + '='
-              for line in (root / '.env.dev').read_text().splitlines():
-                  if line.startswith(prefix):
-                      value = line[len(prefix):].strip()
-                      if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
-                          value = value[1:-1]
-                      return value
-              return ''
-          username = read_env('KEYCLOAK_CONFIG_ADMIN_USERNAME')
-          password = read_env('KEYCLOAK_CONFIG_ADMIN_PASSWORD')
-          if not username or not password:
-              print('DEV_ADMIN_CONFIG: MISSING')
-              raise SystemExit(0)
-          def request(method, url, headers=None, data=None):
+          root=Path('/home/ap/www/kurvenfunk')
+          assert os.geteuid()!=0 and os.environ.get('USER')=='ap','Wrong user'
+          def run(args, **kwargs):
+              return subprocess.check_output(args, cwd=root, text=True, **kwargs).strip()
+          assert run(['git','branch','--show-current'])=='develop'
+          assert run(['git','rev-parse','HEAD'])=='3c6289cfca8fc8032980b1f94d63f3fd3900036b'
+          assert not run(['git','status','--porcelain'])
+          envlines=(root/'.env.dev').read_text().splitlines()
+          def value(key):
+              found=[x.split('=',1)[1].strip().strip('"').strip("'") for x in envlines if x.startswith(key+'=')]
+              assert len(found)==1 and found[0], 'Missing DEV admin setting '+key
+              return found[0]
+          adminuser=value('KEYCLOAK_CONFIG_ADMIN_USERNAME')
+          adminpass=value('KEYCLOAK_CONFIG_ADMIN_PASSWORD')
+          compose=['docker','compose','-p','kurvenfunk-dev','--env-file','.env.dev','-f','compose.yml','-f','compose.dev.yml']
+          for service in ('api','postgres','keycloak'):
+              cid=run(compose+['ps','-q',service])
+              assert cid and run(['docker','inspect','--format','{{index .Config.Labels "com.docker.compose.project"}}',cid])=='kurvenfunk-dev','Wrong DEV container'
+          def call(method, uri, token=None, data=None):
+              hdr={'authorization':'Bearer '+token} if token else {}
+              if data is not None: hdr['content-type']='application/x-www-form-urlencoded'
               try:
-                  req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
-                  with urllib.request.urlopen(req, timeout=10) as resp:
-                      return resp.status, resp.read()
-              except urllib.error.HTTPError as e:
-                  return e.code, b''
-          form = urllib.parse.urlencode({
-              'grant_type': 'password',
-              'client_id': 'admin-cli',
-              'username': username,
-              'password': password,
-          }).encode()
-          # Only the loopback-bound DEV Keycloak port, never staging or production.
-          token_url = 'http://127.0.0.1:3102/realms/master/protocol/openid-connect/token'
-          status, body = request('POST', token_url, {'content-type': 'application/x-www-form-urlencoded'}, form)
-          print('DEV_ADMIN_TOKEN_HTTP:', status)
-          if status != 200:
-              print('TASK_176_ADMIN_LOOKUP: UNAVAILABLE')
-              raise SystemExit(0)
-          token = json.loads(body)['access_token']
-          expected = [
-              ('kurvenfunk-e2e-176-target', 'e2e-176-target@dev.kurvenfunk.invalid'),
-              ('kurvenfunk-e2e-176-moderator', 'e2e-176-moderator@dev.kurvenfunk.invalid'),
+                  req=urllib.request.Request('http://127.0.0.1:3102'+uri,headers=hdr,data=data,method=method)
+                  with urllib.request.urlopen(req,timeout=10) as response:
+                      return response.status,response.read()
+              except urllib.error.HTTPError as err:
+                  return err.code,b''
+          data=urllib.parse.urlencode({'grant_type':'password','client_id':'admin-cli','username':adminuser,'password':adminpass}).encode()
+          status,body=call('POST','/realms/master/protocol/openid-connect/token',data=data)
+          assert status==200,'Persistent DEV administrator is not authenticated'
+          token=json.loads(body)['access_token']
+          print('DEV_PERSISTENT_ADMIN: AUTHENTICATED')
+          accounts=[
+              ('target','e2e-176-target@dev.kurvenfunk.invalid'),
+              ('moderator','e2e-176-moderator@dev.kurvenfunk.invalid'),
           ]
-          for username, email in expected:
-              url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users?' + urllib.parse.urlencode({'username': username, 'exact': 'true', 'max': '50'})
-              response_status, content = request('GET', url, {'authorization': 'Bearer ' + token})
-              print('DEV_ADMIN_LOOKUP_HTTP:', username, response_status)
-              if response_status != 200:
-                  continue
-              users = json.loads(content)
-              matching = [u for u in users if u.get('username','').lower() == username and u.get('email','').lower() == email]
-              print('DEV_ADMIN_EXACT_MATCHES:', username, len(matching))
-              for account in matching:
-                  print('DEV_ADMIN_ACCOUNT_ENABLED:', username, account.get('enabled'))
-                  print('DEV_ADMIN_EMAIL_VERIFIED:', username, account.get('emailVerified'))
-                  session_url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users/' + urllib.parse.quote(account['id']) + '/sessions'
-                  session_status, sessions_content = request('GET', session_url, {'authorization':'Bearer '+token})
-                  print('DEV_ADMIN_SESSIONS_HTTP:', username, session_status)
-                  if session_status == 200:
-                      sessions = json.loads(sessions_content)
-                      print('DEV_ADMIN_SESSIONS_COUNT:', username, len(sessions) if isinstance(sessions, list) else 'INVALID')
-
-          # Aggregate only; never print unrelated user names, IDs, or token contents.
-          count_status, count_content = request('GET',
-              'http://127.0.0.1:3102/admin/realms/kurvenfunk/users/count',
-              {'authorization':'Bearer '+token})
-          print('DEV_REALM_USERS_COUNT_HTTP:', count_status)
-          if count_status == 200:
-              print('DEV_REALM_USERS_COUNT:', count_content.decode('ascii', errors='replace')[:15])
-          all_url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users?first=0&max=1000'
-          all_status, all_body = request('GET', all_url, {'authorization':'Bearer '+token})
-          print('DEV_REALM_LIST_HTTP:', all_status)
-          if all_status == 200:
-              all_users = json.loads(all_body)
-              print('DEV_REALM_VISIBLE_USERS:', len(all_users) if isinstance(all_users, list) else 'INVALID')
-              for name, email in expected:
-                  matches = [x for x in all_users if x.get('username', '').lower() == name]
-                  print('DEV_REALM_UNFILTERED_MATCHES:', name, len(matches))
-          master_status, master_body = request('GET',
-              'http://127.0.0.1:3102/admin/realms/master/users?first=0&max=1000',
-              {'authorization':'Bearer '+token})
-          print('DEV_MASTER_LIST_HTTP:', master_status)
-          if master_status == 200:
-              master_users = json.loads(master_body)
-              for name, email in expected:
-                  print('DEV_MASTER_TEST_MATCHES:', name,
-                      sum(x.get('username','').lower() == name for x in master_users))
-          import base64
-          payload_segment = token.split('.')[1]
-          payload = json.loads(base64.urlsafe_b64decode(payload_segment + '=' * (-len(payload_segment) % 4)))
-          master_roles = payload.get('realm_access',{}).get('roles',[])
-          print('DEV_MASTER_TOKEN_HAS_ADMIN_ROLE:', 'admin' in master_roles)
-          print('TASK_176_ADMIN_LOOKUP: COMPLETE_READ_ONLY')
+          identities=[]
+          for label,email in accounts:
+              path='/admin/realms/kurvenfunk/users?'+urllib.parse.urlencode({'email':email,'exact':'true','max':'20'})
+              st,body=call('GET',path,token)
+              assert st==200,'DEV Keycloak user search failed'
+              matches=[x for x in json.loads(body) if x.get('email','').lower()==email]
+              print('DEV_TEST_EMAIL_MATCHES:',label,len(matches))
+              assert len(matches)==1,'Expected exactly one E2E identity'
+              account=matches[0]
+              assert account.get('username','').lower()==email,'Unexpected Keycloak username'
+              assert account.get('enabled') is True,'Test account disabled'
+              assert account.get('emailVerified') is True,'Test account email unverified'
+              identities.append(account['id'])
+          for client_name in ('kurvenfunk-web','admin-cli','kurvenfunk-task-176-e2e'):
+              path='/admin/realms/kurvenfunk/clients?'+urllib.parse.urlencode({'clientId':client_name})
+              st,body=call('GET',path,token)
+              print('DEV_CLIENT_LOOKUP_HTTP:',client_name,st)
+              assert st==200,'Client lookup denied'
+              clients=[x for x in json.loads(body) if x.get('clientId')==client_name]
+              print('DEV_CLIENT_MATCHES:',client_name,len(clients))
+              if len(clients)==1:
+                  print('DEV_CLIENT_DIRECT_GRANTS:',client_name,clients[0].get('directAccessGrantsEnabled'))
+                  print('DEV_CLIENT_PUBLIC:',client_name,clients[0].get('publicClient'))
+          for service,cmd in [
+              ('api','node -e "console.log(\'DEV_API_OIDC:\', process.env.KEYCLOAK_ISSUER?.includes(\'auth-dev.kurvenfunk.at\') && process.env.KEYCLOAK_AUDIENCE===\'kurvenfunk-api\')"')
+          ]:
+              print(run(compose+['exec','-T',service,'sh','-lc',cmd]))
+          print('TASK_176_TEST_IDENTITIES_AND_OAUTH: VERIFIED_READ_ONLY')
           PY
-
-      - name: Inspect DEV Keycloak database for the two exact E2E usernames (read-only)
-        env:
-          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          SSH_USER: ${{ secrets.DEV_SSH_USER }}
-        run: |
-          set -Eeuo pipefail
-          ssh -T \
-            -i ~/.ssh/kurvenfunk_dev \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
-          set -Eeuo pipefail
-          set +x
-          cd /home/ap/www/kurvenfunk
-          test "$(id -un)" = "ap"
-          test "$(git branch --show-current)" = "develop"
-          test "$(git rev-parse HEAD)" = "3c6289cfca8fc8032980b1f94d63f3fd3900036b"
-          test -z "$(git status --porcelain)"
-          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q postgres)"
-          test -n "$CID"
-          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = "kurvenfunk-dev"
-          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
-            exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d keycloak -A -t' <<'SQL'
-          SELECT 'KEYCLOAK_DB_E2E_USERS=' || count(*)
-          FROM public.user_entity
-          WHERE lower(username) IN ('kurvenfunk-e2e-176-target', 'kurvenfunk-e2e-176-moderator');
-          SELECT 'KEYCLOAK_DB_E2E_USER=' || u.username || ';REALM=' || r.name
-          FROM public.user_entity u
-          JOIN public.realm r ON r.id = u.realm_id
-          WHERE lower(u.username) IN ('kurvenfunk-e2e-176-target', 'kurvenfunk-e2e-176-moderator')
-          ORDER BY u.username;
-          SQL
-          echo "TASK_176_KEYCLOAK_DB_READ_ONLY: COMPLETE"
-          REMOTE
-
-
-      - name: Diagnose DEV Keycloak uniqueness conflict - no writes
-        env:
-          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          SSH_USER: ${{ secrets.DEV_SSH_USER }}
-        run: |
-          set -Eeuo pipefail
-          ssh -T \
-            -i ~/.ssh/kurvenfunk_dev \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            "$SSH_USER@$SSH_HOST" 'bash -se' <<'REMOTE'
-          set -Eeuo pipefail
-          set +x
-          cd /home/ap/www/kurvenfunk
-          test "$(id -un)" = ap
-          test "$(git branch --show-current)" = develop
-          test "$(git rev-parse HEAD)" = 3c6289cfca8fc8032980b1f94d63f3fd3900036b
-          test -z "$(git status --porcelain)"
-          CID="$(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml ps -q postgres)"
-          test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$CID")" = kurvenfunk-dev
-          docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml \
-            exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d keycloak -A -t' <<'SQL'
-          SELECT 'KC_ALL_USERS=' || count(*) FROM public.user_entity;
-          SELECT 'KC_KURVENFUNK_REALM_USERS=' || count(*)
-          FROM public.user_entity u JOIN public.realm r ON r.id=u.realm_id WHERE r.name='kurvenfunk';
-          SELECT 'KC_E2E_NAME_PREFIX=' || count(*)
-          FROM public.user_entity WHERE lower(username) LIKE '%e2e%176%';
-          SELECT 'KC_TEST_EMAIL_TARGET=' || count(*)
-          FROM public.user_entity
-          WHERE lower(email) = 'e2e-176-target@dev.kurvenfunk.invalid';
-          SELECT 'KC_TEST_EMAIL_MODERATOR=' || count(*)
-          FROM public.user_entity
-          WHERE lower(email) = 'e2e-176-moderator@dev.kurvenfunk.invalid';
-          SELECT 'KC_EMAIL_COLLISION_USERNAME=' || username
-          FROM public.user_entity
-          WHERE lower(email) IN (
-             'e2e-176-target@dev.kurvenfunk.invalid',
-             'e2e-176-moderator@dev.kurvenfunk.invalid'
-          );
-          SQL
-          echo "TASK_176_UNIQUENESS_DIAG: COMPLETE_READ_ONLY"
-          REMOTE
