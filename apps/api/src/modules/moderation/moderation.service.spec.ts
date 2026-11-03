@@ -160,6 +160,8 @@ describe('ModerationService – Yellow Cards', () => {
           cardType: 'YELLOW',
           sourceType: 'NONE',
           sourceId: null,
+          yellowCardCount: 1,
+          counterStage: 'YELLOW',
         },
       },
     });
@@ -187,6 +189,34 @@ describe('ModerationService – Yellow Cards', () => {
         },
       },
     });
+  });
+
+  it('sends a stronger notice for the second active yellow card', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(2);
+
+    await service.createYellowCard(command());
+
+    expect(tx.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          body: expect.stringContaining('zweite aktive gelbe Karte'),
+        }),
+      }),
+    );
+  });
+
+  it('notifies the user when the red-card threshold is reached', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(3);
+
+    await service.createYellowCard(command());
+
+    expect(tx.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          body: expect.stringContaining('Schwelle für eine rote Karte ist erreicht'),
+        }),
+      }),
+    );
   });
 
   it('does not expose private notes in the result', async () => {
