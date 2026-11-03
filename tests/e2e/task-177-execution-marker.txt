@@ -1,0 +1,2 @@
+One-shot acceptance of Task 177 on exact DEV merge commit 0af6cf23622bde5755b6a784a7e406013ce63cdb.
+Only reserved .invalid Keycloak identities and Kurvenfunk DEV database records may be touched.
