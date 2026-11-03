@@ -1,0 +1,414 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  type OnModuleDestroy,
+} from '@nestjs/common';
+import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
+
+import type { CreateAppealInput, DecideAppealInput } from './appeals.controller';
+
+export interface CreateAppealCommand extends CreateAppealInput {
+  userId: string;
+}
+
+export interface DecideAppealCommand extends DecideAppealInput {
+  appealId: string;
+  reviewerId: string;
+}
+
+@Injectable()
+export class AppealsService implements OnModuleDestroy {
+  private readonly database: DatabaseClient = createPrismaClient();
+
+  async create(command: CreateAppealCommand) {
+    if (Boolean(command.moderationCardId) === Boolean(command.sanctionId)) {
+      throw new BadRequestException({
+        code: 'APPEAL_INVALID_TARGET',
+        message: 'An appeal must reference exactly one card or sanction.',
+      });
+    }
+
+    try {
+      return await this.database.$transaction(
+        async (tx) => {
+          if (command.moderationCardId) {
+            const card = await tx.moderationCard.findUnique({
+              where: { id: command.moderationCardId },
+              select: { userId: true },
+            });
+            if (!card || card.userId !== command.userId) {
+              throw new NotFoundException({
+                code: 'APPEAL_CARD_NOT_FOUND',
+                message: 'This moderation card was not found.',
+              });
+            }
+          } else if (command.sanctionId) {
+            const sanction = await tx.sanction.findUnique({
+              where: { id: command.sanctionId },
+              select: { userId: true },
+            });
+            if (!sanction || sanction.userId !== command.userId) {
+              throw new NotFoundException({
+                code: 'APPEAL_SANCTION_NOT_FOUND',
+                message: 'This sanction was not found.',
+              });
+            }
+          }
+
+          const appeal = await tx.appeal.create({
+            data: {
+              userId: command.userId,
+              moderationCardId: command.moderationCardId ?? null,
+              sanctionId: command.sanctionId ?? null,
+              reason: command.reason,
+              status: 'OPEN',
+            },
+            select: {
+              id: true,
+              status: true,
+              moderationCardId: true,
+              sanctionId: true,
+              createdAt: true,
+            },
+          });
+
+          await tx.auditLog.create({
+            data: {
+              actorType: 'USER',
+              actorUserId: command.userId,
+              action: 'APPEAL_CREATED',
+              category: 'MODERATION',
+              targetType: 'APPEAL',
+              targetId: appeal.id,
+              targetUserId: command.userId,
+              reason: 'APPEAL_SUBMITTED',
+              metadata: {
+                moderationCardId: command.moderationCardId ?? null,
+                sanctionId: command.sanctionId ?? null,
+              },
+            },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: command.userId,
+              type: 'APPEAL',
+              title: 'Einspruch eingereicht',
+              body: 'Dein Einspruch wurde eingereicht und wird geprüft.',
+              sourceType: 'APPEAL',
+              sourceId: appeal.id,
+              dedupeKey: `appeal-submitted:${appeal.id}`,
+            },
+          });
+
+          return appeal;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw new ConflictException({
+          code: 'APPEAL_ALREADY_EXISTS',
+          message: 'An appeal for this item already exists.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  async listMine(userId: string) {
+    return this.database.appeal.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 50,
+      select: {
+        id: true,
+        moderationCardId: true,
+        sanctionId: true,
+        reason: true,
+        status: true,
+        createdAt: true,
+        resolvedAt: true,
+      },
+    });
+  }
+
+  async listOpenForModeration() {
+    return this.database.appeal.findMany({
+      where: { status: 'OPEN' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 50,
+      select: {
+        id: true,
+        userId: true,
+        moderationCardId: true,
+        sanctionId: true,
+        reason: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async decide(command: DecideAppealCommand) {
+    const preliminary = await this.database.appeal.findUnique({
+      where: { id: command.appealId },
+      select: { userId: true },
+    });
+
+    if (!preliminary) {
+      throw new NotFoundException({
+        code: 'APPEAL_NOT_FOUND',
+        message: 'Appeal not found.',
+      });
+    }
+
+    if (preliminary.userId === command.reviewerId) {
+      throw new ForbiddenException({
+        code: 'APPEAL_SELF_REVIEW_FORBIDDEN',
+        message: 'An appeal cannot be reviewed by its author.',
+      });
+    }
+
+    return this.database.$transaction(
+      async (tx) => {
+        // Synchronizes appeal decisions with direct bans, yellow-card escalation,
+        // LIMITED sanctions and expiration jobs for the same account.
+        const lockedUsers = await tx.$queryRaw<
+          Array<{ id: string; status: 'ACTIVE' | 'LIMITED' | 'BANNED' }>
+        >`
+          SELECT "id", "status" FROM "User"
+          WHERE "id" = ${preliminary.userId}::uuid FOR UPDATE
+        `;
+        const target = lockedUsers[0];
+        if (!target) {
+          throw new NotFoundException({ code: 'APPEAL_USER_NOT_FOUND', message: 'User not found.' });
+        }
+
+        const appeal = await tx.appeal.findUnique({
+          where: { id: command.appealId },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            moderationCardId: true,
+            sanctionId: true,
+          },
+        });
+        if (!appeal || appeal.userId !== preliminary.userId || appeal.status !== 'OPEN') {
+          throw new ConflictException({
+            code: 'APPEAL_ALREADY_REVIEWED',
+            message: 'This appeal has already been reviewed.',
+          });
+        }
+
+        const accepted = command.decision === 'ACCEPTED';
+        const now = new Date();
+
+        if (accepted && appeal.moderationCardId) {
+          const changed = await tx.moderationCard.updateMany({
+            where: { id: appeal.moderationCardId, userId: appeal.userId, status: 'ACTIVE' },
+            data: {
+              status: 'REVOKED',
+              revokedAt: now,
+              revokedById: command.reviewerId,
+              revocationReason: 'APPEAL_ACCEPTED',
+            },
+          });
+
+          if (changed.count === 1) {
+            await tx.auditLog.create({
+              data: {
+                actorType: 'USER',
+                actorUserId: command.reviewerId,
+                action: 'MODERATION_CARD_REVOKED',
+                category: 'MODERATION',
+                targetType: 'MODERATION_CARD',
+                targetId: appeal.moderationCardId,
+                targetUserId: appeal.userId,
+                moderationCardId: appeal.moderationCardId,
+                reason: 'APPEAL_ACCEPTED',
+              },
+            });
+          }
+        }
+
+        if (accepted && appeal.sanctionId) {
+          const prior = await tx.sanction.findUnique({
+            where: { id: appeal.sanctionId },
+            select: { id: true, userId: true, ipBlockId: true },
+          });
+          if (!prior || prior.userId !== appeal.userId) {
+            throw new ConflictException({
+              code: 'APPEAL_SANCTION_MISSING',
+              message: 'The sanction no longer belongs to this user.',
+            });
+          }
+
+          const changed = await tx.sanction.updateMany({
+            where: { id: appeal.sanctionId, userId: appeal.userId, status: 'ACTIVE' },
+            data: {
+              status: 'REVOKED',
+              revokedAt: now,
+              revokedById: command.reviewerId,
+              revocationReason: 'APPEAL_ACCEPTED',
+            },
+          });
+
+          if (changed.count === 1) {
+            await tx.auditLog.create({
+              data: {
+                actorType: 'USER',
+                actorUserId: command.reviewerId,
+                action: 'SANCTION_REVOKED',
+                category: 'SANCTION',
+                targetType: 'SANCTION',
+                targetId: appeal.sanctionId,
+                targetUserId: appeal.userId,
+                sanctionId: appeal.sanctionId,
+                reason: 'APPEAL_ACCEPTED',
+              },
+            });
+          }
+
+          if (changed.count === 1 && prior.ipBlockId) {
+            const deactivated = await tx.iPBlock.updateMany({
+              where: { id: prior.ipBlockId, active: true },
+              data: {
+                active: false,
+                deactivatedAt: now,
+                deactivatedById: command.reviewerId,
+                deactivationReason: 'APPEAL_ACCEPTED',
+              },
+            });
+
+            if (deactivated.count === 1) {
+              await tx.auditLog.create({
+                data: {
+                  actorType: 'USER',
+                  actorUserId: command.reviewerId,
+                  action: 'IP_BLOCK_DEACTIVATED',
+                  category: 'IP_PROTECTION',
+                  targetType: 'IP_BLOCK',
+                  targetId: prior.ipBlockId,
+                  targetUserId: appeal.userId,
+                  ipBlockId: prior.ipBlockId,
+                  sanctionId: prior.id,
+                  reason: 'APPEAL_ACCEPTED',
+                },
+              });
+            }
+          }
+        }
+
+        if (accepted) {
+          const [activeReds, activeBans, activeLimits] = await Promise.all([
+            tx.moderationCard.count({
+              where: {
+                userId: appeal.userId,
+                type: 'RED',
+                status: 'ACTIVE',
+                revokedAt: null,
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+              },
+            }),
+            tx.sanction.count({
+              where: {
+                userId: appeal.userId,
+                type: 'ACCOUNT_BAN',
+                status: 'ACTIVE',
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+              },
+            }),
+            tx.sanction.count({
+              where: {
+                userId: appeal.userId,
+                type: 'LIMITED',
+                status: 'ACTIVE',
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+              },
+            }),
+          ]);
+
+          const nextStatus = activeReds > 0 || activeBans > 0
+            ? 'BANNED'
+            : activeLimits > 0
+              ? 'LIMITED'
+              : 'ACTIVE';
+
+          if (nextStatus !== target.status) {
+            await tx.user.update({
+              where: { id: appeal.userId },
+              data: { status: nextStatus },
+            });
+            await tx.auditLog.create({
+              data: {
+                actorType: 'USER',
+                actorUserId: command.reviewerId,
+                action: 'USER_STATUS_CHANGED',
+                category: 'ACCOUNT',
+                targetType: 'USER',
+                targetId: appeal.userId,
+                targetUserId: appeal.userId,
+                reason: 'APPEAL_ACCEPTED',
+                metadata: { previousStatus: target.status, newStatus: nextStatus },
+              },
+            });
+          }
+        }
+
+        const reviewed = await tx.appeal.update({
+          where: { id: appeal.id },
+          data: {
+            status: command.decision,
+            reviewedById: command.reviewerId,
+            decisionNote: command.decisionNote,
+            resolvedAt: now,
+          },
+          select: { id: true, status: true, resolvedAt: true },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorType: 'USER',
+            actorUserId: command.reviewerId,
+            action: 'APPEAL_RESOLVED',
+            category: 'MODERATION',
+            targetType: 'APPEAL',
+            targetId: appeal.id,
+            targetUserId: appeal.userId,
+            reason: command.decision,
+            metadata: { decision: command.decision },
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: appeal.userId,
+            type: 'APPEAL',
+            title: accepted ? 'Einspruch angenommen' : 'Einspruch abgelehnt',
+            body: accepted
+              ? 'Dein Einspruch wurde angenommen. Die betroffene Sanktion wurde überprüft.'
+              : 'Dein Einspruch wurde überprüft und abgelehnt.',
+            sourceType: 'APPEAL',
+            sourceId: appeal.id,
+            actorUserId: command.reviewerId,
+            dedupeKey: `appeal-decision:${appeal.id}`,
+            metadata: { decision: command.decision },
+          },
+        });
+
+        // Internal decision notes are never returned to the appellant.
+        return reviewed;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.database.$disconnect();
+  }
+}
