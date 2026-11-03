@@ -4,6 +4,11 @@ jest.mock('./limited-sanctions.service', () => ({
   LimitedSanctionsService: jest.fn(),
 }));
 
+// The permission decorator references AuthGuard; isolate it from real Prisma.
+jest.mock('../auth/auth.guard', () => ({
+  AuthGuard: jest.fn(),
+}));
+
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   PERMISSIONS,
