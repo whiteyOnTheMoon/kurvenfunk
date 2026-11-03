@@ -13,8 +13,9 @@ export function LoginClient() {
   if (error === 'ACCOUNT_BANNED') {
     return (
       <main>
-        <h1>Account blocked</h1>
-        <p>Your Kurvenfunk account is banned.</p>
+        <h1>Konto gesperrt</h1>
+        <p>Dieses Kurvenfunk-Konto ist gesperrt. Community-Aktionen sind nicht möglich.</p>
+        <p>Du kannst öffentliche Inhalte weiterhin ohne Anmeldung lesen.</p>
       </main>
     );
   }
@@ -22,8 +23,8 @@ export function LoginClient() {
   if (error === 'EMAIL_NOT_VERIFIED') {
     return (
       <main>
-        <h1>Email not verified</h1>
-        <p>Please verify your email address before signing in.</p>
+        <h1>E-Mail-Adresse nicht bestätigt</h1>
+        <p>Bitte bestätige deine E-Mail-Adresse, bevor du dich anmeldest.</p>
       </main>
     );
   }
@@ -31,8 +32,14 @@ export function LoginClient() {
   if (authenticated && user) {
     return (
       <main>
-        <h1>Login successful</h1>
+        <h1>Anmeldung erfolgreich</h1>
         <p>Status: {user.status}</p>
+        {user.status === 'LIMITED' ? (
+          <p>
+            Dein Konto ist vorübergehend eingeschränkt. Lesen und Abstimmen sind weiterhin
+            möglich; neue Kommentare und Forenbeiträge sind derzeit nicht erlaubt.
+          </p>
+        ) : null}
         <p>
           <Link href="/">Continue to Kurvenfunk</Link>
         </p>
