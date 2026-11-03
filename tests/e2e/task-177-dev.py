@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path('/home/ap/www/kurvenfunk')
-EXPECTED_SHA = '__EXPECTED_TASK_177_MERGE_SHA__'
+EXPECTED_SHA = '0af6cf23622bde5755b6a784a7e406013ce63cdb'
 BASE = 'http://127.0.0.1:3102'
 API = 'http://127.0.0.1:3101/api/v1'
 CLIENT = 'kurvenfunk-task-177-e2e'
