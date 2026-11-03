@@ -18,6 +18,7 @@ import {
   PERMISSIONS,
   REQUIRED_PERMISSIONS_METADATA_KEY,
 } from '../permissions/permissions.constants';
+import { PermissionsService } from '../permissions/permissions.service';
 
 import {
   createDirectRedCardSchema,
@@ -138,9 +139,12 @@ describe('Direct Red Card Controller', () => {
       DirectRedCardController.prototype,
       'createDirectRedCard',
     );
-    expect(Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, descriptor?.value)).toEqual([
-      PERMISSIONS.USER_BAN,
-    ]);
+    const handler: unknown = descriptor?.value;
+    if (typeof handler !== 'function') {
+      throw new Error('Direct red-card handler missing');
+    }
+    const metadata: unknown = Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler);
+    expect(metadata).toEqual([PERMISSIONS.USER_BAN]);
   });
 
   it('forwards the authenticated actor, never a client-supplied moderatorId', async () => {
@@ -161,9 +165,6 @@ describe('Direct Red Card Controller', () => {
   });
 
   it('keeps standard MODERATOR roles from having user.ban', () => {
-    const { PermissionsService } = jest.requireActual(
-      '../permissions/permissions.service',
-    ) as typeof import('../permissions/permissions.service');
     const permissions = new PermissionsService();
     expect(
       permissions.hasPermission({ status: 'ACTIVE', roles: ['MODERATOR'] }, PERMISSIONS.USER_BAN),
