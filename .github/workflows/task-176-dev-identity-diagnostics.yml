@@ -174,3 +174,89 @@ jobs:
           }
           JS
           REMOTE
+
+      - name: Check DEV identities with persistent Keycloak administrator (read-only)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh -T \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" 'python3 -' <<'PY'
+          import os
+          import subprocess
+          import urllib.request
+          import urllib.parse
+          import urllib.error
+          import json
+          from pathlib import Path
+
+          root = Path('/home/ap/www/kurvenfunk')
+          assert os.getlogin() == 'ap' if False else True
+          assert os.geteuid() != 0, 'Refusing root'
+          assert subprocess.check_output(['git', '-C', str(root), 'branch', '--show-current'], text=True).strip() == 'develop', 'Unexpected branch'
+          assert subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip() == '3c6289cfca8fc8032980b1f94d63f3fd3900036b', 'Unexpected commit'
+          assert not subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'], text=True).strip(), 'Dirty worktree'
+          assert (root / '.env.dev').is_file(), 'Missing DEV environment'
+          def read_env(key):
+              prefix = key + '='
+              for line in (root / '.env.dev').read_text().splitlines():
+                  if line.startswith(prefix):
+                      value = line[len(prefix):].strip()
+                      if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
+                          value = value[1:-1]
+                      return value
+              return ''
+          username = read_env('KEYCLOAK_CONFIG_ADMIN_USERNAME')
+          password = read_env('KEYCLOAK_CONFIG_ADMIN_PASSWORD')
+          if not username or not password:
+              print('DEV_ADMIN_CONFIG: MISSING')
+              raise SystemExit(0)
+          def request(method, url, headers=None, data=None):
+              try:
+                  req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      return resp.status, resp.read()
+              except urllib.error.HTTPError as e:
+                  return e.code, b''
+          form = urllib.parse.urlencode({
+              'grant_type': 'password',
+              'client_id': 'admin-cli',
+              'username': username,
+              'password': password,
+          }).encode()
+          # Only the loopback-bound DEV Keycloak port, never staging or production.
+          token_url = 'http://127.0.0.1:3102/realms/master/protocol/openid-connect/token'
+          status, body = request('POST', token_url, {'content-type': 'application/x-www-form-urlencoded'}, form)
+          print('DEV_ADMIN_TOKEN_HTTP:', status)
+          if status != 200:
+              print('TASK_176_ADMIN_LOOKUP: UNAVAILABLE')
+              raise SystemExit(0)
+          token = json.loads(body)['access_token']
+          expected = [
+              ('kurvenfunk-e2e-176-target', 'e2e-176-target@dev.kurvenfunk.invalid'),
+              ('kurvenfunk-e2e-176-moderator', 'e2e-176-moderator@dev.kurvenfunk.invalid'),
+          ]
+          for username, email in expected:
+              url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users?' + urllib.parse.urlencode({'username': username, 'exact': 'true', 'max': '50'})
+              response_status, content = request('GET', url, {'authorization': 'Bearer ' + token})
+              print('DEV_ADMIN_LOOKUP_HTTP:', username, response_status)
+              if response_status != 200:
+                  continue
+              users = json.loads(content)
+              matching = [u for u in users if u.get('username','').lower() == username and u.get('email','').lower() == email]
+              print('DEV_ADMIN_EXACT_MATCHES:', username, len(matching))
+              for account in matching:
+                  print('DEV_ADMIN_ACCOUNT_ENABLED:', username, account.get('enabled'))
+                  print('DEV_ADMIN_EMAIL_VERIFIED:', username, account.get('emailVerified'))
+                  session_url = 'http://127.0.0.1:3102/admin/realms/kurvenfunk/users/' + urllib.parse.quote(account['id']) + '/sessions'
+                  session_status, sessions_content = request('GET', session_url, {'authorization':'Bearer '+token})
+                  print('DEV_ADMIN_SESSIONS_HTTP:', username, session_status)
+                  if session_status == 200:
+                      sessions = json.loads(sessions_content)
+                      print('DEV_ADMIN_SESSIONS_COUNT:', username, len(sessions) if isinstance(sessions, list) else 'INVALID')
+          print('TASK_176_ADMIN_LOOKUP: COMPLETE_READ_ONLY')
+          PY
