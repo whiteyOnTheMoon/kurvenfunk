@@ -315,7 +315,8 @@ def main():
             code, data = api_request('POST', '/moderation/yellow-cards',
                                      user_tokens['moderator'], payload)
             require(code == 201, 'Yellow card ' + str(number) + ' HTTP=' + str(code))
-            response = json.loads(data)
+            envelope = json.loads(data)
+            response = envelope.get('data', {})
             require(response.get('yellowCardCount') == number and
                     response.get('counterStage') == expected_stage,
                     'Unexpected escalation on yellow card ' + str(number))
