@@ -1,6 +1,7 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 
+import type { KeycloakSessionRevoker } from './keycloak-session-revoker';
 import { ModerationService, type CreateYellowCardCommand } from './moderation.service';
 
 jest.mock('@kurvenfunk/database', () => ({
@@ -11,6 +12,7 @@ const USER_ID = '11111111-1111-4111-8111-111111111111';
 const MODERATOR_ID = '22222222-2222-4222-8222-222222222222';
 const SOURCE_ID = '33333333-3333-4333-8333-333333333333';
 const CARD_ID = '44444444-4444-4444-8444-444444444444';
+const RED_CARD_ID = '55555555-5555-4555-8555-555555555555';
 
 function command(overrides: Partial<CreateYellowCardCommand> = {}): CreateYellowCardCommand {
   return {
@@ -25,7 +27,14 @@ function command(overrides: Partial<CreateYellowCardCommand> = {}): CreateYellow
 
 function createTransactionClient() {
   return {
-    $queryRaw: jest.fn().mockResolvedValue([{ id: USER_ID }]),
+    $queryRaw: jest.fn().mockResolvedValue([{
+      id: USER_ID,
+      status: 'ACTIVE',
+      keycloakSubject: SOURCE_ID,
+    }]),
+    user: {
+      update: jest.fn().mockResolvedValue({ id: USER_ID, status: 'BANNED' }),
+    },
     comment: {
       findUnique: jest.fn().mockResolvedValue({
         authorId: USER_ID,
@@ -48,7 +57,8 @@ function createTransactionClient() {
     },
     moderationCard: {
       count: jest.fn().mockResolvedValue(1),
-      create: jest.fn().mockResolvedValue({
+      findFirst: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({ id: RED_CARD_ID }).mockResolvedValueOnce({
         id: CARD_ID,
         userId: USER_ID,
         moderatorId: MODERATOR_ID,
@@ -68,8 +78,8 @@ function createTransactionClient() {
     },
     notification: {
       create: jest.fn().mockResolvedValue({
-        id: 'notification-id',
-      }),
+        id: 'red-notification-id',
+      }).mockResolvedValueOnce({ id: 'notification-id' }),
     },
   };
 }
@@ -79,6 +89,9 @@ describe('ModerationService – Yellow Cards', () => {
   let tx: ReturnType<typeof createTransactionClient>;
   let transaction: jest.Mock;
   let disconnect: jest.Mock;
+  let revoker: { isConfigured: boolean; revokeSessions: jest.Mock };
+  let notificationUpdate: jest.Mock;
+  let notificationFindMany: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -88,13 +101,23 @@ describe('ModerationService – Yellow Cards', () => {
     transaction = jest.fn((callback: (client: typeof tx) => Promise<unknown>) => callback(tx));
 
     disconnect = jest.fn().mockResolvedValue(undefined);
+    notificationUpdate = jest.fn().mockResolvedValue({ id: 'red-notification-id' });
+    notificationFindMany = jest.fn().mockResolvedValue([]);
+    revoker = {
+      isConfigured: false,
+      revokeSessions: jest.fn().mockResolvedValue(true),
+    };
 
     jest.mocked(createPrismaClient).mockReturnValue({
       $transaction: transaction,
       $disconnect: disconnect,
+      notification: {
+        update: notificationUpdate,
+        findMany: notificationFindMany,
+      },
     } as unknown as DatabaseClient);
 
-    service = new ModerationService();
+    service = new ModerationService(revoker as unknown as KeycloakSessionRevoker);
   });
 
   it('creates a yellow card', async () => {
@@ -410,13 +433,113 @@ describe('ModerationService – Yellow Cards', () => {
     expect(tx.notification.create).not.toHaveBeenCalled();
   });
 
-  it('never persists an automatic red card or ban in Task 175', async () => {
+  it('issues exactly one automatic red card and bans the user on the third yellow', async () => {
     tx.moderationCard.count.mockResolvedValueOnce(3);
 
     const result = await service.createYellowCard(command());
 
     expect(result.redCardRequired).toBe(true);
+    expect(result.redCardId).toBe(RED_CARD_ID);
+    expect(result.accountStatus).toBe('BANNED');
+    expect(result.sessionRevocation).toBe('PENDING');
+    expect(tx.moderationCard.create).toHaveBeenCalledTimes(2);
+    expect(tx.moderationCard.create).toHaveBeenLastCalledWith({
+      data: {
+        userId: USER_ID,
+        moderatorId: null,
+        type: 'RED',
+        status: 'ACTIVE',
+        reasonCode: 'THREE_YELLOW_CARDS',
+        userMessage: 'Drei aktive gelbe Karten: Dein Konto wurde gesperrt.',
+        moderatorNote: 'Automatic escalation after three relevant yellow cards.',
+        sourceType: 'USER',
+        sourceId: USER_ID,
+        escalationSource: 'THREE_YELLOW_CARDS',
+      },
+      select: { id: true },
+    });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      data: { status: 'BANNED' },
+    });
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(3);
+    expect(tx.notification.create).toHaveBeenCalledTimes(2);
+    expect(revoker.revokeSessions).not.toHaveBeenCalled();
+  });
+
+  it('does not escalate on one or two yellow cards', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(2);
+
+    const result = await service.createYellowCard(command());
+
+    expect(result.redCardId).toBeNull();
+    expect(result.accountStatus).toBe('ACTIVE');
+    expect(result.sessionRevocation).toBeNull();
+    expect(tx.user.update).not.toHaveBeenCalled();
     expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('prevents repeated warnings for banned accounts', async () => {
+    tx.$queryRaw.mockResolvedValueOnce([{
+      id: USER_ID,
+      status: 'BANNED',
+      keycloakSubject: SOURCE_ID,
+    }]);
+
+    await expect(service.createYellowCard(command())).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.moderationCard.create).not.toHaveBeenCalled();
+  });
+
+  it('does not create a duplicate red card when an active red already exists', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(3);
+    tx.moderationCard.findFirst.mockResolvedValueOnce({ id: RED_CARD_ID });
+
+    await expect(service.createYellowCard(command())).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
+
+  it('revokes sessions after the ban transaction has completed', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(3);
+    revoker.isConfigured = true;
+    const response = await service.createYellowCard(command());
+
+    expect(response.sessionRevocation).toBe('REVOKED');
+    expect(revoker.revokeSessions).toHaveBeenCalledWith(SOURCE_ID);
+    expect(notificationUpdate).toHaveBeenCalledWith({
+      where: { id: 'red-notification-id' },
+      data: {
+        metadata: { reasonCode: 'THREE_YELLOW_CARDS', sessionRevocation: 'REVOKED' },
+      },
+    });
+    expect(transaction.mock.invocationCallOrder[0]).toBeLessThan(
+      revoker.revokeSessions.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('keeps a durable retry marker if Keycloak rejects revocation', async () => {
+    tx.moderationCard.count.mockResolvedValueOnce(3);
+    revoker.isConfigured = true;
+    revoker.revokeSessions.mockResolvedValueOnce(false);
+
+    const response = await service.createYellowCard(command());
+
+    expect(response.sessionRevocation).toBe('PENDING');
+    expect(notificationUpdate).not.toHaveBeenCalled();
+  });
+
+  it('retries pending revocations without affecting active accounts', async () => {
+    revoker.isConfigured = true;
+    notificationFindMany.mockResolvedValueOnce([
+      { id: 'pending-1', user: { status: 'BANNED', keycloakSubject: SOURCE_ID } },
+      { id: 'pending-2', user: { status: 'ACTIVE', keycloakSubject: 'other' } },
+    ]);
+
+    await service.retryPendingSessionRevocations();
+
+    expect(revoker.revokeSessions).toHaveBeenCalledTimes(1);
+    expect(revoker.revokeSessions).toHaveBeenCalledWith(SOURCE_ID);
+    expect(notificationUpdate).toHaveBeenCalledTimes(1);
   });
 
   it('disconnects the database during shutdown', async () => {
