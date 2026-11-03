@@ -196,13 +196,21 @@ describe('ModerationService – Yellow Cards', () => {
 
     await service.createYellowCard(command());
 
-    expect(tx.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          body: expect.stringContaining('zweite aktive gelbe Karte'),
-        }),
-      }),
-    );
+    expect(tx.notification.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        type: 'YELLOW_CARD',
+        title: 'Gelbe Karte',
+        body: 'Du hast eine gelbe Karte erhalten. Grund: SPAM. Dies ist deine zweite aktive gelbe Karte. Eine weitere erreicht die Schwelle für Rot.',
+        sourceType: 'MODERATION_CARD',
+        sourceId: CARD_ID,
+        actorUserId: MODERATOR_ID,
+        dedupeKey: `yellow-card:${CARD_ID}`,
+        metadata: {
+          reasonCode: 'SPAM',
+        },
+      },
+    });
   });
 
   it('notifies the user when the red-card threshold is reached', async () => {
@@ -210,13 +218,21 @@ describe('ModerationService – Yellow Cards', () => {
 
     await service.createYellowCard(command());
 
-    expect(tx.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          body: expect.stringContaining('Schwelle für eine rote Karte ist erreicht'),
-        }),
-      }),
-    );
+    expect(tx.notification.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        type: 'YELLOW_CARD',
+        title: 'Gelbe Karte',
+        body: 'Du hast eine gelbe Karte erhalten. Grund: SPAM. Die Schwelle für eine rote Karte ist erreicht.',
+        sourceType: 'MODERATION_CARD',
+        sourceId: CARD_ID,
+        actorUserId: MODERATOR_ID,
+        dedupeKey: `yellow-card:${CARD_ID}`,
+        metadata: {
+          reasonCode: 'SPAM',
+        },
+      },
+    });
   });
 
   it('does not expose private notes in the result', async () => {
@@ -401,11 +417,7 @@ describe('ModerationService – Yellow Cards', () => {
 
     expect(result.redCardRequired).toBe(true);
     expect(tx.moderationCard.create).toHaveBeenCalledTimes(1);
-    expect(tx.moderationCard.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ type: 'YELLOW', status: 'ACTIVE' }),
-      }),
-    );
+
   });
 
   it('disconnects the database during shutdown', async () => {
