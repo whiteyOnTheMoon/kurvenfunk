@@ -1,3 +1,9 @@
+// The worker's database wrapper imports a generated ESM Prisma client.
+// Mock it so this unit suite remains isolated from runtime database loading.
+jest.mock('../database/database.service', () => ({
+  DatabaseService: class DatabaseService {},
+}));
+
 import type { DatabaseService } from '../database/database.service';
 
 import { SanctionExpirationService } from './sanction-expiration.service';
