@@ -19,7 +19,9 @@ const moderationCardFields = z.object({
     .regex(/^[A-Z][A-Z0-9_]*$/),
   userMessage: z.string().trim().min(1).max(1000).optional(),
   moderatorNote: z.string().trim().min(1).max(2000),
-  sourceType: z.enum(['NONE', 'COMMENT', 'FORUM_POST', 'THREAD', 'ARTICLE', 'USER']).default('NONE'),
+  sourceType: z
+    .enum(['NONE', 'COMMENT', 'FORUM_POST', 'THREAD', 'ARTICLE', 'USER'])
+    .default('NONE'),
   sourceId: z.string().uuid().optional(),
 });
 

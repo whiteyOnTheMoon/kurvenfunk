@@ -161,13 +161,16 @@ describe('Direct Red Card Controller', () => {
   });
 
   it('keeps standard MODERATOR roles from having user.ban', () => {
-    const { PermissionsService } = jest.requireActual('../permissions/permissions.service') as
-      typeof import('../permissions/permissions.service');
+    const { PermissionsService } = jest.requireActual(
+      '../permissions/permissions.service',
+    ) as typeof import('../permissions/permissions.service');
     const permissions = new PermissionsService();
-    expect(permissions.hasPermission({ status: 'ACTIVE', roles: ['MODERATOR'] }, PERMISSIONS.USER_BAN))
-      .toBe(false);
-    expect(permissions.hasPermission({ status: 'ACTIVE', roles: ['ADMIN'] }, PERMISSIONS.USER_BAN))
-      .toBe(true);
+    expect(
+      permissions.hasPermission({ status: 'ACTIVE', roles: ['MODERATOR'] }, PERMISSIONS.USER_BAN),
+    ).toBe(false);
+    expect(
+      permissions.hasPermission({ status: 'ACTIVE', roles: ['ADMIN'] }, PERMISSIONS.USER_BAN),
+    ).toBe(true);
   });
 });
 
@@ -177,33 +180,42 @@ describe('Direct Red Card Validation', () => {
   });
 
   it('defaults sourceType to NONE', () => {
-    expect(createDirectRedCardSchema.parse({
-      userId: USER_ID,
-      reasonCode: 'ABUSE',
-      moderatorNote: 'Evidence retained',
-    }).sourceType).toBe('NONE');
+    expect(
+      createDirectRedCardSchema.parse({
+        userId: USER_ID,
+        reasonCode: 'ABUSE',
+        moderatorNote: 'Evidence retained',
+      }).sourceType,
+    ).toBe('NONE');
   });
 
   it('rejects malformed reasons, empty notes and spoofed actor IDs', () => {
-    expect(createDirectRedCardSchema.safeParse({ ...validInput, reasonCode: 'bad reason' }).success)
-      .toBe(false);
-    expect(createDirectRedCardSchema.safeParse({ ...validInput, moderatorNote: '  ' }).success)
-      .toBe(false);
-    expect(createDirectRedCardSchema.safeParse({ ...validInput, moderatorId: MODERATOR_ID }).success)
-      .toBe(false);
+    expect(
+      createDirectRedCardSchema.safeParse({ ...validInput, reasonCode: 'bad reason' }).success,
+    ).toBe(false);
+    expect(
+      createDirectRedCardSchema.safeParse({ ...validInput, moderatorNote: '  ' }).success,
+    ).toBe(false);
+    expect(
+      createDirectRedCardSchema.safeParse({ ...validInput, moderatorId: MODERATOR_ID }).success,
+    ).toBe(false);
   });
 
   it('rejects source IDs without a source, and sources without an ID', () => {
-    expect(createDirectRedCardSchema.safeParse({ ...validInput, sourceId: USER_ID }).success)
-      .toBe(false);
-    expect(createDirectRedCardSchema.safeParse({ ...validInput, sourceType: 'COMMENT' }).success)
-      .toBe(false);
+    expect(createDirectRedCardSchema.safeParse({ ...validInput, sourceId: USER_ID }).success).toBe(
+      false,
+    );
+    expect(
+      createDirectRedCardSchema.safeParse({ ...validInput, sourceType: 'COMMENT' }).success,
+    ).toBe(false);
   });
 
   it('does not allow direct-red expiration timestamps', () => {
-    expect(createDirectRedCardSchema.safeParse({
-      ...validInput,
-      expiresAt: '2027-01-01T00:00:00Z',
-    }).success).toBe(false);
+    expect(
+      createDirectRedCardSchema.safeParse({
+        ...validInput,
+        expiresAt: '2027-01-01T00:00:00Z',
+      }).success,
+    ).toBe(false);
   });
 });

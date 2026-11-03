@@ -25,11 +25,13 @@ const input = (extra: Partial<CreateDirectRedCardCommand> = {}): CreateDirectRed
 
 function txClient() {
   return {
-    $queryRaw: jest.fn().mockResolvedValue([{
-      id: TARGET_ID,
-      status: 'ACTIVE',
-      keycloakSubject: KEYCLOAK_SUBJECT,
-    }]),
+    $queryRaw: jest.fn().mockResolvedValue([
+      {
+        id: TARGET_ID,
+        status: 'ACTIVE',
+        keycloakSubject: KEYCLOAK_SUBJECT,
+      },
+    ]),
     moderationCard: {
       findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockResolvedValue({ id: RED_ID }),
@@ -121,11 +123,13 @@ describe('DirectRedCardService', () => {
   });
 
   it('writes the correct direct RED audit actor and previous account state', async () => {
-    tx.$queryRaw.mockResolvedValueOnce([{
-      id: TARGET_ID,
-      status: 'LIMITED',
-      keycloakSubject: KEYCLOAK_SUBJECT,
-    }]);
+    tx.$queryRaw.mockResolvedValueOnce([
+      {
+        id: TARGET_ID,
+        status: 'LIMITED',
+        keycloakSubject: KEYCLOAK_SUBJECT,
+      },
+    ]);
 
     await service.createDirectRedCard(input());
 
@@ -180,69 +184,81 @@ describe('DirectRedCardService', () => {
       },
       select: { id: true },
     });
-    expect(tx.notification.create.mock.calls[0][0].data.body)
-      .not.toContain('Internal investigation');
+    expect(tx.notification.create.mock.calls[0][0].data.body).not.toContain(
+      'Internal investigation',
+    );
   });
 
   it('locks the target before the red card or status update', async () => {
     await service.createDirectRedCard(input());
-    expect(tx.$queryRaw.mock.invocationCallOrder[0])
-      .toBeLessThan(tx.moderationCard.findFirst.mock.invocationCallOrder[0]);
-    expect(tx.moderationCard.findFirst.mock.invocationCallOrder[0])
-      .toBeLessThan(tx.moderationCard.create.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.moderationCard.findFirst.mock.invocationCallOrder[0],
+    );
+    expect(tx.moderationCard.findFirst.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.moderationCard.create.mock.invocationCallOrder[0],
+    );
   });
 
   it('rejects a self-ban before opening a transaction', async () => {
-    await expect(service.createDirectRedCard(input({ userId: ACTOR_ID })))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.createDirectRedCard(input({ userId: ACTOR_ID }))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(transact).not.toHaveBeenCalled();
   });
 
   it('rejects a nonexistent target without any writes', async () => {
     tx.$queryRaw.mockResolvedValueOnce([]);
-    await expect(service.createDirectRedCard(input()))
-      .rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.createDirectRedCard(input())).rejects.toBeInstanceOf(NotFoundException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
   });
 
   it('rejects a BANNED target without making duplicate cards', async () => {
-    tx.$queryRaw.mockResolvedValueOnce([{
-      id: TARGET_ID, status: 'BANNED', keycloakSubject: KEYCLOAK_SUBJECT,
-    }]);
-    await expect(service.createDirectRedCard(input()))
-      .rejects.toBeInstanceOf(ConflictException);
+    tx.$queryRaw.mockResolvedValueOnce([
+      {
+        id: TARGET_ID,
+        status: 'BANNED',
+        keycloakSubject: KEYCLOAK_SUBJECT,
+      },
+    ]);
+    await expect(service.createDirectRedCard(input())).rejects.toBeInstanceOf(ConflictException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
   });
 
   it('rejects any existing active red card', async () => {
     tx.moderationCard.findFirst.mockResolvedValueOnce({ id: 'existing' });
-    await expect(service.createDirectRedCard(input()))
-      .rejects.toBeInstanceOf(ConflictException);
+    await expect(service.createDirectRedCard(input())).rejects.toBeInstanceOf(ConflictException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
     expect(tx.user.update).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid source pairing before opening a transaction', async () => {
-    await expect(service.createDirectRedCard(input({ sourceType: 'COMMENT' })))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.createDirectRedCard(input({ sourceType: 'COMMENT' })),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(transact).not.toHaveBeenCalled();
   });
 
   it('rejects a mismatched USER source', async () => {
-    await expect(service.createDirectRedCard(input({
-      sourceType: 'USER',
-      sourceId: SOURCE_ID,
-    }))).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.createDirectRedCard(
+        input({
+          sourceType: 'USER',
+          sourceId: SOURCE_ID,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
   });
 
   it.each(['COMMENT', 'FORUM_POST', 'THREAD', 'ARTICLE'] as const)(
     'accepts valid %s evidence tied to the target',
     async (sourceType) => {
-      const result = await service.createDirectRedCard(input({
-        sourceType,
-        sourceId: SOURCE_ID,
-      }));
+      const result = await service.createDirectRedCard(
+        input({
+          sourceType,
+          sourceId: SOURCE_ID,
+        }),
+      );
       expect(result.type).toBe('RED');
     },
   );
@@ -257,20 +273,28 @@ describe('DirectRedCardService', () => {
         ARTICLE: tx.article.findUnique,
       }[sourceType];
       lookup.mockResolvedValueOnce({ authorId: ACTOR_ID });
-      await expect(service.createDirectRedCard(input({
-        sourceType,
-        sourceId: SOURCE_ID,
-      }))).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.createDirectRedCard(
+          input({
+            sourceType,
+            sourceId: SOURCE_ID,
+          }),
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(tx.moderationCard.create).not.toHaveBeenCalled();
     },
   );
 
   it('rejects missing content', async () => {
     tx.comment.findUnique.mockResolvedValueOnce(null);
-    await expect(service.createDirectRedCard(input({
-      sourceType: 'COMMENT',
-      sourceId: SOURCE_ID,
-    }))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.createDirectRedCard(
+        input({
+          sourceType: 'COMMENT',
+          sourceId: SOURCE_ID,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(tx.moderationCard.create).not.toHaveBeenCalled();
   });
 
@@ -290,8 +314,9 @@ describe('DirectRedCardService', () => {
     const result = await service.createDirectRedCard(input());
     expect(result.sessionRevocation).toBe('REVOKED');
     expect(revoker.revokeSessions).toHaveBeenCalledWith(KEYCLOAK_SUBJECT);
-    expect(transact.mock.invocationCallOrder[0])
-      .toBeLessThan(revoker.revokeSessions.mock.invocationCallOrder[0]);
+    expect(transact.mock.invocationCallOrder[0]).toBeLessThan(
+      revoker.revokeSessions.mock.invocationCallOrder[0],
+    );
     expect(notificationUpdate).toHaveBeenCalledWith({
       where: { id: 'notification-1' },
       data: { metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'REVOKED' } },
