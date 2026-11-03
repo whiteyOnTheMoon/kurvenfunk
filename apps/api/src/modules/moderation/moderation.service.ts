@@ -45,191 +45,194 @@ export class ModerationService implements OnModuleDestroy {
       });
     }
 
-    return this.database.$transaction(async (tx) => {
-      // Serialize warnings for the same account. READ COMMITTED ensures
-      // a waiting transaction counts previously committed warnings.
-      const lockedUsers = await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT "id" FROM "User" WHERE "id" = ${command.userId}::uuid FOR UPDATE
-      `;
+    return this.database.$transaction(
+      async (tx) => {
+        // Serialize warnings for the same account. READ COMMITTED ensures
+        // a waiting transaction counts previously committed warnings.
+        const lockedUsers = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT "id" FROM "User" WHERE "id" = ${command.userId}::uuid FOR UPDATE
+        `;
 
-      if (lockedUsers.length === 0) {
-        throw new NotFoundException({
-          code: 'YELLOW_CARD_USER_NOT_FOUND',
-          message: 'Target user not found.',
-        });
-      }
-
-      if (command.sourceType === 'USER') {
-        if (command.sourceId !== command.userId) {
-          throw new BadRequestException({
-            code: 'YELLOW_CARD_SOURCE_MISMATCH',
-            message: 'Source does not belong to target user.',
-          });
-        }
-      }
-
-      if (command.sourceType !== 'NONE' && command.sourceType !== 'USER') {
-        const sourceId = command.sourceId!;
-
-        let sourceAuthorId: string | null | undefined;
-
-        switch (command.sourceType) {
-          case 'COMMENT': {
-            const comment = await tx.comment.findUnique({
-              where: { id: sourceId },
-              select: { authorId: true },
-            });
-
-            sourceAuthorId = comment?.authorId;
-            break;
-          }
-
-          case 'FORUM_POST': {
-            const post = await tx.post.findUnique({
-              where: { id: sourceId },
-              select: { authorId: true },
-            });
-
-            sourceAuthorId = post?.authorId;
-            break;
-          }
-
-          case 'THREAD': {
-            const thread = await tx.thread.findUnique({
-              where: { id: sourceId },
-              select: { authorId: true },
-            });
-
-            sourceAuthorId = thread?.authorId;
-            break;
-          }
-
-          case 'ARTICLE': {
-            const article = await tx.article.findUnique({
-              where: { id: sourceId },
-              select: { authorId: true },
-            });
-
-            sourceAuthorId = article?.authorId;
-            break;
-          }
-        }
-
-        if (sourceAuthorId === undefined) {
+        if (lockedUsers.length === 0) {
           throw new NotFoundException({
-            code: 'YELLOW_CARD_SOURCE_NOT_FOUND',
-            message: 'Moderation source not found.',
+            code: 'YELLOW_CARD_USER_NOT_FOUND',
+            message: 'Target user not found.',
           });
         }
 
-        if (sourceAuthorId !== command.userId) {
-          throw new BadRequestException({
-            code: 'YELLOW_CARD_SOURCE_MISMATCH',
-            message: 'Source does not belong to target user.',
-          });
+        if (command.sourceType === 'USER') {
+          if (command.sourceId !== command.userId) {
+            throw new BadRequestException({
+              code: 'YELLOW_CARD_SOURCE_MISMATCH',
+              message: 'Source does not belong to target user.',
+            });
+          }
         }
-      }
 
-      const card = await tx.moderationCard.create({
-        data: {
-          userId: command.userId,
-          moderatorId: command.moderatorId,
+        if (command.sourceType !== 'NONE' && command.sourceType !== 'USER') {
+          const sourceId = command.sourceId!;
 
-          type: 'YELLOW',
-          status: 'ACTIVE',
+          let sourceAuthorId: string | null | undefined;
 
-          reasonCode: command.reasonCode,
-          userMessage: command.userMessage ?? null,
-          moderatorNote: command.moderatorNote,
+          switch (command.sourceType) {
+            case 'COMMENT': {
+              const comment = await tx.comment.findUnique({
+                where: { id: sourceId },
+                select: { authorId: true },
+              });
 
-          sourceType: command.sourceType,
-          sourceId: command.sourceId ?? null,
+              sourceAuthorId = comment?.authorId;
+              break;
+            }
 
-          expiresAt,
-          escalationSource: 'MANUAL',
-        },
-        select: {
-          id: true,
-          userId: true,
-          moderatorId: true,
-          type: true,
-          status: true,
-          reasonCode: true,
-          sourceType: true,
-          sourceId: true,
-          issuedAt: true,
-          expiresAt: true,
-        },
-      });
+            case 'FORUM_POST': {
+              const post = await tx.post.findUnique({
+                where: { id: sourceId },
+                select: { authorId: true },
+              });
 
-      // Count within the issuance transaction, including the new yellow card.
-      const yellowCardCount = await countRelevantYellowCards(tx, command.userId, new Date());
-      const counterStage = getYellowCardCounterStage(yellowCardCount);
+              sourceAuthorId = post?.authorId;
+              break;
+            }
 
-      await tx.auditLog.create({
-        data: {
-          actorType: 'USER',
-          actorUserId: command.moderatorId,
+            case 'THREAD': {
+              const thread = await tx.thread.findUnique({
+                where: { id: sourceId },
+                select: { authorId: true },
+              });
 
-          action: 'MODERATION_CARD_CREATED',
-          category: 'MODERATION',
+              sourceAuthorId = thread?.authorId;
+              break;
+            }
 
-          targetType: 'MODERATION_CARD',
-          targetId: card.id,
-          targetUserId: command.userId,
+            case 'ARTICLE': {
+              const article = await tx.article.findUnique({
+                where: { id: sourceId },
+                select: { authorId: true },
+              });
 
-          moderationCardId: card.id,
-          reason: command.reasonCode,
+              sourceAuthorId = article?.authorId;
+              break;
+            }
+          }
 
-          metadata: {
-            cardType: 'YELLOW',
+          if (sourceAuthorId === undefined) {
+            throw new NotFoundException({
+              code: 'YELLOW_CARD_SOURCE_NOT_FOUND',
+              message: 'Moderation source not found.',
+            });
+          }
+
+          if (sourceAuthorId !== command.userId) {
+            throw new BadRequestException({
+              code: 'YELLOW_CARD_SOURCE_MISMATCH',
+              message: 'Source does not belong to target user.',
+            });
+          }
+        }
+
+        const card = await tx.moderationCard.create({
+          data: {
+            userId: command.userId,
+            moderatorId: command.moderatorId,
+
+            type: 'YELLOW',
+            status: 'ACTIVE',
+
+            reasonCode: command.reasonCode,
+            userMessage: command.userMessage ?? null,
+            moderatorNote: command.moderatorNote,
+
             sourceType: command.sourceType,
             sourceId: command.sourceId ?? null,
-            yellowCardCount,
-            counterStage,
+
+            expiresAt,
+            escalationSource: 'MANUAL',
           },
-        },
-      });
-
-      const notificationBody = command.userMessage
-        ? `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}. ${command.userMessage}`
-        : `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}.`;
-
-      const additionalWarning =
-        counterStage === 'SECOND_YELLOW'
-          ? ' Dies ist deine zweite aktive gelbe Karte. Eine weitere erreicht die Schwelle für Rot.'
-          : counterStage === 'RED_CARD_REQUIRED'
-            ? ' Die Schwelle für eine rote Karte ist erreicht.'
-            : '';
-
-      await tx.notification.create({
-        data: {
-          userId: command.userId,
-          type: 'YELLOW_CARD',
-
-          title: 'Gelbe Karte',
-          body: `${notificationBody}${additionalWarning}`,
-
-          sourceType: 'MODERATION_CARD',
-          sourceId: card.id,
-
-          actorUserId: command.moderatorId,
-
-          dedupeKey: `yellow-card:${card.id}`,
-
-          metadata: {
-            reasonCode: command.reasonCode,
+          select: {
+            id: true,
+            userId: true,
+            moderatorId: true,
+            type: true,
+            status: true,
+            reasonCode: true,
+            sourceType: true,
+            sourceId: true,
+            issuedAt: true,
+            expiresAt: true,
           },
-        },
-      });
+        });
 
-      return {
-        ...card,
-        yellowCardCount,
-        counterStage,
-        redCardRequired: counterStage === 'RED_CARD_REQUIRED',
-      };
-    }, { isolationLevel: 'ReadCommitted' });
+        // Count within the issuance transaction, including the new yellow card.
+        const yellowCardCount = await countRelevantYellowCards(tx, command.userId, new Date());
+        const counterStage = getYellowCardCounterStage(yellowCardCount);
+
+        await tx.auditLog.create({
+          data: {
+            actorType: 'USER',
+            actorUserId: command.moderatorId,
+
+            action: 'MODERATION_CARD_CREATED',
+            category: 'MODERATION',
+
+            targetType: 'MODERATION_CARD',
+            targetId: card.id,
+            targetUserId: command.userId,
+
+            moderationCardId: card.id,
+            reason: command.reasonCode,
+
+            metadata: {
+              cardType: 'YELLOW',
+              sourceType: command.sourceType,
+              sourceId: command.sourceId ?? null,
+              yellowCardCount,
+              counterStage,
+            },
+          },
+        });
+
+        const notificationBody = command.userMessage
+          ? `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}. ${command.userMessage}`
+          : `Du hast eine gelbe Karte erhalten. Grund: ${command.reasonCode}.`;
+
+        const additionalWarning =
+          counterStage === 'SECOND_YELLOW'
+            ? ' Dies ist deine zweite aktive gelbe Karte. Eine weitere erreicht die Schwelle für Rot.'
+            : counterStage === 'RED_CARD_REQUIRED'
+              ? ' Die Schwelle für eine rote Karte ist erreicht.'
+              : '';
+
+        await tx.notification.create({
+          data: {
+            userId: command.userId,
+            type: 'YELLOW_CARD',
+
+            title: 'Gelbe Karte',
+            body: `${notificationBody}${additionalWarning}`,
+
+            sourceType: 'MODERATION_CARD',
+            sourceId: card.id,
+
+            actorUserId: command.moderatorId,
+
+            dedupeKey: `yellow-card:${card.id}`,
+
+            metadata: {
+              reasonCode: command.reasonCode,
+            },
+          },
+        });
+
+        return {
+          ...card,
+          yellowCardCount,
+          counterStage,
+          redCardRequired: counterStage === 'RED_CARD_REQUIRED',
+        };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   async onModuleDestroy(): Promise<void> {
