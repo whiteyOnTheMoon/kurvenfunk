@@ -115,7 +115,11 @@ export class LimitedSanctionsService implements OnModuleDestroy {
             targetUserId: command.userId,
             sanctionId: sanction.id,
             reason: command.reasonCode,
-            metadata: { sanctionType: 'LIMITED', duration: command.duration, expiresAt: expiresAt.toISOString() },
+            metadata: {
+              sanctionType: 'LIMITED',
+              duration: command.duration,
+              expiresAt: expiresAt.toISOString(),
+            },
           },
         });
 

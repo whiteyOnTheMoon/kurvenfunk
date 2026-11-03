@@ -41,9 +41,14 @@ describe('SanctionExpirationService', () => {
   });
 
   it('expires LIMITED, restores ACTIVE and records both audit events', async () => {
-    db.sanction.findMany.mockResolvedValueOnce([{
-      id: SANCTION_ID, userId: USER_ID, type: 'LIMITED', expiresAt: expiredAt,
-    }]);
+    db.sanction.findMany.mockResolvedValueOnce([
+      {
+        id: SANCTION_ID,
+        userId: USER_ID,
+        type: 'LIMITED',
+        expiresAt: expiredAt,
+      },
+    ]);
 
     await service.expireDueSanctions(now);
 
@@ -68,9 +73,13 @@ describe('SanctionExpirationService', () => {
   });
 
   it('keeps LIMITED if another active LIMITED sanction remains', async () => {
-    db.sanction.findMany.mockResolvedValueOnce([{
-      id: SANCTION_ID, userId: USER_ID, type: 'LIMITED',
-    }]);
+    db.sanction.findMany.mockResolvedValueOnce([
+      {
+        id: SANCTION_ID,
+        userId: USER_ID,
+        type: 'LIMITED',
+      },
+    ]);
     tx.sanction.count.mockResolvedValueOnce(1);
 
     await service.expireDueSanctions(now);
@@ -80,9 +89,13 @@ describe('SanctionExpirationService', () => {
   });
 
   it('never reactivates a BANNED user after a LIMITED expiry', async () => {
-    db.sanction.findMany.mockResolvedValueOnce([{
-      id: SANCTION_ID, userId: USER_ID, type: 'LIMITED',
-    }]);
+    db.sanction.findMany.mockResolvedValueOnce([
+      {
+        id: SANCTION_ID,
+        userId: USER_ID,
+        type: 'LIMITED',
+      },
+    ]);
     tx.$queryRaw.mockResolvedValueOnce([{ id: USER_ID, status: 'BANNED' }]);
 
     await service.expireDueSanctions(now);
@@ -91,9 +104,13 @@ describe('SanctionExpirationService', () => {
   });
 
   it('does not repeat audit logs for already expired sanctions', async () => {
-    db.sanction.findMany.mockResolvedValueOnce([{
-      id: SANCTION_ID, userId: USER_ID, type: 'LIMITED',
-    }]);
+    db.sanction.findMany.mockResolvedValueOnce([
+      {
+        id: SANCTION_ID,
+        userId: USER_ID,
+        type: 'LIMITED',
+      },
+    ]);
     tx.sanction.updateMany.mockResolvedValueOnce({ count: 0 });
 
     await service.expireDueSanctions(now);
@@ -144,7 +161,10 @@ describe('SanctionExpirationService', () => {
   it('does not overlap concurrent scans', async () => {
     let release!: () => void;
     db.sanction.findMany.mockImplementationOnce(
-      () => new Promise<void>((resolve) => { release = resolve; }),
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
     );
     const first = service.expireDueSanctions(now);
     await service.expireDueSanctions(now);

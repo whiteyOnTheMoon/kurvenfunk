@@ -40,7 +40,9 @@ describe('LimitedSanctionsController', () => {
 
   it('binds the moderator from the authenticated request', async () => {
     const create = jest.fn().mockResolvedValue({ id: 'test-sanction' });
-    const controller = new LimitedSanctionsController({ create } as unknown as LimitedSanctionsService);
+    const controller = new LimitedSanctionsController({
+      create,
+    } as unknown as LimitedSanctionsService);
     const request = {
       user: { kurvenfunkUserId: MODERATOR_ID },
     } as unknown as AuthenticatedRequest;
@@ -52,17 +54,18 @@ describe('LimitedSanctionsController', () => {
 });
 
 describe('Limited sanction input validation', () => {
-  it.each(['24H', '3D', '7D', '30D'] as const)(
-    'accepts %s duration',
-    (duration) => {
-      expect(limitedSanctionSchema.safeParse({ ...valid, duration }).success).toBe(true);
-    },
-  );
+  it.each(['24H', '3D', '7D', '30D'] as const)('accepts %s duration', (duration) => {
+    expect(limitedSanctionSchema.safeParse({ ...valid, duration }).success).toBe(true);
+  });
 
   it('rejects arbitrary durations, unexpected moderatorId and malformed reasons', () => {
     expect(limitedSanctionSchema.safeParse({ ...valid, duration: 'FOREVER' }).success).toBe(false);
-    expect(limitedSanctionSchema.safeParse({ ...valid, moderatorId: MODERATOR_ID }).success).toBe(false);
-    expect(limitedSanctionSchema.safeParse({ ...valid, reasonCode: 'bad reason' }).success).toBe(false);
+    expect(limitedSanctionSchema.safeParse({ ...valid, moderatorId: MODERATOR_ID }).success).toBe(
+      false,
+    );
+    expect(limitedSanctionSchema.safeParse({ ...valid, reasonCode: 'bad reason' }).success).toBe(
+      false,
+    );
   });
 
   it('requires nonempty internal notes and valid target UUID', () => {

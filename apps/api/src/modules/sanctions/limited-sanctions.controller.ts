@@ -12,7 +12,12 @@ export const limitedSanctionSchema = z
   .object({
     userId: z.string().uuid(),
     duration: z.enum(['24H', '3D', '7D', '30D']),
-    reasonCode: z.string().trim().min(2).max(80).regex(/^[A-Z][A-Z0-9_]*$/),
+    reasonCode: z
+      .string()
+      .trim()
+      .min(2)
+      .max(80)
+      .regex(/^[A-Z][A-Z0-9_]*$/),
     moderatorNote: z.string().trim().min(1).max(2000),
     userMessage: z.string().trim().min(1).max(1000).optional(),
   })

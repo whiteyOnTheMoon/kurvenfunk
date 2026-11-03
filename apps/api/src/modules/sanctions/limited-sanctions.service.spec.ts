@@ -1,7 +1,10 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 
-import { LimitedSanctionsService, type CreateLimitedSanctionCommand } from './limited-sanctions.service';
+import {
+  LimitedSanctionsService,
+  type CreateLimitedSanctionCommand,
+} from './limited-sanctions.service';
 
 jest.mock('@kurvenfunk/database', () => ({ createPrismaClient: jest.fn() }));
 
@@ -9,7 +12,9 @@ const USER_ID = '11111111-1111-4111-8111-111111111111';
 const ACTOR_ID = '22222222-2222-4222-8222-222222222222';
 const SANCTION_ID = '44444444-4444-4444-8444-444444444444';
 
-function command(overrides: Partial<CreateLimitedSanctionCommand> = {}): CreateLimitedSanctionCommand {
+function command(
+  overrides: Partial<CreateLimitedSanctionCommand> = {},
+): CreateLimitedSanctionCommand {
   return {
     userId: USER_ID,
     moderatorId: ACTOR_ID,
@@ -32,7 +37,8 @@ function createTx() {
           type: 'LIMITED',
           status: 'ACTIVE',
           expiresAt: data.expiresAt,
-        })),
+        }),
+      ),
     },
     user: { update: jest.fn().mockResolvedValue({ id: USER_ID }) },
     auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit-event' }) },
@@ -126,21 +132,25 @@ describe('LimitedSanctionsService', () => {
 
   it('locks the target before counting or creating sanctions', async () => {
     await service.create(command());
-    expect(tx.$queryRaw.mock.invocationCallOrder[0])
-      .toBeLessThan(tx.sanction.findFirst.mock.invocationCallOrder[0]);
-    expect(tx.sanction.findFirst.mock.invocationCallOrder[0])
-      .toBeLessThan(tx.sanction.create.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.sanction.findFirst.mock.invocationCallOrder[0],
+    );
+    expect(tx.sanction.findFirst.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.sanction.create.mock.invocationCallOrder[0],
+    );
   });
 
   it('rejects self-limiting before any transaction', async () => {
-    await expect(service.create(command({ userId: ACTOR_ID })))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.create(command({ userId: ACTOR_ID }))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(transact).not.toHaveBeenCalled();
   });
 
   it('rejects unsupported durations before any transaction', async () => {
-    await expect(service.create(command({ duration: 'UNKNOWN' as '24H' })))
-      .rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.create(command({ duration: 'UNKNOWN' as '24H' }))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(transact).not.toHaveBeenCalled();
   });
 
