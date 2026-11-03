@@ -27,8 +27,31 @@ describe('PermissionsService', () => {
     expect(can(PERMISSIONS.COMMENT_VOTE, ['USER'], 'LIMITED')).toBe(true);
   });
 
-  it('allows LIMITED users to delete their own comments', () => {
-    expect(can(PERMISSIONS.COMMENT_DELETE, ['USER'], 'LIMITED')).toBe(true);
+  it('blocks LIMITED users from deleting comments', () => {
+    expect(can(PERMISSIONS.COMMENT_DELETE, ['USER'], 'LIMITED')).toBe(false);
+  });
+
+  it.each([
+    PERMISSIONS.COMMENT_CREATE,
+    PERMISSIONS.COMMENT_EDIT,
+    PERMISSIONS.THREAD_CREATE,
+    PERMISSIONS.THREAD_REPLY,
+    PERMISSIONS.COMMENT_MODERATE,
+    PERMISSIONS.USER_WARN,
+    PERMISSIONS.USER_LIMIT,
+    PERMISSIONS.USER_BAN,
+    PERMISSIONS.USER_IPBAN,
+    PERMISSIONS.ARTICLE_CREATE,
+    PERMISSIONS.ARTICLE_PUBLISH,
+  ] as const)('blocks LIMITED users from %s', (permission) => {
+    expect(can(permission, ['USER'], 'LIMITED')).toBe(false);
+    expect(can(permission, ['SUPERADMIN'], 'LIMITED')).toBe(false);
+  });
+
+  it('does not allow LIMITED users to bypass restrictions through elevated roles', () => {
+    expect(can(PERMISSIONS.COMMENT_CREATE, ['MODERATOR'], 'LIMITED')).toBe(false);
+    expect(can(PERMISSIONS.THREAD_REPLY, ['SUPERADMIN'], 'LIMITED')).toBe(false);
+    expect(can(PERMISSIONS.COMMENT_VOTE, ['USER'], 'LIMITED')).toBe(true);
   });
 
   it('blocks LIMITED users from creating comments', () => {
