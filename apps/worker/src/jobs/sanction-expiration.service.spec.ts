@@ -63,16 +63,12 @@ describe('SanctionExpirationService', () => {
     await service.scan();
 
     expect(database.tx.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(database.tx.sanction.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          id: SANCTION_ID,
-          status: 'ACTIVE',
-          expiresAt: expect.any(Object),
-        }),
-        data: { status: 'EXPIRED' },
-      }),
-    );
+    const expirationCall: unknown = database.tx.sanction.updateMany.mock.calls[0]?.[0];
+    expect(expirationCall).toMatchObject({
+      where: { id: SANCTION_ID, status: 'ACTIVE' },
+      data: { status: 'EXPIRED' },
+    });
+    expect(expirationCall).toHaveProperty('where.expiresAt.lte');
     expect(database.tx.user.update).toHaveBeenCalledWith({
       where: { id: USER_ID },
       data: { status: 'ACTIVE' },
@@ -136,15 +132,11 @@ describe('SanctionExpirationService', () => {
 
     await service.scan();
 
-    expect(database.tx.iPBlock.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: IP_BLOCK_ID, active: true }),
-        data: expect.objectContaining({
-          active: false,
-          deactivationReason: 'EXPIRED',
-        }),
-      }),
-    );
+    const ipUpdateCall: unknown = database.tx.iPBlock.updateMany.mock.calls[0]?.[0];
+    expect(ipUpdateCall).toMatchObject({
+      where: { id: IP_BLOCK_ID, active: true },
+      data: { active: false, deactivationReason: 'EXPIRED' },
+    });
     expect(database.tx.sanction.updateMany).toHaveBeenCalledWith({
       where: { ipBlockId: IP_BLOCK_ID, type: 'IP_BLOCK', status: 'ACTIVE' },
       data: { status: 'EXPIRED' },
