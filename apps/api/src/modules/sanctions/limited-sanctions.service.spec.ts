@@ -108,8 +108,8 @@ describe('LimitedSanctionsService', () => {
   it('persists internal notes but never publishes them in notifications', async () => {
     await service.create(command({ userMessage: 'Bitte beachte unsere Regeln.' }));
 
-    const created: unknown = tx.(sanction.create.mock.calls as unknown[][])[0]?.[0];
-    const notice: unknown = tx.(notification.create.mock.calls as unknown[][])[0]?.[0];
+    const created: unknown = (tx.sanction.create.mock.calls as unknown[][])[0]?.[0];
+    const notice: unknown = (tx.notification.create.mock.calls as unknown[][])[0]?.[0];
 
     expect(created).toMatchObject({
       data: {
