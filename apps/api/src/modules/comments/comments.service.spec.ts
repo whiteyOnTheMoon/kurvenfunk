@@ -619,6 +619,39 @@ describe('CommentsService', () => {
     expect(result.body).toBe('Rapid spielt heute sehr stark.');
   });
 
+  it('rejects a stale concurrent edit without creating a revision', async () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
+    const commentId = '22222222-2222-4222-8222-222222222222';
+    const authorId = '33333333-3333-4333-8333-333333333333';
+
+    commentFindUnique.mockResolvedValue({
+      id: commentId,
+      articleId,
+      authorId,
+      body: 'Version before another editor intervenes.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: { status: 'PUBLISHED', deletedAt: null },
+    });
+    commentUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.update({
+        articleId,
+        commentId,
+        authorId,
+        body: 'Stale edit',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'COMMENT_EDIT_CONFLICT' },
+    });
+
+    expect(commentUpdateMany).toHaveBeenCalledTimes(1);
+    expect(commentRevisionCreate).not.toHaveBeenCalled();
+    expect(txCommentFindUniqueOrThrow).not.toHaveBeenCalled();
+  });
+
   it('rejects comment edits from LIMITED users before looking up the comment', async () => {
     await expect(
       service.update({
