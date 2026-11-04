@@ -168,10 +168,11 @@ async function main() {
 
     const beforeLogoutEvent = await page.evaluate(() => {
       const client = window.__mockKeycloak;
+      const refreshCallsBefore = client.refreshCalls;
       client.nextToken = 'must-not-restore-session';
       client.onTokenExpired();
       window.dispatchEvent(new Event('focus'));
-      return client.refreshCalls;
+      return refreshCallsBefore;
     });
     assert.equal(await page.evaluate(() => window.__mockKeycloak.refreshCalls), beforeLogoutEvent);
     assert.equal(await page.locator('#auth-status').textContent(), 'anonymous');
