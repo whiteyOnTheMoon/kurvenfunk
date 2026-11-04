@@ -355,7 +355,7 @@ describe('ImportsService', () => {
   });
 
   describe('review workflow', () => {
-    it('returns unresolved import records in review order', async () => {
+    it('returns newest unresolved import records first', async () => {
       const records = [
         {
           id: '11111111-1111-4111-8111-111111111111',
@@ -376,7 +376,7 @@ describe('ImportsService', () => {
             status: 'REVIEW_REQUIRED',
             reviewDecision: null,
           },
-          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: 100,
         }),
       );

@@ -224,10 +224,18 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [matchingProblems, setMatchingProblems] = useState<MatchingProblem[]>([]);
   const [reviewQueue, setReviewQueue] = useState<ReviewItem[]>([]);
+  const [reviewSource, setReviewSource] = useState<'ots' | 'all'>('ots');
   const [reviewingId, setReviewingId] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
+
+  const otsReviewItems = reviewQueue.filter((item) => item.provider.key === 'ots');
+  const hasOtsProvider = overview?.providers.some((provider) => provider.key === 'ots') ?? false;
+  const activeReviewSource = hasOtsProvider ? reviewSource : 'all';
+  const visibleReviewItems = (activeReviewSource === 'ots' ? otsReviewItems : reviewQueue)
+    .slice()
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 
   async function requestJobs(cursor?: string) {
     if (!token) {
@@ -444,7 +452,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                 <strong>{overview.summary.runningJobs}</strong>
               </div>
               <div className={styles.metric}>
-                <span>Importiert</span>
+                <span>Artikel angelegt/aktualisiert</span>
                 <strong>{overview.summary.importedRecords}</strong>
               </div>
               <div className={styles.metric}>
@@ -469,12 +477,147 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
               </div>
             </div>
 
+            <p className={styles.summaryNote}>
+              Die Kennzahlen enthalten auch historische Testimporte. „Artikel angelegt/aktualisiert“
+              zählt erzeugte oder aktualisierte Artikel, nicht empfangene Meldungen.
+              <a className={styles.jumpLink} href="#review-queue">
+                Offene Meldungen prüfen ({reviewQueue.length})
+              </a>
+            </p>
+
             {overview.summary.failedJobs > 0 ? (
               <p className={styles.summaryNote}>
                 {overview.summary.failedJobs} fehlgeschlagene oder nur teilweise erfolgreiche Jobs
                 vorhanden.
               </p>
             ) : null}
+          </section>
+
+          <section aria-labelledby="review-queue">
+            <div className={styles.sectionHeader}>
+              <div>
+                <p className={styles.sectionEyebrow}>Redaktion</p>
+                <h2 id="review-queue">Review-Queue</h2>
+              </div>
+              <span>
+                {visibleReviewItems.length} von {reviewQueue.length} offen
+              </span>
+            </div>
+
+            <p className={styles.reviewHint}>
+              Eine Freigabe erstellt einen unveröffentlichten Artikelentwurf – keine öffentliche
+              Veröffentlichung.
+            </p>
+            {hasOtsProvider ? (
+              <div className={styles.reviewFilters} role="group" aria-label="Review-Quelle filtern">
+                <button
+                  type="button"
+                  className={
+                    activeReviewSource === 'ots' ? styles.reviewFilterActive : styles.reviewFilter
+                  }
+                  aria-pressed={activeReviewSource === 'ots'}
+                  onClick={() => setReviewSource('ots')}
+                >
+                  APA-OTS ({otsReviewItems.length})
+                </button>
+                <button
+                  type="button"
+                  className={
+                    activeReviewSource === 'all' ? styles.reviewFilterActive : styles.reviewFilter
+                  }
+                  aria-pressed={activeReviewSource === 'all'}
+                  onClick={() => setReviewSource('all')}
+                >
+                  Alle Quellen ({reviewQueue.length})
+                </button>
+              </div>
+            ) : null}
+
+            {visibleReviewItems.length === 0 ? (
+              <EmptyState title="Keine offenen Reviews">
+                Für diese Quelle warten aktuell keine Meldungen auf die manuelle Prüfung.
+              </EmptyState>
+            ) : (
+              <div className={styles.reviewList}>
+                {visibleReviewItems.map((item) => {
+                  const payload = getReviewPayloadSummary(item.normalizedPayload);
+                  const busy = reviewingId === item.id;
+
+                  return (
+                    <article key={item.id} className={styles.reviewCard}>
+                      <div className={styles.reviewHeader}>
+                        <div>
+                          <div className={styles.reviewTitle}>
+                            <strong>{payload.title}</strong>
+                            <StatusBadge status={item.status} />
+                          </div>
+
+                          <span>
+                            {item.provider.name} · {formatDate(item.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {payload.lead ? <p className={styles.reviewLead}>{payload.lead}</p> : null}
+
+                      <dl className={styles.reviewMeta}>
+                        <div>
+                          <dt>Confidence</dt>
+                          <dd>{item.errorMessage ?? 'Manuelle Prüfung erforderlich'}</dd>
+                        </div>
+
+                        <div>
+                          <dt>Vereine</dt>
+                          <dd>
+                            {payload.clubNames.length > 0 ? payload.clubNames.join(', ') : '–'}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt>Wettbewerb</dt>
+                          <dd>{payload.competitionName ?? '–'}</dd>
+                        </div>
+
+                        <div>
+                          <dt>Zuordnung</dt>
+                          <dd>
+                            {item.canonicalEntityType
+                              ? `${item.canonicalEntityType} · ${item.canonicalEntityId ?? '–'}`
+                              : '–'}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      {item.externalUrl ? (
+                        <p className={styles.reviewSource}>
+                          <a href={item.externalUrl} target="_blank" rel="noreferrer">
+                            Originalquelle öffnen
+                          </a>
+                        </p>
+                      ) : null}
+
+                      <div className={styles.reviewActions}>
+                        <Button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void decideReview(item.id, 'approve')}
+                        >
+                          {busy ? 'Wird gespeichert …' : 'Entwurf erstellen'}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void decideReview(item.id, 'reject')}
+                        >
+                          Ablehnen
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           <section aria-labelledby="providers">
@@ -548,7 +691,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                         <th>Provider / Job</th>
                         <th>Status</th>
                         <th>Eingang</th>
-                        <th>Importiert</th>
+                        <th>Artikel angelegt/akt.</th>
                         <th>Duplikate</th>
                         <th>Fehler</th>
                         <th>Zeitpunkt</th>
@@ -605,7 +748,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                           <dd>{job.receivedCount}</dd>
                         </div>
                         <div>
-                          <dt>Importiert</dt>
+                          <dt>Artikel angelegt/akt.</dt>
                           <dd>{job.createdCount + job.updatedCount}</dd>
                         </div>
                         <div>
@@ -657,102 +800,6 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                   </div>
                 ) : null}
               </>
-            )}
-          </section>
-
-          <section aria-labelledby="review-queue">
-            <div className={styles.sectionHeader}>
-              <div>
-                <p className={styles.sectionEyebrow}>Redaktion</p>
-                <h2 id="review-queue">Review-Queue</h2>
-              </div>
-              <span>{reviewQueue.length} offen</span>
-            </div>
-
-            {reviewQueue.length === 0 ? (
-              <EmptyState title="Keine offenen Reviews">
-                Aktuell warten keine importierten Artikel auf eine manuelle Prüfung.
-              </EmptyState>
-            ) : (
-              <div className={styles.reviewList}>
-                {reviewQueue.map((item) => {
-                  const payload = getReviewPayloadSummary(item.normalizedPayload);
-                  const busy = reviewingId === item.id;
-
-                  return (
-                    <article key={item.id} className={styles.reviewCard}>
-                      <div className={styles.reviewHeader}>
-                        <div>
-                          <div className={styles.reviewTitle}>
-                            <strong>{payload.title}</strong>
-                            <StatusBadge status={item.status} />
-                          </div>
-
-                          <span>
-                            {item.provider.name} · {formatDate(item.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {payload.lead ? <p className={styles.reviewLead}>{payload.lead}</p> : null}
-
-                      <dl className={styles.reviewMeta}>
-                        <div>
-                          <dt>Confidence</dt>
-                          <dd>{item.errorMessage ?? 'Manuelle Prüfung erforderlich'}</dd>
-                        </div>
-
-                        <div>
-                          <dt>Vereine</dt>
-                          <dd>
-                            {payload.clubNames.length > 0 ? payload.clubNames.join(', ') : '–'}
-                          </dd>
-                        </div>
-
-                        <div>
-                          <dt>Wettbewerb</dt>
-                          <dd>{payload.competitionName ?? '–'}</dd>
-                        </div>
-
-                        <div>
-                          <dt>Zuordnung</dt>
-                          <dd>
-                            {item.canonicalEntityType
-                              ? `${item.canonicalEntityType} · ${item.canonicalEntityId ?? '–'}`
-                              : '–'}
-                          </dd>
-                        </div>
-                      </dl>
-
-                      {item.externalUrl ? (
-                        <p className={styles.reviewSource}>
-                          <a href={item.externalUrl} target="_blank" rel="noreferrer">
-                            Originalquelle öffnen
-                          </a>
-                        </p>
-                      ) : null}
-
-                      <div className={styles.reviewActions}>
-                        <Button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void decideReview(item.id, 'approve')}
-                        >
-                          {busy ? 'Wird gespeichert …' : 'Freigeben'}
-                        </Button>
-
-                        <Button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void decideReview(item.id, 'reject')}
-                        >
-                          Ablehnen
-                        </Button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
             )}
           </section>
 

@@ -318,7 +318,7 @@ export class ImportsService implements OnModuleDestroy {
         status: 'REVIEW_REQUIRED',
         reviewDecision: null,
       },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 100,
       select: {
         id: true,
