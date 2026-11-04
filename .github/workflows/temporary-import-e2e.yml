@@ -1,0 +1,20 @@
+name: Temporary isolated Import Review E2E
+on:
+  push:
+    branches:
+      - 'feat/phase18-review-to-idempotent-draft-20261103'
+permissions:
+  contents: read
+jobs:
+  import-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api test:e2e
