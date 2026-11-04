@@ -94,7 +94,14 @@ describe('Trusted news publication with disposable PostgreSQL', () => {
 
   it('publishes exactly one article from concurrent retries of the same record', async () => {
     const recordId = await createRecord();
-    const args = [provider, recordId, input('Concurrent trusted news'), clubs, competition, match] as const;
+    const args = [
+      provider,
+      recordId,
+      input('Concurrent trusted news'),
+      clubs,
+      competition,
+      match,
+    ] as const;
 
     const outcomes = await Promise.all([
       service.publish(...args),
@@ -116,7 +123,9 @@ describe('Trusted news publication with disposable PostgreSQL', () => {
     });
     expect(storedRecord.status).toBe('CREATED');
     expect(storedRecord.canonicalEntityId).toBe(storedArticle.id);
-    expect((await database.importJob.findUniqueOrThrow({ where: { id: jobId } })).createdCount).toBe(1);
+    expect(
+      (await database.importJob.findUniqueOrThrow({ where: { id: jobId } })).createdCount,
+    ).toBe(1);
 
     const retry = await service.publish(...args);
     expect(retry).toEqual({ articleId: storedArticle.id, created: false });
@@ -143,6 +152,8 @@ describe('Trusted news publication with disposable PostgreSQL', () => {
 
     expect(originals).toHaveLength(2);
     expect(new Set(originals.map((article) => article.slug)).size).toBe(2);
-    expect((await database.importJob.findUniqueOrThrow({ where: { id: jobId } })).createdCount).toBe(3);
+    expect(
+      (await database.importJob.findUniqueOrThrow({ where: { id: jobId } })).createdCount,
+    ).toBe(3);
   }, 30000);
 });
