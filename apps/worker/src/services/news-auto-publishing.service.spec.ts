@@ -343,12 +343,8 @@ describe('NewsAutoPublishingService', () => {
     await service.publish(provider, 'record-1', article, clubs, competition, match);
 
     expect(createArticle).toHaveBeenCalledTimes(2);
-    const createCalls = createArticle.mock.calls as Array<
-      [{ data: { slug: string } }]
-    >;
-    expect(createCalls[1]?.[0].data.slug).toBe(
-      'rapid-schlagt-austria-im-wiener-derby-record-1',
-    );
+    const createCalls = createArticle.mock.calls as Array<[{ data: { slug: string } }]>;
+    expect(createCalls[1]?.[0].data.slug).toBe('rapid-schlagt-austria-im-wiener-derby-record-1');
   });
 
   it('creates a unique slug when the base slug already exists', async () => {
