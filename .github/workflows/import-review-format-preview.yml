@@ -1,0 +1,29 @@
+name: Temporary import review Prettier preview
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/import-review-format-preview.yml'
+      - 'apps/api/src/modules/imports/imports.controller.ts'
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Print exact formatted controller
+        run: |
+          pnpm exec prettier --write apps/api/src/modules/imports/imports.controller.ts
+          echo KURVENFUNK_FORMATTED_BEGIN
+          base64 -w0 apps/api/src/modules/imports/imports.controller.ts
+          echo
+          echo KURVENFUNK_FORMATTED_END
