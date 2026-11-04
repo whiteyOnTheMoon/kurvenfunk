@@ -499,7 +499,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                 <p className={styles.sectionEyebrow}>Redaktion</p>
                 <h2 id="review-queue">Review-Queue</h2>
               </div>
-              <span>{visibleReviewItems.length} von {reviewQueue.length} offen</span>
+              <span>
+                {visibleReviewItems.length} von {reviewQueue.length} offen
+              </span>
             </div>
 
             <p className={styles.reviewHint}>
@@ -510,7 +512,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
               <div className={styles.reviewFilters} role="group" aria-label="Review-Quelle filtern">
                 <button
                   type="button"
-                  className={activeReviewSource === 'ots' ? styles.reviewFilterActive : styles.reviewFilter}
+                  className={
+                    activeReviewSource === 'ots' ? styles.reviewFilterActive : styles.reviewFilter
+                  }
                   aria-pressed={activeReviewSource === 'ots'}
                   onClick={() => setReviewSource('ots')}
                 >
@@ -518,7 +522,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                 </button>
                 <button
                   type="button"
-                  className={activeReviewSource === 'all' ? styles.reviewFilterActive : styles.reviewFilter}
+                  className={
+                    activeReviewSource === 'all' ? styles.reviewFilterActive : styles.reviewFilter
+                  }
                   aria-pressed={activeReviewSource === 'all'}
                   onClick={() => setReviewSource('all')}
                 >
