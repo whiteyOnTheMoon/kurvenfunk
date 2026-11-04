@@ -20,7 +20,7 @@ jobs:
           install: false
       - run: pnpm install --frozen-lockfile
       - name: Prettier only approved files
-        run: pnpm exec prettier --write apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts packages/database/prisma/schema.prisma
+        run: pnpm exec prettier --write apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts
       - name: Commit formatted files back to this PR branch
         run: |
           git config user.name 'github-actions[bot]'
