@@ -1,0 +1,50 @@
+{
+  "realm": "kurvenfunk",
+  "enabled": true,
+  "displayName": "Kurvenfunk browser test realm",
+  "sslRequired": "none",
+  "loginWithEmailAllowed": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "verifyEmail": false,
+  "accessTokenLifespan": 75,
+  "ssoSessionIdleTimeout": 600,
+  "ssoSessionMaxLifespan": 900,
+  "clients": [
+    {
+      "clientId": "kurvenfunk-web",
+      "name": "Isolated Chromium public client",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "browser-e2e",
+      "email": "browser-e2e@example.invalid",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "local-only-browser-test-password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
