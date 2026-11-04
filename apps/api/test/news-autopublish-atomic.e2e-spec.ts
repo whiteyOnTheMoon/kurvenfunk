@@ -19,9 +19,7 @@ describe('Trusted news publication with disposable PostgreSQL', () => {
       supportsCursorPagination: true,
       supportsTimeWindow: true,
     },
-    fetch: async () => {
-      throw new Error('E2E must never contact a real provider');
-    },
+    fetch: () => Promise.reject(new Error('E2E must never contact a real provider')),
   } as unknown as PublishArgs[0];
 
   const clubs = { matches: [], unmatchedNames: [] } as PublishArgs[3];
