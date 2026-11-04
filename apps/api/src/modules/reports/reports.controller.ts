@@ -2,6 +2,7 @@ import { Body, Controller, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@n
 import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
+import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { ReportsService } from './reports.service';
 
@@ -30,7 +31,7 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, OnboardingCompletedGuard)
   createCommentReport(
     @Param('commentId', new ParseUUIDPipe({ version: '4' }))
     commentId: string,
