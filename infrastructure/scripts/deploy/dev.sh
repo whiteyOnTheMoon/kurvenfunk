@@ -87,14 +87,28 @@ docker compose \
   config --quiet
 
 echo
-echo "=== Build application images ==="
+echo "=== Build application and migration images ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
   -f compose.yml \
   -f compose.dev.yml \
+  --profile deployment \
   build \
-  web api worker
+  web api worker migrate
+
+echo
+echo "=== Apply DEV database migrations before starting updated services ==="
+# The dedicated migrate service has the current Prisma migration files.
+# Fail the deployment if a migration fails; do not start a newer API/worker
+# against an outdated schema. The migrate service waits for healthy Postgres.
+docker compose \
+  -p "$COMPOSE_PROJECT" \
+  --env-file .env.dev \
+  -f compose.yml \
+  -f compose.dev.yml \
+  --profile deployment \
+  run --rm -T migrate
 
 echo
 echo "=== Update DEV environment ==="
