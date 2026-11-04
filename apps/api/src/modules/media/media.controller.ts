@@ -85,7 +85,10 @@ export class MediaController {
   }
 
   @Get(':id/content')
-  async getContent(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Res() response: Response) {
+  async getContent(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Res() response: Response,
+  ) {
     const content = await this.mediaService.getContent(id);
 
     response.setHeader('Content-Type', content.mimeType);
