@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node-only CommonJS test runner */
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
 const { readFileSync } = require('node:fs');
