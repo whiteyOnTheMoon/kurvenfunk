@@ -7,7 +7,8 @@ const repo = resolve(__dirname, '../../..');
 const api = resolve(__dirname, '..');
 const containers = [];
 let setupStep = 'initialization';
-const minioImage = 'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z';
+// Maintained MinIO-compatible fork; upstream public Docker Hub/Quay images were withdrawn.
+const minioImage = 'pgsty/minio:RELEASE.2026-08-04T00-00-00Z';
 const env = { ...process.env };
 for (const key of [
   'DOCKER_HOST',
