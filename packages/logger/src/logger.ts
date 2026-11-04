@@ -32,7 +32,7 @@ const SENSITIVE_KEYS = [
 const sensitiveKeys = new Set(SENSITIVE_KEYS.map((key) => key.toLowerCase()));
 
 const INLINE_SECRET_PATTERN =
-  /((?:["']?)(?:access[_-]?token|refresh[_-]?token|id[_-]?token|authorization|password|passwd|api[_-]?key|client[_-]?secret|secret|set-cookie|cookie|code|app)(?:["']?)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s&;,}]+)/gi;
+  /((?:["']?)(?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|authorization|password|passwd|api[_-]?key|client[_-]?secret|secret|set-cookie|cookie|code|app)(?:["']?)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s&;,}]+)/gi;
 const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi;
 
 export function redactSensitiveText(text: string): string {
