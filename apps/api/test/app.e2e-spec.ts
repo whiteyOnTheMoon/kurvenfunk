@@ -30,6 +30,18 @@ describe('API with real isolated PostgreSQL and Redis', () => {
     await app?.close();
   });
 
+  it('sets baseline security headers on public and rejected HTTP responses', async () => {
+    for (const path of ['/api/v1/health', '/api/v1/auth/me']) {
+      const response = await request(app.getHttpServer()).get(path);
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers['x-frame-options']).toBe('DENY');
+      expect(response.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+      expect(response.headers['permissions-policy']).toBe(
+        'camera=(), microphone=(), geolocation=()',
+      );
+    }
+  });
+
   it.each(['health', 'health/live'])(
     'serves the actual /api/v1/%s response contract',
     async (path) => {

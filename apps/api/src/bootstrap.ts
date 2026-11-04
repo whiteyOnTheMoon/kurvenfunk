@@ -1,12 +1,21 @@
 import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { NextFunction, Request, Response } from 'express';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 export function configureApplication(app: INestApplication): void {
   const configService = app.get(ConfigService);
+
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.setHeader('X-Frame-Options', 'DENY');
+    response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
 
   app.enableCors({
     origin: configService.getOrThrow<string>('WEB_URL'),
