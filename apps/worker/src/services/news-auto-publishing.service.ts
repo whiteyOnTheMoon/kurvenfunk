@@ -67,7 +67,7 @@ export class NewsAutoPublishingService {
     }
 
     const title = article.title;
-    const slug = await this.createUniqueSlug(title);
+    let slug = await this.createUniqueSlug(title);
 
     const publishedAt =
       article.publishedAt !== undefined ? new Date(article.publishedAt) : new Date();
@@ -78,96 +78,144 @@ export class NewsAutoPublishingService {
 
     const content = this.createArticleContent(article.body);
 
-    const createdArticle = await this.databaseService.client.$transaction(async (tx) => {
-      const currentRecord = await tx.importRecord.findUniqueOrThrow({
-        where: {
-          id: importRecordId,
-        },
-        select: {
-          importJobId: true,
-          status: true,
-          canonicalEntityType: true,
-          canonicalEntityId: true,
-        },
-      });
+    // A worker retry or a competing worker must never create a second
+    // article for one import record. Claim the record before writing the
+    // article, and rely on the unique Article.importRecordId constraint too.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        const result = await this.databaseService.client.$transaction(
+          async (tx) => {
+            const currentRecord = await tx.importRecord.findUniqueOrThrow({
+              where: { id: importRecordId },
+              select: {
+                importJobId: true,
+                status: true,
+                canonicalEntityType: true,
+                canonicalEntityId: true,
+              },
+            });
 
-      if (
-        currentRecord.status === 'CREATED' &&
-        currentRecord.canonicalEntityType === 'ARTICLE' &&
-        currentRecord.canonicalEntityId !== null
-      ) {
-        return {
-          id: currentRecord.canonicalEntityId,
-          created: false,
-        };
-      }
+            if (
+              currentRecord.status === 'CREATED' &&
+              currentRecord.canonicalEntityType === 'ARTICLE' &&
+              currentRecord.canonicalEntityId !== null
+            ) {
+              return { id: currentRecord.canonicalEntityId, created: false };
+            }
 
-      if (currentRecord.status !== 'MATCHED') {
-        throw new Error(
-          `Import record ${importRecordId} cannot be published from status ${currentRecord.status}`,
-        );
-      }
+            if (currentRecord.status !== 'MATCHED') {
+              throw new Error(
+                'Import record ' +
+                  importRecordId +
+                  ' cannot be published from status ' +
+                  currentRecord.status,
+              );
+            }
 
-      const created = await tx.article.create({
-        data: {
-          title,
-          slug,
-          lead: article.lead ?? null,
-          content,
-          status: 'PUBLISHED',
-          externalAuthorName: article.authorName ?? null,
-          originalUrl: article.originalUrl ?? null,
-          competitionId: competitionMatching.match?.competitionId ?? null,
-          matchId: matchMatching.match?.matchId ?? null,
-          publishedAt,
-          clubs:
-            clubMatching.matches.length > 0
-              ? {
-                  create: clubMatching.matches.map((club) => ({
-                    clubId: club.clubId,
-                  })),
-                }
-              : undefined,
-        },
-        select: {
-          id: true,
-        },
-      });
+            // Atomic conditional write takes a row lock. Concurrent
+            // Serializable transactions retry without publishing twice.
+            const claim = await tx.importRecord.updateMany({
+              where: { id: importRecordId, status: 'MATCHED' },
+              data: { status: 'CREATED' },
+            });
 
-      await tx.importRecord.update({
-        where: {
-          id: importRecordId,
-        },
-        data: {
-          status: 'CREATED',
-          canonicalEntityType: 'ARTICLE',
-          canonicalEntityId: created.id,
-          errorCode: null,
-          errorMessage: null,
-        },
-      });
+            if (claim.count !== 1) {
+              const latest = await tx.importRecord.findUniqueOrThrow({
+                where: { id: importRecordId },
+                select: {
+                  status: true,
+                  canonicalEntityType: true,
+                  canonicalEntityId: true,
+                },
+              });
 
-      await tx.importJob.update({
-        where: {
-          id: currentRecord.importJobId,
-        },
-        data: {
-          createdCount: {
-            increment: 1,
+              if (
+                latest.status === 'CREATED' &&
+                latest.canonicalEntityType === 'ARTICLE' &&
+                latest.canonicalEntityId !== null
+              ) {
+                return { id: latest.canonicalEntityId, created: false };
+              }
+
+              throw new Error('IMPORT_RECORD_CLAIM_CONFLICT');
+            }
+
+            const created = await tx.article.create({
+              data: {
+                importRecordId,
+                title,
+                slug,
+                lead: article.lead ?? null,
+                content,
+                status: 'PUBLISHED',
+                externalAuthorName: article.authorName ?? null,
+                originalUrl: article.originalUrl ?? null,
+                competitionId: competitionMatching.match?.competitionId ?? null,
+                matchId: matchMatching.match?.matchId ?? null,
+                publishedAt,
+                clubs:
+                  clubMatching.matches.length > 0
+                    ? {
+                        create: clubMatching.matches.map((club) => ({
+                          clubId: club.clubId,
+                        })),
+                      }
+                    : undefined,
+              },
+              select: { id: true },
+            });
+
+            await tx.importRecord.update({
+              where: { id: importRecordId },
+              data: {
+                status: 'CREATED',
+                canonicalEntityType: 'ARTICLE',
+                canonicalEntityId: created.id,
+                errorCode: null,
+                errorMessage: null,
+              },
+            });
+
+            await tx.importJob.update({
+              where: { id: currentRecord.importJobId },
+              data: { createdCount: { increment: 1 } },
+            });
+
+            return { id: created.id, created: true };
           },
-        },
-      });
+          { isolationLevel: 'Serializable' },
+        );
 
-      return {
-        id: created.id,
-        created: true,
-      };
-    });
+        return {
+          articleId: result.id,
+          created: result.created,
+        };
+      } catch (error) {
+        const code =
+          error !== null && typeof error === 'object' && 'code' in error
+            ? (error as { code?: unknown }).code
+            : null;
 
-    return {
-      articleId: createdArticle.id,
-      created: createdArticle.created,
-    };
+        if (
+          attempt < 3 &&
+          (code === 'P2034' ||
+            (error instanceof Error && error.message === 'IMPORT_RECORD_CLAIM_CONFLICT'))
+        ) {
+          continue;
+        }
+
+        // Concurrent imports may have the same headline and therefore slug.
+        // A stable record-ID fallback avoids a second slug race on retry.
+        if (attempt < 3 && code === 'P2002') {
+          slug = slug.slice(0, 130) + '-' + importRecordId;
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw new Error('Import article transaction retries exhausted');
   }
 
   private createArticleContent(body: string | undefined): Prisma.InputJsonValue {
