@@ -32,7 +32,7 @@ type OtsRecord = {
 };
 
 const DEFAULT_BASE_URL = 'https://www.ots.at/api';
-const DEFAULT_QUERY = 'FuÃball';
+const DEFAULT_QUERY = 'Fußball';
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGES = 5;

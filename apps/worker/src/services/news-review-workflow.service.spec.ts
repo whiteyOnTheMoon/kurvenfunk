@@ -111,6 +111,35 @@ describe('NewsReviewWorkflowService', () => {
     },
   );
 
+  it.each(['EXACT', 'HIGH'] as const)(
+    'requires editorial review for untrusted providers even with %s confidence',
+    async (confidence) => {
+      const result = await service.apply(
+        'record-1',
+        { confidence, reasons: ['trusted_match'] },
+        clubs,
+        competition,
+        noMatch,
+        true,
+      );
+
+      expect(result).toEqual({
+        status: 'REVIEW_REQUIRED',
+        reviewRequired: true,
+      });
+      expect(updateImportRecord).toHaveBeenCalledWith({
+        where: { id: 'record-1' },
+        data: {
+          status: 'REVIEW_REQUIRED',
+          canonicalEntityType: null,
+          canonicalEntityId: null,
+          errorCode: 'NEWS_REVIEW_REQUIRED',
+          errorMessage: 'Manual review required (provider not trusted for automatic publishing)',
+        },
+      });
+    },
+  );
+
   it('stores a unique matched fixture as the canonical entity', async () => {
     const kickoff = new Date('2026-08-23T15:00:00.000Z');
 

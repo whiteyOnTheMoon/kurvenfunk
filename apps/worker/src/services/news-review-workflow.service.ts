@@ -21,8 +21,10 @@ export class NewsReviewWorkflowService {
     _clubMatching: NewsClubMatchingResult,
     _competitionMatching: NewsCompetitionMatchingResult,
     matchMatching: NewsMatchMatchingResult,
+    requireEditorialReview = false,
   ): Promise<NewsReviewWorkflowResult> {
-    const reviewRequired = !['EXACT', 'HIGH'].includes(confidence.confidence);
+    const reviewRequired =
+      requireEditorialReview || !['EXACT', 'HIGH'].includes(confidence.confidence);
     const status = reviewRequired ? 'REVIEW_REQUIRED' : 'MATCHED';
 
     await this.databaseService.client.importRecord.update({
@@ -35,7 +37,9 @@ export class NewsReviewWorkflowService {
         canonicalEntityId: matchMatching.match?.matchId ?? null,
         errorCode: reviewRequired ? 'NEWS_REVIEW_REQUIRED' : null,
         errorMessage: reviewRequired
-          ? `Manual review required (${confidence.confidence}: ${confidence.reasons.join(', ')})`
+          ? requireEditorialReview
+            ? 'Manual review required (provider not trusted for automatic publishing)'
+            : `Manual review required (${confidence.confidence}: ${confidence.reasons.join(', ')})`
           : null,
       },
     });

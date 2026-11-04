@@ -39,6 +39,7 @@ import { NewsImportProcessor } from './news-import.processor';
 
 describe('NewsImportProcessor', () => {
   let provider: FakeNewsProvider;
+  let otsProvider: OtsNewsProvider;
   let processor: NewsImportProcessor;
 
   const startNewsImport = jest.fn();
@@ -51,6 +52,7 @@ describe('NewsImportProcessor', () => {
   const matchMatch = jest.fn();
   const scoreConfidence = jest.fn();
   const applyReviewWorkflow = jest.fn();
+  const fetchOts = jest.fn();
   const autoPublish = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
@@ -183,8 +185,19 @@ describe('NewsImportProcessor', () => {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
 
-    const otsProvider = {
+    fetchOts.mockResolvedValue({
+      records: [
+        {
+          externalId: 'ots-001',
+          externalUrl: 'https://www.ots.at/presseaussendung/ots-001',
+          payload: { TITEL: 'Real Austrian football news' },
+        },
+      ],
+    });
+    otsProvider = {
       key: 'ots',
+      trustedForAutoPublish: false,
+      fetch: fetchOts,
     } as unknown as OtsNewsProvider;
 
     const otsNormalizer = {
@@ -558,6 +571,7 @@ describe('NewsImportProcessor', () => {
       clubMatchingResult,
       competitionMatchingResult,
       matchMatchingResult,
+      false,
     );
   });
 
@@ -600,6 +614,32 @@ describe('NewsImportProcessor', () => {
       competitionMatchingResult,
       matchMatchingResult,
     );
+  });
+
+  it('forces manual editorial review for untrusted OTS even at high confidence', async () => {
+    scoreConfidence.mockReturnValue({
+      confidence: 'HIGH',
+      reasons: ['clubs_exact', 'competition_exact'],
+    });
+
+    applyReviewWorkflow.mockResolvedValue({
+      status: 'REVIEW_REQUIRED',
+      reviewRequired: true,
+    });
+
+    await processor.process(createJob({ providerKey: 'ots' }));
+
+    expect(fetchOts).toHaveBeenCalledTimes(1);
+    expect(applyReviewWorkflow).toHaveBeenCalledWith(
+      'import-ots-001',
+      { confidence: 'HIGH', reasons: ['clubs_exact', 'competition_exact'] },
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      true,
+    );
+    expect(autoPublish).not.toHaveBeenCalled();
+    expect(completeNewsImport).toHaveBeenCalledTimes(1);
   });
 
   it('does not auto publish records requiring manual review', async () => {

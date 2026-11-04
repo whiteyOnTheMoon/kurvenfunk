@@ -147,6 +147,7 @@ export class NewsImportProcessor extends WorkerHost {
             clubMatching,
             competitionMatching,
             matchMatching,
+            !provider.trustedForAutoPublish,
           );
 
           if (!reviewWorkflow.reviewRequired) {
