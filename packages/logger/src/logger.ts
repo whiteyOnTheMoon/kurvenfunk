@@ -41,7 +41,6 @@ export function redactSensitiveText(text: string): string {
     .replace(INLINE_SECRET_PATTERN, '$1[REDACTED]');
 }
 
-
 function isSensitiveKey(key: string): boolean {
   return sensitiveKeys.has(key.toLowerCase());
 }
