@@ -10,6 +10,17 @@ jest.mock('@kurvenfunk/logger', () => ({
   })),
 }));
 
+interface CompletedLog {
+  requestId: string;
+  event: string;
+  metadata: {
+    method: string;
+    path: string;
+    statusCode: number;
+    durationMs: number;
+  };
+}
+
 describe('HttpLoggingInterceptor', () => {
   it('logs only the pathname and never sensitive query parameters', () => {
     const logger = jest.mocked(createLogger).mock.results[0]?.value as unknown as {
@@ -47,21 +58,7 @@ describe('HttpLoggingInterceptor', () => {
       },
     });
 
-    const completedCalls = logger.info.mock.calls as unknown as Array<
-      [
-        string,
-        {
-          requestId: string;
-          event: string;
-          metadata: {
-            method: string;
-            path: string;
-            statusCode: number;
-            durationMs: number;
-          };
-        },
-      ]
-    >;
+    const completedCalls = logger.info.mock.calls as unknown as Array<[string, CompletedLog]>;
     const completedLog = completedCalls[1]?.[1];
 
     expect(completedLog).toBeDefined();
