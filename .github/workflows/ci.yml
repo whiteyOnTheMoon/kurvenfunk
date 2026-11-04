@@ -167,6 +167,19 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk-staging && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/staging.sh"
 
+  docker-worker-build:
+    name: Worker Docker build (Prisma schema)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - ci
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Build worker image from fresh Prisma schema
+        run: docker build --file apps/worker/Dockerfile --tag kurvenfunk-worker:ci .
+
   e2e-isolated:
     name: Isolated API HTTP E2E (PostgreSQL, Redis, signed JWT)
     if: github.event_name == 'pull_request'
