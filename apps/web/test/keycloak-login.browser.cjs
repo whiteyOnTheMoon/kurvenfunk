@@ -91,11 +91,18 @@ async function main() {
     page.on('pageerror', (error) => browserErrors.push(error.message));
 
     await page.goto('http://127.0.0.1:3000/login');
-    await page.waitForFunction(
-      () => document.getElementById('auth-ready')?.textContent === 'true',
-      null,
-      { timeout: 30000 },
-    );
+    try {
+      await page.waitForFunction(
+        () => document.getElementById('auth-ready')?.textContent === 'true',
+        null,
+        { timeout: 30000 },
+      );
+    } catch (error) {
+      console.error('Initial browser URL:', page.url());
+      console.error('Initial browser HTML:', (await page.content()).slice(0, 2500));
+      console.error('Browser JS exceptions:', browserErrors.join(' | '));
+      throw error;
+    }
     await page.locator('#login').click();
     await page.locator('#username').fill('browser-e2e');
     await page.locator('#password').fill('local-only-browser-test-password');
