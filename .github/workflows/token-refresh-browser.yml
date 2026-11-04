@@ -1,0 +1,54 @@
+name: Chromium token-refresh browser regression
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'apps/web/src/features/auth/**'
+      - 'apps/web/test/token-refresh.browser.cjs'
+      - '.github/workflows/token-refresh-browser.yml'
+permissions:
+  contents: read
+jobs:
+  browser-refresh:
+    name: Real Chromium token renewal
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Install isolated Playwright test browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
+          node "$RUNNER_TEMP/kurvenfunk-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Execute Chromium assertions
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/token-refresh.browser.cjs
+      - name: Start isolated Keycloak realm (test accounts only)
+        run: |
+          docker run -d --rm --name kurvenfunk-browser-idp -p 127.0.0.1:8080:8080 \
+            -v "$GITHUB_WORKSPACE/apps/web/test/fixtures/keycloak-realm.json:/opt/keycloak/data/import/kurvenfunk-realm.json:ro" \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=local-test-admin \
+            -e KC_BOOTSTRAP_ADMIN_PASSWORD=local-only-test-password \
+            quay.io/keycloak/keycloak:26.2.4 start-dev --import-realm --hostname-strict=false
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:8080/realms/kurvenfunk/.well-known/openid-configuration >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/realms/kurvenfunk/.well-known/openid-configuration >/dev/null
+      - name: Verify actual Keycloak login and token refresh in Chromium
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+          KEYCLOAK_TEST_URL: http://127.0.0.1:8080
+        run: node apps/web/test/keycloak-login.browser.cjs
+      - name: Clean up isolated Keycloak
+        if: always()
+        run: docker rm -f kurvenfunk-browser-idp || true
