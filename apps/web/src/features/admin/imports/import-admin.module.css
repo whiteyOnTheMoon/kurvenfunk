@@ -89,6 +89,57 @@
   margin: 12px 0 0;
   color: var(--kf-color-text-muted);
   font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.jumpLink {
+  display: block;
+  width: fit-content;
+  margin-top: 12px;
+  font-weight: 700;
+  color: #067647;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reviewHint {
+  margin: 0 0 12px;
+  color: var(--kf-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.reviewFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.reviewFilter,
+.reviewFilterActive {
+  padding: 9px 12px;
+  border: 1px solid var(--kf-color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reviewFilterActive {
+  border-color: #067647;
+  background: #dcfae6;
+  color: #067647;
+}
+
+.reviewFilter:focus-visible,
+.reviewFilterActive:focus-visible,
+.jumpLink:focus-visible {
+  outline: 3px solid #067647;
+  outline-offset: 3px;
 }
 
 .providerGrid {
@@ -393,7 +444,10 @@
     overflow-wrap: anywhere;
   }
 
-  .metrics,
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .providerGrid {
     grid-template-columns: 1fr;
   }
@@ -501,5 +555,15 @@
 
   .reviewActions > * {
     flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .metric {
+    padding: 12px;
+  }
+
+  .metric strong {
+    font-size: 1.45rem;
   }
 }
