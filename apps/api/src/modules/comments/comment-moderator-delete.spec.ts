@@ -50,14 +50,21 @@ describe('Task 166: audited moderator comment deletion', () => {
     });
 
     expect(transaction).toHaveBeenCalledTimes(1);
-    expect(updateMany).toHaveBeenCalledWith({
-      where: { id: commentId, status: 'VISIBLE', deletedAt: null },
-      data: {
-        status: 'DELETED',
-        deletedAt: expect.any(Date),
-        moderatedAt: expect.any(Date),
-      },
+    expect(updateMany).toHaveBeenCalledTimes(1);
+    const updateInput = (updateMany.mock.calls as unknown[][])[0]?.[0] as
+      | {
+          where: { id: string; status: string; deletedAt: null };
+          data: { status: string; deletedAt: Date; moderatedAt: Date };
+        }
+      | undefined;
+    expect(updateInput?.where).toEqual({
+      id: commentId,
+      status: 'VISIBLE',
+      deletedAt: null,
     });
+    expect(updateInput?.data.status).toBe('DELETED');
+    expect(updateInput?.data.deletedAt).toBeInstanceOf(Date);
+    expect(updateInput?.data.moderatedAt).toBeInstanceOf(Date);
     expect(createAudit).toHaveBeenCalledWith({
       data: {
         actorType: 'USER',
@@ -72,7 +79,7 @@ describe('Task 166: audited moderator comment deletion', () => {
       },
     });
     expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(
-      createAudit.mock.invocationCallOrder[0]!,
+      createAudit.mock.invocationCallOrder[0],
     );
   });
 
@@ -114,9 +121,7 @@ describe('Task 166: audited moderator comment deletion', () => {
   it('propagates an audit database failure so the transaction can roll back', async () => {
     createAudit.mockRejectedValue(new Error('AUDIT_STORAGE_UNAVAILABLE'));
 
-    await expect(service.moderateRemove(command)).rejects.toThrow(
-      'AUDIT_STORAGE_UNAVAILABLE',
-    );
+    await expect(service.moderateRemove(command)).rejects.toThrow('AUDIT_STORAGE_UNAVAILABLE');
     expect(transaction).toHaveBeenCalledTimes(1);
   });
 });
