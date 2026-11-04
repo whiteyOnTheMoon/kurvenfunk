@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -43,12 +43,18 @@ export class ImportsController {
   }
 
   @Post('review/:id/approve')
-  approveReview(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+  approveReview(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
     return this.importsService.approveReview(id, request.user!.kurvenfunkUserId);
   }
 
   @Post('review/:id/reject')
-  rejectReview(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+  rejectReview(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
     return this.importsService.rejectReview(id, request.user!.kurvenfunkUserId);
   }
 

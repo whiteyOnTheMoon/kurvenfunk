@@ -368,7 +368,7 @@ export class ImportsService implements OnModuleDestroy {
   private async decideReview(id: string, reviewerId: string, decision: 'APPROVED' | 'REJECTED') {
     // The conditional update acquires the PostgreSQL row lock. Serializable
     // retries also cover competing workers/reviewers and prevent duplicate drafts.
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
         return await this.database.$transaction(
           async (transaction) => {
@@ -440,6 +440,9 @@ export class ImportsService implements OnModuleDestroy {
                 reviewDecision: decision,
                 reviewedById: reviewerId,
                 reviewedAt,
+                // A resolved review must not keep the stale manual-review error.
+                errorCode: null,
+                errorMessage: null,
               },
             });
 
@@ -519,7 +522,9 @@ export class ImportsService implements OnModuleDestroy {
             ? (error as { code?: unknown }).code
             : null;
 
-        if (attempt < 2 && code === 'P2034') {
+        // A conflicting serializable write or unique import-record claim may
+        // finish successfully in a competing transaction. Retry to read it.
+        if (attempt < 4 && (code === 'P2034' || code === 'P2002')) {
           continue;
         }
 
