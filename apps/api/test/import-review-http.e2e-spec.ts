@@ -229,14 +229,13 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
       ),
     );
 
-    const results = attempts.filter(
-      (attempt): attempt is PromiseFulfilledResult<Awaited<(typeof attempts)[number]>> =>
-        attempt.status === 'fulfilled',
-    );
+    const results = attempts
+      .filter((attempt) => attempt.status === 'fulfilled')
+      .map((attempt) => attempt.value);
     expect(results.length).toBe(4);
-    expect(results.every((result) => result.value.status === 201)).toBe(true);
+    expect(results.every((result) => result.status === 201)).toBe(true);
 
-    const ids = results.map((result) => (result.value.body as ReviewResult).data.canonicalEntityId);
+    const ids = results.map((result) => (result.body as ReviewResult).data.canonicalEntityId);
     expect(new Set(ids).size).toBe(1);
     expect(ids[0]).toBeTruthy();
 
