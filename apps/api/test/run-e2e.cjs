@@ -6,6 +6,8 @@ const { resolve } = require('node:path');
 const repo = resolve(__dirname, '../../..');
 const api = resolve(__dirname, '..');
 const containers = [];
+let setupStep = 'initialization';
+const minioImage = 'minio/minio:RELEASE.2025-09-07T16-13-09Z';
 const env = { ...process.env };
 for (const key of [
   'DOCKER_HOST',
@@ -59,13 +61,16 @@ async function run() {
   env.MINIO_ROOT_PASSWORD = randomBytes(24).toString('hex');
   env.REDISCLI_AUTH = env.E2E_REDIS_PASSWORD;
   try {
-    for (const image of ['postgres:17-alpine', 'redis:7.4-alpine', 'minio/minio:latest']) {
+    for (const image of ['postgres:17-alpine', 'redis:7.4-alpine', minioImage]) {
+      setupStep = `check image ${image}`;
       try {
         docker('image', 'inspect', image);
       } catch {
+        setupStep = `pull image ${image}`;
         docker('pull', image);
       }
     }
+    setupStep = 'start isolated PostgreSQL';
     const postgres = docker(
       'run',
       '--rm',
@@ -83,6 +88,7 @@ async function run() {
       'postgres:17-alpine',
     );
     containers.push(postgres);
+    setupStep = 'start isolated Redis';
     const redis = docker(
       'run',
       '--rm',
@@ -99,6 +105,7 @@ async function run() {
       'exec redis-server --save "" --appendonly no --requirepass "$E2E_REDIS_PASSWORD"',
     );
     containers.push(redis);
+    setupStep = 'start isolated MinIO';
     const minio = docker(
       'run',
       '--rm',
@@ -111,16 +118,19 @@ async function run() {
       'MINIO_ROOT_USER',
       '-e',
       'MINIO_ROOT_PASSWORD',
-      'minio/minio:latest',
+      minioImage,
       'server',
       '/data',
     );
     containers.push(minio);
+    setupStep = 'wait for isolated PostgreSQL';
     await ready(postgres, ['pg_isready', '-U', 'e2e', '-d', 'kurvenfunk_e2e']);
+    setupStep = 'wait for isolated Redis';
     await ready(redis, ['sh', '-c', 'REDISCLI_AUTH="$E2E_REDIS_PASSWORD" redis-cli ping']);
     const postgresPort = docker('port', postgres, '5432/tcp').split(':').at(-1);
     const redisPort = docker('port', redis, '6379/tcp').split(':').at(-1);
     const minioPort = docker('port', minio, '9000/tcp').split(':').at(-1);
+    setupStep = 'wait for isolated MinIO';
     await readyHttp(`http://127.0.0.1:${minioPort}/minio/health/ready`);
     Object.assign(env, {
       API_E2E_ISOLATED: 'true',
@@ -142,7 +152,9 @@ async function run() {
       STORAGE_SECRET_KEY: env.MINIO_ROOT_PASSWORD,
       SWAGGER_ENABLED: 'false',
     });
+    setupStep = 'generate Prisma client';
     command(['--filter', '@kurvenfunk/database', 'generate']);
+    setupStep = 'build shared packages';
     command([
       'exec',
       'turbo',
@@ -152,7 +164,9 @@ async function run() {
       '--filter=@kurvenfunk/logger',
       '--filter=@kurvenfunk/validation',
     ]);
+    setupStep = 'migrate isolated database';
     command(['--filter', '@kurvenfunk/database', 'exec', 'prisma', 'migrate', 'deploy']);
+    setupStep = 'run isolated HTTP integration tests';
     const result = spawnSync(
       process.execPath,
       [
@@ -179,9 +193,7 @@ async function run() {
   }
 }
 run().catch(() => {
-  // Setup failures must not expose environment/credential-bearing child errors.
-  console.error(
-    'API E2E setup failed. Check the local Docker socket, images and setup command output.',
-  );
+  // Stage labels contain no environment values, credentials or child exception text.
+  console.error(`API E2E setup failed at: ${setupStep}`);
   process.exitCode = 1;
 });
