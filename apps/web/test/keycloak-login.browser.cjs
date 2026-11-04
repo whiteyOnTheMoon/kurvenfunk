@@ -164,6 +164,7 @@ async function main() {
     );
 
     assert.equal(await page.locator('#auth-status').textContent(), 'authenticated');
+    assert.equal(await page.locator('#user-status').textContent(), 'ACTIVE');
     assert.equal(await page.locator('#auth-error').textContent(), '');
     assert.deepEqual(browserErrors, []);
 
