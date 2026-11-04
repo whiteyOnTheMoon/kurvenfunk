@@ -207,11 +207,7 @@ describe('Media multipart upload with real isolated PostgreSQL and MinIO', () =>
       .png()
       .toBuffer();
 
-    await assertRejectedWithoutStorage(
-      `${filenamePrefix}-dimensions.png`,
-      oversized,
-      'image/png',
-    );
+    await assertRejectedWithoutStorage(`${filenamePrefix}-dimensions.png`, oversized, 'image/png');
   });
 
   it('rejects non-image uploads and does not write any object', async () => {
