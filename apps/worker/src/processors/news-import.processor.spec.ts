@@ -39,6 +39,7 @@ import { NewsImportProcessor } from './news-import.processor';
 
 describe('NewsImportProcessor', () => {
   let provider: FakeNewsProvider;
+  let otsProvider: OtsNewsProvider;
   let processor: NewsImportProcessor;
 
   const startNewsImport = jest.fn();
@@ -183,8 +184,18 @@ describe('NewsImportProcessor', () => {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
 
-    const otsProvider = {
+    otsProvider = {
       key: 'ots',
+      trustedForAutoPublish: false,
+      fetch: jest.fn().mockResolvedValue({
+        records: [
+          {
+            externalId: 'ots-001',
+            externalUrl: 'https://www.ots.at/presseaussendung/ots-001',
+            payload: { TITEL: 'Real Austrian football news' },
+          },
+        ],
+      }),
     } as unknown as OtsNewsProvider;
 
     const otsNormalizer = {
@@ -558,6 +569,7 @@ describe('NewsImportProcessor', () => {
       clubMatchingResult,
       competitionMatchingResult,
       matchMatchingResult,
+      false,
     );
   });
 
@@ -600,6 +612,32 @@ describe('NewsImportProcessor', () => {
       competitionMatchingResult,
       matchMatchingResult,
     );
+  });
+
+  it('forces manual editorial review for untrusted OTS even at high confidence', async () => {
+    scoreConfidence.mockReturnValue({
+      confidence: 'HIGH',
+      reasons: ['clubs_exact', 'competition_exact'],
+    });
+
+    applyReviewWorkflow.mockResolvedValue({
+      status: 'REVIEW_REQUIRED',
+      reviewRequired: true,
+    });
+
+    await processor.process(createJob({ providerKey: 'ots' }));
+
+    expect(otsProvider.fetch).toHaveBeenCalledTimes(1);
+    expect(applyReviewWorkflow).toHaveBeenCalledWith(
+      'import-ots-001',
+      { confidence: 'HIGH', reasons: ['clubs_exact', 'competition_exact'] },
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      true,
+    );
+    expect(autoPublish).not.toHaveBeenCalled();
+    expect(completeNewsImport).toHaveBeenCalledTimes(1);
   });
 
   it('does not auto publish records requiring manual review', async () => {
