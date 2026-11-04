@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -69,14 +70,14 @@ export class MediaController {
 
   @Get(':id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
-  getById(@Param('id') id: string) {
+  getById(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.mediaService.getById(id);
   }
 
   @Patch(':id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
   update(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body(new ZodValidationPipe(updateMediaMetadataSchema))
     input: UpdateMediaMetadataInput,
   ) {
@@ -84,7 +85,7 @@ export class MediaController {
   }
 
   @Get(':id/content')
-  async getContent(@Param('id') id: string, @Res() response: Response) {
+  async getContent(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Res() response: Response) {
     const content = await this.mediaService.getContent(id);
 
     response.setHeader('Content-Type', content.mimeType);
