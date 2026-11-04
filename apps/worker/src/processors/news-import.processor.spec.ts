@@ -52,6 +52,7 @@ describe('NewsImportProcessor', () => {
   const matchMatch = jest.fn();
   const scoreConfidence = jest.fn();
   const applyReviewWorkflow = jest.fn();
+  const fetchOts = jest.fn();
   const autoPublish = jest.fn();
   const completeNewsImport = jest.fn();
   const failNewsImport = jest.fn();
@@ -184,10 +185,7 @@ describe('NewsImportProcessor', () => {
       moveToDeadLetter,
     } as unknown as NewsImportDeadLetterService;
 
-    otsProvider = {
-      key: 'ots',
-      trustedForAutoPublish: false,
-      fetch: jest.fn().mockResolvedValue({
+    fetchOts.mockResolvedValue({
         records: [
           {
             externalId: 'ots-001',
@@ -195,7 +193,11 @@ describe('NewsImportProcessor', () => {
             payload: { TITEL: 'Real Austrian football news' },
           },
         ],
-      }),
+      });
+    otsProvider = {
+      key: 'ots',
+      trustedForAutoPublish: false,
+      fetch: fetchOts,
     } as unknown as OtsNewsProvider;
 
     const otsNormalizer = {
@@ -627,7 +629,7 @@ describe('NewsImportProcessor', () => {
 
     await processor.process(createJob({ providerKey: 'ots' }));
 
-    expect(otsProvider.fetch).toHaveBeenCalledTimes(1);
+    expect(fetchOts).toHaveBeenCalledTimes(1);
     expect(applyReviewWorkflow).toHaveBeenCalledWith(
       'import-ots-001',
       { confidence: 'HIGH', reasons: ['clubs_exact', 'competition_exact'] },
