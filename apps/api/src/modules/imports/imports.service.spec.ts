@@ -35,10 +35,15 @@ describe('ImportsService', () => {
   const importJobCount = jest.fn();
   const importJobFindMany = jest.fn();
   const importJobFindUnique = jest.fn();
+  const importJobUpdate = jest.fn();
   const importRecordCount = jest.fn();
   const importRecordFindMany = jest.fn();
   const importRecordFindUnique = jest.fn();
   const importRecordFindUniqueOrThrow = jest.fn();
+  const importRecordUpdate = jest.fn();
+  const articleCreate = jest.fn();
+  const articleFindUnique = jest.fn();
+  const auditLogCreate = jest.fn();
   const importRecordUpdateMany = jest.fn<
     Promise<{ count: number }>,
     [
@@ -70,6 +75,7 @@ describe('ImportsService', () => {
       count: importJobCount,
       findMany: importJobFindMany,
       findUnique: importJobFindUnique,
+      update: importJobUpdate,
     },
     importRecord: {
       count: importRecordCount,
@@ -77,6 +83,14 @@ describe('ImportsService', () => {
       findUnique: importRecordFindUnique,
       findUniqueOrThrow: importRecordFindUniqueOrThrow,
       updateMany: importRecordUpdateMany,
+      update: importRecordUpdate,
+    },
+    article: {
+      create: articleCreate,
+      findUnique: articleFindUnique,
+    },
+    auditLog: {
+      create: auditLogCreate,
     },
     entityMatch: {
       count: entityMatchCount,
@@ -368,52 +382,112 @@ describe('ImportsService', () => {
       );
     });
 
-    it('approves an unresolved review atomically', async () => {
+    it('approves an unresolved review and creates one audited editorial draft', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        importJobId: 'job-1',
+        recordType: 'NEWS_ARTICLE',
+        normalizedPayload: {
+          title: 'Rapid gewinnt',
+          lead: 'Eine Zusammenfassung',
+          body: 'Das ist der Nachrichtentext.',
+          originalUrl: 'https://example.test/news/1',
+          authorName: 'Quelle',
+        },
+        externalUrl: null,
         status: 'REVIEW_REQUIRED',
         reviewDecision: null,
-        reviewedAt: null,
+        canonicalEntityId: null,
       });
 
-      importRecordUpdateMany.mockResolvedValue({
-        count: 1,
-      });
-
+      importRecordUpdateMany.mockResolvedValue({ count: 1 });
+      articleCreate.mockResolvedValue({ id: 'draft-1' });
       importRecordFindUniqueOrThrow.mockResolvedValue({
         id: 'record-1',
-        status: 'MATCHED',
+        status: 'CREATED',
         reviewDecision: 'APPROVED',
         reviewedById: 'user-1',
+        canonicalEntityId: 'draft-1',
         reviewedAt: new Date('2026-08-27T00:00:00.000Z'),
       });
 
       const service = new ImportsService();
+      const result = await service.approveReview('record-1', 'user-1');
 
-      await expect(service.approveReview('record-1', 'user-1')).resolves.toEqual(
-        expect.objectContaining({
-          id: 'record-1',
-          status: 'MATCHED',
-          reviewDecision: 'APPROVED',
-          reviewedById: 'user-1',
-        }),
-      );
-
+      expect(result).toMatchObject({
+        id: 'record-1',
+        status: 'CREATED',
+        reviewDecision: 'APPROVED',
+        canonicalEntityId: 'draft-1',
+      });
       expect(importRecordUpdateMany).toHaveBeenCalledTimes(1);
+      expect(articleCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          importRecordId: 'record-1',
+          title: 'Rapid gewinnt',
+          status: 'DRAFT',
+          authorId: 'user-1',
+          originalUrl: 'https://example.test/news/1',
+        }),
+        select: { id: true },
+      });
+      expect(importRecordUpdate).toHaveBeenCalledWith({
+        where: { id: 'record-1' },
+        data: {
+          status: 'CREATED',
+          canonicalEntityType: 'ARTICLE',
+          canonicalEntityId: 'draft-1',
+        },
+      });
+      expect(importJobUpdate).toHaveBeenCalledTimes(1);
+      expect(auditLogCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorUserId: 'user-1',
+          targetId: 'draft-1',
+          category: 'EDITORIAL',
+        }),
+      });
+    });
 
-      const approveUpdate = importRecordUpdateMany.mock.calls[0]?.[0];
+    it('returns the existing draft on repeated approval without another write', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        status: 'CREATED',
+        reviewDecision: 'APPROVED',
+        canonicalEntityId: 'draft-1',
+      });
+      articleFindUnique.mockResolvedValue({ id: 'draft-1' });
+      importRecordFindUniqueOrThrow.mockResolvedValue({
+        id: 'record-1',
+        status: 'CREATED',
+        reviewDecision: 'APPROVED',
+        canonicalEntityId: 'draft-1',
+      });
 
-      expect(approveUpdate.where).toEqual({
+      const service = new ImportsService();
+      await expect(service.approveReview('record-1', 'user-1')).resolves.toMatchObject({
+        canonicalEntityId: 'draft-1',
+      });
+      expect(articleCreate).not.toHaveBeenCalled();
+      expect(importRecordUpdateMany).not.toHaveBeenCalled();
+      expect(auditLogCreate).not.toHaveBeenCalled();
+    });
+
+    it('rejects an article without valid normalized payload without a write', async () => {
+      importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
         status: 'REVIEW_REQUIRED',
+        recordType: 'NEWS_ARTICLE',
+        normalizedPayload: { body: 'Missing title' },
         reviewDecision: null,
       });
-      expect(approveUpdate.data).toMatchObject({
-        status: 'MATCHED',
-        reviewDecision: 'APPROVED',
-        reviewedById: 'user-1',
-      });
-      expect(approveUpdate.data.reviewedAt).toBeInstanceOf(Date);
+
+      const service = new ImportsService();
+      await expect(service.approveReview('record-1', 'user-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(importRecordUpdateMany).not.toHaveBeenCalled();
+      expect(articleCreate).not.toHaveBeenCalled();
     });
 
     it('rejects an unresolved review as skipped', async () => {
