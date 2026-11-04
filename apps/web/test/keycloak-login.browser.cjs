@@ -99,7 +99,7 @@ async function main() {
       );
     } catch (error) {
       console.error('Initial browser URL:', page.url());
-      console.error('Initial browser HTML:', (await page.content()).slice(0, 2500));
+      console.error('Initial browser title:', await page.title());
       console.error('Browser JS exceptions:', browserErrors.join(' | '));
       throw error;
     }
@@ -108,11 +108,21 @@ async function main() {
     await page.locator('#password').fill('local-only-browser-test-password');
     await page.locator('#kc-login').click();
 
-    await page.waitForFunction(
-      () => document.getElementById('auth-status')?.textContent === 'authenticated',
-      null,
-      { timeout: 30000 },
-    );
+    try {
+      await page.waitForFunction(
+        () => document.getElementById('auth-status')?.textContent === 'authenticated',
+        null,
+        { timeout: 30000 },
+      );
+    } catch (error) {
+      const currentUrl = new URL(page.url());
+      console.error('Post-login browser route:', currentUrl.host, currentUrl.pathname);
+      console.error('Post-login page title:', await page.title());
+      console.error('Post-login auth state:', await page.locator('#auth-status').textContent().catch(() => 'missing'));
+      console.error('Post-login auth error:', await page.locator('#auth-error').textContent().catch(() => 'missing'));
+      console.error('Browser JS exceptions:', browserErrors.join(' | '));
+      throw error;
+    }
     await page.waitForFunction(
       () => document.getElementById('user-status')?.textContent === 'ACTIVE',
       null,
