@@ -4,7 +4,10 @@ import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
-import { PERMISSIONS, REQUIRED_PERMISSIONS_METADATA_KEY } from '../permissions/permissions.constants';
+import {
+  PERMISSIONS,
+  REQUIRED_PERMISSIONS_METADATA_KEY,
+} from '../permissions/permissions.constants';
 import { PermissionsGuard } from '../permissions/permissions.guard';
 import { CommentModerationController } from './comments.controller';
 import type { CommentsService } from './comments.service';
