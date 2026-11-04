@@ -1,0 +1,32 @@
+name: Temporary auth browser test formatting
+on:
+  push:
+    branches:
+      - 'fix/phase12-keycloak-token-refresh-20261103'
+permissions:
+  contents: write
+jobs:
+  format:
+    if: contains(github.event.head_commit.message, '[RUN_AUTH_FORMAT]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 'fix/phase12-keycloak-token-refresh-20261103'
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Format auth test fixtures
+        run: pnpm exec prettier --write 'apps/web/test/auth-provider-browser-harness.tsx' 'apps/web/test/fixtures/keycloak-realm.json' 'apps/web/test/keycloak-login.browser.cjs' 'apps/web/test/token-refresh.browser.cjs'
+      - name: Commit formatting to pull request branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'apps/web/test/auth-provider-browser-harness.tsx' 'apps/web/test/fixtures/keycloak-realm.json' 'apps/web/test/keycloak-login.browser.cjs' 'apps/web/test/token-refresh.browser.cjs'
+          if ! git diff --cached --quiet; then
+            git commit -m 'style(auth): format browser test fixtures'
+            git push origin HEAD:fix/phase12-keycloak-token-refresh-20261103
+          fi
