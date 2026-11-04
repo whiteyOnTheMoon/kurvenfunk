@@ -1,3 +1,21 @@
+jest.mock('@kurvenfunk/validation', () => ({
+  createCommentSchema: {
+    safeParse: (value: unknown) => ({ success: true, data: value }),
+  },
+}));
+
+jest.mock('../auth/auth.guard', () => ({
+  AuthGuard: class AuthGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
+jest.mock('./comments.service', () => ({
+  CommentsService: class CommentsService {},
+}));
+
 import { RequestMethod } from '@nestjs/common';
 import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 
