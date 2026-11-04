@@ -8,9 +8,7 @@ export default class MockKeycloak {
   refreshCalls = 0;
 
   constructor() {
-    (
-      window as Window & { __mockKeycloak?: MockKeycloak }
-    ).__mockKeycloak = this;
+    (window as Window & { __mockKeycloak?: MockKeycloak }).__mockKeycloak = this;
   }
 
   async init(): Promise<boolean> {
