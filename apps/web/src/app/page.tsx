@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { Countdown } from './countdown';
 import styles from './page.module.css';
 
@@ -14,10 +16,10 @@ export default function Home() {
 
       <div className={styles.container}>
         <header className={styles.header}>
-          <a className={styles.brand} href="/" aria-label="Kurvenfunk Startseite">
+          <Link className={styles.brand} href="/" aria-label="Kurvenfunk Startseite">
             <span className={styles.brandMark} aria-hidden="true">K</span>
             <span>KURVENFUNK<span className={styles.brandStop}>.</span></span>
-          </a>
+          </Link>
           <span className={styles.headerNote}>
             <span className={styles.statusDot} aria-hidden="true" />
             AB 01.01.2027
