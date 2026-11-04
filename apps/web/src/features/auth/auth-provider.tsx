@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -102,43 +103,94 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
   const [token, setToken] = useState<string>();
   const [user, setUser] = useState<CurrentUser>();
   const [error, setError] = useState<string>();
+  const currentUserRef = useRef<CurrentUser | undefined>(undefined);
+  const logoutRequestedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
+    let renewal: Promise<void> | undefined;
     const client = getKeycloak(authUrl);
 
-    const renew = async (): Promise<void> => {
-      try {
-        const freshToken = await ensureFreshToken(client);
-
-        if (!active || !client.authenticated) {
-          return;
-        }
-
-        setAuthenticated(true);
-        setToken(freshToken);
-        setError(undefined);
-      } catch {
-        if (!active) {
-          return;
-        }
-
-        setAuthenticated(false);
-        setToken(undefined);
-        setUser(undefined);
-        setError('AUTHENTICATION_FAILED');
+    const clearSession = (reason?: string) => {
+      if (!active) {
+        return;
       }
+
+      currentUserRef.current = undefined;
+      setAuthenticated(false);
+      setToken(undefined);
+      setUser(undefined);
+      setError(reason);
+    };
+
+    const renew = (): Promise<void> => {
+      if (renewal) {
+        return renewal;
+      }
+
+      if (logoutRequestedRef.current || !client.authenticated || !client.token) {
+        return Promise.resolve();
+      }
+
+      const pending = (async () => {
+        try {
+          const freshToken = await ensureFreshToken(client);
+
+          if (!active || logoutRequestedRef.current || !client.authenticated) {
+            return;
+          }
+
+          // After a transient refresh failure we must restore the user as well
+          // as the token; authenticated without a user breaks onboarding.
+          const currentUser =
+            currentUserRef.current ?? (await fetchCurrentUser(apiUrl, freshToken));
+
+          if (!active || logoutRequestedRef.current || !client.authenticated) {
+            return;
+          }
+
+          currentUserRef.current = currentUser;
+          setUser(currentUser);
+          setToken(freshToken);
+          setAuthenticated(true);
+          setError(undefined);
+        } catch (authError) {
+          if (!active || logoutRequestedRef.current) {
+            return;
+          }
+
+          const code = authError instanceof Error ? authError.message : undefined;
+          clearSession(
+            code === 'ACCOUNT_BANNED' || code === 'EMAIL_NOT_VERIFIED'
+              ? code
+              : 'AUTHENTICATION_FAILED',
+          );
+        }
+      })();
+
+      renewal = pending.finally(() => {
+        renewal = undefined;
+      });
+      return renewal;
     };
 
     client.onTokenExpired = () => {
       void renew();
     };
 
-    // Refresh before expiry even when there is no request or user interaction.
-    const refreshInterval = window.setInterval(() => {
-      if (client.authenticated && client.token) {
+    // Background tabs can suspend timers. Refresh immediately on return, before
+    // the next scheduled 30-second check.
+    const onResume = () => {
+      if (document.visibilityState === 'visible') {
         void renew();
       }
+    };
+
+    window.addEventListener('focus', onResume);
+    document.addEventListener('visibilitychange', onResume);
+
+    const refreshInterval = window.setInterval(() => {
+      void renew();
     }, 30_000);
 
     initialization ??= client.init({
@@ -154,57 +206,29 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
         }
 
         if (!isAuthenticated || !client.token) {
-          setAuthenticated(false);
-          setToken(undefined);
-          setUser(undefined);
+          clearSession();
           setInitialized(true);
           return;
         }
 
-        try {
-          const freshToken = await ensureFreshToken(client);
-          const currentUser = await fetchCurrentUser(apiUrl, freshToken);
+        await renew();
 
-          if (!active) {
-            return;
-          }
-
-          setAuthenticated(true);
-          setToken(freshToken);
-          setUser(currentUser);
-          setError(undefined);
-        } catch (authError) {
-          if (!active) {
-            return;
-          }
-
-          const message = authError instanceof Error ? authError.message : 'AUTHENTICATION_FAILED';
-
-          setAuthenticated(false);
-          setToken(undefined);
-          setUser(undefined);
-          setError(message);
-        } finally {
-          if (active) {
-            setInitialized(true);
-          }
+        if (active) {
+          setInitialized(true);
         }
       })
       .catch(() => {
-        if (!active) {
-          return;
+        clearSession('AUTHENTICATION_FAILED');
+        if (active) {
+          setInitialized(true);
         }
-
-        setAuthenticated(false);
-        setToken(undefined);
-        setUser(undefined);
-        setError('AUTHENTICATION_FAILED');
-        setInitialized(true);
       });
 
     return () => {
       active = false;
       window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', onResume);
+      document.removeEventListener('visibilitychange', onResume);
       client.onTokenExpired = undefined;
     };
   }, [apiUrl, authUrl]);
@@ -229,6 +253,8 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     const client = getKeycloak(authUrl);
 
+    logoutRequestedRef.current = true;
+    currentUserRef.current = undefined;
     setAuthenticated(false);
     setToken(undefined);
     setUser(undefined);
@@ -241,10 +267,17 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
 
   const refreshUser = useCallback(async () => {
     const client = getKeycloak(authUrl);
+    if (logoutRequestedRef.current || !client.authenticated) {
+      throw new Error('AUTHENTICATION_REQUIRED');
+    }
 
     const freshToken = await ensureFreshToken(client);
     const currentUser = await fetchCurrentUser(apiUrl, freshToken);
+    if (logoutRequestedRef.current || !client.authenticated) {
+      throw new Error('AUTHENTICATION_REQUIRED');
+    }
 
+    currentUserRef.current = currentUser;
     setAuthenticated(true);
     setToken(freshToken);
     setUser(currentUser);
