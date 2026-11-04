@@ -43,9 +43,7 @@ describe('Task 166: audited moderator comment deletion', () => {
     service = new CommentsService({} as CommentSpamProtectionService);
   });
 
-  it(
-    'soft-deletes a visible comment and records the moderator, author, reason and target in one transaction',
-    async () => {
+  it('soft-deletes and atomically audits a moderator action', async () => {
     await expect(service.moderateRemove(command)).resolves.toEqual({
       id: commentId,
       deleted: true,
@@ -76,8 +74,7 @@ describe('Task 166: audited moderator comment deletion', () => {
     expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(
       createAudit.mock.invocationCallOrder[0]!,
     );
-    },
-  );
+  });
 
   it('rejects an unknown comment without writing an audit event', async () => {
     findUnique.mockResolvedValue(null);
