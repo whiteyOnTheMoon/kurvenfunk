@@ -27,7 +27,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
       event: 'http.request.started',
       metadata: {
         method: request.method,
-        path: request.originalUrl,
+        path: request.path,
       },
     });
 
@@ -41,7 +41,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
           event: 'http.request.completed',
           metadata: {
             method: request.method,
-            path: request.originalUrl,
+            path: request.path,
             statusCode: response.statusCode,
             durationMs: Number(durationMs.toFixed(2)),
           },
