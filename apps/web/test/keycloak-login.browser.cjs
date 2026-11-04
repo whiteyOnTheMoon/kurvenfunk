@@ -121,11 +121,17 @@ async function main() {
       console.error('Post-login page title:', await page.title());
       console.error(
         'Post-login auth state:',
-        await page.locator('#auth-status').textContent().catch(() => 'missing'),
+        await page
+          .locator('#auth-status')
+          .textContent()
+          .catch(() => 'missing'),
       );
       console.error(
         'Post-login auth error:',
-        await page.locator('#auth-error').textContent().catch(() => 'missing'),
+        await page
+          .locator('#auth-error')
+          .textContent()
+          .catch(() => 'missing'),
       );
       console.error('Browser JS exceptions:', browserErrors.join(' | '));
       throw error;
