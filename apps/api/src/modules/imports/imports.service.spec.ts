@@ -421,16 +421,17 @@ describe('ImportsService', () => {
         canonicalEntityId: 'draft-1',
       });
       expect(importRecordUpdateMany).toHaveBeenCalledTimes(1);
-      expect(articleCreate).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          importRecordId: 'record-1',
-          title: 'Rapid gewinnt',
-          status: 'DRAFT',
-          authorId: 'user-1',
-          originalUrl: 'https://example.test/news/1',
-        }),
-        select: { id: true },
+      const draftCalls = articleCreate.mock.calls as unknown as Array<
+        [{ data: Record<string, unknown>; select: { id: boolean } }]
+      >;
+      expect(draftCalls[0]?.[0]?.data).toMatchObject({
+        importRecordId: 'record-1',
+        title: 'Rapid gewinnt',
+        status: 'DRAFT',
+        authorId: 'user-1',
+        originalUrl: 'https://example.test/news/1',
       });
+      expect(draftCalls[0]?.[0]?.select).toEqual({ id: true });
       expect(importRecordUpdate).toHaveBeenCalledWith({
         where: { id: 'record-1' },
         data: {
@@ -440,12 +441,13 @@ describe('ImportsService', () => {
         },
       });
       expect(importJobUpdate).toHaveBeenCalledTimes(1);
-      expect(auditLogCreate).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          actorUserId: 'user-1',
-          targetId: 'draft-1',
-          category: 'EDITORIAL',
-        }),
+      const auditCalls = auditLogCreate.mock.calls as unknown as Array<
+        [{ data: Record<string, unknown> }]
+      >;
+      expect(auditCalls[0]?.[0]?.data).toMatchObject({
+        actorUserId: 'user-1',
+        targetId: 'draft-1',
+        category: 'EDITORIAL',
       });
     });
 
