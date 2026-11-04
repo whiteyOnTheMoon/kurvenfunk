@@ -514,13 +514,12 @@ export class ImportsService implements OnModuleDestroy {
           { isolationLevel: 'Serializable' },
         );
       } catch (error) {
-        if (
-          attempt < 2 &&
-          error !== null &&
-          typeof error === 'object' &&
-          'code' in error &&
-          error.code === 'P2034'
-        ) {
+        const code =
+          error !== null && typeof error === 'object' && 'code' in error
+            ? (error as { code?: unknown }).code
+            : null;
+
+        if (attempt < 2 && code === 'P2034') {
           continue;
         }
 
