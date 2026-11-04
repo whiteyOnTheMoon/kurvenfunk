@@ -45,16 +45,18 @@ async function main() {
     }
     if (req.url === '/api/v1/auth/me') {
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        data: {
-          id: 'browser-e2e-user',
-          status: 'ACTIVE',
-          subject: 'browser-e2e',
-          fanPreference: 'NEUTRAL',
-          favoriteClubId: null,
-          onboardingCompleted: true,
-        },
-      }));
+      res.end(
+        JSON.stringify({
+          data: {
+            id: 'browser-e2e-user',
+            status: 'ACTIVE',
+            subject: 'browser-e2e',
+            fanPreference: 'NEUTRAL',
+            favoriteClubId: null,
+            onboardingCompleted: true,
+          },
+        }),
+      );
       return;
     }
     res.writeHead(404);
@@ -70,7 +72,11 @@ async function main() {
     }
 
     res.setHeader('Content-Type', 'text/html');
-    res.end('<!doctype html><html><head><title>Isolated Kurvenfunk AuthProvider test</title></head><body><div id="root"></div><script>window.__kurvenfunkTest={apiUrl:"http://127.0.0.1:3001",authUrl:' + JSON.stringify(identityProvider) + '}</script><script src="/bundle.js"></script></body></html>');
+    res.end(
+      '<!doctype html><html><head><title>Isolated Kurvenfunk AuthProvider test</title></head><body><div id="root"></div><script>window.__kurvenfunkTest={apiUrl:"http://127.0.0.1:3001",authUrl:' +
+        JSON.stringify(identityProvider) +
+        '}</script><script src="/bundle.js"></script></body></html>',
+    );
   });
 
   await listen(apiServer, 3001);
@@ -85,14 +91,26 @@ async function main() {
     page.on('pageerror', (error) => browserErrors.push(error.message));
 
     await page.goto('http://127.0.0.1:3000/login');
-    await page.waitForFunction(() => document.getElementById('auth-ready')?.textContent === 'true', null, { timeout: 30000 });
+    await page.waitForFunction(
+      () => document.getElementById('auth-ready')?.textContent === 'true',
+      null,
+      { timeout: 30000 },
+    );
     await page.locator('#login').click();
     await page.locator('#username').fill('browser-e2e');
     await page.locator('#password').fill('local-only-browser-test-password');
     await page.locator('#kc-login').click();
 
-    await page.waitForFunction(() => document.getElementById('auth-status')?.textContent === 'authenticated', null, { timeout: 30000 });
-    await page.waitForFunction(() => document.getElementById('user-status')?.textContent === 'ACTIVE', null, { timeout: 30000 });
+    await page.waitForFunction(
+      () => document.getElementById('auth-status')?.textContent === 'authenticated',
+      null,
+      { timeout: 30000 },
+    );
+    await page.waitForFunction(
+      () => document.getElementById('user-status')?.textContent === 'ACTIVE',
+      null,
+      { timeout: 30000 },
+    );
 
     const tokenBefore = await page.locator('#token-fingerprint').textContent();
     assert.ok(tokenBefore, 'Original Keycloak token should be present');

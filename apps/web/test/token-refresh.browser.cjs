@@ -26,7 +26,9 @@ async function main() {
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end('<!doctype html><html><head><title>Kurvenfunk token refresh browser test</title></head><body>Test</body></html>');
+    res.end(
+      '<!doctype html><html><head><title>Kurvenfunk token refresh browser test</title></head><body>Test</body></html>',
+    );
   });
 
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

@@ -20,12 +20,8 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "redirectUris": [
-        "http://127.0.0.1:3000/*"
-      ],
-      "webOrigins": [
-        "http://127.0.0.1:3000"
-      ],
+      "redirectUris": ["http://127.0.0.1:3000/*"],
+      "webOrigins": ["http://127.0.0.1:3000"],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }

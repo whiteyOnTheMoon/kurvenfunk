@@ -8,7 +8,11 @@ function Probe() {
     'main',
     null,
     React.createElement('div', { id: 'auth-ready' }, String(auth.initialized)),
-    React.createElement('div', { id: 'auth-status' }, auth.authenticated ? 'authenticated' : 'anonymous'),
+    React.createElement(
+      'div',
+      { id: 'auth-status' },
+      auth.authenticated ? 'authenticated' : 'anonymous',
+    ),
     React.createElement('div', { id: 'auth-error' }, auth.error ?? ''),
     React.createElement('div', { id: 'token-fingerprint' }, auth.token?.slice(-12) ?? ''),
     React.createElement('div', { id: 'user-status' }, auth.user?.status ?? ''),
@@ -20,9 +24,11 @@ function Probe() {
   );
 }
 
-const config = (window as Window & {
-  __kurvenfunkTest?: { apiUrl: string; authUrl: string };
-}).__kurvenfunkTest;
+const config = (
+  window as Window & {
+    __kurvenfunkTest?: { apiUrl: string; authUrl: string };
+  }
+).__kurvenfunkTest;
 
 if (!config) {
   throw new Error('Missing isolated browser test configuration');
