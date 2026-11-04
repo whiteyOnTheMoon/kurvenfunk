@@ -32,7 +32,7 @@ type OtsRecord = {
 };
 
 const DEFAULT_BASE_URL = 'https://www.ots.at/api';
-const DEFAULT_QUERY = 'Fußball';
+const DEFAULT_QUERY = 'FuÃball';
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGES = 5;
@@ -98,7 +98,7 @@ export class OtsNewsProvider implements NewsProvider {
     }
 
     const payload: unknown = await response.json();
-    const otsResponse = this.parseResponse(payload);
+    const otsResponse = this.parseResponse(payload, page, pageSize);
 
     const records: NewsProviderRecord[] = otsResponse.records.map((record) => ({
       ...this.optionalString('externalId', record.SCHLUESSEL),
@@ -134,40 +134,64 @@ export class OtsNewsProvider implements NewsProvider {
     return Math.floor(milliseconds / 1_000);
   }
 
-  private parseResponse(payload: unknown): {
+  private parseResponse(
+    payload: unknown,
+    requestedPage: number,
+    pageSize: number,
+  ): {
     records: OtsRecord[];
     hasNextPage: boolean;
   } {
-    if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    // The official OTS documentation shows a plain JSON array, while older
+    // integrations also return { meta, ergebnisse }. Accept both shapes.
+    if (Array.isArray(payload)) {
+      const records = this.parseRecords(payload);
+
+      return {
+        records,
+        // Bare arrays expose no total count. A full page warrants one more
+        // bounded request; empty/partial pages terminate pagination.
+        hasNextPage: records.length === pageSize,
+      };
+    }
+
+    if (payload === null || typeof payload !== 'object') {
       throw new Error('Invalid OTS API response');
     }
 
-    const response = payload as OtsResponse;
+    const response = payload as OtsResponse & { error?: unknown };
+
+    // OTS may return an HTTP 200 with a JSON error object for invalid keys.
+    // Do not log the remote error value or the credential-bearing request URL.
+    if (response.error !== undefined) {
+      throw new Error('OTS API returned an error; check API access and query parameters');
+    }
 
     if (!Array.isArray(response.ergebnisse)) {
       throw new Error('Invalid OTS API response: ergebnisse must be an array');
     }
 
-    const records = response.ergebnisse.filter(
-      (item): item is OtsRecord =>
-        item !== null && typeof item === 'object' && !Array.isArray(item),
-    );
-
+    const records = this.parseRecords(response.ergebnisse);
     const page = this.toPositiveInteger(response.meta?.page);
     const maxPerPage = this.toPositiveInteger(response.meta?.maxanz);
     const total = this.toNonNegativeInteger(response.meta?.treffer);
+    const hasUsableMetadata = page !== undefined && maxPerPage !== undefined && total !== undefined;
 
-    const hasNextPage =
-      page !== undefined &&
-      maxPerPage !== undefined &&
-      total !== undefined &&
-      page * maxPerPage < total &&
-      records.length > 0;
+    const hasNextPage = hasUsableMetadata
+      ? page * maxPerPage < total && records.length > 0
+      : requestedPage > 0 && records.length === pageSize;
 
     return {
       records,
       hasNextPage,
     };
+  }
+
+  private parseRecords(items: unknown[]): OtsRecord[] {
+    return items.filter(
+      (item): item is OtsRecord =>
+        item !== null && typeof item === 'object' && !Array.isArray(item),
+    );
   }
 
   private toPositiveInteger(value: unknown): number | undefined {
