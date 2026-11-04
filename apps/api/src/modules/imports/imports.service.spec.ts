@@ -421,6 +421,9 @@ describe('ImportsService', () => {
         canonicalEntityId: 'draft-1',
       });
       expect(importRecordUpdateMany).toHaveBeenCalledTimes(1);
+      expect(importRecordUpdateMany.mock.calls[0]?.[0]?.data).toEqual(
+        expect.objectContaining({ errorCode: null, errorMessage: null }),
+      );
       const draftCalls = articleCreate.mock.calls as unknown as Array<
         [{ data: Record<string, unknown>; select: { id: boolean } }]
       >;
