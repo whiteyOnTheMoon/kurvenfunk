@@ -37,10 +37,7 @@ test('de-duplicates concurrent Keycloak refreshes', async () => {
   assert.equal(refreshCount, 1);
   release();
 
-  assert.deepEqual(await Promise.all([first, second]), [
-    'rotated-token',
-    'rotated-token',
-  ]);
+  assert.deepEqual(await Promise.all([first, second]), ['rotated-token', 'rotated-token']);
 });
 
 test('does not silently reuse a missing or expired token on refresh failure', async () => {
