@@ -85,14 +85,14 @@ async function main() {
     page.on('pageerror', (error) => browserErrors.push(error.message));
 
     await page.goto('http://127.0.0.1:3000/login');
-    await page.locator('#auth-ready').getByText('true').waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => document.getElementById('auth-ready')?.textContent === 'true', null, { timeout: 30000 });
     await page.locator('#login').click();
     await page.locator('#username').fill('browser-e2e');
     await page.locator('#password').fill('local-only-browser-test-password');
     await page.locator('#kc-login').click();
 
-    await page.locator('#auth-status').getByText('authenticated').waitFor({ timeout: 30000 });
-    await page.locator('#user-status').getByText('ACTIVE').waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => document.getElementById('auth-status')?.textContent === 'authenticated', null, { timeout: 30000 });
+    await page.waitForFunction(() => document.getElementById('user-status')?.textContent === 'ACTIVE', null, { timeout: 30000 });
 
     const tokenBefore = await page.locator('#token-fingerprint').textContent();
     assert.ok(tokenBefore, 'Original Keycloak token should be present');
