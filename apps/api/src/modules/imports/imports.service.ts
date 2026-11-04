@@ -535,7 +535,12 @@ export class ImportsService implements OnModuleDestroy {
   }
 
   private parseReviewedArticle(recordType: string, payload: unknown) {
-    if (recordType !== 'NEWS_ARTICLE' || !payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    if (
+      recordType !== 'NEWS_ARTICLE' ||
+      !payload ||
+      typeof payload !== 'object' ||
+      Array.isArray(payload)
+    ) {
       throw new BadRequestException({
         code: 'IMPORT_REVIEW_NOT_ARTICLE',
         message: 'Review approval requires normalized news article content',
