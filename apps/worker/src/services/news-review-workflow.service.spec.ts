@@ -134,8 +134,7 @@ describe('NewsReviewWorkflowService', () => {
           canonicalEntityType: null,
           canonicalEntityId: null,
           errorCode: 'NEWS_REVIEW_REQUIRED',
-          errorMessage:
-            'Manual review required (provider not trusted for automatic publishing)',
+          errorMessage: 'Manual review required (provider not trusted for automatic publishing)',
         },
       });
     },
