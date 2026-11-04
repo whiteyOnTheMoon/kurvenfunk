@@ -191,6 +191,72 @@ describe('OtsNewsProvider', () => {
     await expect(provider.fetch({})).rejects.not.toThrow('test-secret-key');
   });
 
+  it('accepts the documented bare-array response and continues full pages', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue([
+        {
+          SCHLUESSEL: 'OTS_20261104_OTS0100',
+          TITEL: 'Erste Presseaussendung',
+          WEBLINK: 'https://www.ots.at/presseaussendung/OTS_20261104_OTS0100/test',
+        },
+        {
+          SCHLUESSEL: 'OTS_20261104_OTS0101',
+          TITEL: 'Zweite Presseaussendung',
+          WEBLINK: 'https://www.ots.at/presseaussendung/OTS_20261104_OTS0101/test',
+        },
+      ]),
+    });
+    global.fetch = fetchMock as typeof fetch;
+
+    const result = await createProvider({ NEWS_OTS_MAX_PAGES: 2 }).fetch({});
+
+    expect(result.records).toHaveLength(2);
+    expect(result.records[0]).toEqual(
+      expect.objectContaining({
+        externalId: 'OTS_20261104_OTS0100',
+        externalUrl: 'https://www.ots.at/presseaussendung/OTS_20261104_OTS0100/test',
+      }),
+    );
+    expect(result.nextCursor).toBe('2');
+  });
+
+  it('stops bare-array pagination on a partial page or max-page limit', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue([{ SCHLUESSEL: 'OTS_20261104_OTS0110' }]),
+    });
+    global.fetch = fetchMock as typeof fetch;
+
+    const partial = await createProvider().fetch({});
+    expect(partial.records).toHaveLength(1);
+    expect(partial.nextCursor).toBeUndefined();
+
+    const lastPage = await createProvider({
+      NEWS_OTS_PAGE_SIZE: 1,
+      NEWS_OTS_MAX_PAGES: 1,
+    }).fetch({});
+    expect(lastPage.nextCursor).toBeUndefined();
+  });
+
+  it('rejects an HTTP-200 OTS error response without leaking the key', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        error: 'Error: General Auth Error for test-secret-key',
+      }),
+    }) as typeof fetch;
+
+    const provider = createProvider();
+    await expect(provider.fetch({})).rejects.toThrow(
+      'OTS API returned an error; check API access and query parameters',
+    );
+    await expect(provider.fetch({})).rejects.not.toThrow('test-secret-key');
+  });
+
   it('rejects malformed API responses', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
