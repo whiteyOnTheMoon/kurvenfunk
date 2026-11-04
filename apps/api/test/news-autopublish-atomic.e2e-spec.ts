@@ -103,10 +103,7 @@ describe('Trusted news publication with disposable PostgreSQL', () => {
       match,
     ] as const;
 
-    const outcomes = await Promise.all([
-      service.publish(...args),
-      service.publish(...args),
-    ]);
+    const outcomes = await Promise.all([service.publish(...args), service.publish(...args)]);
 
     expect(outcomes.every((result) => result.articleId === outcomes[0].articleId)).toBe(true);
     expect(outcomes.filter((result) => result.created)).toHaveLength(1);
