@@ -29,9 +29,7 @@ if (!config) {
 }
 
 createRoot(document.getElementById('root')!).render(
-  React.createElement(
-    AuthProvider,
-    { apiUrl: config.apiUrl, authUrl: config.authUrl },
-    React.createElement(Probe),
-  ),
+  <AuthProvider apiUrl={config.apiUrl} authUrl={config.authUrl}>
+    <Probe />
+  </AuthProvider>,
 );
