@@ -47,23 +47,31 @@ describe('HttpLoggingInterceptor', () => {
       },
     });
 
-    const completedLog = logger.info.mock.calls[1]?.[1] as unknown as {
-      requestId: string;
-      event: string;
-      metadata: {
-        method: string;
-        path: string;
-        statusCode: number;
-        durationMs: number;
-      };
-    };
+    const completedCalls = logger.info.mock.calls as unknown as Array<
+      [
+        string,
+        {
+          requestId: string;
+          event: string;
+          metadata: {
+            method: string;
+            path: string;
+            statusCode: number;
+            durationMs: number;
+          };
+        },
+      ]
+    >;
+    const completedLog = completedCalls[1]?.[1];
 
-    expect(completedLog.requestId).toBe('test-request');
-    expect(completedLog.event).toBe('http.request.completed');
-    expect(completedLog.metadata.method).toBe('GET');
-    expect(completedLog.metadata.path).toBe('/api/v1/articles');
-    expect(completedLog.metadata.statusCode).toBe(200);
-    expect(completedLog.metadata.durationMs).toBeGreaterThanOrEqual(0);
+    expect(completedLog).toBeDefined();
+
+    expect(completedLog?.requestId).toBe('test-request');
+    expect(completedLog?.event).toBe('http.request.completed');
+    expect(completedLog?.metadata.method).toBe('GET');
+    expect(completedLog?.metadata.path).toBe('/api/v1/articles');
+    expect(completedLog?.metadata.statusCode).toBe(200);
+    expect(completedLog?.metadata.durationMs).toBeGreaterThanOrEqual(0);
 
     expect(JSON.stringify(logger.info.mock.calls)).not.toContain('secret-value');
     expect(JSON.stringify(logger.info.mock.calls)).not.toContain('private-code');
