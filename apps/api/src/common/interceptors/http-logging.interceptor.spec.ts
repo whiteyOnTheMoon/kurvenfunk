@@ -12,7 +12,7 @@ jest.mock('@kurvenfunk/logger', () => ({
 
 describe('HttpLoggingInterceptor', () => {
   it('logs only the pathname and never sensitive query parameters', () => {
-    const logger = jest.mocked(createLogger).mock.results[0]?.value as {
+    const logger = jest.mocked(createLogger).mock.results[0]?.value as unknown as {
       info: jest.Mock;
     };
 
