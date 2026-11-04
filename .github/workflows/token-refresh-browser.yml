@@ -6,6 +6,11 @@ on:
     paths:
       - 'apps/web/src/features/auth/**'
       - 'apps/web/test/token-refresh.browser.cjs'
+      - 'apps/web/test/auth-provider.browser.cjs'
+      - 'apps/web/test/auth-provider-browser-harness.tsx'
+      - 'apps/web/test/keycloak-client.browser-mock.ts'
+      - 'apps/web/test/keycloak-login.browser.cjs'
+      - 'apps/web/test/fixtures/keycloak-realm.json'
       - '.github/workflows/token-refresh-browser.yml'
 permissions:
   contents: read
@@ -30,6 +35,10 @@ jobs:
         env:
           PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
         run: node apps/web/test/token-refresh.browser.cjs
+      - name: Verify React AuthProvider renewal, tab resume and recovery
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/auth-provider.browser.cjs
       - name: Start isolated Keycloak realm (test accounts only)
         run: |
           docker run -d --rm --name kurvenfunk-browser-idp -p 127.0.0.1:8080:8080 \

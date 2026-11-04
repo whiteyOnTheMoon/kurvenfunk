@@ -21,6 +21,11 @@ function Probe() {
       { type: 'button', id: 'login', onClick: () => void auth.login() },
       'Login',
     ),
+    React.createElement(
+      'button',
+      { type: 'button', id: 'logout', onClick: () => void auth.logout() },
+      'Logout',
+    ),
   );
 }
 
