@@ -31,11 +31,26 @@ const SENSITIVE_KEYS = [
 
 const sensitiveKeys = new Set(SENSITIVE_KEYS.map((key) => key.toLowerCase()));
 
+const INLINE_SECRET_PATTERN =
+  /((?:["']?)(?:access[_-]?token|refresh[_-]?token|id[_-]?token|authorization|password|passwd|api[_-]?key|client[_-]?secret|secret|set-cookie|cookie|code|app)(?:["']?)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s&;,}]+)/gi;
+const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi;
+
+export function redactSensitiveText(text: string): string {
+  return text
+    .replace(BEARER_PATTERN, 'Bearer [REDACTED]')
+    .replace(INLINE_SECRET_PATTERN, '$1[REDACTED]');
+}
+
+
 function isSensitiveKey(key: string): boolean {
   return sensitiveKeys.has(key.toLowerCase());
 }
 
 function sanitizeValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return redactSensitiveText(value);
+  }
+
   if (Array.isArray(value)) {
     return value.map(sanitizeValue);
   }
@@ -47,8 +62,8 @@ function sanitizeValue(value: unknown): unknown {
   if (value instanceof Error) {
     return {
       name: value.name,
-      message: value.message,
-      stack: value.stack,
+      message: redactSensitiveText(value.message),
+      stack: value.stack ? redactSensitiveText(value.stack) : undefined,
     };
   }
 
@@ -81,7 +96,7 @@ export function createLogEntry(
     ...(options.requestId ? { requestId: options.requestId } : {}),
     ...(options.userId ? { userId: options.userId } : {}),
     ...(options.event ? { event: options.event } : {}),
-    message,
+    message: redactSensitiveText(message),
     ...(options.metadata ? { metadata: sanitizeMetadata(options.metadata) } : {}),
   };
 }
