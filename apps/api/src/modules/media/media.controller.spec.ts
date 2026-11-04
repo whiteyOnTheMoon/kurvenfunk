@@ -3,6 +3,18 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
+jest.mock('@kurvenfunk/validation', () => ({
+  mediaListQuerySchema: {
+    safeParse: (value: unknown) => ({ success: true, data: value }),
+  },
+  mediaUploadMetadataSchema: {
+    safeParse: (value: unknown) => ({ success: true, data: value }),
+  },
+  updateMediaMetadataSchema: {
+    safeParse: (value: unknown) => ({ success: true, data: value }),
+  },
+}));
+
 jest.mock('../auth/auth.guard', () => ({
   AuthGuard: class AuthGuard {
     canActivate() {
