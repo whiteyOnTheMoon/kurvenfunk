@@ -26,6 +26,10 @@ COPY packages/database ./packages/database
 
 RUN pnpm --filter @kurvenfunk/types build
 RUN pnpm --filter @kurvenfunk/logger build
+# Prisma's generated types are gitignored; a Docker build must generate them
+# from the current schema before compiling the database package and worker.
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build \
+    pnpm --filter @kurvenfunk/database generate
 RUN pnpm --filter @kurvenfunk/database build
 RUN pnpm --filter worker build
 
