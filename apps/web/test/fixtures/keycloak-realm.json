@@ -30,6 +30,8 @@
   "users": [
     {
       "username": "browser-e2e",
+      "firstName": "Browser",
+      "lastName": "Testuser",
       "email": "browser-e2e@example.invalid",
       "emailVerified": true,
       "enabled": true,
