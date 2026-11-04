@@ -288,13 +288,13 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
     const page = (
       first.body as {
         data: {
-          items: Array<{ id: string }>;
+          items: Array<{ id: string; parentId: string | null }>;
           pagination: { nextCursor: string | null; hasNextPage: boolean };
         };
       }
     ).data;
     expect(page.pagination.hasNextPage).toBe(true);
-    expect(page.items).toHaveLength(20);
+    expect(page.items.filter((item) => item.parentId === null)).toHaveLength(20);
 
     const second = await request(app.getHttpServer())
       .get(`/api/v1/articles/${articleId}/comments`)
@@ -310,7 +310,10 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
         .get(`/api/v1/articles/${articleId}/comments`)
         .query({ sort })
         .expect(200);
-      expect((response.body as { data: { items: unknown[] } }).data.items.length).toBe(20);
+      const listed = (response.body as {
+        data: { items: Array<{ parentId: string | null }> };
+      }).data.items;
+      expect(listed.filter((item) => item.parentId === null)).toHaveLength(20);
     }
   }, 25000);
 });
