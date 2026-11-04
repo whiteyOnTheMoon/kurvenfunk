@@ -1,0 +1,27 @@
+name: Temporary Import UI Format Preview
+on:
+  push:
+    branches:
+      - fix/admin-imports-ots-mobile-review
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Print formatted import-admin.tsx as base64 for patch
+        run: |
+          pnpm exec prettier --write apps/web/src/features/admin/imports/import-admin.tsx
+          echo KURVENFUNK_FORMATTED_BEGIN
+          base64 -w0 apps/web/src/features/admin/imports/import-admin.tsx
+          echo
+          echo KURVENFUNK_FORMATTED_END
