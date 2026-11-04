@@ -24,7 +24,7 @@ function docker(...args) {
   }).trim();
 }
 function command(args, cwd = repo, commandEnv = env) {
-  const result = spawnSync(process.execPath, [process.env.npm_execpath, ...args], {
+  const result = spawnSync('pnpm', args, {
     cwd,
     env: commandEnv,
     stdio: 'inherit',
