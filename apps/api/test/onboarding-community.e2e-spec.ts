@@ -59,8 +59,8 @@ describe('Onboarding community HTTP integration with isolated PostgreSQL and Red
     const address = jwksServer.address() as AddressInfo;
     process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${address.port}/jwks`;
 
-    const { AppModule } = await import('../src/app.module');
-    const { configureApplication } = await import('../src/bootstrap');
+    const { AppModule } = (await import('../src/app.module')) as unknown as typeof import('../src/app.module');
+    const { configureApplication } = (await import('../src/bootstrap')) as unknown as typeof import('../src/bootstrap');
     database = createPrismaClient();
     articleId = (
       await database.article.create({
@@ -98,7 +98,10 @@ describe('Onboarding community HTTP integration with isolated PostgreSQL and Red
       .get('/api/v1/auth/me')
       .set('Authorization', `Bearer ${authorToken}`)
       .expect(200);
-    expect(incompleteAuthor.body.data.onboardingCompleted).toBe(false);
+    const initialUser = incompleteAuthor.body as unknown as {
+      data: { onboardingCompleted: boolean };
+    };
+    expect(initialUser.data.onboardingCompleted).toBe(false);
 
     await request(app.getHttpServer())
       .post(`/api/v1/articles/${articleId}/comments`)
@@ -126,7 +129,8 @@ describe('Onboarding community HTTP integration with isolated PostgreSQL and Red
       .send({ body: 'Comment created after successful onboarding.' })
       .expect(201);
 
-    const commentId = created.body.data.id as string;
+    const createdBody = created.body as unknown as { data: { id: string } };
+    const commentId = createdBody.data.id;
     expect(await database.comment.count({ where: { articleId } })).toBe(1);
 
     await request(app.getHttpServer())
@@ -189,6 +193,7 @@ describe('Onboarding community HTTP integration with isolated PostgreSQL and Red
       .get('/api/v1/auth/me')
       .set('Authorization', `Bearer ${voterToken}`)
       .expect(403);
-    expect(banned.body.code).toBe('ACCOUNT_BANNED');
+    const bannedBody = banned.body as unknown as { code: string };
+    expect(bannedBody.code).toBe('ACCOUNT_BANNED');
   }, 25000);
 });
