@@ -19,6 +19,7 @@ describe('NewsAutoPublishingService', () => {
   const txFindImportRecord = jest.fn();
   const createArticle = jest.fn();
   const updateImportRecord = jest.fn();
+  const claimImportRecord = jest.fn();
   const updateImportJob = jest.fn();
 
   let service: NewsAutoPublishingService;
@@ -91,6 +92,7 @@ describe('NewsAutoPublishingService', () => {
       importRecord: {
         findUniqueOrThrow: txFindImportRecord,
         update: updateImportRecord,
+        updateMany: claimImportRecord,
       },
       article: {
         create: createArticle,
@@ -134,6 +136,8 @@ describe('NewsAutoPublishingService', () => {
       id: 'article-id',
     });
 
+    claimImportRecord.mockResolvedValue({ count: 1 });
+
     updateImportRecord.mockResolvedValue({
       id: 'record-1',
     });
@@ -157,6 +161,7 @@ describe('NewsAutoPublishingService', () => {
 
     expect(createArticle).toHaveBeenCalledWith({
       data: {
+        importRecordId: 'record-1',
         title: 'Rapid schlägt Austria im Wiener Derby',
         slug: 'rapid-schlagt-austria-im-wiener-derby',
         lead: 'Rapid gewinnt das Derby.',
@@ -283,6 +288,67 @@ describe('NewsAutoPublishingService', () => {
     ).rejects.toThrow('Import record record-1 cannot be published from status REVIEW_REQUIRED');
 
     expect(createArticle).not.toHaveBeenCalled();
+  });
+
+  it('claims a matched record before article creation in a serializable transaction', async () => {
+    await service.publish(provider, 'record-1', article, clubs, competition, match);
+
+    expect(claimImportRecord).toHaveBeenCalledWith({
+      where: { id: 'record-1', status: 'MATCHED' },
+      data: { status: 'CREATED' },
+    });
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+    expect(claimImportRecord.mock.invocationCallOrder[0]).toBeLessThan(
+      createArticle.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('returns the already-created article if another worker won the claim', async () => {
+    claimImportRecord.mockResolvedValueOnce({ count: 0 });
+    txFindImportRecord
+      .mockResolvedValueOnce({
+        importJobId: 'job-1',
+        status: 'MATCHED',
+        canonicalEntityType: null,
+        canonicalEntityId: null,
+      })
+      .mockResolvedValueOnce({
+        status: 'CREATED',
+        canonicalEntityType: 'ARTICLE',
+        canonicalEntityId: 'winner-id',
+      });
+
+    const result = await service.publish(provider, 'record-1', article, clubs, competition, match);
+
+    expect(result).toEqual({ articleId: 'winner-id', created: false });
+    expect(createArticle).not.toHaveBeenCalled();
+    expect(updateImportJob).not.toHaveBeenCalled();
+  });
+
+  it('retries serializable write conflicts without losing the import record', async () => {
+    transaction.mockRejectedValueOnce({ code: 'P2034' });
+
+    const result = await service.publish(provider, 'record-1', article, clubs, competition, match);
+
+    expect(result).toEqual({ articleId: 'article-id', created: true });
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(createArticle).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses a stable record-ID slug if concurrent imports collide', async () => {
+    createArticle.mockRejectedValueOnce({ code: 'P2002' });
+
+    await service.publish(provider, 'record-1', article, clubs, competition, match);
+
+    expect(createArticle).toHaveBeenCalledTimes(2);
+    const secondCall = createArticle.mock.calls[1]?.[0] as {
+      data: { slug: string };
+    };
+    expect(secondCall.data.slug).toBe(
+      'rapid-schlagt-austria-im-wiener-derby-record-1',
+    );
   });
 
   it('creates a unique slug when the base slug already exists', async () => {
