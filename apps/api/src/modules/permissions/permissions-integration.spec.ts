@@ -19,6 +19,7 @@ jest.mock('@kurvenfunk/validation', () => ({
 }));
 
 import { AuthGuard } from '../auth/auth.guard';
+import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
 import { CommentsController } from '../comments/comments.controller';
 import { ReactionsController } from '../reactions/reactions.controller';
 
@@ -39,7 +40,11 @@ describe('Community permission integration', () => {
     }
     expect(Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler)).toEqual([permission]);
 
-    expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([AuthGuard, PermissionsGuard]);
+    expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
+      AuthGuard,
+      OnboardingCompletedGuard,
+      PermissionsGuard,
+    ]);
   }
 
   it('protects comment creation', () => {

@@ -2,6 +2,7 @@ import { RequestMethod } from '@nestjs/common';
 import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
+import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
 import { createCommentReportSchema, ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
@@ -104,6 +105,7 @@ describe('ReportsController', () => {
     );
 
     expect(guards).toContain(AuthGuard);
+    expect(guards).toContain(OnboardingCompletedGuard);
   });
 
   it('registers the expected POST route', () => {
