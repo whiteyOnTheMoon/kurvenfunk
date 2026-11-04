@@ -8,6 +8,7 @@ import type {
 import { randomUUID } from 'node:crypto';
 
 import { STORAGE_SERVICE, type StorageService } from '../../infrastructure/storage/storage.types';
+import { validateAndNormalizeImage } from './image-validation';
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -66,15 +67,18 @@ export class MediaService {
       });
     }
 
+    // Decode and sanitize before any object is persisted.
+    const verified = await validateAndNormalizeImage(file);
+
     const now = new Date();
     const year = String(now.getUTCFullYear());
     const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const storageKey = `media/${year}/${month}/${randomUUID()}.${extension}`;
+    const storageKey = `media/${year}/${month}/${randomUUID()}.${verified.extension}`;
 
     await this.storage.put({
       key: storageKey,
-      body: file.buffer,
-      contentType: file.mimetype,
+      body: verified.buffer,
+      contentType: verified.mimetype,
     });
 
     try {
@@ -83,8 +87,10 @@ export class MediaService {
           storageType: 'INTERNAL',
           storageKey,
           originalFileName: file.originalname,
-          mimeType: file.mimetype,
-          sizeBytes: BigInt(file.size),
+          mimeType: verified.mimetype,
+          sizeBytes: BigInt(verified.buffer.length),
+          width: verified.width,
+          height: verified.height,
           altText: metadata.altText,
           copyright: metadata.copyright,
           source: metadata.source,
