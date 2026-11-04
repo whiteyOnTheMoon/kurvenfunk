@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   type OnModuleDestroy,
@@ -365,69 +366,241 @@ export class ImportsService implements OnModuleDestroy {
   }
 
   private async decideReview(id: string, reviewerId: string, decision: 'APPROVED' | 'REJECTED') {
-    return this.database.$transaction(async (transaction) => {
-      const record = await transaction.importRecord.findUnique({
-        where: {
-          id,
-        },
-        select: {
-          id: true,
-          status: true,
-          reviewDecision: true,
-          reviewedAt: true,
-        },
-      });
+    // The conditional update acquires the PostgreSQL row lock. Serializable
+    // retries also cover competing workers/reviewers and prevent duplicate drafts.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.database.$transaction(
+          async (transaction) => {
+            const record = await transaction.importRecord.findUnique({
+              where: { id },
+              select: {
+                id: true,
+                importJobId: true,
+                status: true,
+                recordType: true,
+                reviewDecision: true,
+                normalizedPayload: true,
+                externalUrl: true,
+                canonicalEntityId: true,
+              },
+            });
 
-      if (!record) {
-        throw new NotFoundException({
-          code: 'IMPORT_RECORD_NOT_FOUND',
-          message: 'Import record not found',
-        });
+            if (!record) {
+              throw new NotFoundException({
+                code: 'IMPORT_RECORD_NOT_FOUND',
+                message: 'Import record not found',
+              });
+            }
+
+            // Repeated approvals return the original draft without creating
+            // new content or duplicate audit/count records.
+            if (record.reviewDecision === 'APPROVED' && decision === 'APPROVED') {
+              const existing = await transaction.article.findUnique({
+                where: { importRecordId: id },
+                select: { id: true },
+              });
+
+              if (existing && existing.id === record.canonicalEntityId) {
+                return transaction.importRecord.findUniqueOrThrow({
+                  where: { id },
+                  select: {
+                    id: true,
+                    status: true,
+                    reviewDecision: true,
+                    reviewedAt: true,
+                    reviewedById: true,
+                    canonicalEntityId: true,
+                  },
+                });
+              }
+            }
+
+            if (record.status !== 'REVIEW_REQUIRED' || record.reviewDecision !== null) {
+              throw new BadRequestException({
+                code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+                message: 'Import record is not awaiting review',
+              });
+            }
+
+            const article =
+              decision === 'APPROVED'
+                ? this.parseReviewedArticle(record.recordType, record.normalizedPayload)
+                : null;
+
+            const reviewedAt = new Date();
+            const claimed = await transaction.importRecord.updateMany({
+              where: {
+                id,
+                status: 'REVIEW_REQUIRED',
+                reviewDecision: null,
+              },
+              data: {
+                status: decision === 'APPROVED' ? 'MATCHED' : 'SKIPPED',
+                reviewDecision: decision,
+                reviewedById: reviewerId,
+                reviewedAt,
+              },
+            });
+
+            if (claimed.count !== 1) {
+              throw new BadRequestException({
+                code: 'IMPORT_REVIEW_ALREADY_DECIDED',
+                message: 'Import record is not awaiting review',
+              });
+            }
+
+            if (article) {
+              const slug = `${article.slugBase}-${id}`;
+              const created = await transaction.article.create({
+                data: {
+                  importRecordId: id,
+                  title: article.title,
+                  slug,
+                  lead: article.lead,
+                  content: article.content,
+                  status: 'DRAFT',
+                  authorId: reviewerId,
+                  externalAuthorName: article.authorName,
+                  originalUrl: this.safeExternalUrl(record.externalUrl) ?? article.originalUrl,
+                },
+                select: { id: true },
+              });
+
+              await transaction.importRecord.update({
+                where: { id },
+                data: {
+                  status: 'CREATED',
+                  canonicalEntityType: 'ARTICLE',
+                  canonicalEntityId: created.id,
+                },
+              });
+
+              await transaction.importJob.update({
+                where: { id: record.importJobId },
+                data: { createdCount: { increment: 1 } },
+              });
+
+              await transaction.auditLog.create({
+                data: {
+                  actorType: 'USER',
+                  actorUserId: reviewerId,
+                  action: 'ADMIN_CORRECTION',
+                  category: 'EDITORIAL',
+                  targetType: 'ARTICLE',
+                  targetId: created.id,
+                  reason: 'Import review approved as editorial draft',
+                  metadata: {
+                    importRecordId: id,
+                    reviewDecision: 'APPROVED',
+                    articleStatus: 'DRAFT',
+                  },
+                },
+              });
+            }
+
+            return transaction.importRecord.findUniqueOrThrow({
+              where: { id },
+              select: {
+                id: true,
+                status: true,
+                reviewDecision: true,
+                reviewedAt: true,
+                reviewedById: true,
+                canonicalEntityId: true,
+              },
+            });
+          },
+          { isolationLevel: 'Serializable' },
+        );
+      } catch (error) {
+        const code =
+          error !== null && typeof error === 'object' && 'code' in error
+            ? (error as { code?: unknown }).code
+            : null;
+
+        if (attempt < 2 && code === 'P2034') {
+          continue;
+        }
+
+        throw error;
       }
+    }
 
-      if (record.status !== 'REVIEW_REQUIRED' || record.reviewDecision !== null) {
-        throw new BadRequestException({
-          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
-          message: 'Import record is not awaiting review',
-        });
-      }
-
-      const reviewedAt = new Date();
-
-      const result = await transaction.importRecord.updateMany({
-        where: {
-          id,
-          status: 'REVIEW_REQUIRED',
-          reviewDecision: null,
-        },
-        data: {
-          status: decision === 'APPROVED' ? 'MATCHED' : 'SKIPPED',
-          reviewDecision: decision,
-          reviewedById: reviewerId,
-          reviewedAt,
-        },
-      });
-
-      if (result.count !== 1) {
-        throw new BadRequestException({
-          code: 'IMPORT_REVIEW_ALREADY_DECIDED',
-          message: 'Import record is not awaiting review',
-        });
-      }
-
-      return transaction.importRecord.findUniqueOrThrow({
-        where: {
-          id,
-        },
-        select: {
-          id: true,
-          status: true,
-          reviewDecision: true,
-          reviewedAt: true,
-          reviewedById: true,
-        },
-      });
+    throw new ConflictException({
+      code: 'IMPORT_REVIEW_CONFLICT',
+      message: 'Import review was updated concurrently',
     });
+  }
+
+  private parseReviewedArticle(recordType: string, payload: unknown) {
+    if (
+      recordType !== 'NEWS_ARTICLE' ||
+      !payload ||
+      typeof payload !== 'object' ||
+      Array.isArray(payload)
+    ) {
+      throw new BadRequestException({
+        code: 'IMPORT_REVIEW_NOT_ARTICLE',
+        message: 'Review approval requires normalized news article content',
+      });
+    }
+
+    const normalized = payload as Record<string, unknown>;
+    const title = typeof normalized.title === 'string' ? normalized.title.trim() : '';
+    const body = typeof normalized.body === 'string' ? normalized.body.trim() : '';
+    const lead = typeof normalized.lead === 'string' ? normalized.lead.trim() : '';
+
+    if (!title || title.length > 200 || body.length > 100_000 || lead.length > 1000) {
+      throw new BadRequestException({
+        code: 'IMPORT_REVIEW_CONTENT_INVALID',
+        message: 'Reviewed article title or content is invalid',
+      });
+    }
+
+    const slugBase =
+      title
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('de')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 65) || 'import';
+
+    return {
+      title,
+      slugBase,
+      lead: lead || null,
+      authorName:
+        typeof normalized.authorName === 'string'
+          ? normalized.authorName.trim().slice(0, 200) || null
+          : null,
+      originalUrl: this.safeExternalUrl(normalized.originalUrl),
+      content: {
+        type: 'doc',
+        content: body
+          ? [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: body }],
+              },
+            ]
+          : [],
+      },
+    };
+  }
+
+  private safeExternalUrl(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : null;
+    } catch {
+      return null;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
