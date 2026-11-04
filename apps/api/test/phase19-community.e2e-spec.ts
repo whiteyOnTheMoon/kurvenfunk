@@ -60,7 +60,8 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       res.end(JSON.stringify({ keys: [publicKey] }));
     });
     await new Promise<void>((resolve) => jwksServer.listen(0, '127.0.0.1', resolve));
-    process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/jwks`;
+    process.env.KEYCLOAK_JWKS_URL =
+      `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/jwks`;
 
     db = createPrismaClient();
     const [author, visitor, moderator, article] = await Promise.all([
