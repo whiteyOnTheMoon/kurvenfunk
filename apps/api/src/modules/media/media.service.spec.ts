@@ -3,12 +3,18 @@ import { createPrismaClient } from '@kurvenfunk/database';
 
 import type { StoragePutInput, StorageService } from '../../infrastructure/storage/storage.types';
 import { MediaService } from './media.service';
+import { validateAndNormalizeImage } from './image-validation';
 
 jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: jest.fn(),
 }));
 
+jest.mock('./image-validation', () => ({
+  validateAndNormalizeImage: jest.fn(),
+}));
+
 const mockedCreatePrismaClient = jest.mocked(createPrismaClient);
+const mockedValidateImage = jest.mocked(validateAndNormalizeImage);
 
 interface MediaCreateData {
   storageType: string;
@@ -16,6 +22,8 @@ interface MediaCreateData {
   originalFileName: string;
   mimeType: string;
   sizeBytes: bigint;
+  width: number;
+  height: number;
   altText: string | null;
   copyright: string | null;
   source: string | null;
@@ -55,12 +63,21 @@ describe('MediaService', () => {
     originalname: 'rapid.webp',
     mimetype: 'image/webp',
     size: 1234,
-    buffer: Buffer.from('test-image'),
+    buffer: Buffer.alloc(1234, 1),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockedCreatePrismaClient.mockReturnValue(database as never);
+    mockedValidateImage.mockImplementation((input) =>
+      Promise.resolve({
+        buffer: input.buffer,
+        mimetype: 'image/webp',
+        extension: 'webp',
+        width: 1,
+        height: 1,
+      }),
+    );
   });
 
   it('uploads an image and creates the media record', async () => {
@@ -83,8 +100,8 @@ describe('MediaService', () => {
         originalFileName: data.originalFileName,
         mimeType: data.mimeType,
         sizeBytes: data.sizeBytes,
-        width: null,
-        height: null,
+        width: data.width,
+        height: data.height,
         altText: data.altText,
         copyright: data.copyright,
         source: data.source,
@@ -118,6 +135,8 @@ describe('MediaService', () => {
         originalFileName: 'rapid.webp',
         mimeType: 'image/webp',
         sizeBytes: 1234n,
+        width: 1,
+        height: 1,
         altText: 'Rapid',
         copyright: null,
         source: null,
