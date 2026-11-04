@@ -124,5 +124,4 @@ describe('Strict media image validation', () => {
       validateAndNormalizeImage({ buffer, mimetype: 'image/png' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
-
 });
