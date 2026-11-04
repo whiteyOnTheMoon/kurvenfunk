@@ -33,7 +33,7 @@ export interface PermissionSubject {
 
 export const REQUIRED_PERMISSIONS_METADATA_KEY = 'kurvenfunk:required-permissions';
 
-const COMMUNITY_PERMISSIONS: readonly Permission[] = [
+export const COMMUNITY_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.COMMENT_CREATE,
   PERMISSIONS.COMMENT_EDIT,
   PERMISSIONS.COMMENT_VOTE,
