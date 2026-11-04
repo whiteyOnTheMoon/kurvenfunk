@@ -60,8 +60,7 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       res.end(JSON.stringify({ keys: [publicKey] }));
     });
     await new Promise<void>((resolve) => jwksServer.listen(0, '127.0.0.1', resolve));
-    process.env.KEYCLOAK_JWKS_URL =
-      `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/jwks`;
+    process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/jwks`;
 
     db = createPrismaClient();
     const [author, visitor, moderator, article] = await Promise.all([
@@ -186,9 +185,7 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       .delete(`/api/v1/articles/${articleId}/comments/${rootId}`)
       .set('Authorization', `Bearer ${authorToken}`)
       .expect(200);
-    expect((await db.comment.findUniqueOrThrow({ where: { id: rootId } })).status).toBe(
-      'DELETED',
-    );
+    expect((await db.comment.findUniqueOrThrow({ where: { id: rootId } })).status).toBe('DELETED');
   }, 25000);
 
   it('verifies up/down votes, report rules, and an audited moderator deletion', async () => {
@@ -288,12 +285,14 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       .get(`/api/v1/articles/${articleId}/comments`)
       .query({ sort: 'newest' })
       .expect(200);
-    const page = (first.body as {
-      data: {
-        items: Array<{ id: string }>;
-        pagination: { nextCursor: string | null; hasNextPage: boolean };
-      };
-    }).data;
+    const page = (
+      first.body as {
+        data: {
+          items: Array<{ id: string }>;
+          pagination: { nextCursor: string | null; hasNextPage: boolean };
+        };
+      }
+    ).data;
     expect(page.pagination.hasNextPage).toBe(true);
     expect(page.items).toHaveLength(20);
 
