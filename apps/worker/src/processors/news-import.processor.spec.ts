@@ -186,14 +186,14 @@ describe('NewsImportProcessor', () => {
     } as unknown as NewsImportDeadLetterService;
 
     fetchOts.mockResolvedValue({
-        records: [
-          {
-            externalId: 'ots-001',
-            externalUrl: 'https://www.ots.at/presseaussendung/ots-001',
-            payload: { TITEL: 'Real Austrian football news' },
-          },
-        ],
-      });
+      records: [
+        {
+          externalId: 'ots-001',
+          externalUrl: 'https://www.ots.at/presseaussendung/ots-001',
+          payload: { TITEL: 'Real Austrian football news' },
+        },
+      ],
+    });
     otsProvider = {
       key: 'ots',
       trustedForAutoPublish: false,
