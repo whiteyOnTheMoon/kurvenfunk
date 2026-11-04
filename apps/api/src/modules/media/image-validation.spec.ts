@@ -86,4 +86,43 @@ describe('Strict media image validation', () => {
       validateAndNormalizeImage({ buffer, mimetype: 'image/png' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+  it('corrects EXIF orientation and strips the original metadata', async () => {
+    const buffer = await sharp({
+      create: {
+        width: 36,
+        height: 14,
+        channels: 3,
+        background: { r: 30, g: 50, b: 70 },
+      },
+    })
+      .jpeg()
+      .withMetadata({ orientation: 6 })
+      .toBuffer();
+
+    const image = await validateAndNormalizeImage({ buffer, mimetype: 'image/jpeg' });
+    const metadata = await sharp(image.buffer).metadata();
+
+    expect(image.width).toBe(14);
+    expect(image.height).toBe(36);
+    expect(metadata.exif).toBeUndefined();
+    expect(metadata.orientation).toBeUndefined();
+  });
+
+  it('rejects decompression bombs beyond the total input pixel limit', async () => {
+    const buffer = await sharp({
+      create: {
+        width: 5000,
+        height: 4001,
+        channels: 3,
+        background: { r: 0, g: 0, b: 0 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    await expect(
+      validateAndNormalizeImage({ buffer, mimetype: 'image/png' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
 });
