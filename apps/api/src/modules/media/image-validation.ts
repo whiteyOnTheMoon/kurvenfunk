@@ -40,8 +40,7 @@ function sniffImageMime(buffer: Buffer): string | undefined {
 
   if (
     buffer.length >= 6 &&
-    (buffer.toString('ascii', 0, 6) === 'GIF87a' ||
-      buffer.toString('ascii', 0, 6) === 'GIF89a')
+    (buffer.toString('ascii', 0, 6) === 'GIF87a' || buffer.toString('ascii', 0, 6) === 'GIF89a')
   ) {
     return 'image/gif';
   }

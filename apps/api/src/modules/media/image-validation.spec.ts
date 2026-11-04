@@ -1,10 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import sharp from 'sharp';
 
-import {
-  MAX_IMAGE_BYTES,
-  validateAndNormalizeImage,
-} from './image-validation';
+import { MAX_IMAGE_BYTES, validateAndNormalizeImage } from './image-validation';
 
 const fixture = {
   create: {
