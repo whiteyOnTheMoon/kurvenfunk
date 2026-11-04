@@ -69,13 +69,15 @@ describe('MediaService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedCreatePrismaClient.mockReturnValue(database as never);
-    mockedValidateImage.mockImplementation(async (input) => ({
-      buffer: input.buffer,
-      mimetype: 'image/webp',
-      extension: 'webp',
-      width: 1,
-      height: 1,
-    }));
+    mockedValidateImage.mockImplementation((input) =>
+      Promise.resolve({
+        buffer: input.buffer,
+        mimetype: 'image/webp',
+        extension: 'webp',
+        width: 1,
+        height: 1,
+      }),
+    );
   });
 
   it('uploads an image and creates the media record', async () => {
