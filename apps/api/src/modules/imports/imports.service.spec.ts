@@ -571,6 +571,8 @@ describe('ImportsService', () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
         status: 'REVIEW_REQUIRED',
+        recordType: 'NEWS_ARTICLE',
+        normalizedPayload: { title: 'Valid reviewed title', body: 'Valid body' },
         reviewDecision: null,
         reviewedAt: null,
       });
