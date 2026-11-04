@@ -1,0 +1,32 @@
+name: Temporary one-shot Prettier (LOGGER)
+on:
+  push:
+    branches:
+      - 'fix/phase07-logger-secret-redaction-20261103'
+permissions:
+  contents: write
+jobs:
+  format:
+    if: contains(github.event.head_commit.message, '[RUN_LOGGER_FORMAT]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 'fix/phase07-logger-secret-redaction-20261103'
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Prettier only approved files
+        run: pnpm exec prettier --write 'packages/logger/src/logger.ts' 'packages/logger/src/logger.spec.mjs'
+      - name: Commit formatted files back to this PR branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'packages/logger/src/logger.ts' 'packages/logger/src/logger.spec.mjs'
+          if ! git diff --cached --quiet; then
+            git commit -m 'style: apply one-shot Prettier formatting'
+            git push origin HEAD:fix/phase07-logger-secret-redaction-20261103
+          fi
