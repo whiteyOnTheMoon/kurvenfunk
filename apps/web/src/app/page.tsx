@@ -3,8 +3,6 @@ import Link from 'next/link';
 import { Countdown } from './countdown';
 import styles from './page.module.css';
 
-const topics = ['BUNDESLIGA', '2. LIGA', 'ÖFB-CUP', 'NATIONALTEAM', 'FRAUENFUSSBALL'];
-
 export default function Home() {
   return (
     <main className={styles.page}>
@@ -22,7 +20,7 @@ export default function Home() {
           </Link>
           <span className={styles.headerNote}>
             <span className={styles.statusDot} aria-hidden="true" />
-            AB 01.01.2027
+            COMING SOON
           </span>
         </header>
 
@@ -37,7 +35,7 @@ export default function Home() {
             DEIN REVIER.
           </h1>
           <p className={styles.description}>
-            Alle News zum österreichischen Fußball.<br className={styles.desktopBreak} />
+            Alle News zum österreichischen Fußball.<br className={styles.desktopBreak} />{' '}
             Alle Vereine. Alle Geschichten. Eine Leidenschaft.
           </p>
         </section>
@@ -45,10 +43,8 @@ export default function Home() {
         <section className={styles.launch} aria-labelledby="launch-title">
           <div className={styles.launchTopline}>
             <h2 id="launch-title">BIS ZUM ANPFIFF</h2>
-            <span className={styles.launchDate}>01 / 01 / 2027</span>
           </div>
           <Countdown />
-          <p className={styles.launchCaption}>1. JÄNNER 2027 · 00:00 UHR · WIENER ZEIT</p>
         </section>
 
         <section className={styles.manifesto} aria-label="Unser Versprechen">
@@ -58,14 +54,6 @@ export default function Home() {
         </section>
 
         <footer className={styles.footer}>
-          <div className={styles.topics} aria-label="Unsere Themen">
-            {topics.map((topic, index) => (
-              <span key={topic}>
-                {index > 0 && <span className={styles.topicDivider} aria-hidden="true">/</span>}
-                {topic}
-              </span>
-            ))}
-          </div>
           <p>© 2026 KURVENFUNK · MADE FOR THE FANS</p>
         </footer>
       </div>
