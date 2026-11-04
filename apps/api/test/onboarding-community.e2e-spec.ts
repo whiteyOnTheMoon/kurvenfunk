@@ -59,8 +59,10 @@ describe('Onboarding community HTTP integration with isolated PostgreSQL and Red
     const address = jwksServer.address() as AddressInfo;
     process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${address.port}/jwks`;
 
-    const { AppModule } = (await import('../src/app.module')) as unknown as typeof import('../src/app.module');
-    const { configureApplication } = (await import('../src/bootstrap')) as unknown as typeof import('../src/bootstrap');
+    const { AppModule } =
+      (await import('../src/app.module')) as unknown as typeof import('../src/app.module');
+    const { configureApplication } =
+      (await import('../src/bootstrap')) as unknown as typeof import('../src/bootstrap');
     database = createPrismaClient();
     articleId = (
       await database.article.create({
