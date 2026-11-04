@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  type ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, type ExecutionContext, UnauthorizedException } from '@nestjs/common';
 
 import type { AuthenticatedUser } from './auth.types';
 import { OnboardingCompletedGuard } from './onboarding-completed.guard';
