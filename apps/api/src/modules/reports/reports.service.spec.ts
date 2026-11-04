@@ -23,6 +23,7 @@ describe('ReportsService', () => {
 
   const visibleComment = {
     id: commentId,
+    authorId: '55555555-5555-4555-8555-555555555555',
     status: 'VISIBLE',
     deletedAt: null,
     article: {
@@ -87,6 +88,19 @@ describe('ReportsService', () => {
         userStatus: 'BANNED',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(database.moderationReport.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects reporting ones own comment', async () => {
+    database.comment.findUnique.mockResolvedValue({
+      ...visibleComment,
+      authorId: reporterId,
+    });
+
+    await expect(service.createCommentReport(command)).rejects.toMatchObject({
+      response: { code: 'SELF_REPORT_FORBIDDEN' },
+    });
 
     expect(database.moderationReport.create).not.toHaveBeenCalled();
   });
