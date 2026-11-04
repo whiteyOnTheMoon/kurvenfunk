@@ -610,10 +610,19 @@ describe('CommentsService', () => {
     });
     expect(updateArgument?.data.body).toBe('Rapid spielt heute sehr stark.');
     expect(updateArgument?.data.editedAt).toBeInstanceOf(Date);
-    expect(txCommentFindUniqueOrThrow).toHaveBeenCalledWith({
-      where: { id: '22222222-2222-4222-8222-222222222222' },
-      select: expect.objectContaining({ id: true, body: true, editedAt: true }),
-    });
+    expect(txCommentFindUniqueOrThrow).toHaveBeenCalledTimes(1);
+    const findCalls = txCommentFindUniqueOrThrow.mock.calls as Array<
+      [
+        {
+          where: { id: string };
+          select: { id: boolean; body: boolean; editedAt: boolean };
+        },
+      ]
+    >;
+    expect(findCalls[0]?.[0].where.id).toBe('22222222-2222-4222-8222-222222222222');
+    expect(findCalls[0]?.[0].select.id).toBe(true);
+    expect(findCalls[0]?.[0].select.body).toBe(true);
+    expect(findCalls[0]?.[0].select.editedAt).toBe(true);
 
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(result.body).toBe('Rapid spielt heute sehr stark.');
