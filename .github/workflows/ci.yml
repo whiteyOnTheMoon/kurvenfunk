@@ -58,6 +58,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Temporary diagnostic. Removed before merging.
+      - name: Emit formatted Phase 19 test sources
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          files=(
+            apps/api/src/modules/comments/comment-moderator-delete.spec.ts
+            apps/api/test/phase19-community.e2e-spec.ts
+          )
+          pnpm exec prettier --write "${files[@]}"
+          for file in "${files[@]}"; do
+            printf 'PRETTY_BEGIN:%s\\n' "$file"
+            base64 --wrap=0 "$file"
+            printf '\\nPRETTY_END:%s\\n' "$file"
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
