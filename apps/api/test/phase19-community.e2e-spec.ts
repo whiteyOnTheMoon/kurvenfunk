@@ -9,6 +9,8 @@ import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
+type RootPageResponse = { data: { items: Array<{ parentId: string | null }> } };
+
 describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis)', () => {
   let app: INestApplication<App>;
   let db: DatabaseClient;
@@ -310,9 +312,7 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
         .get(`/api/v1/articles/${articleId}/comments`)
         .query({ sort })
         .expect(200);
-      const listed = (response.body as {
-        data: { items: Array<{ parentId: string | null }> };
-      }).data.items;
+      const listed = (response.body as RootPageResponse).data.items;
       expect(listed.filter((item) => item.parentId === null)).toHaveLength(20);
     }
   }, 25000);
