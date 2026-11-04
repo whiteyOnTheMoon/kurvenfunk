@@ -11,6 +11,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { createCommentSchema, type CreateCommentInput } from '@kurvenfunk/validation';
+import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { PERMISSIONS } from '../permissions/permissions.constants';
 import { RequirePermissions } from '../permissions/require-permissions.decorator';
@@ -108,6 +109,34 @@ export class CommentsController {
       authorId: user.kurvenfunkUserId,
       body: input.body,
       userStatus: user.kurvenfunkUserStatus,
+    });
+  }
+}
+
+const moderateDeleteCommentSchema = z
+  .object({ reason: z.string().trim().min(3).max(500) })
+  .strict();
+
+/**
+ * Distinct privileged route: never reuse the author's delete permission.
+ * RequirePermissions applies AuthGuard and PermissionsGuard server-side.
+ */
+@Controller('moderation/comments')
+export class CommentModerationController {
+  constructor(private readonly commentsService: CommentsService) {}
+
+  @Delete(':commentId')
+  @RequirePermissions(PERMISSIONS.COMMENT_MODERATE)
+  moderateRemove(
+    @Param('commentId', new ParseUUIDPipe({ version: '4' })) commentId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(moderateDeleteCommentSchema))
+    input: z.infer<typeof moderateDeleteCommentSchema>,
+  ) {
+    return this.commentsService.moderateRemove({
+      commentId,
+      moderatorId: request.user!.kurvenfunkUserId,
+      reason: input.reason,
     });
   }
 }
