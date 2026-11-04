@@ -2,7 +2,7 @@ const articleFindUnique = jest.fn();
 const commentCreate = jest.fn();
 const commentFindMany = jest.fn();
 const commentFindUnique = jest.fn();
-const commentUpdate = jest.fn();
+const txCommentFindUniqueOrThrow = jest.fn();
 const commentUpdateMany = jest.fn();
 const commentRevisionCreate = jest.fn();
 const transaction = jest.fn();
@@ -36,13 +36,17 @@ describe('CommentsService', () => {
     transaction.mockImplementation(
       (
         callback: (client: {
-          comment: { update: typeof commentUpdate };
+          comment: {
+            updateMany: typeof commentUpdateMany;
+            findUniqueOrThrow: typeof txCommentFindUniqueOrThrow;
+          };
           commentRevision: { create: typeof commentRevisionCreate };
         }) => unknown,
       ) =>
         callback({
           comment: {
-            update: commentUpdate,
+            updateMany: commentUpdateMany,
+            findUniqueOrThrow: txCommentFindUniqueOrThrow,
           },
           commentRevision: {
             create: commentRevisionCreate,
@@ -542,7 +546,8 @@ describe('CommentsService', () => {
       id: '55555555-5555-4555-8555-555555555555',
     });
 
-    commentUpdate.mockResolvedValue({
+    commentUpdateMany.mockResolvedValue({ count: 1 });
+    txCommentFindUniqueOrThrow.mockResolvedValue({
       id: '22222222-2222-4222-8222-222222222222',
       articleId: '11111111-1111-4111-8111-111111111111',
       authorId: '33333333-3333-4333-8333-333333333333',
@@ -574,45 +579,86 @@ describe('CommentsService', () => {
       },
     });
 
-    expect(commentUpdate).toHaveBeenCalledTimes(1);
+    expect(commentUpdateMany).toHaveBeenCalledTimes(1);
 
-    const updateCalls = commentUpdate.mock.calls as Array<
+    const updateCalls = commentUpdateMany.mock.calls as Array<
       [
         {
           where: {
             id: string;
-          };
-          data: {
+            articleId: string;
+            authorId: string;
             body: string;
-            editedAt: Date;
+            status: string;
+            deletedAt: null;
+            article: { status: string; deletedAt: null };
           };
-          select: {
-            id: boolean;
-            body: boolean;
-            editedAt: boolean;
-          };
+          data: { body: string; editedAt: Date };
         },
       ]
     >;
 
     const updateArgument = updateCalls[0]?.[0];
-
-    expect(updateArgument).toBeDefined();
     expect(updateArgument?.where).toEqual({
       id: '22222222-2222-4222-8222-222222222222',
+      articleId: '11111111-1111-4111-8111-111111111111',
+      authorId: '33333333-3333-4333-8333-333333333333',
+      body: 'Rapid spielt heute stark.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: { status: 'PUBLISHED', deletedAt: null },
     });
     expect(updateArgument?.data.body).toBe('Rapid spielt heute sehr stark.');
     expect(updateArgument?.data.editedAt).toBeInstanceOf(Date);
-    expect(updateArgument?.select).toEqual(
-      expect.objectContaining({
-        id: true,
-        body: true,
-        editedAt: true,
-      }),
-    );
+    expect(txCommentFindUniqueOrThrow).toHaveBeenCalledTimes(1);
+    const findCalls = txCommentFindUniqueOrThrow.mock.calls as Array<
+      [
+        {
+          where: { id: string };
+          select: { id: boolean; body: boolean; editedAt: boolean };
+        },
+      ]
+    >;
+    expect(findCalls[0]?.[0].where.id).toBe('22222222-2222-4222-8222-222222222222');
+    expect(findCalls[0]?.[0].select.id).toBe(true);
+    expect(findCalls[0]?.[0].select.body).toBe(true);
+    expect(findCalls[0]?.[0].select.editedAt).toBe(true);
 
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(result.body).toBe('Rapid spielt heute sehr stark.');
+  });
+
+  it('rejects a stale concurrent edit without creating a revision', async () => {
+    const articleId = '11111111-1111-4111-8111-111111111111';
+    const commentId = '22222222-2222-4222-8222-222222222222';
+    const authorId = '33333333-3333-4333-8333-333333333333';
+
+    commentFindUnique.mockResolvedValue({
+      id: commentId,
+      articleId,
+      authorId,
+      body: 'Version before another editor intervenes.',
+      status: 'VISIBLE',
+      deletedAt: null,
+      article: { status: 'PUBLISHED', deletedAt: null },
+    });
+    commentUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.update({
+        articleId,
+        commentId,
+        authorId,
+        body: 'Stale edit',
+        userStatus: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'COMMENT_EDIT_CONFLICT' },
+    });
+
+    expect(commentUpdateMany).toHaveBeenCalledTimes(1);
+    expect(commentRevisionCreate).not.toHaveBeenCalled();
+    expect(txCommentFindUniqueOrThrow).not.toHaveBeenCalled();
   });
 
   it('rejects comment edits from LIMITED users before looking up the comment', async () => {

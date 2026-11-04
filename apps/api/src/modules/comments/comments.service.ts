@@ -1,5 +1,6 @@
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -611,6 +612,32 @@ export class CommentsService implements OnModuleDestroy {
     this.spamProtection.validateLinks(command.body);
 
     return this.database.$transaction(async (transaction) => {
+      // Compare-and-swap prevents stale edits from overwriting a concurrent
+      // edit, author deletion, or moderator removal. Both the update and its
+      // revision are committed together.
+      const changed = await transaction.comment.updateMany({
+        where: {
+          id: comment.id,
+          articleId: command.articleId,
+          authorId: command.authorId,
+          status: 'VISIBLE',
+          deletedAt: null,
+          body: comment.body,
+          article: { status: 'PUBLISHED', deletedAt: null },
+        },
+        data: {
+          body: command.body,
+          editedAt: new Date(),
+        },
+      });
+
+      if (changed.count !== 1) {
+        throw new ConflictException({
+          code: 'COMMENT_EDIT_CONFLICT',
+          message: 'Der Kommentar wurde inzwischen geändert oder entfernt.',
+        });
+      }
+
       await transaction.commentRevision.create({
         data: {
           commentId: comment.id,
@@ -618,14 +645,8 @@ export class CommentsService implements OnModuleDestroy {
         },
       });
 
-      return transaction.comment.update({
-        where: {
-          id: comment.id,
-        },
-        data: {
-          body: command.body,
-          editedAt: new Date(),
-        },
+      return transaction.comment.findUniqueOrThrow({
+        where: { id: comment.id },
         select: createdCommentSelect,
       });
     });
