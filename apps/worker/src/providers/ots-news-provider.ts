@@ -32,7 +32,7 @@ type OtsRecord = {
 };
 
 const DEFAULT_BASE_URL = 'https://www.ots.at/api';
-const DEFAULT_QUERY = 'Fußball';
+const DEFAULT_QUERY = 'FuÃball';
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGES = 5;
@@ -164,9 +164,7 @@ export class OtsNewsProvider implements NewsProvider {
     // OTS may return an HTTP 200 with a JSON error object for invalid keys.
     // Do not log the remote error value or the credential-bearing request URL.
     if (response.error !== undefined) {
-      throw new Error(
-        'OTS API returned an error; check API access and query parameters',
-      );
+      throw new Error('OTS API returned an error; check API access and query parameters');
     }
 
     if (!Array.isArray(response.ergebnisse)) {
@@ -177,8 +175,7 @@ export class OtsNewsProvider implements NewsProvider {
     const page = this.toPositiveInteger(response.meta?.page);
     const maxPerPage = this.toPositiveInteger(response.meta?.maxanz);
     const total = this.toNonNegativeInteger(response.meta?.treffer);
-    const hasUsableMetadata =
-      page !== undefined && maxPerPage !== undefined && total !== undefined;
+    const hasUsableMetadata = page !== undefined && maxPerPage !== undefined && total !== undefined;
 
     const hasNextPage = hasUsableMetadata
       ? page * maxPerPage < total && records.length > 0
