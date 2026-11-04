@@ -13,7 +13,7 @@ describe('S3 storage over an isolated HTTP S3-compatible endpoint', () => {
 
   beforeAll(async () => {
     server = createServer((req, response) => {
-      const key = req.url ?? '';
+      const key = new URL(req.url ?? '/', 'http://127.0.0.1').pathname;
 
       if (req.method === 'PUT') {
         const chunks: Buffer[] = [];
