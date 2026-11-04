@@ -134,7 +134,11 @@ export class OtsNewsProvider implements NewsProvider {
     return Math.floor(milliseconds / 1_000);
   }
 
-  private parseResponse(payload: unknown, requestedPage: number, pageSize: number): {
+  private parseResponse(
+    payload: unknown,
+    requestedPage: number,
+    pageSize: number,
+  ): {
     records: OtsRecord[];
     hasNextPage: boolean;
   } {
@@ -160,7 +164,9 @@ export class OtsNewsProvider implements NewsProvider {
     // OTS may return an HTTP 200 with a JSON error object for invalid keys.
     // Do not log the remote error value or the credential-bearing request URL.
     if (response.error !== undefined) {
-      throw new Error('OTS API returned an error; check API access and query parameters');
+      throw new Error(
+        'OTS API returned an error; check API access and query parameters',
+      );
     }
 
     if (!Array.isArray(response.ergebnisse)) {
