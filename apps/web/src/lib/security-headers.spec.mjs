@@ -11,8 +11,5 @@ test('provides unique baseline browser security headers', () => {
   assert.equal(values.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(values.get('X-Frame-Options'), 'DENY');
   assert.equal(values.get('Referrer-Policy'), 'strict-origin-when-cross-origin');
-  assert.equal(
-    values.get('Permissions-Policy'),
-    'camera=(), microphone=(), geolocation=()',
-  );
+  assert.equal(values.get('Permissions-Policy'), 'camera=(), microphone=(), geolocation=()');
 });
