@@ -93,7 +93,10 @@ async function main() {
     res.end(
       '<!doctype html><html><head><title>Kurvenfunk auth lifecycle regression</title></head>' +
         '<body><div id="root"></div><script>window.__kurvenfunkTest=' +
-        JSON.stringify({ apiUrl: 'http://127.0.0.1:' + apiPort, authUrl: 'http://unused.invalid' }) +
+        JSON.stringify({
+          apiUrl: 'http://127.0.0.1:' + apiPort,
+          authUrl: 'http://unused.invalid',
+        }) +
         '</script><script src="/bundle.js"></script></body></html>',
     );
   });
