@@ -346,9 +346,7 @@ describe('NewsAutoPublishingService', () => {
     const secondCall = createArticle.mock.calls[1]?.[0] as {
       data: { slug: string };
     };
-    expect(secondCall.data.slug).toBe(
-      'rapid-schlagt-austria-im-wiener-derby-record-1',
-    );
+    expect(secondCall.data.slug).toBe('rapid-schlagt-austria-im-wiener-derby-record-1');
   });
 
   it('creates a unique slug when the base slug already exists', async () => {
