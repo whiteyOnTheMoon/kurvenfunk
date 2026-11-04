@@ -1,69 +1,72 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import { Countdown } from './countdown';
+import styles from './page.module.css';
+
+const topics = ['BUNDESLIGA', '2. LIGA', 'ÖFB-CUP', 'NATIONALTEAM', 'FRAUENFUSSBALL'];
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className={styles.page}>
+      <div className={styles.fieldLines} aria-hidden="true">
+        <div className={styles.fieldCircle} />
+        <div className={styles.fieldArc} />
+        <div className={styles.fieldLine} />
+      </div>
+
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <a className={styles.brand} href="/" aria-label="Kurvenfunk Startseite">
+            <span className={styles.brandMark} aria-hidden="true">K</span>
+            <span>KURVENFUNK<span className={styles.brandStop}>.</span></span>
+          </a>
+          <span className={styles.headerNote}>
+            <span className={styles.statusDot} aria-hidden="true" />
+            AB 01.01.2027
+          </span>
+        </header>
+
+        <section className={styles.hero} aria-labelledby="hero-title">
+          <p className={styles.eyebrow}>
+            <span className={styles.eyebrowLine} aria-hidden="true" />
+            AUS LIEBE ZUM SPIEL
           </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          <h1 id="hero-title" className={styles.headline}>
+            ÖSTERREICHS<br />
+            <span>FUSSBALL.</span><br />
+            DEIN REVIER.
+          </h1>
+          <p className={styles.description}>
+            Alle News zum österreichischen Fußball.<br className={styles.desktopBreak} />
+            Alle Vereine. Alle Geschichten. Eine Leidenschaft.
+          </p>
+        </section>
+
+        <section className={styles.launch} aria-labelledby="launch-title">
+          <div className={styles.launchTopline}>
+            <h2 id="launch-title">BIS ZUM ANPFIFF</h2>
+            <span className={styles.launchDate}>01 / 01 / 2027</span>
+          </div>
+          <Countdown />
+          <p className={styles.launchCaption}>1. JÄNNER 2027 · 00:00 UHR · WIENER ZEIT</p>
+        </section>
+
+        <section className={styles.manifesto} aria-label="Unser Versprechen">
+          <span className={styles.quoteMark} aria-hidden="true">“</span>
+          <p>Wir machen keine Welle.<br /><strong>Wir machen Fußball.</strong></p>
+          <span className={styles.manifestoCaption}>OHNE SHOW. MIT HALTUNG.</span>
+        </section>
+
+        <footer className={styles.footer}>
+          <div className={styles.topics} aria-label="Unsere Themen">
+            {topics.map((topic, index) => (
+              <span key={topic}>
+                {index > 0 && <span className={styles.topicDivider} aria-hidden="true">/</span>}
+                {topic}
+              </span>
+            ))}
+          </div>
+          <p>© 2026 KURVENFUNK · MADE FOR THE FANS</p>
+        </footer>
+      </div>
+    </main>
   );
 }
