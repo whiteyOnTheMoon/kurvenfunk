@@ -7,7 +7,7 @@ const repo = resolve(__dirname, '../../..');
 const api = resolve(__dirname, '..');
 const containers = [];
 let setupStep = 'initialization';
-const minioImage = 'minio/minio:RELEASE.2025-09-07T16-13-09Z';
+const minioImage = 'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z';
 const env = { ...process.env };
 for (const key of [
   'DOCKER_HOST',
