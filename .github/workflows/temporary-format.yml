@@ -20,12 +20,12 @@ jobs:
           install: false
       - run: pnpm install --frozen-lockfile
       - name: Prettier only approved files
-        run: pnpm exec prettier --write apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts
+        run: pnpm exec prettier --write apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts apps/api/test/import-review-draft.e2e-spec.ts
       - name: Commit formatted files back to this PR branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts packages/database/prisma/schema.prisma
+          git add -- apps/api/src/modules/imports/imports.service.ts apps/api/src/modules/imports/imports.service.spec.ts packages/database/prisma/schema.prisma apps/api/test/import-review-draft.e2e-spec.ts
           if ! git diff --cached --quiet; then
             git commit -m 'style: apply one-shot Prettier formatting'
             git push origin HEAD:feat/phase18-review-to-idempotent-draft-20261103
