@@ -23,7 +23,12 @@ const originalJobSchema = z
     providerKey: z.string().trim().min(1).max(100),
     windowStart: z.string().datetime({ offset: true }).optional(),
     windowEnd: z.string().datetime({ offset: true }).optional(),
-    lookbackMinutes: z.number().int().min(1).max(24 * 60).optional(),
+    lookbackMinutes: z
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 60)
+      .optional(),
   })
   .passthrough();
 
@@ -59,11 +64,7 @@ export class ImportReplayService implements OnModuleDestroy {
       });
     }
 
-    if (
-      source.kind !== 'NEWS_FETCH' ||
-      source.status !== 'DEAD_LETTER' ||
-      !source.queueJobId
-    ) {
+    if (source.kind !== 'NEWS_FETCH' || source.status !== 'DEAD_LETTER' || !source.queueJobId) {
       throw new ConflictException({
         code: 'IMPORT_REPLAY_NOT_ALLOWED',
         message: 'Nur endgültig gescheiterte Newsimporte können erneut gestartet werden.',
