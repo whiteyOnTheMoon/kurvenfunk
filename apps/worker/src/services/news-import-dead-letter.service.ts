@@ -47,9 +47,7 @@ export class NewsImportDeadLetterService {
         ? {
             // Scheduler IDs can contain ':'; BullMQ forbids this separator in
             // custom IDs, so use a stable hash instead of the raw queue ID.
-            jobId: `news-import-dead-${createHash('sha256')
-              .update(String(job.id))
-              .digest('hex')}`,
+            jobId: `news-import-dead-${createHash('sha256').update(String(job.id)).digest('hex')}`,
           }
         : {}),
       removeOnComplete: false,
