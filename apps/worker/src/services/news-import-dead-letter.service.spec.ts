@@ -164,8 +164,9 @@ describe('NewsImportDeadLetterService', () => {
   it('does not mark failed attempts as dead-lettered if Redis enqueue fails', async () => {
     add.mockRejectedValueOnce(new Error('Redis unavailable'));
 
-    await expect(service.moveToDeadLetter(createJob(3), new Error('Provider failure')))
-      .rejects.toThrow('Redis unavailable');
+    await expect(
+      service.moveToDeadLetter(createJob(3), new Error('Provider failure')),
+    ).rejects.toThrow('Redis unavailable');
     expect(updateMany).not.toHaveBeenCalled();
   });
 });
