@@ -239,6 +239,37 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       .expect(409);
     expect(await db.moderationReport.count({ where: { commentId: comment.id } })).toBe(1);
 
+    const reportId = (
+      await db.moderationReport.findFirstOrThrow({
+        where: { commentId: comment.id },
+        select: { id: true },
+      })
+    ).id;
+
+    await request(app.getHttpServer())
+      .get('/api/v1/moderation/comment-reports')
+      .set('Authorization', `Bearer ${visitorToken}`)
+      .expect(403);
+
+    const openReports = await request(app.getHttpServer())
+      .get('/api/v1/moderation/comment-reports')
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .expect(200);
+    expect(
+      (
+        openReports.body as { data: Array<{ id: string }> }
+      ).data.some((item) => item.id === reportId),
+    ).toBe(true);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/moderation/comment-reports/${reportId}/resolve`)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Keine Maßnahme ohne tatsächliche Moderation.',
+      })
+      .expect(409);
+
     await request(app.getHttpServer())
       .delete(`/api/v1/moderation/comments/${comment.id}`)
       .set('Authorization', `Bearer ${visitorToken}`)
@@ -260,6 +291,46 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
     expect(audit.actorUserId).toBe(moderatorId);
     expect(audit.targetUserId).toBe(authorId);
     expect(audit.reason).toBe('Beleidigung in der Diskussion');
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/moderation/comment-reports/${reportId}/resolve`)
+      .set('Authorization', `Bearer ${visitorToken}`)
+      .send({ resolution: 'ACTION_TAKEN', moderatorNote: 'Kein Moderator' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/moderation/comment-reports/${reportId}/resolve`)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Regelwidrigen Kommentar entfernt.',
+      })
+      .expect(201);
+
+    expect(
+      (
+        await db.moderationReport.findUniqueOrThrow({ where: { id: reportId } })
+      ).status,
+    ).toBe('RESOLVED');
+
+    expect(
+      await db.auditLog.count({
+        where: {
+          action: 'MODERATION_REPORT_RESOLVED',
+          moderationReportId: reportId,
+          actorUserId: moderatorId,
+        },
+      }),
+    ).toBe(1);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/moderation/comment-reports/${reportId}/resolve`)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Doppelte Bearbeitung verhindern.',
+      })
+      .expect(409);
 
     await request(app.getHttpServer())
       .delete(`/api/v1/moderation/comments/${comment.id}`)
