@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { createLogger } from '@kurvenfunk/logger';
 import {
   QUEUE_NAMES,
@@ -42,7 +43,15 @@ export class NewsImportDeadLetterService {
     // A worker failure notification can be delivered more than once.
     // Reuse the original BullMQ ID to avoid duplicate dead-letter entries.
     const deadLetterJob = await this.deadLetterQueue.add('dead-letter', payload, {
-      ...(job.id !== undefined ? { jobId: `news-import-dead-${String(job.id)}` } : {}),
+      ...(job.id !== undefined
+        ? {
+            // Scheduler IDs can contain ':'; BullMQ forbids this separator in
+            // custom IDs, so use a stable hash instead of the raw queue ID.
+            jobId: `news-import-dead-${createHash('sha256')
+              .update(String(job.id))
+              .digest('hex')}`,
+          }
+        : {}),
       removeOnComplete: false,
       removeOnFail: false,
     });
