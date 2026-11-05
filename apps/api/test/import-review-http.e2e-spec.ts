@@ -8,7 +8,11 @@ import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { Queue } from 'bullmq';
-import { QUEUE_NAMES, type NewsImportDeadLetterPayload, type NewsImportJobPayload } from '@kurvenfunk/types';
+import {
+  QUEUE_NAMES,
+  type NewsImportDeadLetterPayload,
+  type NewsImportJobPayload,
+} from '@kurvenfunk/types';
 
 type ReviewResult = {
   data: {
@@ -363,9 +367,7 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
         .post(endpoint)
         .set('Authorization', adminToken)
         .expect(201);
-      expect(
-        (second.body as { data: { alreadyQueued: boolean } }).data.alreadyQueued,
-      ).toBe(true);
+      expect((second.body as { data: { alreadyQueued: boolean } }).data.alreadyQueued).toBe(true);
       expect(
         await database.auditLog.count({
           where: {
