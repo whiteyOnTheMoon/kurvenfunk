@@ -58,6 +58,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inspect DLQ replay formatting (temporary)
+        run: |
+          pnpm exec prettier apps/api/src/modules/imports/import-replay.service.ts | diff -u apps/api/src/modules/imports/import-replay.service.ts - || true
+          pnpm exec prettier apps/api/test/import-review-http.e2e-spec.ts | diff -u apps/api/test/import-review-http.e2e-spec.ts - || true
+          pnpm exec prettier apps/web/src/features/admin/imports/import-admin.tsx | diff -u apps/web/src/features/admin/imports/import-admin.tsx - || true
+
       - name: Check formatting
         run: pnpm format:check
 
