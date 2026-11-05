@@ -65,9 +65,13 @@ export class NewsImportProcessor extends WorkerHost {
 
       const { provider, normalizer } = this.resolveProvider(job.data.providerKey);
 
+      // BullMQ keeps job.timestamp across automatic retry attempts. Pin the
+      // import window to that timestamp instead of shifting it on each retry.
       const windowEnd =
         job.data.windowEnd ??
-        (job.data.lookbackMinutes !== undefined ? new Date().toISOString() : undefined);
+        (job.data.lookbackMinutes !== undefined
+          ? new Date(job.timestamp ?? Date.now()).toISOString()
+          : undefined);
       const windowStart =
         job.data.windowStart ??
         (job.data.lookbackMinutes !== undefined && windowEnd !== undefined

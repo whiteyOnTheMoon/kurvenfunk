@@ -309,6 +309,29 @@ describe('NewsImportProcessor', () => {
     });
   });
 
+  it('pins the provider time window to the original BullMQ timestamp on retry', async () => {
+    const job = createJob({ providerKey: 'fake', lookbackMinutes: 15 });
+    const fetchProvider = jest.spyOn(provider, 'fetch');
+    job.timestamp = Date.parse('2026-11-05T08:00:00.000Z');
+
+    await processor.process(job);
+
+    expect(startNewsImport).toHaveBeenCalledWith(
+      provider,
+      expect.objectContaining({
+        queueJobId: 'news-import-job-1',
+        windowStart: '2026-11-05T07:45:00.000Z',
+        windowEnd: '2026-11-05T08:00:00.000Z',
+      }),
+    );
+    expect(fetchProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        windowStart: '2026-11-05T07:45:00.000Z',
+        windowEnd: '2026-11-05T08:00:00.000Z',
+      }),
+    );
+  });
+
   it('persists every provider record as raw payload', async () => {
     await processor.process(createJob());
 
