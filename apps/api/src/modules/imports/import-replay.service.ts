@@ -83,6 +83,23 @@ export class ImportReplayService implements OnModuleDestroy {
     const sourceHash = createHash('sha256').update(source.queueJobId).digest('hex');
     const deadLetterId = `news-import-dead-${sourceHash}`;
     const replayId = `news-import-replay-${sourceHash}`;
+    // A permanent audit identity also deduplicates calls after BullMQ job cleanup.
+    const auditHash = createHash('sha256')
+      .update(`news-import-replay-audit:${source.queueJobId}`)
+      .digest('hex');
+    const auditId = `${auditHash.slice(0, 8)}-${auditHash.slice(8, 12)}-4${auditHash.slice(13, 16)}-a${auditHash.slice(17, 20)}-${auditHash.slice(20, 32)}`;
+
+    const existingAudit = await this.database.auditLog.findUnique({
+      where: { id: auditId },
+      select: { id: true },
+    });
+    if (existingAudit) {
+      return {
+        sourceImportJobId: importJobId,
+        queueJobId: replayId,
+        alreadyQueued: true,
+      };
+    }
 
     let deadLetter;
     let existingReplay;
@@ -99,6 +116,9 @@ export class ImportReplayService implements OnModuleDestroy {
     }
 
     if (existingReplay) {
+      // A Redis enqueue may succeed while its audit write fails. Repair the
+      // missing audit on the next request rather than losing traceability.
+      await this.writeReplayAudit(auditId, source.id, actorUserId, replayId, source.provider.key);
       return {
         sourceImportJobId: importJobId,
         queueJobId: replayId,
@@ -149,6 +169,10 @@ export class ImportReplayService implements OnModuleDestroy {
       await this.importQueue.add('fetch-provider', payload, {
         ...DEFAULT_JOB_OPTIONS,
         jobId: replayId,
+        // Manual replays must retain their identity even after thousands of
+        // regular imports. Database audit remains a second durable safeguard.
+        removeOnComplete: false,
+        removeOnFail: false,
       });
     } catch {
       throw new ServiceUnavailableException({
@@ -157,28 +181,59 @@ export class ImportReplayService implements OnModuleDestroy {
       });
     }
 
-    await this.database.auditLog.create({
-      data: {
-        actorType: 'USER',
-        actorUserId,
-        action: 'ADMIN_CORRECTION',
-        category: 'EDITORIAL',
-        targetType: 'SYSTEM',
-        targetId: source.id,
-        reason: 'MANUAL_NEWS_IMPORT_REPLAY',
-        metadata: {
-          sourceImportJobId: source.id,
-          replayQueueJobId: replayId,
-          providerKey: source.provider.key,
-        },
-      },
-    });
+    // Two administrators may both observe an empty queue before enqueue.
+    // A deterministic unique audit ID makes their actions idempotent in SQL.
+    const createdAudit = await this.writeReplayAudit(
+      auditId,
+      source.id,
+      actorUserId,
+      replayId,
+      source.provider.key,
+    );
 
     return {
       sourceImportJobId: importJobId,
       queueJobId: replayId,
-      alreadyQueued: false,
+      alreadyQueued: !createdAudit,
     };
+  }
+
+  private async writeReplayAudit(
+    id: string,
+    sourceImportJobId: string,
+    actorUserId: string,
+    replayQueueJobId: string,
+    providerKey: string,
+  ): Promise<boolean> {
+    try {
+      await this.database.auditLog.create({
+        data: {
+          id,
+          actorType: 'USER',
+          actorUserId,
+          action: 'ADMIN_CORRECTION',
+          category: 'EDITORIAL',
+          targetType: 'SYSTEM',
+          targetId: sourceImportJobId,
+          reason: 'MANUAL_NEWS_IMPORT_REPLAY',
+          metadata: {
+            sourceImportJobId,
+            replayQueueJobId,
+            providerKey,
+          },
+        },
+      });
+      return true;
+    } catch (error) {
+      const code =
+        error !== null && typeof error === 'object' && 'code' in error
+          ? (error as { code?: unknown }).code
+          : null;
+      if (code === 'P2002') {
+        return false;
+      }
+      throw error;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

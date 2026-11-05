@@ -355,6 +355,8 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
 
       const replay = await importQueue.getJob(expectedReplayId);
       expect(replay).not.toBeNull();
+      expect(replay?.opts.removeOnComplete).toBe(false);
+      expect(replay?.opts.removeOnFail).toBe(false);
       expect(replay?.data).toEqual({
         providerKey: provider.key,
         lookbackMinutes: 15,
