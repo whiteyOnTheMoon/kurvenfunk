@@ -256,9 +256,9 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       .set('Authorization', `Bearer ${moderatorToken}`)
       .expect(200);
     expect(
-      (
-        openReports.body as { data: Array<{ id: string }> }
-      ).data.some((item) => item.id === reportId),
+      (openReports.body as { data: Array<{ id: string }> }).data.some(
+        (item) => item.id === reportId,
+      ),
     ).toBe(true);
 
     await request(app.getHttpServer())
@@ -307,11 +307,9 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
       })
       .expect(201);
 
-    expect(
-      (
-        await db.moderationReport.findUniqueOrThrow({ where: { id: reportId } })
-      ).status,
-    ).toBe('RESOLVED');
+    expect((await db.moderationReport.findUniqueOrThrow({ where: { id: reportId } })).status).toBe(
+      'RESOLVED',
+    );
 
     expect(
       await db.auditLog.count({
