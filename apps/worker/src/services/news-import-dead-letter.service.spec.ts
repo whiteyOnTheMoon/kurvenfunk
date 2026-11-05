@@ -15,15 +15,21 @@ jest.mock('@kurvenfunk/types', () => ({
 }));
 
 import type { NewsImportDeadLetterPayload, NewsImportJobPayload } from '@kurvenfunk/types';
+import type { DatabaseService } from '../database/database.service';
 import type { Job, Queue } from 'bullmq';
 import { NewsImportDeadLetterService } from './news-import-dead-letter.service';
 
 describe('NewsImportDeadLetterService', () => {
   const add = jest.fn();
+  const updateMany = jest.fn();
 
   const queue = {
     add,
   } as unknown as Queue<NewsImportDeadLetterPayload>;
+
+  const databaseService = {
+    client: { importJob: { updateMany } },
+  } as unknown as DatabaseService;
 
   let service: NewsImportDeadLetterService;
 
@@ -33,8 +39,9 @@ describe('NewsImportDeadLetterService', () => {
     add.mockResolvedValue({
       id: 'dead-letter-job-1',
     });
+    updateMany.mockResolvedValue({ count: 2 });
 
-    service = new NewsImportDeadLetterService(queue);
+    service = new NewsImportDeadLetterService(queue, databaseService);
   });
 
   function createJob(attemptsMade: number, attempts = 3): Job<NewsImportJobPayload> {
@@ -75,6 +82,7 @@ describe('NewsImportDeadLetterService', () => {
       string,
       NewsImportDeadLetterPayload,
       {
+        jobId: string;
         removeOnComplete: boolean;
         removeOnFail: boolean;
       },
@@ -96,8 +104,17 @@ describe('NewsImportDeadLetterService', () => {
     });
     expect(typeof payload.failedAt).toBe('string');
     expect(options).toEqual({
+      jobId: 'news-import-dead-news-import-job-1',
       removeOnComplete: false,
       removeOnFail: false,
+    });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        queueJobId: 'news-import-job-1',
+        kind: 'NEWS_FETCH',
+        status: 'FAILED',
+      },
+      data: { status: 'DEAD_LETTER' },
     });
   });
 
@@ -122,9 +139,28 @@ describe('NewsImportDeadLetterService', () => {
         maxAttempts: 1,
       }),
       {
+        jobId: 'news-import-dead-single-attempt-job',
         removeOnComplete: false,
         removeOnFail: false,
       },
     );
+  });
+
+  it('uses a stable DLQ ID if the failed event is delivered twice', async () => {
+    const job = createJob(3);
+    await service.moveToDeadLetter(job, new Error('Failed'));
+    await service.moveToDeadLetter(job, new Error('Failed'));
+
+    expect(add).toHaveBeenCalledTimes(2);
+    expect(add.mock.calls[0]?.[2]).toEqual(add.mock.calls[1]?.[2]);
+    expect(updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not mark failed attempts as dead-lettered if Redis enqueue fails', async () => {
+    add.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    await expect(service.moveToDeadLetter(createJob(3), new Error('Provider failure')))
+      .rejects.toThrow('Redis unavailable');
+    expect(updateMany).not.toHaveBeenCalled();
   });
 });
