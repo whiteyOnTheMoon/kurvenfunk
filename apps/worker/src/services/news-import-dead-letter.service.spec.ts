@@ -157,7 +157,17 @@ describe('NewsImportDeadLetterService', () => {
     await service.moveToDeadLetter(job, new Error('Failed'));
 
     expect(add).toHaveBeenCalledTimes(2);
-    expect(add.mock.calls[0]?.[2]).toEqual(add.mock.calls[1]?.[2]);
+    const firstCall = add.mock.calls[0] as unknown as [
+      string,
+      NewsImportDeadLetterPayload,
+      { jobId: string },
+    ];
+    const secondCall = add.mock.calls[1] as unknown as [
+      string,
+      NewsImportDeadLetterPayload,
+      { jobId: string },
+    ];
+    expect(firstCall[2]).toEqual(secondCall[2]);
     expect(updateMany).toHaveBeenCalledTimes(2);
   });
 
