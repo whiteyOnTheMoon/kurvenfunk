@@ -10,6 +10,19 @@ const database = {
   $disconnect: jest.fn(),
 };
 
+jest.mock('@kurvenfunk/types', () => ({
+  QUEUE_NAMES: {
+    NEWS_IMPORT: 'news-import',
+    NEWS_IMPORT_DEAD_LETTER: 'news-import-dead-letter',
+  },
+  DEFAULT_JOB_OPTIONS: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2_000 },
+    removeOnComplete: { count: 1_000 },
+    removeOnFail: { count: 5_000 },
+  },
+}));
+
 jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: () => database,
 }));
