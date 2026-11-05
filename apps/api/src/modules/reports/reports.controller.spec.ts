@@ -3,7 +3,10 @@ import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
-import { PERMISSIONS, REQUIRED_PERMISSIONS_METADATA_KEY } from '../permissions/permissions.constants';
+import {
+  PERMISSIONS,
+  REQUIRED_PERMISSIONS_METADATA_KEY,
+} from '../permissions/permissions.constants';
 import {
   CommentReportsModerationController,
   createCommentReportSchema,
@@ -194,10 +197,7 @@ describe('CommentReportsModerationController', () => {
   it('requires centralized comment moderation permission for both routes', () => {
     for (const method of ['listPendingCommentReports', 'resolveCommentReport']) {
       const handler = Reflect.get(CommentReportsModerationController.prototype, method);
-      const permissions: unknown = Reflect.getMetadata(
-        REQUIRED_PERMISSIONS_METADATA_KEY,
-        handler,
-      );
+      const permissions: unknown = Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler);
       expect(permissions).toContain(PERMISSIONS.COMMENT_MODERATE);
       const guards: unknown = Reflect.getMetadata(GUARDS_METADATA, handler);
       expect(guards).toContain(AuthGuard);
