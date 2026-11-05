@@ -324,7 +324,7 @@ describe('NewsImportProcessor', () => {
         windowEnd: '2026-11-05T08:00:00.000Z',
       }),
     );
-    expect(provider.fetch).toHaveBeenCalledWith(
+    expect(fetchProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         windowStart: '2026-11-05T07:45:00.000Z',
         windowEnd: '2026-11-05T08:00:00.000Z',
