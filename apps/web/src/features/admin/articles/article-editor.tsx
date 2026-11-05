@@ -693,6 +693,13 @@ export function ArticleEditor({ apiUrl, articleId }: ArticleEditorProps) {
       return;
     }
 
+    if (mediaPickerMode === 'og') {
+      setSelectedOgImage(media);
+      setMediaPickerOpen(false);
+      setError(undefined);
+      return;
+    }
+
     if (!editor) {
       return;
     }

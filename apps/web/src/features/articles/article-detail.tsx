@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CommentComposer } from './comment-composer';
+import { getArticleLeadMediaSrc } from './article-media';
 import type { ReactNode } from 'react';
 
 import styles from './article-detail.module.css';
@@ -235,6 +236,7 @@ function ArticleBody({ content }: { content: ArticleContentNode | null }) {
 }
 
 export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData; apiUrl: string }) {
+  const leadMediaSrc = getArticleLeadMediaSrc(apiUrl, article.leadMedia);
   const category =
     article.competition?.shortName ??
     article.competition?.name ??
@@ -265,11 +267,11 @@ export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData;
         </div>
       </header>
 
-      {article.leadMedia?.externalUrl ? (
+      {leadMediaSrc && article.leadMedia ? (
         <figure className={styles.leadFigure}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={article.leadMedia.externalUrl}
+            src={leadMediaSrc}
             alt={article.leadMedia.altText ?? ''}
             width={article.leadMedia.width ?? undefined}
             height={article.leadMedia.height ?? undefined}
