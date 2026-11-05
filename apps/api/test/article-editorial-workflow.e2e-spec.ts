@@ -270,6 +270,44 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
       .expect(200);
     expect((publicArticle.body as ArticleResponse).data.id).toBe(articleId);
 
+    // A published article must disappear when soft-deleted; restoring it may
+    // only create a private DRAFT, never silently republish it.
+    await request(app.getHttpServer())
+      .delete(endpoint + '/' + articleId)
+      .set('Authorization', editorAuth)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(endpoint + '/by-slug/' + slug)
+      .expect(404);
+
+    const editorialList = await request(app.getHttpServer())
+      .get(endpoint + '/editorial')
+      .set('Authorization', editorAuth)
+      .expect(200);
+    expect(
+      (editorialList.body as { data: Array<{ id: string; deletedAt: string | null }> }).data.find(
+        (item) => item.id === articleId,
+      )?.deletedAt,
+    ).not.toBeNull();
+
+    await request(app.getHttpServer())
+      .post(endpoint + '/' + articleId + '/restore')
+      .set('Authorization', editorAuth)
+      .expect(201);
+
+    const restoredPublished = await db.article.findUniqueOrThrow({ where: { id: articleId } });
+    expect(restoredPublished.deletedAt).toBeNull();
+    expect(restoredPublished.status).toBe('DRAFT');
+    expect(restoredPublished.publishedAt).toBeNull();
+    expect(restoredPublished.scheduledAt).toBeNull();
+    await request(app.getHttpServer())
+      .get(endpoint + '/by-slug/' + slug)
+      .expect(404);
+    await request(app.getHttpServer())
+      .post(endpoint + '/' + articleId + '/restore')
+      .set('Authorization', editorAuth)
+      .expect(409);
+
     await request(app.getHttpServer())
       .post(endpoint + '/' + articleId + '/archive')
       .set('Authorization', editorAuth)
