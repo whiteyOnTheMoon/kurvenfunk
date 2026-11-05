@@ -311,6 +311,7 @@ describe('NewsImportProcessor', () => {
 
   it('pins the provider time window to the original BullMQ timestamp on retry', async () => {
     const job = createJob({ providerKey: 'fake', lookbackMinutes: 15 });
+    const fetchProvider = jest.spyOn(provider, 'fetch');
     job.timestamp = Date.parse('2026-11-05T08:00:00.000Z');
 
     await processor.process(job);
