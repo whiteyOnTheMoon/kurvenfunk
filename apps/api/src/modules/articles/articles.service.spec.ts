@@ -1417,7 +1417,7 @@ describe('ArticlesService', () => {
       expect(call.data.deletedAt).toBeInstanceOf(Date);
     });
 
-    it('restores a soft-deleted non-archived article without changing its status', async () => {
+    it('restores a soft-deleted non-archived article as a private draft', async () => {
       findUniqueArticle.mockResolvedValue({
         ...draftArticle,
         deletedAt: new Date(),
@@ -1433,6 +1433,10 @@ describe('ArticlesService', () => {
         },
         data: {
           deletedAt: null,
+          status: 'DRAFT',
+          scheduledAt: null,
+          publishedAt: null,
+          archivedAt: null,
         },
       });
     });
@@ -1456,9 +1460,20 @@ describe('ArticlesService', () => {
         data: {
           deletedAt: null,
           status: 'DRAFT',
+          scheduledAt: null,
+          publishedAt: null,
           archivedAt: null,
         },
       });
+    });
+
+    it('rejects attempts to restore a non-deleted article', async () => {
+      findUniqueArticle.mockResolvedValue(draftArticle);
+
+      await expect(service.restore(articleId)).rejects.toThrow(
+        'Only deleted articles can be restored',
+      );
+      expect(updateArticle).not.toHaveBeenCalled();
     });
   });
 

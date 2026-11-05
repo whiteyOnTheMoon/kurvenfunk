@@ -1,0 +1,33 @@
+name: Phase 17 article restore Chromium regression
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'apps/web/src/features/admin/articles/article-list.tsx'
+      - 'apps/web/src/features/admin/articles/article-list.module.css'
+      - 'apps/web/test/phase17-article-restore.browser.cjs'
+      - '.github/workflows/phase17-crud-browser.yml'
+permissions:
+  contents: read
+jobs:
+  editorial-browser:
+    name: Article delete and draft-restore Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Install isolated Playwright browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
+          node "$RUNNER_TEMP/kurvenfunk-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Verify article deletion and restoration in Chromium
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/phase17-article-restore.browser.cjs

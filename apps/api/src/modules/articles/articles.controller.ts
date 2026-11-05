@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -115,8 +116,17 @@ export class ArticlesController {
   }
 
   @Get('by-slug/:slug')
-  findPublishedBySlug(@Param('slug') slug: string) {
-    return this.articlesService.findPublishedBySlug(slug);
+  async findPublishedBySlug(@Param('slug') slug: string) {
+    const article = await this.articlesService.findPublishedBySlug(slug);
+
+    if (!article) {
+      throw new NotFoundException({
+        code: 'ARTICLE_NOT_FOUND',
+        message: 'Article not found',
+      });
+    }
+
+    return article;
   }
 
   @Get('startpage/neutral')

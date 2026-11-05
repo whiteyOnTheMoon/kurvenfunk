@@ -413,9 +413,6 @@ export class ArticlesService implements OnModuleDestroy {
 
   async findEditorialList() {
     return this.database.article.findMany({
-      where: {
-        deletedAt: null,
-      },
       orderBy: {
         updatedAt: 'desc',
       },
@@ -425,6 +422,7 @@ export class ArticlesService implements OnModuleDestroy {
         slug: true,
         status: true,
         updatedAt: true,
+        deletedAt: true,
         publishedAt: true,
         scheduledAt: true,
         author: {
@@ -493,6 +491,13 @@ export class ArticlesService implements OnModuleDestroy {
 
   async update(id: string, input: UpdateArticleInput) {
     const article = await this.findEditorialById(id);
+
+    if (article.deletedAt) {
+      throw new ConflictException({
+        code: 'ARTICLE_DELETED',
+        message: 'Deleted articles cannot be edited',
+      });
+    }
 
     if (input.slug) {
       const existing = await this.database.article.findFirst({
@@ -760,18 +765,23 @@ export class ArticlesService implements OnModuleDestroy {
   async restore(id: string) {
     const article = await this.findEditorialById(id);
 
+    if (!article.deletedAt) {
+      throw new ConflictException({
+        code: 'ARTICLE_NOT_DELETED',
+        message: 'Only deleted articles can be restored',
+      });
+    }
+
+    // Restore to editorial review, never make a previously published or
+    // scheduled article publicly visible without a fresh publish decision.
     return this.database.article.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         deletedAt: null,
-        ...(article.status === 'ARCHIVED'
-          ? {
-              status: 'DRAFT',
-              archivedAt: null,
-            }
-          : {}),
+        status: 'DRAFT',
+        scheduledAt: null,
+        publishedAt: null,
+        archivedAt: null,
       },
     });
   }
