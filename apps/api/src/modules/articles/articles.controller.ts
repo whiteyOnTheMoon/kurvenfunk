@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -59,14 +60,14 @@ export class ArticlesController {
 
   @Get('editorial/:id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
-  findEditorial(@Param('id') id: string) {
+  findEditorial(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.articlesService.findEditorialById(id);
   }
 
   @Patch(':id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
   update(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body(new ZodValidationPipe(updateArticleSchema)) input: UpdateArticleInput,
   ) {
     return this.articlesService.update(id, input);
@@ -75,7 +76,7 @@ export class ArticlesController {
   @Patch(':id/publication')
   @RequirePermissions(PERMISSIONS.ARTICLE_PUBLISH)
   changePublicationStatus(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body(new ZodValidationPipe(articlePublicationWorkflowSchema))
     input: ArticlePublicationWorkflowInput,
   ) {
@@ -84,19 +85,19 @@ export class ArticlesController {
 
   @Post(':id/archive')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
-  archive(@Param('id') id: string) {
+  archive(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.articlesService.archive(id);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.articlesService.softDelete(id);
   }
 
   @Post(':id/restore')
   @UseGuards(AuthGuard, ArticleEditorialGuard)
-  restore(@Param('id') id: string) {
+  restore(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.articlesService.restore(id);
   }
 
