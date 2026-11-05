@@ -38,6 +38,21 @@
   gap: var(--kf-space-3);
 }
 
+.cardRow {
+  display: flex;
+  align-items: center;
+  gap: var(--kf-space-3);
+}
+
+.cardRow > .card {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardRow > button {
+  flex-shrink: 0;
+}
+
 .card {
   display: flex;
   align-items: center;
@@ -102,6 +117,14 @@
   color: var(--kf-link);
 }
 
+.message {
+  padding: var(--kf-space-4);
+  border: var(--kf-border-width-1) solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+}
+
 .error,
 .state {
   padding: var(--kf-space-5);
@@ -120,6 +143,15 @@
 }
 
 @media (max-width: 640px) {
+  .cardRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cardRow > button {
+    width: 100%;
+  }
+
   .header {
     align-items: stretch;
     flex-direction: column;
