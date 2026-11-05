@@ -58,11 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Inspect Phase 18 test formatting (temporary)
-        run: |
-          pnpm exec prettier apps/worker/src/services/news-import-dead-letter.service.spec.ts | diff -u apps/worker/src/services/news-import-dead-letter.service.spec.ts - || true
-          pnpm exec prettier apps/worker/src/services/news-import-dead-letter.service.ts | diff -u apps/worker/src/services/news-import-dead-letter.service.ts - || true
-
       - name: Check formatting
         run: pnpm format:check
 
