@@ -179,11 +179,19 @@ export class ReportsService implements OnModuleDestroy {
         const comment = report.commentId
           ? await tx.comment.findUnique({
               where: { id: report.commentId },
-              select: { status: true, deletedAt: true },
+              select: { status: true, deletedAt: true, moderatedAt: true },
             })
           : null;
 
-        if (comment && comment.status === 'VISIBLE' && comment.deletedAt === null) {
+        // Author self-deletion does not count as a moderator measure.
+        // The privileged moderation route marks moderatedAt atomically with
+        // deletion and its audit event.
+        if (
+          !comment ||
+          comment.status !== 'DELETED' ||
+          comment.deletedAt === null ||
+          comment.moderatedAt === null
+        ) {
           throw new ConflictException({
             code: 'COMMENT_REPORT_ACTION_MISSING',
             message: 'Vor dem Abschluss muss der gemeldete Kommentar moderiert werden.',

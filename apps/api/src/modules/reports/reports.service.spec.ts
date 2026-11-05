@@ -254,10 +254,46 @@ describe('ReportsService', () => {
     expect(database.auditLog.create).not.toHaveBeenCalled();
   });
 
-  it('resolves a report with audit after the comment is deleted', async () => {
+  it('rejects ACTION_TAKEN when the author deleted the comment', async () => {
     database.comment.findUnique.mockResolvedValue({
       status: 'DELETED',
       deletedAt: new Date(),
+      moderatedAt: null,
+    });
+
+    await expect(
+      service.resolveCommentReport({
+        reportId: '33333333-3333-4333-8333-333333333333',
+        moderatorId: reporterId,
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Keine nachgewiesene Moderationsmaßnahme.',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(database.moderationReport.updateMany).not.toHaveBeenCalled();
+    expect(database.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects ACTION_TAKEN when its reported comment is missing', async () => {
+    database.comment.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.resolveCommentReport({
+        reportId: '33333333-3333-4333-8333-333333333333',
+        moderatorId: reporterId,
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Kein nachgewiesener Kommentar.',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(database.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('resolves a report with audit after confirmed moderator deletion', async () => {
+    database.comment.findUnique.mockResolvedValue({
+      status: 'DELETED',
+      deletedAt: new Date(),
+      moderatedAt: new Date(),
     });
 
     await service.resolveCommentReport({
