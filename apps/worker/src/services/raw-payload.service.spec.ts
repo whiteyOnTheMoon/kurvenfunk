@@ -139,6 +139,29 @@ describe('RawPayloadService', () => {
     );
   });
 
+  it('marks replayed jobs with their original import job and replay trigger', async () => {
+    const { service, providerUpsert, importJobCreate } = createService();
+    providerUpsert.mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' });
+    importJobCreate.mockResolvedValue({ id: '22222222-2222-4222-8222-222222222222' });
+
+    await service.startNewsImport(provider, {
+      queueJobId: 'manual-replay-01',
+      retryOfImportJobId: '77777777-7777-4777-8777-777777777777',
+      windowStart: '2026-11-05T08:00:00.000Z',
+      windowEnd: '2026-11-05T08:15:00.000Z',
+    });
+
+    expect(importJobCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          trigger: 'REPLAY',
+          retryOfJobId: '77777777-7777-4777-8777-777777777777',
+          queueJobId: 'manual-replay-01',
+        }),
+      }),
+    );
+  });
+
   it('stores raw payload and links an import record', async () => {
     const { service, rawPayloadCreate, importRecordCreate, importJobUpdate } = createService();
 
