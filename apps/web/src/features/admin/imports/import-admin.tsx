@@ -783,7 +783,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                                 disabled={retryingJobId !== undefined}
                                 onClick={() => void replayJob(job)}
                               >
-                                {retryingJobId === job.id ? 'Wird eingereiht …' : 'Erneut einreihen'}
+                                {retryingJobId === job.id
+                                  ? 'Wird eingereiht …'
+                                  : 'Erneut einreihen'}
                               </Button>
                             ) : null}
                           </td>
