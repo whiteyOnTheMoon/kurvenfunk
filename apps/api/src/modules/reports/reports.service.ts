@@ -19,6 +19,22 @@ export type ReportReason =
   | 'MISINFORMATION'
   | 'OTHER';
 
+export type CommentReportResolution =
+  | 'ACTION_TAKEN'
+  | 'NO_VIOLATION'
+  | 'INSUFFICIENT_EVIDENCE'
+  | 'ALREADY_HANDLED'
+  | 'DUPLICATE'
+  | 'INVALID_REPORT'
+  | 'OTHER';
+
+export interface ResolveCommentReportCommand {
+  reportId: string;
+  moderatorId: string;
+  resolution: CommentReportResolution;
+  moderatorNote: string;
+}
+
 export interface CreateCommentReportCommand {
   commentId: string;
   reporterId: string;
@@ -107,6 +123,129 @@ export class ReportsService implements OnModuleDestroy {
 
       throw error;
     }
+  }
+
+  async listPendingCommentReports() {
+    return this.database.moderationReport.findMany({
+      where: {
+        targetType: 'COMMENT',
+        status: { in: ['OPEN', 'IN_REVIEW'] },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 100,
+      select: {
+        id: true,
+        status: true,
+        reason: true,
+        details: true,
+        createdAt: true,
+        commentId: true,
+        comment: {
+          select: {
+            id: true,
+            body: true,
+            status: true,
+            deletedAt: true,
+            author: { select: { nickname: true } },
+            article: { select: { title: true, slug: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async resolveCommentReport(command: ResolveCommentReportCommand) {
+    return this.database.$transaction(async (tx) => {
+      const report = await tx.moderationReport.findUnique({
+        where: { id: command.reportId },
+        select: { id: true, targetType: true, status: true, commentId: true },
+      });
+
+      if (!report || report.targetType !== 'COMMENT') {
+        throw new NotFoundException({
+          code: 'COMMENT_REPORT_NOT_FOUND',
+          message: 'Kommentarmeldung wurde nicht gefunden.',
+        });
+      }
+
+      if (report.status !== 'OPEN' && report.status !== 'IN_REVIEW') {
+        throw new ConflictException({
+          code: 'COMMENT_REPORT_ALREADY_RESOLVED',
+          message: 'Diese Meldung wurde bereits abgeschlossen.',
+        });
+      }
+
+      if (command.resolution === 'ACTION_TAKEN') {
+        const comment = report.commentId
+          ? await tx.comment.findUnique({
+              where: { id: report.commentId },
+              select: { status: true, deletedAt: true },
+            })
+          : null;
+
+        if (comment && comment.status === 'VISIBLE' && comment.deletedAt === null) {
+          throw new ConflictException({
+            code: 'COMMENT_REPORT_ACTION_MISSING',
+            message: 'Vor dem Abschluss muss der gemeldete Kommentar moderiert werden.',
+          });
+        }
+      }
+
+      const actionTaken = command.resolution === 'ACTION_TAKEN';
+      const nextStatus = actionTaken ? 'RESOLVED' : 'DISMISSED';
+
+      // Atomic claim: two moderators cannot close the same report twice.
+      const updated = await tx.moderationReport.updateMany({
+        where: {
+          id: command.reportId,
+          targetType: 'COMMENT',
+          status: { in: ['OPEN', 'IN_REVIEW'] },
+        },
+        data: {
+          status: nextStatus,
+          resolution: command.resolution,
+          moderatorNote: command.moderatorNote,
+          assignedModeratorId: command.moderatorId,
+          assignedAt: new Date(),
+          resolvedAt: new Date(),
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new ConflictException({
+          code: 'COMMENT_REPORT_ALREADY_RESOLVED',
+          message: 'Diese Meldung wurde bereits abgeschlossen.',
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId: command.moderatorId,
+          action: actionTaken ? 'MODERATION_REPORT_RESOLVED' : 'MODERATION_REPORT_DISMISSED',
+          category: 'MODERATION',
+          targetType: 'MODERATION_REPORT',
+          targetId: command.reportId,
+          moderationReportId: command.reportId,
+          reason: command.moderatorNote,
+          metadata: {
+            resolution: command.resolution,
+            commentId: report.commentId,
+          },
+        },
+      });
+
+      return tx.moderationReport.findUniqueOrThrow({
+        where: { id: command.reportId },
+        select: {
+          id: true,
+          status: true,
+          resolution: true,
+          assignedModeratorId: true,
+          resolvedAt: true,
+        },
+      });
+    });
   }
 
   async onModuleDestroy(): Promise<void> {

@@ -3,7 +3,16 @@ import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
-import { createCommentReportSchema, ReportsController } from './reports.controller';
+import {
+  PERMISSIONS,
+  REQUIRED_PERMISSIONS_METADATA_KEY,
+} from '../permissions/permissions.constants';
+import {
+  CommentReportsModerationController,
+  createCommentReportSchema,
+  ReportsController,
+  resolveCommentReportSchema,
+} from './reports.controller';
 import { ReportsService } from './reports.service';
 
 jest.mock('../auth/auth.guard', () => ({
@@ -156,5 +165,67 @@ describe('ReportsController', () => {
     });
 
     expect(result).toEqual(expected);
+  });
+});
+
+describe('CommentReportsModerationController', () => {
+  const reportId = '33333333-3333-4333-8333-333333333333';
+  const moderatorId = '22222222-2222-4222-8222-222222222222';
+
+  it('validates report decision bodies and rejects extra fields', () => {
+    expect(
+      resolveCommentReportSchema.safeParse({
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Kommentar entfernt',
+      }).success,
+    ).toBe(true);
+    expect(
+      resolveCommentReportSchema.safeParse({
+        resolution: 'NO_VIOLATION',
+        moderatorNote: '  ',
+      }).success,
+    ).toBe(false);
+    expect(
+      resolveCommentReportSchema.safeParse({
+        resolution: 'NO_VIOLATION',
+        moderatorNote: 'Kein Verstoß',
+        reviewerId: moderatorId,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('requires centralized comment moderation permission for both routes', () => {
+    for (const method of ['listPendingCommentReports', 'resolveCommentReport']) {
+      const handler: unknown = Reflect.get(CommentReportsModerationController.prototype, method);
+      if (typeof handler !== 'function') throw new Error(`Missing route handler: ${method}`);
+      const permissions: unknown = Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler);
+      expect(permissions).toContain(PERMISSIONS.COMMENT_MODERATE);
+      const guards: unknown = Reflect.getMetadata(GUARDS_METADATA, handler);
+      expect(guards).toContain(AuthGuard);
+    }
+  });
+
+  it('forwards the authenticated moderator and validated decision', async () => {
+    const resolveCommentReport = jest.fn().mockResolvedValue({ id: reportId, status: 'DISMISSED' });
+    const listPendingCommentReports = jest.fn().mockResolvedValue([]);
+    const controller = new CommentReportsModerationController({
+      resolveCommentReport,
+      listPendingCommentReports,
+    } as unknown as ReportsService);
+    const request = {
+      user: { kurvenfunkUserId: moderatorId },
+    } as unknown as AuthenticatedRequest;
+
+    expect(await controller.listPendingCommentReports()).toEqual([]);
+    await controller.resolveCommentReport(reportId, request, {
+      resolution: 'NO_VIOLATION',
+      moderatorNote: 'Kein Verstoß',
+    });
+    expect(resolveCommentReport).toHaveBeenCalledWith({
+      reportId,
+      moderatorId,
+      resolution: 'NO_VIOLATION',
+      moderatorNote: 'Kein Verstoß',
+    });
   });
 });

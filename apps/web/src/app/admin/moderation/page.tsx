@@ -1,11 +1,6 @@
-import { AdminPlaceholder } from '../../../features/admin/admin-placeholder';
+import { CommentReportQueue } from '../../../features/admin/moderation/comment-report-queue';
+import { env } from '../../../lib/env';
 
 export default function AdminModerationPage() {
-  return (
-    <AdminPlaceholder
-      eyebrow="Community"
-      title="Moderation"
-      description="Reports, Karten, Sanktionen und Sperren verwalten."
-    />
-  );
+  return <CommentReportQueue apiUrl={env.API_URL} />;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Jest's asymmetric matchers intentionally return dynamic values in mock assertions. */
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 
@@ -7,7 +8,13 @@ const database = {
   },
   moderationReport: {
     create: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
+    updateMany: jest.fn(),
   },
+  auditLog: { create: jest.fn() },
+  $transaction: jest.fn(),
   $disconnect: jest.fn(),
 };
 
@@ -43,6 +50,22 @@ describe('ReportsService', () => {
     jest.clearAllMocks();
 
     service = new ReportsService();
+    database.$transaction.mockImplementation((handler: (db: typeof database) => unknown) =>
+      Promise.resolve(handler(database)),
+    );
+    database.moderationReport.updateMany.mockResolvedValue({ count: 1 });
+    database.moderationReport.findUnique.mockResolvedValue({
+      id: '33333333-3333-4333-8333-333333333333',
+      targetType: 'COMMENT',
+      status: 'OPEN',
+      commentId,
+    });
+    database.moderationReport.findUniqueOrThrow.mockResolvedValue({
+      id: '33333333-3333-4333-8333-333333333333',
+      status: 'DISMISSED',
+      resolution: 'NO_VIOLATION',
+    });
+    database.comment.findUnique.mockResolvedValue(visibleComment);
 
     database.comment.findUnique.mockResolvedValue(visibleComment);
 
@@ -170,6 +193,123 @@ describe('ReportsService', () => {
     database.moderationReport.create.mockRejectedValue(error);
 
     await expect(service.createCommentReport(command)).rejects.toBe(error);
+  });
+
+  it('lists only open and in-review comment reports with a bounded query', async () => {
+    database.moderationReport.findMany.mockResolvedValue([]);
+
+    expect(await service.listPendingCommentReports()).toEqual([]);
+    expect(database.moderationReport.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { targetType: 'COMMENT', status: { in: ['OPEN', 'IN_REVIEW'] } },
+        take: 100,
+      }),
+    );
+  });
+
+  it('dismisses a report and writes an audit event atomically', async () => {
+    await service.resolveCommentReport({
+      reportId: '33333333-3333-4333-8333-333333333333',
+      moderatorId: reporterId,
+      resolution: 'NO_VIOLATION',
+      moderatorNote: 'Kein Verstoß gegen die Community-Regeln.',
+    });
+
+    expect(database.moderationReport.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: '33333333-3333-4333-8333-333333333333',
+          targetType: 'COMMENT',
+          status: { in: ['OPEN', 'IN_REVIEW'] },
+        },
+        data: expect.objectContaining({
+          status: 'DISMISSED',
+          resolution: 'NO_VIOLATION',
+          assignedModeratorId: reporterId,
+          resolvedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(database.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorUserId: reporterId,
+        action: 'MODERATION_REPORT_DISMISSED',
+        moderationReportId: '33333333-3333-4333-8333-333333333333',
+      }),
+    });
+    expect(database.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('requires actual comment moderation before confirming action taken', async () => {
+    await expect(
+      service.resolveCommentReport({
+        reportId: '33333333-3333-4333-8333-333333333333',
+        moderatorId: reporterId,
+        resolution: 'ACTION_TAKEN',
+        moderatorNote: 'Kommentar war regelwidrig.',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(database.moderationReport.updateMany).not.toHaveBeenCalled();
+    expect(database.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('resolves a report with audit after the comment is deleted', async () => {
+    database.comment.findUnique.mockResolvedValue({
+      status: 'DELETED',
+      deletedAt: new Date(),
+    });
+
+    await service.resolveCommentReport({
+      reportId: '33333333-3333-4333-8333-333333333333',
+      moderatorId: reporterId,
+      resolution: 'ACTION_TAKEN',
+      moderatorNote: 'Kommentar durch Moderation entfernt.',
+    });
+
+    expect(database.moderationReport.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'RESOLVED', resolution: 'ACTION_TAKEN' }),
+      }),
+    );
+    expect(database.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'MODERATION_REPORT_RESOLVED' }),
+    });
+  });
+
+  it('rejects a second decision without writing a duplicate audit entry', async () => {
+    database.moderationReport.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.resolveCommentReport({
+        reportId: '33333333-3333-4333-8333-333333333333',
+        moderatorId: reporterId,
+        resolution: 'NO_VIOLATION',
+        moderatorNote: 'Bereits abgeschlossen.',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(database.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses to manage reports targeting something other than a comment', async () => {
+    database.moderationReport.findUnique.mockResolvedValue({
+      id: '33333333-3333-4333-8333-333333333333',
+      targetType: 'FORUM_POST',
+      status: 'OPEN',
+      commentId: null,
+    });
+
+    await expect(
+      service.resolveCommentReport({
+        reportId: '33333333-3333-4333-8333-333333333333',
+        moderatorId: reporterId,
+        resolution: 'NO_VIOLATION',
+        moderatorNote: 'Kein Kommentartarget.',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(database.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('disconnects the database on shutdown', async () => {
