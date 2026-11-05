@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inspect Phase 17 restore test formatting (temporary)
+        run: |
+          pnpm exec prettier apps/web/test/phase17-article-restore.browser.cjs | diff -u apps/web/test/phase17-article-restore.browser.cjs - || true
+
       - name: Check formatting
         run: pnpm format:check
 
