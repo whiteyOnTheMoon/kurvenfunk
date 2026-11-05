@@ -38,8 +38,10 @@ const queue = new Queue('news-import', {
   }
 });
 
+class VerificationError extends Error {}
+
 function check(ok, message) {
-  if (!ok) throw new Error(message);
+  if (!ok) throw new VerificationError(message);
 }
 
 try {
@@ -136,7 +138,10 @@ try {
     : 'NOCH OFFEN – im Zeitraum keine Meldungen');
   console.log('Es wurden keine Daten verändert.');
 } catch (error) {
-  console.error('ABNAHME NICHT BESTANDEN:', error?.message ?? 'Unbekannter Fehler');
+  const reason = error instanceof VerificationError
+    ? error.message
+    : (typeof error?.code === 'string' ? error.code : 'UNEXPECTED_ERROR');
+  console.error('ABNAHME NICHT BESTANDEN:', reason);
   process.exitCode = 1;
 } finally {
   await queue.close();
