@@ -492,6 +492,13 @@ export class ArticlesService implements OnModuleDestroy {
   async update(id: string, input: UpdateArticleInput) {
     const article = await this.findEditorialById(id);
 
+    if (article.deletedAt) {
+      throw new ConflictException({
+        code: 'ARTICLE_DELETED',
+        message: 'Deleted articles cannot be edited',
+      });
+    }
+
     if (input.slug) {
       const existing = await this.database.article.findFirst({
         where: {
