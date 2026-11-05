@@ -267,7 +267,7 @@ export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData;
         </div>
       </header>
 
-      {leadMediaSrc ? (
+      {leadMediaSrc && article.leadMedia ? (
         <figure className={styles.leadFigure}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
