@@ -49,15 +49,9 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
   const [message, setMessage] = useState<string>();
 
   useEffect(() => {
-    if (!initialized) return;
-    if (!authenticated || !token) {
-      setLoading(false);
-      return;
-    }
+    if (!initialized || !authenticated || !token) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError(undefined);
 
     void (async () => {
       try {
@@ -138,7 +132,9 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
         <p>Weitere Moderationsfunktionen wie Karten und Sanktionen folgen in Phase 20.</p>
       </header>
 
-      {!initialized || loading ? <p role="status">Meldungen werden geladen …</p> : null}
+      {!initialized || (authenticated && loading) ? (
+        <p role="status">Meldungen werden geladen …</p>
+      ) : null}
       {initialized && !authenticated ? (
         <p role="alert">Bitte mit einem Moderationskonto anmelden.</p>
       ) : null}
@@ -158,7 +154,7 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
       ) : null}
 
       <div className={styles.list}>
-        {reports.map((report) => {
+        {(authenticated ? reports : []).map((report) => {
           const isBusy = Boolean(activeId);
           const note = notes[report.id] ?? '';
           const visible = report.comment?.status === 'VISIBLE' && !report.comment.deletedAt;
