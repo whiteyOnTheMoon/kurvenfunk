@@ -180,7 +180,8 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
       .expect(201);
     const articleId = (created.body as ArticleResponse).data.id;
     expect((created.body as ArticleResponse).data.status).toBe('DRAFT');
-    expect((await db.article.findUniqueOrThrow({ where: { id: articleId } })).publishedAt).toBeNull();
+    const storedDraft = await db.article.findUniqueOrThrow({ where: { id: articleId } });
+    expect(storedDraft.publishedAt).toBeNull();
 
     await request(app.getHttpServer())
       .post(endpoint)
@@ -281,7 +282,8 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
       .delete(endpoint + '/' + articleId)
       .set('Authorization', editorAuth)
       .expect(200);
-    expect((await db.article.findUniqueOrThrow({ where: { id: articleId } })).deletedAt).not.toBeNull();
+    const deleted = await db.article.findUniqueOrThrow({ where: { id: articleId } });
+    expect(deleted.deletedAt).not.toBeNull();
 
     await request(app.getHttpServer())
       .post(endpoint + '/' + articleId + '/restore')
