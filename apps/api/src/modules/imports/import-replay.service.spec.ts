@@ -84,6 +84,7 @@ describe('ImportReplayService', () => {
       }),
     );
     expect(database.auditLog.create).toHaveBeenCalledWith({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest asymmetric mock matcher.
       data: expect.objectContaining({
         actorUserId: actorId,
         action: 'ADMIN_CORRECTION',
