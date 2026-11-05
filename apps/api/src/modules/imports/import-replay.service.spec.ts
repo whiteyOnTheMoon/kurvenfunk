@@ -154,8 +154,9 @@ describe('ImportReplayService', () => {
     expect(second.alreadyQueued).toBe(true);
     expect(add).toHaveBeenCalledTimes(2);
 
-    const firstId = (database.auditLog.create.mock.calls[0][0] as { data: { id: string } }).data.id;
-    const secondId = (database.auditLog.create.mock.calls[1][0] as { data: { id: string } }).data.id;
+    const auditIdOf = (value: unknown) => (value as { data: { id: string } }).data.id;
+    const firstId = auditIdOf(database.auditLog.create.mock.calls[0][0]);
+    const secondId = auditIdOf(database.auditLog.create.mock.calls[1][0]);
     expect(firstId).toBe(secondId);
     expect(firstId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-a[0-9a-f]{3}-[0-9a-f]{12}$/);
   });
