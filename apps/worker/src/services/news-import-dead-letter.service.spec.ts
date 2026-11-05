@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 jest.mock('@kurvenfunk/logger', () => ({
   createLogger: () => ({
     info: jest.fn(),
@@ -20,6 +22,9 @@ import type { Job, Queue } from 'bullmq';
 import { NewsImportDeadLetterService } from './news-import-dead-letter.service';
 
 describe('NewsImportDeadLetterService', () => {
+  const deadLetterId = (id: string) =>
+    `news-import-dead-${createHash('sha256').update(id).digest('hex')}`;
+
   const add = jest.fn();
   const updateMany = jest.fn();
 
@@ -104,7 +109,7 @@ describe('NewsImportDeadLetterService', () => {
     });
     expect(typeof payload.failedAt).toBe('string');
     expect(options).toEqual({
-      jobId: 'news-import-dead-news-import-job-1',
+      jobId: deadLetterId('news-import-job-1'),
       removeOnComplete: false,
       removeOnFail: false,
     });
@@ -139,7 +144,7 @@ describe('NewsImportDeadLetterService', () => {
         maxAttempts: 1,
       }),
       {
-        jobId: 'news-import-dead-single-attempt-job',
+        jobId: deadLetterId('single-attempt-job'),
         removeOnComplete: false,
         removeOnFail: false,
       },
