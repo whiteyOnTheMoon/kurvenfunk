@@ -196,7 +196,8 @@ describe('CommentReportsModerationController', () => {
 
   it('requires centralized comment moderation permission for both routes', () => {
     for (const method of ['listPendingCommentReports', 'resolveCommentReport']) {
-      const handler = Reflect.get(CommentReportsModerationController.prototype, method);
+      const handler: unknown = Reflect.get(CommentReportsModerationController.prototype, method);
+      if (typeof handler !== 'function') throw new Error(`Missing route handler: ${method}`);
       const permissions: unknown = Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler);
       expect(permissions).toContain(PERMISSIONS.COMMENT_MODERATE);
       const guards: unknown = Reflect.getMetadata(GUARDS_METADATA, handler);
