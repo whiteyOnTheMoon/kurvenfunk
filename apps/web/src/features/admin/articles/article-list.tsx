@@ -17,6 +17,7 @@ interface EditorialArticle {
   slug: string;
   status: 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
   updatedAt: string;
+  deletedAt: string | null;
   publishedAt: string | null;
   scheduledAt: string | null;
   author: {
@@ -39,6 +40,8 @@ export function ArticleList({ apiUrl }: ArticleListProps) {
   const [articles, setArticles] = useState<EditorialArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [message, setMessage] = useState<string>();
+  const [pendingArticleId, setPendingArticleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialized) {
@@ -98,6 +101,70 @@ export function ArticleList({ apiUrl }: ArticleListProps) {
     };
   }, [apiUrl, authenticated, initialized, token]);
 
+  async function changeDeletion(article: EditorialArticle) {
+    if (!token || pendingArticleId) {
+      return;
+    }
+
+    const restore = Boolean(article.deletedAt);
+
+    if (
+      !restore &&
+      !window.confirm(`Artikel „${article.title}“ löschen? Du kannst ihn später wiederherstellen.`)
+    ) {
+      return;
+    }
+
+    setPendingArticleId(article.id);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/articles/${encodeURIComponent(article.id)}${restore ? '/restore' : ''}`,
+        {
+          method: restore ? 'POST' : 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const payload = (await response.json().catch(() => null)) as {
+        data?: Pick<
+          EditorialArticle,
+          'deletedAt' | 'status' | 'updatedAt' | 'publishedAt' | 'scheduledAt'
+        >;
+        error?: { message?: string };
+      } | null;
+
+      if (!response.ok || !payload?.data) {
+        throw new Error(
+          payload?.error?.message ??
+            (restore
+              ? 'Artikel konnte nicht wiederhergestellt werden.'
+              : 'Artikel konnte nicht gelöscht werden.'),
+        );
+      }
+
+      const updated = payload.data;
+      setArticles((current) =>
+        current.map((entry) => (entry.id === article.id ? { ...entry, ...updated } : entry)),
+      );
+      setMessage(
+        restore
+          ? 'Artikel wurde als unveröffentlichter Entwurf wiederhergestellt.'
+          : 'Artikel wurde gelöscht und kann wiederhergestellt werden.',
+      );
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : 'Aktion konnte nicht abgeschlossen werden.',
+      );
+    } finally {
+      setPendingArticleId(null);
+    }
+  }
+
   if (!initialized) {
     return (
       <div className={styles.loading}>
@@ -142,6 +209,12 @@ export function ArticleList({ apiUrl }: ArticleListProps) {
         </div>
       ) : null}
 
+      {message ? (
+        <div className={styles.message} role="status">
+          {message}
+        </div>
+      ) : null}
+
       {articles.length === 0 ? (
         <EmptyState title="Noch keine Artikel">
           Erstelle den ersten Artikel im Redaktionssystem.
@@ -149,22 +222,50 @@ export function ArticleList({ apiUrl }: ArticleListProps) {
       ) : (
         <div className={styles.list}>
           {articles.map((article) => (
-            <Link key={article.id} href={`/admin/artikel/${article.id}`} className={styles.card}>
-              <div className={styles.cardMain}>
-                <div className={styles.cardMeta}>
-                  <span className={styles.status}>{article.status}</span>
-                  <span>Aktualisiert {formatDate(article.updatedAt)} Uhr</span>
+            <div key={article.id} className={styles.cardRow}>
+              {article.deletedAt ? (
+                <div className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <div className={styles.cardMeta}>
+                      <span className={styles.status}>Gelöscht</span>
+                      <span>Zuletzt geändert {formatDate(article.updatedAt)} Uhr</span>
+                    </div>
+                    <h2>{article.title}</h2>
+                    <p>/{article.slug}</p>
+                  </div>
+                  <div className={styles.cardAside}>
+                    <span>{article.author?.nickname ?? 'Kurvenfunk'}</span>
+                    <strong>Nur für die Redaktion</strong>
+                  </div>
                 </div>
-
-                <h2>{article.title}</h2>
-                <p>/{article.slug}</p>
-              </div>
-
-              <div className={styles.cardAside}>
-                <span>{article.author?.nickname ?? 'Kurvenfunk'}</span>
-                <strong>Bearbeiten →</strong>
-              </div>
-            </Link>
+              ) : (
+                <Link href={`/admin/artikel/${article.id}`} className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <div className={styles.cardMeta}>
+                      <span className={styles.status}>{article.status}</span>
+                      <span>Aktualisiert {formatDate(article.updatedAt)} Uhr</span>
+                    </div>
+                    <h2>{article.title}</h2>
+                    <p>/{article.slug}</p>
+                  </div>
+                  <div className={styles.cardAside}>
+                    <span>{article.author?.nickname ?? 'Kurvenfunk'}</span>
+                    <strong>Bearbeiten →</strong>
+                  </div>
+                </Link>
+              )}
+              <Button
+                variant="outline"
+                disabled={pendingArticleId !== null}
+                onClick={() => void changeDeletion(article)}
+              >
+                {pendingArticleId === article.id
+                  ? 'Verarbeitet …'
+                  : article.deletedAt
+                    ? 'Wiederherstellen'
+                    : 'Löschen'}
+              </Button>
+            </div>
           ))}
         </div>
       )}
