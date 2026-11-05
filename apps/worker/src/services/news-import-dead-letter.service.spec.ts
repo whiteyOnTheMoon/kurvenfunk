@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto';
 
+jest.mock('@kurvenfunk/database', () => ({
+  createPrismaClient: jest.fn(),
+}));
+
 jest.mock('@kurvenfunk/logger', () => ({
   createLogger: () => ({
     info: jest.fn(),
