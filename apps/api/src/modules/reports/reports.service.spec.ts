@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Jest's asymmetric matchers intentionally return dynamic values in mock assertions. */
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 
@@ -49,8 +50,8 @@ describe('ReportsService', () => {
     jest.clearAllMocks();
 
     service = new ReportsService();
-    database.$transaction.mockImplementation(async (handler: (db: typeof database) => unknown) =>
-      handler(database),
+    database.$transaction.mockImplementation((handler: (db: typeof database) => unknown) =>
+      Promise.resolve(handler(database)),
     );
     database.moderationReport.updateMany.mockResolvedValue({ count: 1 });
     database.moderationReport.findUnique.mockResolvedValue({
