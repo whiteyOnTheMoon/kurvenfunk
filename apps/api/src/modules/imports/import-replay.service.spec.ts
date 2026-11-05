@@ -6,7 +6,7 @@ import type { NewsImportDeadLetterPayload, NewsImportJobPayload } from '@kurvenf
 
 const database = {
   importJob: { findUnique: jest.fn() },
-  auditLog: { create: jest.fn() },
+  auditLog: { create: jest.fn(), findUnique: jest.fn() },
   $disconnect: jest.fn(),
 };
 
@@ -70,6 +70,7 @@ describe('ImportReplayService', () => {
     });
     add.mockResolvedValue({ id: replayQueueId });
     database.auditLog.create.mockResolvedValue({ id: 'audit-1' });
+    database.auditLog.findUnique.mockResolvedValue(null);
 
     service = new ImportReplayService(
       { add, getJob: getReplay } as unknown as Queue<NewsImportJobPayload>,
@@ -94,6 +95,8 @@ describe('ImportReplayService', () => {
       expect.objectContaining({
         jobId: replayQueueId,
         attempts: 3,
+        removeOnComplete: false,
+        removeOnFail: false,
       }),
     );
     expect(database.auditLog.create).toHaveBeenCalledWith({
@@ -121,7 +124,40 @@ describe('ImportReplayService', () => {
       alreadyQueued: true,
     });
     expect(add).not.toHaveBeenCalled();
+    // A previous Redis enqueue without an audit is repaired on retry.
+    expect(database.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('remains idempotent even after the previous BullMQ job was removed', async () => {
+    database.auditLog.findUnique.mockResolvedValue({ id: 'durable-audit-id' });
+
+    expect(await service.replayDeadLetter(sourceId, actorId)).toEqual({
+      sourceImportJobId: sourceId,
+      queueJobId: replayQueueId,
+      alreadyQueued: true,
+    });
+    expect(getReplay).not.toHaveBeenCalled();
+    expect(getDeadLetter).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
     expect(database.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('allows only one audit row for competing replay attempts', async () => {
+    database.auditLog.create
+      .mockResolvedValueOnce({ id: 'durable-audit-id' })
+      .mockRejectedValueOnce({ code: 'P2002' });
+
+    const first = await service.replayDeadLetter(sourceId, actorId);
+    const second = await service.replayDeadLetter(sourceId, actorId);
+
+    expect(first.alreadyQueued).toBe(false);
+    expect(second.alreadyQueued).toBe(true);
+    expect(add).toHaveBeenCalledTimes(2);
+
+    const firstId = (database.auditLog.create.mock.calls[0][0] as { data: { id: string } }).data.id;
+    const secondId = (database.auditLog.create.mock.calls[1][0] as { data: { id: string } }).data.id;
+    expect(firstId).toBe(secondId);
+    expect(firstId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-a[0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 
   it('refuses to replay a job that is not dead-lettered', async () => {
