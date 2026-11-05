@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inspect Phase 19 HTTP test formatting (temporary)
+        run: |
+          pnpm exec prettier apps/api/test/phase19-community.e2e-spec.ts | diff -u apps/api/test/phase19-community.e2e-spec.ts - || true
+
       - name: Check formatting
         run: pnpm format:check
 
