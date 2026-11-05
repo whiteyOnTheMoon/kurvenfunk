@@ -6,6 +6,7 @@ import { DatabaseService } from '../database/database.service';
 
 export interface RawPayloadImportContext {
   queueJobId?: string;
+  retryOfImportJobId?: string;
   windowStart?: string;
   windowEnd?: string;
 }
@@ -55,7 +56,8 @@ export class RawPayloadService {
         providerId: providerRow.id,
         kind: 'NEWS_FETCH',
         status: 'RUNNING',
-        trigger: 'SYSTEM',
+        trigger: context.retryOfImportJobId ? 'REPLAY' : 'SYSTEM',
+        retryOfJobId: context.retryOfImportJobId,
         queueJobId: context.queueJobId,
         windowStart: context.windowStart !== undefined ? new Date(context.windowStart) : undefined,
         windowEnd: context.windowEnd !== undefined ? new Date(context.windowEnd) : undefined,

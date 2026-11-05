@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -7,6 +7,12 @@ import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
 import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { Queue } from 'bullmq';
+import {
+  QUEUE_NAMES,
+  type NewsImportDeadLetterPayload,
+  type NewsImportJobPayload,
+} from '@kurvenfunk/types';
 
 type ReviewResult = {
   data: {
@@ -29,6 +35,7 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
   const editorSubject = `e2e-review-editor-${suffix}`;
   const otherEditorSubject = `e2e-review-editor-other-${suffix}`;
   const readerSubject = `e2e-review-reader-${suffix}`;
+  const adminSubject = `e2e-review-admin-${suffix}`;
   let editorId: string;
   let providerId: string;
   let jobId: string;
@@ -111,6 +118,12 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
       data: {
         keycloakSubject: otherEditorSubject,
         roleAssignments: { create: { role: 'EDITOR' } },
+      },
+    });
+    await database.user.create({
+      data: {
+        keycloakSubject: adminSubject,
+        roleAssignments: { create: { role: 'ADMIN' } },
       },
     });
 
@@ -266,6 +279,112 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
     expect(unchanged.reviewDecision).toBeNull();
     expect(unchanged.errorCode).toBe('NEWS_REVIEW_REQUIRED');
     expect(await database.article.count({ where: { importRecordId: record.id } })).toBe(0);
+  }, 30000);
+
+  it('replays a real dead-letter entry only for admins, once, with an audit trail', async () => {
+    const originalJobId = `isolated-import-replay-${suffix}`;
+    const hash = createHash('sha256').update(originalJobId).digest('hex');
+    const deadLetterId = `news-import-dead-${hash}`;
+    const expectedReplayId = `news-import-replay-${hash}`;
+    const connection = {
+      host: '127.0.0.1',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+      password: process.env.REDIS_PASSWORD,
+      maxRetriesPerRequest: null,
+    };
+    const importQueue = new Queue<NewsImportJobPayload>(QUEUE_NAMES.NEWS_IMPORT, { connection });
+    const deadLetterQueue = new Queue<NewsImportDeadLetterPayload>(
+      QUEUE_NAMES.NEWS_IMPORT_DEAD_LETTER,
+      { connection },
+    );
+
+    try {
+      const source = await database.importJob.create({
+        data: {
+          providerId,
+          kind: 'NEWS_FETCH',
+          status: 'DEAD_LETTER',
+          trigger: 'SYSTEM',
+          queueJobId: originalJobId,
+          windowStart: new Date('2026-11-05T08:00:00.000Z'),
+          windowEnd: new Date('2026-11-05T08:15:00.000Z'),
+        },
+        select: { id: true },
+      });
+
+      const provider = await database.provider.findUniqueOrThrow({
+        where: { id: providerId },
+        select: { key: true },
+      });
+
+      await deadLetterQueue.add(
+        'dead-letter',
+        {
+          originalQueue: QUEUE_NAMES.NEWS_IMPORT,
+          originalJobId,
+          originalJobName: 'fetch-provider',
+          originalData: { providerKey: provider.key, lookbackMinutes: 15 },
+          failedReason: 'Isolated test provider failure',
+          attemptsMade: 3,
+          maxAttempts: 3,
+          failedAt: new Date().toISOString(),
+        },
+        { jobId: deadLetterId, removeOnComplete: false, removeOnFail: false },
+      );
+
+      const endpoint = `/api/v1/imports/jobs/${source.id}/retry`;
+      await request(app.getHttpServer()).post(endpoint).expect(401);
+      await request(app.getHttpServer())
+        .post(endpoint)
+        .set('Authorization', `Bearer ${await signToken(editorSubject)}`)
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/imports/jobs/not-a-uuid/retry')
+        .set('Authorization', `Bearer ${await signToken(adminSubject)}`)
+        .expect(400);
+
+      const adminToken = `Bearer ${await signToken(adminSubject)}`;
+      const first = await request(app.getHttpServer())
+        .post(endpoint)
+        .set('Authorization', adminToken)
+        .expect(201);
+      expect(
+        (first.body as { data: { queueJobId: string; alreadyQueued: boolean } }).data,
+      ).toMatchObject({ queueJobId: expectedReplayId, alreadyQueued: false });
+
+      const replay = await importQueue.getJob(expectedReplayId);
+      expect(replay).not.toBeNull();
+      expect(replay?.data).toEqual({
+        providerKey: provider.key,
+        lookbackMinutes: 15,
+        windowStart: '2026-11-05T08:00:00.000Z',
+        windowEnd: '2026-11-05T08:15:00.000Z',
+        retryOfImportJobId: source.id,
+      });
+
+      const second = await request(app.getHttpServer())
+        .post(endpoint)
+        .set('Authorization', adminToken)
+        .expect(201);
+      expect((second.body as { data: { alreadyQueued: boolean } }).data.alreadyQueued).toBe(true);
+      expect(
+        await database.auditLog.count({
+          where: {
+            action: 'ADMIN_CORRECTION',
+            targetId: source.id,
+            reason: 'MANUAL_NEWS_IMPORT_REPLAY',
+          },
+        }),
+      ).toBe(1);
+    } finally {
+      const retry = await importQueue.getJob(expectedReplayId);
+      if (retry) await retry.remove();
+      const dead = await deadLetterQueue.getJob(deadLetterId);
+      if (dead) await dead.remove();
+      await importQueue.close();
+      await deadLetterQueue.close();
+    }
   }, 30000);
 
   it('records a rejection, clears stale review errors and never creates a draft', async () => {

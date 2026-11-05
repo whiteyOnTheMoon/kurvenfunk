@@ -229,6 +229,8 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
+  const [message, setMessage] = useState<string>();
+  const [retryingJobId, setRetryingJobId] = useState<string>();
 
   const otsReviewItems = reviewQueue.filter((item) => item.provider.key === 'ots');
   const hasOtsProvider = overview?.providers.some((provider) => provider.key === 'ots') ?? false;
@@ -369,6 +371,52 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
     }
   }
 
+  async function replayJob(job: ImportJob) {
+    if (!token || retryingJobId || job.status !== 'DEAD_LETTER' || job.kind !== 'NEWS_FETCH') {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Importjob ${job.id.slice(0, 8)} wirklich erneut einreihen? Das kann Nachrichten erneut abrufen. Nur Administratoren dürfen diese Aktion ausführen.`,
+      )
+    ) {
+      return;
+    }
+
+    setRetryingJobId(job.id);
+    setError(undefined);
+    setMessage(undefined);
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/imports/jobs/${encodeURIComponent(job.id)}/retry`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (response.status === 403) {
+        throw new Error('Nur Administratoren dürfen fehlgeschlagene Importe erneut starten.');
+      }
+
+      const result = await readPayload<{
+        sourceImportJobId: string;
+        queueJobId: string;
+        alreadyQueued: boolean;
+      }>(response);
+
+      setMessage(
+        result.alreadyQueued
+          ? 'Dieser Import wurde bereits erneut eingereiht.'
+          : 'Import zur erneuten Verarbeitung eingereiht. Die neue Ausführung wird protokolliert.',
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'Der Import konnte nicht erneut gestartet werden.',
+      );
+    } finally {
+      setRetryingJobId(undefined);
+    }
+  }
+
   async function loadMore() {
     if (!nextCursor || loadingMore) {
       return;
@@ -423,6 +471,12 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
       {error ? (
         <div className={styles.error} role="alert">
           {error}
+        </div>
+      ) : null}
+
+      {message ? (
+        <div className={styles.summaryNote} role="status">
+          {message}
         </div>
       ) : null}
 
@@ -695,6 +749,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                         <th>Duplikate</th>
                         <th>Fehler</th>
                         <th>Zeitpunkt</th>
+                        <th>Aktion</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -721,6 +776,19 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                             </span>
                           </td>
                           <td>{formatDate(job.startedAt ?? job.createdAt)}</td>
+                          <td>
+                            {job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                              <Button
+                                type="button"
+                                disabled={retryingJobId !== undefined}
+                                onClick={() => void replayJob(job)}
+                              >
+                                {retryingJobId === job.id
+                                  ? 'Wird eingereiht …'
+                                  : 'Erneut einreihen'}
+                              </Button>
+                            ) : null}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -766,6 +834,15 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                       <p className={styles.mobileJobDate}>
                         {formatDate(job.startedAt ?? job.createdAt)}
                       </p>
+                      {job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                        <Button
+                          type="button"
+                          disabled={retryingJobId !== undefined}
+                          onClick={() => void replayJob(job)}
+                        >
+                          {retryingJobId === job.id ? 'Wird eingereiht …' : 'Erneut einreihen'}
+                        </Button>
+                      ) : null}
                     </article>
                   ))}
                 </div>

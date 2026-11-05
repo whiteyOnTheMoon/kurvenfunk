@@ -43,6 +43,7 @@ describe('PermissionsService', () => {
     PERMISSIONS.USER_IPBAN,
     PERMISSIONS.ARTICLE_CREATE,
     PERMISSIONS.ARTICLE_PUBLISH,
+    PERMISSIONS.IMPORT_REPLAY,
   ] as const)('blocks LIMITED users from %s', (permission) => {
     expect(can(permission, ['USER'], 'LIMITED')).toBe(false);
     expect(can(permission, ['SUPERADMIN'], 'LIMITED')).toBe(false);
@@ -94,6 +95,15 @@ describe('PermissionsService', () => {
     expect(can(PERMISSIONS.USER_IPBAN, ['ADMIN'])).toBe(false);
 
     expect(can(PERMISSIONS.USER_IPBAN, ['SUPERADMIN'])).toBe(true);
+  });
+
+  it('reserves failed import replay for active admins', () => {
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['USER'])).toBe(false);
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['MODERATOR'])).toBe(false);
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['EDITOR'])).toBe(false);
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['ADMIN'])).toBe(true);
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['SUPERADMIN'])).toBe(true);
+    expect(can(PERMISSIONS.IMPORT_REPLAY, ['ADMIN'], 'BANNED')).toBe(false);
   });
 
   it('combines permissions from multiple roles', () => {

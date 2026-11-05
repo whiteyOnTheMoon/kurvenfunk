@@ -80,6 +80,9 @@ export class NewsImportProcessor extends WorkerHost {
 
       importSession = await this.rawPayloadService.startNewsImport(provider, {
         ...(job.id !== undefined ? { queueJobId: String(job.id) } : {}),
+        ...(job.data.retryOfImportJobId !== undefined
+          ? { retryOfImportJobId: job.data.retryOfImportJobId }
+          : {}),
         ...(windowStart !== undefined ? { windowStart } : {}),
         ...(windowEnd !== undefined ? { windowEnd } : {}),
       });

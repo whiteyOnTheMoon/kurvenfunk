@@ -18,6 +18,8 @@ export interface NewsImportJobPayload {
   windowStart?: string;
   windowEnd?: string;
   lookbackMinutes?: number;
+  /** Set only by a privileged manual dead-letter replay. */
+  retryOfImportJobId?: string;
 }
 
 export interface NewsImportDeadLetterPayload {
