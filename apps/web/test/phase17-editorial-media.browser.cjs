@@ -52,14 +52,14 @@ async function main() {
     let data;
     if (req.method === 'GET' && req.url?.startsWith('/api/v1/media?')) {
       data = { items: [mediaItem], nextCursor: null };
-    } else if (
-      req.method === 'GET' &&
-      req.url === '/api/v1/media/' + mediaId + '/content'
-    ) {
+    } else if (req.method === 'GET' && req.url === '/api/v1/media/' + mediaId + '/content') {
       res.writeHead(200, { 'Content-Type': 'image/png' });
       res.end(samplePng);
       return;
-    } else if (req.method === 'GET' && /^\/api\/v1\/(clubs|competitions|categories|tags)$/.test(req.url ?? '')) {
+    } else if (
+      req.method === 'GET' &&
+      /^\/api\/v1\/(clubs|competitions|categories|tags)$/.test(req.url ?? '')
+    ) {
       data = [];
     } else if (req.method === 'POST' && req.url === '/api/v1/articles') {
       const chunks = [];
@@ -95,10 +95,16 @@ async function main() {
     "import { createRoot } from 'react-dom/client';",
     "import { ArticleEditor } from './src/features/admin/articles/article-editor';",
     "import { ArticleDetail } from './src/features/articles/article-detail';",
-    "const image = {id: " + JSON.stringify(mediaId) + ", storageKey: 'media/2026/11/image.webp', externalUrl: null, altText: 'Lead aus Storage', copyright: null, source: null, sourceUrl: null, width: 24, height: 16};",
+    'const image = {id: ' +
+      JSON.stringify(mediaId) +
+      ", storageKey: 'media/2026/11/image.webp', externalUrl: null, altText: 'Lead aus Storage', copyright: null, source: null, sourceUrl: null, width: 24, height: 16};",
     "const article = {id: 'published-id', slug: 'browser-test', title: 'Veröffentlicht', lead: null, content: {type: 'doc', content: [{type: 'paragraph', content: [{type: 'text', text: 'Browserinhalt'}]}]}, publishedAt: '2026-11-05T07:00:00.000Z', originalUrl: null, author: null, source: null, leadMedia: image, competition: null, clubs: [], tags: [], _count: {comments: 0}};",
     "const root = document.getElementById('root');",
-    "createRoot(root).render(<><ArticleEditor apiUrl=" + JSON.stringify(apiUrl) + " /><div id='public-preview'><ArticleDetail apiUrl=" + JSON.stringify(apiUrl) + " article={article} /></div></>);",
+    'createRoot(root).render(<><ArticleEditor apiUrl=' +
+      JSON.stringify(apiUrl) +
+      " /><div id='public-preview'><ArticleDetail apiUrl=" +
+      JSON.stringify(apiUrl) +
+      ' article={article} /></div></>);',
   ].join('\n');
 
   const stubs = {
@@ -142,14 +148,14 @@ async function main() {
       {
         name: 'isolated-editor-api-and-auth',
         setup(builder) {
-          builder.onResolve(
-            { filter: /^(@kurvenfunk\/ui|next\/link)$/ },
-            (args) => ({ path: args.path, namespace: 'test-stub' }),
-          );
-          builder.onResolve(
-            { filter: /auth\/auth-provider$/ },
-            () => ({ path: 'auth-provider', namespace: 'test-stub' }),
-          );
+          builder.onResolve({ filter: /^(@kurvenfunk\/ui|next\/link)$/ }, (args) => ({
+            path: args.path,
+            namespace: 'test-stub',
+          }));
+          builder.onResolve({ filter: /auth\/auth-provider$/ }, () => ({
+            path: 'auth-provider',
+            namespace: 'test-stub',
+          }));
           builder.onResolve(
             { filter: /articles\/comment-composer$|^\.\/comment-composer$/ },
             () => ({ path: 'comment-composer', namespace: 'test-stub' }),
@@ -208,7 +214,7 @@ async function main() {
     await page.getByRole('dialog').getByRole('button', { name: 'phase17-test-image.png' }).click();
     assert.equal(await page.locator('.ProseMirror img').count(), 0);
     assert.ok(
-      await page.getByRole('button', { name: 'Ändern' }).count() >= 1,
+      (await page.getByRole('button', { name: 'Ändern' }).count()) >= 1,
       'OG image should be selected in the sidebar',
     );
 
