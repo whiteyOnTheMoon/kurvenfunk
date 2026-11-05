@@ -92,7 +92,7 @@ async function main() {
         "import {ArticleList} from './src/features/admin/articles/article-list';",
         "createRoot(document.getElementById('root')).render(<ArticleList apiUrl=" +
           JSON.stringify(apiUrl) +
-          " />);",
+          ' />);',
       ].join('\n'),
       loader: 'tsx',
       resolveDir: root,
@@ -171,14 +171,20 @@ async function main() {
 
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: 'Löschen' }).click();
-    await page.getByRole('status').getByText(/Artikel wurde gelöscht/).waitFor();
+    await page
+      .getByRole('status')
+      .getByText(/Artikel wurde gelöscht/)
+      .waitFor();
     assert.deepEqual(actions, ['delete']);
     assert.equal(await page.getByRole('link', { name: /Veröffentlichter Testartikel/ }).count(), 0);
     await page.getByRole('button', { name: 'Wiederherstellen' }).waitFor();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('button', { name: 'Wiederherstellen' }).click();
-    await page.getByRole('status').getByText(/unveröffentlichter Entwurf/).waitFor();
+    await page
+      .getByRole('status')
+      .getByText(/unveröffentlichter Entwurf/)
+      .waitFor();
     await page.getByRole('link', { name: /Veröffentlichter Testartikel/ }).waitFor();
     assert.deepEqual(actions, ['delete', 'restore']);
     assert.equal(article.status, 'DRAFT');
