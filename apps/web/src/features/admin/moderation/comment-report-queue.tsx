@@ -68,7 +68,9 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
         if (!cancelled) setReports(items);
       } catch (cause) {
         if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : 'Meldungen konnten nicht geladen werden.');
+          setError(
+            cause instanceof Error ? cause.message : 'Meldungen konnten nicht geladen werden.',
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -140,8 +142,16 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
       {initialized && !authenticated ? (
         <p role="alert">Bitte mit einem Moderationskonto anmelden.</p>
       ) : null}
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
-      {message ? <p className={styles.message} role="status">{message}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className={styles.message} role="status">
+          {message}
+        </p>
+      ) : null}
 
       {!loading && authenticated && !error && reports.length === 0 ? (
         <p>Aktuell sind keine offenen Kommentarmeldungen vorhanden.</p>
@@ -169,20 +179,23 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
               {report.comment ? (
                 <>
                   <p>
-                    Artikel: <a href={`/artikel/${encodeURIComponent(report.comment.article.slug)}`}>
+                    Artikel:{' '}
+                    <a href={`/artikel/${encodeURIComponent(report.comment.article.slug)}`}>
                       {report.comment.article.title}
                     </a>
                   </p>
                   <blockquote className={styles.comment}>{report.comment.body}</blockquote>
-                  <p className={styles.meta}>
-                    Kommentarstatus: {report.comment.status}
-                  </p>
+                  <p className={styles.meta}>Kommentarstatus: {report.comment.status}</p>
                 </>
               ) : (
                 <p>Der gemeldete Kommentar ist nicht mehr verfügbar.</p>
               )}
 
-              {report.details ? <p><strong>Hinweis:</strong> {report.details}</p> : null}
+              {report.details ? (
+                <p>
+                  <strong>Hinweis:</strong> {report.details}
+                </p>
+              ) : null}
 
               <label className={styles.noteLabel} htmlFor={`report-note-${report.id}`}>
                 Interne Moderationsnotiz
@@ -201,17 +214,25 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
               />
 
               <div className={styles.actions}>
-                <button disabled={isBusy || note.trim().length < 3}
-                  onClick={() => void resolveReport(report, 'NO_VIOLATION')}>
+                <button
+                  disabled={isBusy || note.trim().length < 3}
+                  onClick={() => void resolveReport(report, 'NO_VIOLATION')}
+                >
                   Kein Verstoß
                 </button>
-                <button disabled={isBusy || note.trim().length < 3}
-                  onClick={() => void resolveReport(report, 'INSUFFICIENT_EVIDENCE')}>
+                <button
+                  disabled={isBusy || note.trim().length < 3}
+                  onClick={() => void resolveReport(report, 'INSUFFICIENT_EVIDENCE')}
+                >
                   Nicht ausreichend belegt
                 </button>
                 {report.comment ? (
-                  <button disabled={isBusy || note.trim().length < 3}
-                    onClick={() => void resolveReport(report, visible ? 'ACTION_TAKEN' : 'ALREADY_HANDLED')}>
+                  <button
+                    disabled={isBusy || note.trim().length < 3}
+                    onClick={() =>
+                      void resolveReport(report, visible ? 'ACTION_TAKEN' : 'ALREADY_HANDLED')
+                    }
+                  >
                     {visible ? 'Kommentar entfernen und abschließen' : 'Bereits bearbeitet'}
                   </button>
                 ) : null}
