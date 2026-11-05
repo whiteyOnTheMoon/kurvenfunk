@@ -58,11 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Inspect Phase 19 formatting (temporary)
-        run: |
-          pnpm exec prettier apps/api/src/modules/reports/reports.controller.spec.ts | diff -u apps/api/src/modules/reports/reports.controller.spec.ts - || true
-          pnpm exec prettier apps/web/src/features/admin/moderation/comment-report-queue.tsx | diff -u apps/web/src/features/admin/moderation/comment-report-queue.tsx - || true
-
       - name: Check formatting
         run: pnpm format:check
 
