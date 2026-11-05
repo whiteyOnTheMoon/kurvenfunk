@@ -279,6 +279,11 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
     await request(app.getHttpServer())
       .get(endpoint + '/by-slug/' + slug)
       .expect(404);
+    await request(app.getHttpServer())
+      .patch(endpoint + '/' + articleId)
+      .set('Authorization', editorAuth)
+      .send({ title: 'Bearbeitung gelöschter Artikel verboten' })
+      .expect(409);
 
     const editorialList = await request(app.getHttpServer())
       .get(endpoint + '/editorial')
