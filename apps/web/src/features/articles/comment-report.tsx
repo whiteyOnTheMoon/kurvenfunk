@@ -7,6 +7,7 @@ import styles from './comment-report.module.css';
 interface CommentReportProps {
   apiUrl: string;
   commentId: string;
+  authorId: string | null;
   userId?: string;
   userStatus?: 'ACTIVE' | 'LIMITED' | 'BANNED';
   token?: string;
@@ -15,6 +16,7 @@ interface CommentReportProps {
 export function CommentReport({
   apiUrl,
   commentId,
+  authorId,
   userId,
   userStatus,
   token,
@@ -30,7 +32,9 @@ export function CommentReport({
   const [feedback, setFeedback] = useState<string>();
 
   const canReport =
-    Boolean(token && userId) && (userStatus === 'ACTIVE' || userStatus === 'LIMITED');
+    Boolean(token && userId) &&
+    authorId !== userId &&
+    (userStatus === 'ACTIVE' || userStatus === 'LIMITED');
 
   function openDialog() {
     if (!canReport || reported) return;

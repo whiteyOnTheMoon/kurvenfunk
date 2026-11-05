@@ -17,8 +17,10 @@ Nutzerprofile tragen Vereinspräferenzen und Community-Aktivitäten.
   Onboarding voraus.
 - Kommentare und Antworten müssen den konfigurierten Spam- und
   Berechtigungsregeln genügen.
-- Der vorhandene Code verwendet UPVOTE/DOWNVOTE; die Abweichung vom
-  ursprünglich vorgesehenen LIKE bleibt eine Produktentscheidung.
+- **Verbindlicher Produktentscheid vom 04.11.2026:** Kommentare verwenden
+  UPVOTE und DOWNVOTE (statt des ursprünglichen LIKE-only-MVP).
+  Ein Nutzer kann pro Kommentar maximal eine Stimme abgeben, diese wechseln
+  oder zurücknehmen. Eigenes Voting ist nicht erlaubt.
 - Meldungen werden vertraulich behandelt. Eine Meldung allein löst nicht
   automatisch eine Strafe aus.
 

@@ -49,6 +49,7 @@ export class ReportsService implements OnModuleDestroy {
       },
       select: {
         id: true,
+        authorId: true,
         status: true,
         deletedAt: true,
         article: {
@@ -70,6 +71,13 @@ export class ReportsService implements OnModuleDestroy {
       throw new NotFoundException({
         code: 'COMMENT_NOT_FOUND',
         message: 'Kommentar wurde nicht gefunden.',
+      });
+    }
+
+    if (comment.authorId === command.reporterId) {
+      throw new ForbiddenException({
+        code: 'SELF_REPORT_FORBIDDEN',
+        message: 'Eigene Kommentare können nicht gemeldet werden.',
       });
     }
 

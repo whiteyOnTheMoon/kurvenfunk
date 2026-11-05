@@ -705,6 +705,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
               <CommentReport
                 apiUrl={apiUrl}
                 commentId={comment.id}
+                authorId={comment.author?.id ?? null}
                 userId={authenticated ? user?.id : undefined}
                 userStatus={user?.status}
                 token={authenticated ? token : undefined}

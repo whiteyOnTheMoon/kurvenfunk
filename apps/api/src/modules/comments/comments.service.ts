@@ -34,6 +34,12 @@ export interface UpdateCommentCommand extends CreateCommentCommand {
   commentId: string;
 }
 
+export interface ModerateRemoveCommentCommand {
+  commentId: string;
+  moderatorId: string;
+  reason: string;
+}
+
 export interface RemoveCommentCommand {
   articleId: string;
   commentId: string;
@@ -725,6 +731,69 @@ export class CommentsService implements OnModuleDestroy {
       id: comment.id,
       deleted: true,
     };
+  }
+
+  /**
+   * Privileged moderator removal is deliberately separate from self-deletion.
+   * The state transition and immutable audit event must commit atomically.
+   */
+  async moderateRemove(command: ModerateRemoveCommentCommand) {
+    return this.database.$transaction(async (tx) => {
+      const comment = await tx.comment.findUnique({
+        where: { id: command.commentId },
+        select: {
+          id: true,
+          articleId: true,
+          authorId: true,
+          status: true,
+          deletedAt: true,
+        },
+      });
+
+      if (!comment || comment.status !== 'VISIBLE' || comment.deletedAt !== null) {
+        throw new NotFoundException({
+          code: 'COMMENT_NOT_FOUND',
+          message: 'Kommentar wurde nicht gefunden.',
+        });
+      }
+
+      const now = new Date();
+      const changed = await tx.comment.updateMany({
+        where: {
+          id: comment.id,
+          status: 'VISIBLE',
+          deletedAt: null,
+        },
+        data: {
+          status: 'DELETED',
+          deletedAt: now,
+          moderatedAt: now,
+        },
+      });
+
+      if (changed.count !== 1) {
+        throw new NotFoundException({
+          code: 'COMMENT_NOT_FOUND',
+          message: 'Kommentar wurde nicht gefunden.',
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId: command.moderatorId,
+          action: 'COMMENT_DELETED_BY_MODERATOR',
+          category: 'MODERATION',
+          targetType: 'COMMENT',
+          targetId: comment.id,
+          targetUserId: comment.authorId,
+          reason: command.reason,
+          metadata: { articleId: comment.articleId },
+        },
+      });
+
+      return { id: comment.id, deleted: true };
+    });
   }
 
   async createReply(command: CreateCommentReplyCommand) {
