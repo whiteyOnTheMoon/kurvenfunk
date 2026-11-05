@@ -62,7 +62,9 @@ jobs:
         run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
-        run: bash -n infrastructure/scripts/deploy/dev.sh
+        run: |
+          bash -n infrastructure/scripts/deploy/dev.sh
+          bash -n infrastructure/scripts/verify/dev-ots-import.sh
 
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
