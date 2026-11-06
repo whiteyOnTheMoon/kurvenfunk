@@ -4,6 +4,12 @@ set -Eeuo pipefail
 set +x
 cd /home/ap/www/kurvenfunk || exit 1
 test "$(git branch --show-current)" = "develop"
+if [[ -n "${EXPECTED_COMMIT:-}" ]]; then
+  test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT" || {
+    echo "DEV-Commit entspricht nicht dem getesteten SHA" >&2
+    exit 1
+  }
+fi
 
 docker compose -p kurvenfunk-dev --env-file .env.dev \
   -f compose.yml -f compose.dev.yml config --format json | python3 -c '

@@ -177,6 +177,16 @@ describe('Import review HTTP, real guards and isolated PostgreSQL', () => {
       .set('Authorization', `Bearer ${await signToken(editorSubject)}`)
       .expect(400);
 
+    await request(app.getHttpServer())
+      .get('/api/v1/imports/jobs/invalid-uuid')
+      .set('Authorization', `Bearer ${await signToken(editorSubject)}`)
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/imports/jobs/${record.id}`)
+      .set('Authorization', `Bearer ${await signToken(editorSubject)}`)
+      .expect(404);
+
     const unchanged = await database.importRecord.findUniqueOrThrow({
       where: { id: record.id },
     });
