@@ -191,6 +191,41 @@ describe('OtsNewsProvider', () => {
     await expect(provider.fetch({})).rejects.not.toThrow('test-secret-key');
   });
 
+  it('treats HTTP 429 as a retryable provider error without exposing the key', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+    });
+    global.fetch = fetchMock as typeof fetch;
+    const provider = createProvider();
+
+    await expect(provider.fetch({})).rejects.toThrow('OTS API request failed with status 429');
+    await expect(provider.fetch({})).rejects.not.toThrow('test-secret-key');
+
+    const [, requestInit] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(requestInit.signal).toBeInstanceOf(AbortSignal);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes a bounded abort signal and propagates provider timeouts', async () => {
+    const fetchMock = jest.fn().mockRejectedValue(
+      Object.assign(new Error('The operation timed out'), {
+        name: 'TimeoutError',
+      }),
+    );
+    global.fetch = fetchMock as typeof fetch;
+    const provider = createProvider();
+
+    await expect(provider.fetch({})).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
+
+    const [, requestInit] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(requestInit.signal).toBeInstanceOf(AbortSignal);
+    expect(requestInit.signal?.aborted).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('accepts the documented bare-array response and continues full pages', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
