@@ -158,6 +158,45 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase17-accounts.sh inspect"
 
+  verify-dev-ots:
+    name: Verify DEV APA-OTS imports (read-only, acceptance)
+    needs:
+      - deploy-dev
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    # The external APA feed may be temporarily unavailable. Keep this
+    # operational check independent of CI and the already deployed app.
+    continue-on-error: true
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Inspect APA-OTS scheduler and import safety on DEV
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh \
+            -i ~/.ssh/kurvenfunk_dev \
+            -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-ots-import.sh"
+
   deploy-staging:
     name: Deploy STAGING
     needs:
