@@ -49,17 +49,26 @@ test('editors see editorial sections but not moderation or system management', (
   ]) {
     assert.equal(canAccessAdminPath(editor, path), true, path);
   }
-  for (const path of ['/admin/moderation', '/admin/forum', '/admin/benutzer', '/admin/system', '/admin/sportdaten']) {
+  for (const path of [
+    '/admin/moderation',
+    '/admin/forum',
+    '/admin/benutzer',
+    '/admin/system',
+    '/admin/sportdaten',
+  ]) {
     assert.equal(canAccessAdminPath(editor, path), false, path);
   }
-  assert.deepEqual(getAdminNavigation(editor).map((entry) => entry.href), [
-    '/admin',
-    '/admin/artikel',
-    '/admin/kategorien',
-    '/admin/tags',
-    '/admin/medien',
-    '/admin/importe',
-  ]);
+  assert.deepEqual(
+    getAdminNavigation(editor).map((entry) => entry.href),
+    [
+      '/admin',
+      '/admin/artikel',
+      '/admin/kategorien',
+      '/admin/tags',
+      '/admin/medien',
+      '/admin/importe',
+    ],
+  );
 });
 
 test('moderators only enter moderation and forum sections', () => {
@@ -70,11 +79,10 @@ test('moderators only enter moderation and forum sections', () => {
   for (const path of ['/admin/artikel', '/admin/importe', '/admin/benutzer']) {
     assert.equal(canAccessAdminPath(moderator, path), false, path);
   }
-  assert.deepEqual(getAdminNavigation(moderator).map((entry) => entry.href), [
-    '/admin',
-    '/admin/moderation',
-    '/admin/forum',
-  ]);
+  assert.deepEqual(
+    getAdminNavigation(moderator).map((entry) => entry.href),
+    ['/admin', '/admin/moderation', '/admin/forum'],
+  );
 });
 
 test('administrators and superadministrators see all registered admin sections', () => {
