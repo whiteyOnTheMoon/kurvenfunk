@@ -28,6 +28,20 @@ jobs:
           cache: true
           install: false
       - run: pnpm install --frozen-lockfile
+      - name: Format PR admin-role files for review (temporary)
+        run: |
+          pnpm exec prettier --write \
+            apps/web/src/features/admin/admin-access.ts \
+            apps/web/src/features/admin/admin-access.spec.mjs \
+            apps/web/test/phase17-admin-guard.browser.cjs
+          for file in \
+            apps/web/src/features/admin/admin-access.ts \
+            apps/web/src/features/admin/admin-access.spec.mjs \
+            apps/web/test/phase17-admin-guard.browser.cjs; do
+            printf 'PR65_FORMAT_START %s\n' "$file"
+            base64 -w0 "$file"
+            printf '\nPR65_FORMAT_END %s\n' "$file"
+          done
       - name: Install isolated Playwright browser
         run: |
           npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
