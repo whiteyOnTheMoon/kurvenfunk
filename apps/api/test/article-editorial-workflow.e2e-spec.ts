@@ -125,6 +125,20 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
   it('checks permissions and UUIDs, preserves revisions, and publishes only when due', async () => {
     const editorAuth = 'Bearer ' + (await token(editorSubject));
     const readerAuth = 'Bearer ' + (await token(readerSubject));
+
+    await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
+    const editorIdentity = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', editorAuth)
+      .expect(200);
+    expect((editorIdentity.body as { data: { roles: string[] } }).data.roles).toEqual(['EDITOR']);
+
+    const readerIdentity = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', readerAuth)
+      .expect(200);
+    expect((readerIdentity.body as { data: { roles: string[] } }).data.roles).toEqual(['USER']);
+
     const createInput = {
       title: 'Neuer redaktioneller Artikel',
       slug,

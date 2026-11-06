@@ -5,6 +5,11 @@ on:
       - develop
     paths:
       - 'apps/web/src/features/admin/articles/article-list.tsx'
+      - 'apps/web/src/features/admin/admin-access.ts'
+      - 'apps/web/src/features/admin/admin-layout.tsx'
+      - 'apps/web/src/features/auth/auth-provider.tsx'
+      - 'apps/web/test/phase17-admin-guard.browser.cjs'
+      - 'apps/api/src/modules/auth/auth.controller.ts'
       - 'apps/web/src/features/admin/articles/article-list.module.css'
       - 'apps/web/test/phase17-article-restore.browser.cjs'
       - '.github/workflows/phase17-crud-browser.yml'
@@ -27,6 +32,10 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
           node "$RUNNER_TEMP/kurvenfunk-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Verify admin role and route blocking in Chromium
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/phase17-admin-guard.browser.cjs
       - name: Verify article deletion and restoration in Chromium
         env:
           PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules

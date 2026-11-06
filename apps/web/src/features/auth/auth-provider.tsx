@@ -13,6 +13,7 @@ import {
 } from 'react';
 
 import { ensureFreshToken } from './token-refresh';
+import type { AdminRole } from '../admin/admin-access';
 
 type UserStatus = 'ACTIVE' | 'LIMITED' | 'BANNED';
 
@@ -25,6 +26,7 @@ interface AuthProviderProps {
 interface CurrentUser {
   id: string;
   status: UserStatus;
+  roles: AdminRole[];
   subject: string;
   fanPreference: 'CLUB' | 'NEUTRAL' | 'UNSET';
   favoriteClubId: string | null;
@@ -142,8 +144,9 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
 
           // After a transient refresh failure we must restore the user as well
           // as the token; authenticated without a user breaks onboarding.
-          const currentUser =
-            currentUserRef.current ?? (await fetchCurrentUser(apiUrl, freshToken));
+          // Re-read the server-authoritative roles/status on renewal, so
+          // revoked admin access disappears without requiring a manual reload.
+          const currentUser = await fetchCurrentUser(apiUrl, freshToken);
 
           if (!active || logoutRequestedRef.current || !client.authenticated) {
             return;

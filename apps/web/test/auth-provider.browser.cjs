@@ -69,6 +69,7 @@ async function main() {
         data: {
           id: 'isolated-browser-user',
           status: 'ACTIVE',
+          roles: ['EDITOR'],
           subject: 'isolated-browser-subject',
           fanPreference: 'NEUTRAL',
           favoriteClubId: null,
@@ -158,6 +159,7 @@ async function main() {
     await waitText('#auth-error', '');
     assert.deepEqual(meRequests, [
       'Bearer initial-browser-token',
+      'Bearer rotated-browser-token',
       'Bearer recovered-browser-token',
     ]);
 

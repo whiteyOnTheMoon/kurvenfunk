@@ -18,6 +18,7 @@ describe('AuthController', () => {
         sub: 'keycloak-user-123',
         kurvenfunkUserId: 'kurvenfunk-user-123',
         kurvenfunkUserStatus: 'LIMITED',
+        kurvenfunkRoles: ['EDITOR'],
         kurvenfunkFanPreference: 'CLUB',
         kurvenfunkFavoriteClubId: '11111111-1111-4111-8111-111111111111',
         kurvenfunkOnboardingCompleted: false,
@@ -27,6 +28,7 @@ describe('AuthController', () => {
     expect(controller.getCurrentUser(request)).toEqual({
       id: 'kurvenfunk-user-123',
       status: 'LIMITED',
+      roles: ['EDITOR'],
       subject: 'keycloak-user-123',
       fanPreference: 'CLUB',
       favoriteClubId: '11111111-1111-4111-8111-111111111111',
