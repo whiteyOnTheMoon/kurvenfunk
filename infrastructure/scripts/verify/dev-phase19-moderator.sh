@@ -111,8 +111,8 @@ async function main() {
   });
 
   if (mode === 'inspect') {
-    console.log('Keycloak Phase-17 accounts:', matches.length);
-    console.log('Application Phase-17 accounts:', dbMatches);
+    console.log('Keycloak Phase-19 accounts:', matches.length);
+    console.log('Application Phase-19 accounts:', dbMatches);
     console.log('Existing application users:', await db.user.count());
     console.log('Credentials or tokens displayed: NO');
     console.log(
@@ -123,7 +123,7 @@ async function main() {
     return;
   }
   if (matches.length || dbMatches) {
-    throw new Error('EXISTING_PHASE17_ACCOUNTS_REFUSE_DUPLICATES');
+    throw new Error('EXISTING_PHASE19_ACCOUNTS_REFUSE_DUPLICATES');
   }
 
   const suffix = randomBytes(8).toString('hex');
