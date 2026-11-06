@@ -10,6 +10,7 @@ export class AuthController {
   getCurrentUser(@Req() request: AuthenticatedRequest) {
     return {
       id: request.user?.kurvenfunkUserId,
+      roles: request.user?.kurvenfunkRoles ?? [],
       status: request.user?.kurvenfunkUserStatus,
       subject: request.user?.sub,
       fanPreference: request.user?.kurvenfunkFanPreference,
