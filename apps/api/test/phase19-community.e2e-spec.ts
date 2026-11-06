@@ -342,6 +342,130 @@ describe('Phase 19 real HTTP community acceptance (disposable PostgreSQL + Redis
     ).toBe(1);
   }, 25000);
 
+  it('accepts only one of six concurrent posts under the real Redis cooldown', async () => {
+    const subject = `phase19-racing-author-${suffix}`;
+    const raceUser = await db.user.create({
+      data: {
+        keycloakSubject: subject,
+        nickname: `racer${suffix}`,
+        onboardingCompleted: true,
+        fanPreference: 'NEUTRAL',
+        roleAssignments: { create: { role: 'USER' } },
+      },
+      select: { id: true },
+    });
+
+    const authorization = `Bearer ${await token(subject)}`;
+    const attempts = await Promise.all(
+      Array.from({ length: 6 }, (_, index) =>
+        request(app.getHttpServer())
+          .post(`/api/v1/articles/${articleId}/comments`)
+          .set('Authorization', authorization)
+          .send({ body: `Phase 19 concurrent Redis request number ${index}` }),
+      ),
+    );
+
+    expect(attempts.filter((response) => response.status === 201)).toHaveLength(1);
+    const limited = attempts.filter((response) => response.status === 429);
+    expect(limited).toHaveLength(5);
+    for (const response of limited) {
+      expect((response.body as { code: string }).code).toBe('COMMENT_POST_COOLDOWN');
+    }
+
+    expect(await db.comment.count({ where: { authorId: raceUser.id, articleId } })).toBe(1);
+  }, 30000);
+
+  it('enforces LIMITED, BANNED and missing-onboarding permissions over HTTP', async () => {
+    const limitedSubject = `phase19-limited-${suffix}`;
+    const bannedSubject = `phase19-banned-${suffix}`;
+    const incompleteSubject = `phase19-incomplete-${suffix}`;
+
+    await Promise.all([
+      db.user.create({
+        data: {
+          keycloakSubject: limitedSubject,
+          status: 'LIMITED',
+          onboardingCompleted: true,
+          fanPreference: 'NEUTRAL',
+          roleAssignments: { create: { role: 'USER' } },
+        },
+      }),
+      db.user.create({
+        data: {
+          keycloakSubject: bannedSubject,
+          status: 'BANNED',
+          onboardingCompleted: true,
+          fanPreference: 'NEUTRAL',
+          roleAssignments: { create: { role: 'USER' } },
+        },
+      }),
+      db.user.create({
+        data: {
+          keycloakSubject: incompleteSubject,
+          status: 'ACTIVE',
+          onboardingCompleted: false,
+          roleAssignments: { create: { role: 'USER' } },
+        },
+      }),
+    ]);
+
+    const limitedAuth = `Bearer ${await token(limitedSubject)}`;
+    const bannedAuth = `Bearer ${await token(bannedSubject)}`;
+    const incompleteAuth = `Bearer ${await token(incompleteSubject)}`;
+    const comment = await db.comment.create({
+      data: {
+        articleId,
+        authorId,
+        body: 'Phase 19 permission test comment for voting and reporting',
+      },
+      select: { id: true },
+    });
+    const commentsEndpoint = `/api/v1/articles/${articleId}/comments`;
+    const commentEndpoint = `/api/v1/comments/${comment.id}`;
+
+    await request(app.getHttpServer())
+      .post(commentsEndpoint)
+      .set('Authorization', limitedAuth)
+      .send({ body: 'A LIMITED user cannot post new comments' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .put(`${commentEndpoint}/votes`)
+      .set('Authorization', limitedAuth)
+      .send({ type: 'UPVOTE' })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`${commentEndpoint}/reports`)
+      .set('Authorization', limitedAuth)
+      .send({ reason: 'SPAM' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .get('/api/v1/moderation/comment-reports')
+      .set('Authorization', limitedAuth)
+      .expect(403);
+
+    for (const authorization of [bannedAuth, incompleteAuth]) {
+      await request(app.getHttpServer())
+        .post(commentsEndpoint)
+        .set('Authorization', authorization)
+        .send({ body: 'Blocked before comment creation' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .put(`${commentEndpoint}/votes`)
+        .set('Authorization', authorization)
+        .send({ type: 'DOWNVOTE' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .post(`${commentEndpoint}/reports`)
+        .set('Authorization', authorization)
+        .send({ reason: 'SPAM' })
+        .expect(403);
+    }
+
+    expect(await db.comment.count({ where: { articleId, id: comment.id } })).toBe(1);
+    expect(await db.reaction.count({ where: { commentId: comment.id } })).toBe(1);
+    expect(await db.moderationReport.count({ where: { commentId: comment.id } })).toBe(1);
+  }, 30000);
+
   it('paginates discussions by cursor with all three sort modes', async () => {
     await db.comment.createMany({
       data: Array.from({ length: 26 }, (_, index) => ({
