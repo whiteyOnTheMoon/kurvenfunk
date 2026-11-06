@@ -785,7 +785,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                           </td>
                           <td>{formatDate(job.startedAt ?? job.createdAt)}</td>
                           <td>
-                            {mayReplayJobs && job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                            {mayReplayJobs &&
+                            job.kind === 'NEWS_FETCH' &&
+                            job.status === 'DEAD_LETTER' ? (
                               <Button
                                 type="button"
                                 disabled={retryingJobId !== undefined}
@@ -842,7 +844,9 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                       <p className={styles.mobileJobDate}>
                         {formatDate(job.startedAt ?? job.createdAt)}
                       </p>
-                      {mayReplayJobs && job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                      {mayReplayJobs &&
+                      job.kind === 'NEWS_FETCH' &&
+                      job.status === 'DEAD_LETTER' ? (
                         <Button
                           type="button"
                           disabled={retryingJobId !== undefined}
