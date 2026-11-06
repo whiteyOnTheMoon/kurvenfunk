@@ -66,6 +66,7 @@ jobs:
           bash -n infrastructure/scripts/deploy/dev.sh
           bash -n infrastructure/scripts/verify/dev-ots-import.sh
           bash -n infrastructure/scripts/verify/dev-editorial-readonly.sh
+          bash -n infrastructure/scripts/verify/dev-phase17-accounts.sh
 
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
