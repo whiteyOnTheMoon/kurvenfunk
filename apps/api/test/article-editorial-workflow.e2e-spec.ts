@@ -165,7 +165,9 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
     const afterRetry = await db.article.findUniqueOrThrow({ where: { id: article.id } });
     expect(afterRetry.publishedAt).toEqual(published.publishedAt);
 
-    await request(app.getHttpServer()).get(endpoint + '/by-slug/' + racingSlug).expect(200);
+    await request(app.getHttpServer())
+      .get(endpoint + '/by-slug/' + racingSlug)
+      .expect(200);
   }, 30000);
 
   it('checks permissions and UUIDs, preserves revisions, and publishes only when due', async () => {
