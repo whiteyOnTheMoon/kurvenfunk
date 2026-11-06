@@ -191,7 +191,7 @@ describe('OtsNewsProvider', () => {
     await expect(provider.fetch({})).rejects.not.toThrow('test-secret-key');
   });
 
-  it('treats API rate limiting as a retryable provider error without exposing its key', async () => {
+  it('treats HTTP 429 as a retryable provider error without exposing the key', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: false,
       status: 429,
