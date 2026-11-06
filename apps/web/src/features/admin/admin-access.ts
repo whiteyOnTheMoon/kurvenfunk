@@ -33,7 +33,7 @@ export const adminNavigation = [
 ] as const;
 
 function hasAnyRole(user: AdminIdentity, allowed: readonly AdminRole[]): boolean {
-  return user.roles.some((role) => allowed.includes(role));
+  return Array.isArray(user.roles) && user.roles.some((role) => allowed.includes(role));
 }
 
 export function canEnterAdmin(user: AdminIdentity | undefined): boolean {
