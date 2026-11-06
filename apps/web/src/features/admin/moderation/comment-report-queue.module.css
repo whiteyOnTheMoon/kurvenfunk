@@ -23,6 +23,27 @@
   font-weight: 700;
 }
 
+.refreshActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.refreshActions button {
+  border: 1px solid var(--kf-border, #a1a1aa);
+  border-radius: 0.6rem;
+  background: var(--kf-surface-subtle, #f4f4f5);
+  color: inherit;
+  padding: 0.65rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.refreshActions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .list {
   display: grid;
   gap: 1.25rem;
