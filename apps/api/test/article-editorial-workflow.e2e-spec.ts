@@ -122,6 +122,52 @@ describe('Phase 17 editorial HTTP workflow (disposable PostgreSQL and Redis)', (
     }
   }, 30000);
 
+  it('atomically publishes a due article only once when two worker scans overlap', async () => {
+    const editor = await db.user.findUniqueOrThrow({
+      where: { keycloakSubject: editorSubject },
+      select: { id: true },
+    });
+    const racingSlug = 'phase17-concurrent-publishing-' + suffix;
+    const article = await db.article.create({
+      data: {
+        title: 'Phase 17 isolated concurrent scheduler test',
+        slug: racingSlug,
+        content: document,
+        authorId: editor.id,
+        status: 'SCHEDULED',
+        scheduledAt: new Date(Date.now() - 60_000),
+      },
+    });
+
+    // Both instances inspect the same disposable database. The conditional
+    // UPDATE (status=SCHEDULED, deletedAt IS NULL, due) is the atomic winner.
+    const workerA = new ScheduledPublishingService({
+      client: db,
+    } as ConstructorParameters<typeof ScheduledPublishingService>[0]);
+    const workerB = new ScheduledPublishingService({
+      client: db,
+    } as ConstructorParameters<typeof ScheduledPublishingService>[0]);
+
+    const [publishedA, publishedB] = await Promise.all([
+      workerA.publishDueArticles(),
+      workerB.publishDueArticles(),
+    ]);
+    expect(publishedA + publishedB).toBe(1);
+
+    const published = await db.article.findUniqueOrThrow({ where: { id: article.id } });
+    expect(published.status).toBe('PUBLISHED');
+    expect(published.publishedAt).not.toBeNull();
+    expect(published.scheduledAt).toBeNull();
+    expect(published.deletedAt).toBeNull();
+
+    // A retry or restarted worker must not overwrite the publication time.
+    expect(await workerB.publishDueArticles()).toBe(0);
+    const afterRetry = await db.article.findUniqueOrThrow({ where: { id: article.id } });
+    expect(afterRetry.publishedAt).toEqual(published.publishedAt);
+
+    await request(app.getHttpServer()).get(endpoint + '/by-slug/' + racingSlug).expect(200);
+  }, 30000);
+
   it('checks permissions and UUIDs, preserves revisions, and publishes only when due', async () => {
     const editorAuth = 'Bearer ' + (await token(editorSubject));
     const readerAuth = 'Bearer ' + (await token(readerSubject));
