@@ -11,12 +11,7 @@ export interface AdminIdentity {
 const editorialRoles: readonly AdminRole[] = ['EDITOR', 'ADMIN', 'SUPERADMIN'];
 const moderatorRoles: readonly AdminRole[] = ['MODERATOR', 'ADMIN', 'SUPERADMIN'];
 const administratorRoles: readonly AdminRole[] = ['ADMIN', 'SUPERADMIN'];
-const workspaceRoles: readonly AdminRole[] = [
-  'EDITOR',
-  'MODERATOR',
-  'ADMIN',
-  'SUPERADMIN',
-];
+const workspaceRoles: readonly AdminRole[] = ['EDITOR', 'MODERATOR', 'ADMIN', 'SUPERADMIN'];
 
 export const adminNavigation = [
   { href: '/admin', label: 'Dashboard', shortLabel: 'DB', roles: workspaceRoles },
@@ -39,25 +34,20 @@ function hasAnyRole(user: AdminIdentity, allowed: readonly AdminRole[]): boolean
 export function canEnterAdmin(user: AdminIdentity | undefined): boolean {
   return Boolean(
     user &&
-      user.status === 'ACTIVE' &&
-      user.onboardingCompleted &&
-      hasAnyRole(user, workspaceRoles),
+    user.status === 'ACTIVE' &&
+    user.onboardingCompleted &&
+    hasAnyRole(user, workspaceRoles),
   );
 }
 
-export function canAccessAdminPath(
-  user: AdminIdentity | undefined,
-  pathname: string,
-): boolean {
+export function canAccessAdminPath(user: AdminIdentity | undefined, pathname: string): boolean {
   if (!user || !canEnterAdmin(user)) return false;
 
   const path = pathname.replace(/\/$/, '') || '/';
   if (path === '/admin') return true;
 
   const entry = adminNavigation.find(
-    (item) =>
-      item.href !== '/admin' &&
-      (path === item.href || path.startsWith(item.href + '/')),
+    (item) => item.href !== '/admin' && (path === item.href || path.startsWith(item.href + '/')),
   );
 
   // Unknown /admin routes are not implicitly available, and /adminfoo must
