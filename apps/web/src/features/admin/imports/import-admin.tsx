@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button, EmptyState, Skeleton } from '@kurvenfunk/ui';
 
 import { useAuth } from '../../auth/auth-provider';
+import { canReplayImportJobs } from './import-replay-access';
 import styles from './import-admin.module.css';
 
 interface ImportAdminProps {
@@ -217,7 +218,7 @@ function getReviewPayloadSummary(payload: unknown) {
 }
 
 export function ImportAdmin({ apiUrl }: ImportAdminProps) {
-  const { authenticated, initialized, token } = useAuth();
+  const { authenticated, initialized, token, user } = useAuth();
 
   const [overview, setOverview] = useState<ImportOverview>();
   const [jobs, setJobs] = useState<ImportJob[]>([]);
@@ -232,6 +233,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   const [message, setMessage] = useState<string>();
   const [retryingJobId, setRetryingJobId] = useState<string>();
 
+  const mayReplayJobs = canReplayImportJobs(user?.roles);
   const otsReviewItems = reviewQueue.filter((item) => item.provider.key === 'ots');
   const hasOtsProvider = overview?.providers.some((provider) => provider.key === 'ots') ?? false;
   const activeReviewSource = hasOtsProvider ? reviewSource : 'all';
@@ -372,7 +374,13 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
   }
 
   async function replayJob(job: ImportJob) {
-    if (!token || retryingJobId || job.status !== 'DEAD_LETTER' || job.kind !== 'NEWS_FETCH') {
+    if (
+      !token ||
+      !mayReplayJobs ||
+      retryingJobId ||
+      job.status !== 'DEAD_LETTER' ||
+      job.kind !== 'NEWS_FETCH'
+    ) {
       return;
     }
 
@@ -777,7 +785,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                           </td>
                           <td>{formatDate(job.startedAt ?? job.createdAt)}</td>
                           <td>
-                            {job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                            {mayReplayJobs && job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
                               <Button
                                 type="button"
                                 disabled={retryingJobId !== undefined}
@@ -834,7 +842,7 @@ export function ImportAdmin({ apiUrl }: ImportAdminProps) {
                       <p className={styles.mobileJobDate}>
                         {formatDate(job.startedAt ?? job.createdAt)}
                       </p>
-                      {job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
+                      {mayReplayJobs && job.kind === 'NEWS_FETCH' && job.status === 'DEAD_LETTER' ? (
                         <Button
                           type="button"
                           disabled={retryingJobId !== undefined}
