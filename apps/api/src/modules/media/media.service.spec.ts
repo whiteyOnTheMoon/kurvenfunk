@@ -200,6 +200,24 @@ describe('MediaService', () => {
     expect(storagePut).not.toHaveBeenCalled();
   });
 
+  it('fails closed without persisting a media record when object storage is offline', async () => {
+    storagePut.mockRejectedValueOnce(new Error('storage unavailable'));
+
+    const service = new MediaService(storage);
+    await expect(
+      service.upload(file, {
+        altText: 'Synthetic outage test',
+        copyright: null,
+        source: null,
+        sourceUrl: null,
+      }),
+    ).rejects.toThrow('storage unavailable');
+
+    expect(storagePut).toHaveBeenCalledTimes(1);
+    expect(mediaCreate).not.toHaveBeenCalled();
+    expect(storageDelete).not.toHaveBeenCalled();
+  });
+
   it('deletes the storage object if database creation fails', async () => {
     let capturedPutInput: StoragePutInput | undefined;
 
