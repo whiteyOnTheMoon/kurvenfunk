@@ -130,7 +130,9 @@ async function main() {
         await page.goto(base + '/?' + params.toString());
         if (allowed) {
           await page.getByTestId('protected').waitFor();
-          assert.ok((await page.getByRole('navigation', { name: 'Admin Navigation' }).count()) === 1);
+          assert.ok(
+            (await page.getByRole('navigation', { name: 'Admin Navigation' }).count()) === 1,
+          );
           assert.deepEqual(await page.evaluate(() => window.__redirects), []);
         } else {
           await page.getByRole('status').waitFor();
@@ -147,15 +149,33 @@ async function main() {
 
     await verify({ role: 'guest', path: '/admin', allowed: false, redirect: '/login' });
     await verify({ role: 'USER', path: '/admin/artikel', allowed: false, redirect: '/' });
-    await verify({ role: 'TRUSTED_USER', path: '/admin', allowed: false, redirect: '/', width: 390 });
+    await verify({
+      role: 'TRUSTED_USER',
+      path: '/admin',
+      allowed: false,
+      redirect: '/',
+      width: 390,
+    });
     await verify({ role: 'EDITOR', path: '/admin/artikel/neu', allowed: true });
     await verify({ role: 'EDITOR', path: '/admin/system', allowed: false, redirect: '/' });
     await verify({ role: 'MODERATOR', path: '/admin/moderation', allowed: true, width: 390 });
     await verify({ role: 'MODERATOR', path: '/admin/artikel', allowed: false, redirect: '/' });
     await verify({ role: 'ADMIN', path: '/admin/system', allowed: true });
     await verify({ role: 'SUPERADMIN', path: '/admin/benutzer', allowed: true });
-    await verify({ role: 'EDITOR', path: '/admin/artikel', allowed: false, redirect: '/', status: 'LIMITED' });
-    await verify({ role: 'EDITOR', path: '/admin/artikel', allowed: false, redirect: '/', onboard: 'no' });
+    await verify({
+      role: 'EDITOR',
+      path: '/admin/artikel',
+      allowed: false,
+      redirect: '/',
+      status: 'LIMITED',
+    });
+    await verify({
+      role: 'EDITOR',
+      path: '/admin/artikel',
+      allowed: false,
+      redirect: '/',
+      onboard: 'no',
+    });
 
     process.stdout.write('Phase 17 Chromium admin authorization desktop/mobile: PASS\n');
   } finally {
