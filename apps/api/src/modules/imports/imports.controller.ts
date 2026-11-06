@@ -59,7 +59,7 @@ export class ImportsController {
   }
 
   @Get('jobs/:id')
-  getJob(@Param('id') id: string) {
+  getJob(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.importsService.getJob(id);
   }
 }
