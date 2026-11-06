@@ -52,15 +52,17 @@ export function canAccessAdminPath(
   if (!user || !canEnterAdmin(user)) return false;
 
   const path = pathname.replace(/\/$/, '') || '/';
+  if (path === '/admin') return true;
+
   const entry = adminNavigation.find(
-    (item) => path === item.href || path.startsWith(item.href + '/'),
+    (item) =>
+      item.href !== '/admin' &&
+      (path === item.href || path.startsWith(item.href + '/')),
   );
 
   // Unknown /admin routes are not implicitly available, and /adminfoo must
   // not be mistaken for the /admin dashboard.
-  if (!entry || (path !== '/admin' && entry.href === '/admin')) return false;
-
-  return hasAnyRole(user, entry.roles);
+  return Boolean(entry && hasAnyRole(user, entry.roles));
 }
 
 export function getAdminNavigation(user: AdminIdentity | undefined) {
