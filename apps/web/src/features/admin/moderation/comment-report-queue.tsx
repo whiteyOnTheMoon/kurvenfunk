@@ -47,6 +47,7 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
   const [activeId, setActiveId] = useState<string>();
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!initialized || !authenticated || !token) return;
@@ -74,7 +75,15 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl, authenticated, initialized, token]);
+  }, [apiUrl, authenticated, initialized, token, reloadKey]);
+
+  function refreshReports() {
+    if (!initialized || !authenticated || !token || loading || activeId) return;
+    setLoading(true);
+    setError(undefined);
+    setMessage(undefined);
+    setReloadKey((current) => current + 1);
+  }
 
   async function resolveReport(report: CommentReport, resolution: Resolution) {
     if (!token || activeId) return;
@@ -130,6 +139,15 @@ export function CommentReportQueue({ apiUrl }: { apiUrl: string }) {
         <h1>Kommentarmeldungen</h1>
         <p>Offene Meldungen prüfen, Maßnahmen ergreifen und Entscheidungen dokumentieren.</p>
         <p>Weitere Moderationsfunktionen wie Karten und Sanktionen folgen in Phase 20.</p>
+        <div className={styles.refreshActions}>
+          <button
+            type="button"
+            disabled={!initialized || !authenticated || loading || Boolean(activeId)}
+            onClick={refreshReports}
+          >
+            {loading ? 'Wird aktualisiert …' : 'Liste aktualisieren'}
+          </button>
+        </div>
       </header>
 
       {!initialized || (authenticated && loading) ? (
