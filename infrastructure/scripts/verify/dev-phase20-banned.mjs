@@ -339,12 +339,18 @@ async function execute() {
 
   const sessions = await admin(
     'GET',
-    '/users/' + encodeURIComponent(createdKeycloak.find((user) => user.username === target.username)?.subject) +
+    '/users/' +
+      encodeURIComponent(
+        createdKeycloak.find((user) => user.username === target.username)?.subject,
+      ) +
       '/sessions',
   );
   check(sessions.status === 200, 'BANNED_SESSION_LIST_NOT_AVAILABLE');
   const activeSessions = await jsonOrNull(sessions);
-  check(Array.isArray(activeSessions) && activeSessions.length === 0, 'BANNED_SESSIONS_STILL_ACTIVE');
+  check(
+    Array.isArray(activeSessions) && activeSessions.length === 0,
+    'BANNED_SESSIONS_STILL_ACTIVE',
+  );
 
   const staleTokenCheck = await api('GET', '/auth/me', originalTargetToken);
   check(
@@ -371,12 +377,16 @@ async function execute() {
     ['POST', '/comments/' + fixtureCommentId + '/reports', { reason: 'SPAM' }],
     ['GET', '/reactions/comments/me?ids=' + fixtureCommentId],
     ['GET', '/moderation/comment-reports'],
-    ['POST', '/moderation/limited-sanctions', {
-      userId: administrator.id,
-      duration: '24H',
-      reasonCode: 'BANNED_BYPASS_TEST',
-      moderatorNote: note,
-    }],
+    [
+      'POST',
+      '/moderation/limited-sanctions',
+      {
+        userId: administrator.id,
+        duration: '24H',
+        reasonCode: 'BANNED_BYPASS_TEST',
+        moderatorNote: note,
+      },
+    ],
     ['POST', '/moderation/red-cards', command],
   ];
   for (const [method, route, input] of deniedActions) {
@@ -389,25 +399,34 @@ async function execute() {
 
   // Public resources must remain visible, but they never confer membership access.
   check(
-    (await api('GET', '/articles/by-slug/' + fixtureArticleSlug, originalTargetToken)).status === 200,
+    (await api('GET', '/articles/by-slug/' + fixtureArticleSlug, originalTargetToken)).status ===
+      200,
     'BANNED_PUBLIC_ARTICLE_UNAVAILABLE',
   );
   check(
-    (await api('GET', '/comments/' + fixtureCommentId + '/votes', originalTargetToken)).status === 200,
+    (await api('GET', '/comments/' + fixtureCommentId + '/votes', originalTargetToken)).status ===
+      200,
     'BANNED_PUBLIC_VOTE_SUMMARY_UNAVAILABLE',
   );
 
   const card = await database.moderationCard.findUnique({
     where: { id: cardId },
     select: {
-      userId: true, moderatorId: true, type: true, status: true,
-      reasonCode: true, moderatorNote: true,
+      userId: true,
+      moderatorId: true,
+      type: true,
+      status: true,
+      reasonCode: true,
+      moderatorNote: true,
     },
   });
   check(
-    card?.userId === target.id && card.moderatorId === administrator.id &&
-      card.type === 'RED' && card.status === 'ACTIVE' &&
-      card.reasonCode === 'PHASE20_180_TEST' && card.moderatorNote === note,
+    card?.userId === target.id &&
+      card.moderatorId === administrator.id &&
+      card.type === 'RED' &&
+      card.status === 'ACTIVE' &&
+      card.reasonCode === 'PHASE20_180_TEST' &&
+      card.moderatorNote === note,
     'BANNED_RED_CARD_DATABASE_MISMATCH',
   );
   const targetRow = await database.user.findUnique({
