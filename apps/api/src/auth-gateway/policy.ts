@@ -70,7 +70,6 @@ export function rateKey(address: string, secretBase64Url: string): string {
     .digest('hex');
 }
 
-
 /** Strip externally controlled proxy identity and hop-by-hop headers. */
 export function safeUpstreamHeaders(
   incoming: Record<string, string | string[] | undefined>,
