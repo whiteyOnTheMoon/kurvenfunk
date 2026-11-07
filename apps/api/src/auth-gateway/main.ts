@@ -3,7 +3,14 @@ import { lookup } from 'node:dns/promises';
 
 import Redis from 'ioredis';
 
-import { AUTH_LIMITS, classifyAuthRequest, COUNTER_LUA, rateKey, safeUpstreamHeaders, verifiedClientIp } from './policy';
+import {
+  AUTH_LIMITS,
+  classifyAuthRequest,
+  COUNTER_LUA,
+  rateKey,
+  safeUpstreamHeaders,
+  verifiedClientIp,
+} from './policy';
 
 const port = Number(process.env.AUTH_GATEWAY_PORT || 8080);
 const redisPassword = process.env.REDIS_PASSWORD;
