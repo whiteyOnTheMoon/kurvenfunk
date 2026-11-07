@@ -70,6 +70,43 @@ export function rateKey(address: string, secretBase64Url: string): string {
     .digest('hex');
 }
 
+
+/** Strip externally controlled proxy identity and hop-by-hop headers. */
+export function safeUpstreamHeaders(
+  incoming: Record<string, string | string[] | undefined>,
+  clientIp: string,
+  expectedHost: string,
+): Record<string, string | string[] | undefined> {
+  const headers = { ...incoming };
+  for (const key of Object.keys(headers)) {
+    if (
+      key.startsWith('cf-') ||
+      key.startsWith('x-forwarded-') ||
+      key === 'forwarded' ||
+      key === 'connection' ||
+      key === 'proxy-connection' ||
+      key === 'transfer-encoding' ||
+      key === 'upgrade' ||
+      key === 'keep-alive' ||
+      key === 'x-real-ip' ||
+      key === 'x-original-forwarded-for' ||
+      key === 'true-client-ip' ||
+      key === 'x-cluster-client-ip' ||
+      key === 'proxy-authorization' ||
+      key === 'te' ||
+      key === 'trailer'
+    ) {
+      delete headers[key];
+    }
+  }
+  headers.host = expectedHost;
+  headers['x-forwarded-proto'] = 'https';
+  headers['x-forwarded-host'] = expectedHost;
+  headers['x-forwarded-port'] = '443';
+  headers['x-forwarded-for'] = clientIp;
+  return headers;
+}
+
 // Fixed-window atomic counter. No raw client addresses in Redis keys.
 export const COUNTER_LUA = [
   "local n = redis.call('INCR', KEYS[1])",
