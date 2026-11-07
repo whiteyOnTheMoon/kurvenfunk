@@ -59,3 +59,33 @@ export function getAdminNavigation(user: AdminIdentity | undefined) {
   if (!canEnterAdmin(user) || !user) return [];
   return adminNavigation.filter((item) => hasAnyRole(user, item.roles));
 }
+
+// The API-backed identity is authoritative; Keycloak login alone does not
+// determine the landing route or grant access to the admin workspace.
+export function getPostLoginDestination(user: AdminIdentity): string {
+  if (!user.onboardingCompleted) {
+    return '/onboarding';
+  }
+
+  if (!canEnterAdmin(user)) {
+    return '/';
+  }
+
+  if (user.roles.includes('ADMIN') || user.roles.includes('SUPERADMIN')) {
+    return '/admin';
+  }
+
+  if (user.roles.includes('EDITOR')) {
+    return '/admin/artikel';
+  }
+
+  if (user.roles.includes('MODERATOR')) {
+    return '/admin/moderation';
+  }
+
+  return '/';
+}
+
+export function getAdminMenuDestination(user: AdminIdentity | undefined): string | null {
+  return user && canEnterAdmin(user) ? getPostLoginDestination(user) : null;
+}
