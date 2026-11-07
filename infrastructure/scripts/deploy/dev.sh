@@ -127,8 +127,7 @@ if ! docker compose \
   docker compose \
     -p "$COMPOSE_PROJECT" \
     --env-file .env.dev \
-    -f compose.yml \
-    -f compose.dev.yml \
+    "${COMPOSE_FILES[@]}" \
     logs --tail=100 api || true
   exit 1
 fi
@@ -146,8 +145,7 @@ wait_for_health() {
       docker compose \
         -p "$COMPOSE_PROJECT" \
         --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
+        "${COMPOSE_FILES[@]}" \
         ps -q "$service"
     )"
 
@@ -173,8 +171,7 @@ wait_for_health() {
       docker compose \
         -p "$COMPOSE_PROJECT" \
         --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
+        "${COMPOSE_FILES[@]}" \
         logs --tail=100 "$service"
       return 1
     fi
