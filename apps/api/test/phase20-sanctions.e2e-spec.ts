@@ -671,7 +671,6 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       .expect(200);
   }, 30000);
 
-
   it('Task 180: direct red card bans real HTTP operations, persists audit and rejects stale tokens', async () => {
     const unique = randomUUID().slice(0, 8);
     const adminSubject = 'phase20-ban-admin-' + unique;
@@ -718,15 +717,17 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
         sourceType: 'NONE',
       })
       .expect(201);
-    const data = (ban.body as {
-      data: {
-        id: string;
-        userId: string;
-        type: string;
-        accountStatus: string;
-        sessionRevocation: string;
-      };
-    }).data;
+    const data = (
+      ban.body as {
+        data: {
+          id: string;
+          userId: string;
+          type: string;
+          accountStatus: string;
+          sessionRevocation: string;
+        };
+      }
+    ).data;
     expect(data).toMatchObject({
       userId: target.id,
       type: 'RED',
@@ -805,21 +806,16 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     ] as const;
 
     for (const action of forbiddenActions) {
-      const response = await request(app.getHttpServer())[action.method](action.route)
+      const operation = request(app.getHttpServer());
+      const response = await operation[action.method](action.route)
         .set('Authorization', 'Bearer ' + freshToken)
         .send('body' in action ? action.body : undefined);
       expect(response.status).toBe(403);
       expect((response.body as { code: string }).code).toBe('ACCOUNT_BANNED');
     }
-    expect(
-      await db.reaction.count({ where: { userId: target.id } }),
-    ).toBe(0);
-    expect(
-      await db.comment.count({ where: { authorId: target.id } }),
-    ).toBe(0);
-    expect(
-      await db.moderationReport.count({ where: { reporterId: target.id } }),
-    ).toBe(0);
+    expect(await db.reaction.count({ where: { userId: target.id } })).toBe(0);
+    expect(await db.comment.count({ where: { authorId: target.id } })).toBe(0);
+    expect(await db.moderationReport.count({ where: { reporterId: target.id } })).toBe(0);
 
     await request(app.getHttpServer())
       .get('/api/v1/articles/' + articleId + '/comments')
