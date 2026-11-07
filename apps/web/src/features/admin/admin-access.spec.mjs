@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { canAccessAdminPath, canEnterAdmin, getAdminNavigation } from './admin-access.ts';
+import {
+  canAccessAdminPath,
+  canEnterAdmin,
+  getAdminNavigation,
+  getAdminMenuDestination,
+  getPostLoginDestination,
+} from './admin-access.ts';
 
 const identity = (roles, status = 'ACTIVE', onboardingCompleted = true) => ({
   roles,
@@ -108,4 +114,44 @@ test('combined roles use the union of privileges', () => {
   assert.equal(canAccessAdminPath(user, '/admin/artikel'), true);
   assert.equal(canAccessAdminPath(user, '/admin/moderation'), true);
   assert.equal(canAccessAdminPath(user, '/admin/system'), false);
+});
+
+test('completed community accounts land on the portal homepage', () => {
+  for (const roles of [[], ['USER'], ['TRUSTED_USER']]) {
+    assert.equal(getPostLoginDestination(identity(roles)), '/');
+  }
+  assert.equal(getPostLoginDestination(identity(['USER'], 'LIMITED')), '/');
+});
+
+test('unfinished onboarding always takes priority over admin redirection', () => {
+  for (const roles of [['USER'], ['EDITOR'], ['MODERATOR'], ['SUPERADMIN']]) {
+    assert.equal(getPostLoginDestination(identity(roles, 'ACTIVE', false)), '/onboarding');
+  }
+});
+
+test('staff land in an authorized workspace matching their roles', () => {
+  assert.equal(getPostLoginDestination(identity(['EDITOR'])), '/admin/artikel');
+  assert.equal(getPostLoginDestination(identity(['MODERATOR'])), '/admin/moderation');
+  assert.equal(getPostLoginDestination(identity(['ADMIN'])), '/admin');
+  assert.equal(getPostLoginDestination(identity(['SUPERADMIN'])), '/admin');
+  assert.equal(getPostLoginDestination(identity(['USER', 'MODERATOR'])), '/admin/moderation');
+  assert.equal(getPostLoginDestination(identity(['EDITOR', 'MODERATOR'])), '/admin/artikel');
+});
+
+test('restricted staff never get an admin landing route', () => {
+  assert.equal(getPostLoginDestination(identity(['EDITOR'], 'LIMITED')), '/');
+  assert.equal(getPostLoginDestination(identity(['MODERATOR'], 'BANNED')), '/');
+  assert.equal(getPostLoginDestination(identity(['ADMIN'], 'BANNED')), '/');
+});
+
+test('profile menu exposes admin only to active, onboarded staff', () => {
+  for (const roles of [[], ['USER'], ['TRUSTED_USER']]) {
+    assert.equal(getAdminMenuDestination(identity(roles)), null);
+  }
+  assert.equal(getAdminMenuDestination(undefined), null);
+  assert.equal(getAdminMenuDestination(identity(['ADMIN'], 'LIMITED')), null);
+  assert.equal(getAdminMenuDestination(identity(['MODERATOR'], 'ACTIVE', false)), null);
+  assert.equal(getAdminMenuDestination(identity(['MODERATOR'])), '/admin/moderation');
+  assert.equal(getAdminMenuDestination(identity(['EDITOR'])), '/admin/artikel');
+  assert.equal(getAdminMenuDestination(identity(['SUPERADMIN'])), '/admin');
 });
