@@ -77,15 +77,17 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
     config: ConfigService,
   ) {
     this.enabled = config.get<string>('IP_RATE_LIMIT_ENABLED', 'false') === 'true';
-    this.redis = this.enabled ? new Redis({
-      host: config.get<string>('REDIS_HOST', 'redis'),
-      port: Number(config.get<number>('REDIS_PORT', 6379)),
-      password: config.getOrThrow<string>('REDIS_PASSWORD'),
-      lazyConnect: true,
-      connectTimeout: 1500,
-      maxRetriesPerRequest: 1,
-      retryStrategy: () => null,
-    }) : null;
+    this.redis = this.enabled
+      ? new Redis({
+          host: config.get<string>('REDIS_HOST', 'redis'),
+          port: Number(config.get<number>('REDIS_PORT', 6379)),
+          password: config.getOrThrow<string>('REDIS_PASSWORD'),
+          lazyConnect: true,
+          connectTimeout: 1500,
+          maxRetriesPerRequest: 1,
+          retryStrategy: () => null,
+        })
+      : null;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
