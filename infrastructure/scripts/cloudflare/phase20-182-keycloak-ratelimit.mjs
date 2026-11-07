@@ -18,8 +18,13 @@ export function desiredRules() {
     ref: 'kf_20_182_dev_' + id,
     description: 'KURVENFUNK Task 182 DEV Keycloak: ' + id,
     expression:
-      '(http.host eq "' + hostname + '" and http.request.method eq "POST" and ' +
-      'starts_with(http.request.uri.path, "' + realm + path + '"))',
+      '(http.host eq "' +
+      hostname +
+      '" and http.request.method eq "POST" and ' +
+      'starts_with(http.request.uri.path, "' +
+      realm +
+      path +
+      '"))',
     action: 'block',
     enabled: true,
     ratelimit: {
@@ -40,21 +45,28 @@ export function qualifiedPlan(plan) {
 }
 
 export function rulesAreEquivalent(actual, expected) {
-  if (!actual || !actual.enabled || actual.ref !== expected.ref ||
-      actual.expression !== expected.expression || actual.action !== expected.action) {
+  if (
+    !actual ||
+    !actual.enabled ||
+    actual.ref !== expected.ref ||
+    actual.expression !== expected.expression ||
+    actual.action !== expected.action
+  ) {
     return false;
   }
 
   const x = actual.ratelimit;
   const y = expected.ratelimit;
-  return Boolean(x &&
+  return Boolean(
+    x &&
     x.period === y.period &&
     x.requests_per_period === y.requests_per_period &&
     x.mitigation_timeout === y.mitigation_timeout &&
     x.requests_to_origin === y.requests_to_origin &&
     Array.isArray(x.characteristics) &&
     x.characteristics.length === y.characteristics.length &&
-    y.characteristics.every((v) => x.characteristics.includes(v)));
+    y.characteristics.every((v) => x.characteristics.includes(v)),
+  );
 }
 
 function sanitizedApiFailure(response, payload) {
@@ -64,9 +76,12 @@ function sanitizedApiFailure(response, payload) {
 }
 
 export async function manageRules({ mode, zoneId, token, fetcher = fetch, out = console.log }) {
-  if (!['audit', 'apply'].includes(mode) ||
-      !/^[a-f0-9]{32}$/i.test(zoneId ?? '') ||
-      typeof token !== 'string' || token.length < 16) {
+  if (
+    !['audit', 'apply'].includes(mode) ||
+    !/^[a-f0-9]{32}$/i.test(zoneId ?? '') ||
+    typeof token !== 'string' ||
+    token.length < 16
+  ) {
     throw new Error('CF_WAF_CREDENTIALS_OR_MODE_MISSING');
   }
 
@@ -170,8 +185,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   } catch (error) {
     // Never print response bodies, auth tokens, URLs or zone identifiers.
     const code = error instanceof Error ? error.message : 'CF_WAF_UNEXPECTED_FAILURE';
-    console.error('PHASE20_182_CLOUDFLARE_DEV_WAF: FAIL ' +
-      (/^[A-Z0-9_]+$/.test(code) ? code : 'CF_WAF_UNEXPECTED_FAILURE'));
+    console.error(
+      'PHASE20_182_CLOUDFLARE_DEV_WAF: FAIL ' +
+        (/^[A-Z0-9_]+$/.test(code) ? code : 'CF_WAF_UNEXPECTED_FAILURE'),
+    );
     process.exitCode = 1;
   }
 }
