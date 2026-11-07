@@ -77,6 +77,8 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase20-ip-hashing.sh
           bash -n infrastructure/scripts/verify/dev-phase20-ip-rate-limits.sh
           node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
+          node --check infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs
+          node --test infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.test.mjs
 
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
@@ -508,3 +510,31 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REF: ${{ github.ref }}
         run: node infrastructure/scripts/maintenance/prune-merged-branches.mjs
+
+  phase20-182-cloudflare:
+    name: Task 182 Cloudflare DEV auth WAF apply and readback
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-182-cf-finalize]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: phase20-182-cloudflare
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v7
+      - name: Deploy only DEV Keycloak auth rate limits and read back
+        env:
+          CLOUDFLARE_WAF_API_TOKEN: ${{ secrets.CLOUDFLARE_WAF_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          set -Eeuo pipefail
+          set +x
+          node infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs --apply
+          node infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs --audit
