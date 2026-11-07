@@ -345,7 +345,6 @@ async function execute() {
     '/articles?limit=10',
     '/articles/by-slug/' + fixtureArticleSlug,
     '/articles/' + fixtureArticleId + '/comments',
-    '/matches',
     '/competitions',
     '/clubs',
     '/reactions/comments?ids=' + fixtureCommentId,
@@ -353,6 +352,21 @@ async function execute() {
   ];
   for (const path of allowedReads) {
     check((await api('GET', path, readerToken)).status === 200, 'LIMITED_READ_NOT_ALLOWED');
+  }
+
+  // A 404 schedule on DEV means there is no current active season. That must
+  // not be confused with a LIMITED auth denial (403/401).
+  const scheduleRead = await api('GET', '/matches', readerToken);
+  check(
+    scheduleRead.status === 200 || scheduleRead.status === 404,
+    'LIMITED_MATCH_READ_FORBIDDEN',
+  );
+  const availableMatch = await database.match.findFirst({ select: { id: true } });
+  if (availableMatch) {
+    check(
+      (await api('GET', '/matches/' + availableMatch.id, readerToken)).status === 200,
+      'LIMITED_MATCH_DETAIL_FORBIDDEN',
+    );
   }
 
   const votePath = '/comments/' + fixtureCommentId + '/votes';
