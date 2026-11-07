@@ -76,6 +76,7 @@ jobs:
           node --check infrastructure/scripts/verify/dev-phase20-banned.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-ip-hashing.sh
           bash -n infrastructure/scripts/verify/dev-phase20-ip-rate-limits.sh
+          bash -n infrastructure/scripts/verify/dev-phase20-free-gateway.sh
           node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
           node --check infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs
           node --test infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.test.mjs
@@ -538,3 +539,38 @@ jobs:
           set +x
           node infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs --apply
           node infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs --audit
+
+  phase20-182-free-dev-preflight:
+    name: Task 182 Cloudflare Free DEV gateway safety preflight
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-182-free-preflight]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: phase20-182-free-dev-preflight
+      cancel-in-progress: false
+    steps:
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Prepare and smoke-test the optional DEV gateway (not public)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-free-gateway.sh"
