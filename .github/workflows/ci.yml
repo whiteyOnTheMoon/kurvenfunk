@@ -58,23 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary Task 181 formatter diagnostics
-        run: |
-          pnpm exec prettier --write apps/api/src/config/env.validation.ts apps/api/src/modules/bans/ip-identity.service.spec.ts apps/api/src/modules/bans/bans.module.spec.ts
-          echo P181_FORMAT_0_BEGIN
-          base64 -w0 apps/api/src/config/env.validation.ts
-          echo
-          echo P181_FORMAT_0_END
-          echo P181_FORMAT_1_BEGIN
-          base64 -w0 apps/api/src/modules/bans/ip-identity.service.spec.ts
-          echo
-          echo P181_FORMAT_1_END
-          echo P181_FORMAT_2_BEGIN
-          base64 -w0 apps/api/src/modules/bans/bans.module.spec.ts
-          echo
-          echo P181_FORMAT_2_END
-          exit 1
-
       - name: Check formatting
         run: pnpm format:check
 
