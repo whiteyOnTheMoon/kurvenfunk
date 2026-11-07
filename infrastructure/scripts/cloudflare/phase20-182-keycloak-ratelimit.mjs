@@ -1,3 +1,6 @@
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 #!/usr/bin/env node
 // Task 182: fail-closed Cloudflare WAF deployment/audit for DEV Keycloak only.
 // No production hostname or existing unrelated rule is ever modified.
@@ -158,7 +161,7 @@ export async function manageRules({ mode, zoneId, token, fetcher = fetch, out = 
   return { status: 'verified', present: desired.length };
 }
 
-if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     await manageRules({
       mode: process.argv[2]?.replace(/^--/, ''),
