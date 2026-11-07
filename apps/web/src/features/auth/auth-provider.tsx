@@ -13,6 +13,7 @@ import {
 } from 'react';
 
 import { ensureFreshToken } from './token-refresh';
+import { isTemporaryIdentityFailure } from './auth-failure';
 import type { AdminRole } from '../admin/admin-access';
 
 type UserStatus = 'ACTIVE' | 'LIMITED' | 'BANNED';
@@ -36,10 +37,11 @@ interface CurrentUser {
 interface AuthContextValue {
   authenticated: boolean;
   initialized: boolean;
+  sessionRecovering: boolean;
   login: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<CurrentUser>;
   token?: string;
   user?: CurrentUser;
   error?: string;
@@ -63,11 +65,14 @@ function getKeycloak(authUrl: string): Keycloak {
 }
 
 async function fetchCurrentUser(apiUrl: string, token: string): Promise<CurrentUser> {
-  const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new Error('AUTH_TEMPORARY_UNAVAILABLE');
+  }
 
   if (!response.ok) {
     const body = (await response.json().catch(() => undefined)) as
@@ -83,6 +88,10 @@ async function fetchCurrentUser(apiUrl: string, token: string): Promise<CurrentU
 
     if (response.status === 401 && body?.message === 'Email address is not verified') {
       throw new Error('EMAIL_NOT_VERIFIED');
+    }
+
+    if (isTemporaryIdentityFailure(response.status)) {
+      throw new Error('AUTH_TEMPORARY_UNAVAILABLE');
     }
 
     throw new Error('AUTHENTICATION_FAILED');
@@ -101,6 +110,7 @@ async function fetchCurrentUser(apiUrl: string, token: string): Promise<CurrentU
 
 export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
   const [initialized, setInitialized] = useState(false);
+  const [sessionRecovering, setSessionRecovering] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [token, setToken] = useState<string>();
   const [user, setUser] = useState<CurrentUser>();
@@ -122,6 +132,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       setAuthenticated(false);
       setToken(undefined);
       setUser(undefined);
+      setSessionRecovering(false);
       setError(reason);
     };
 
@@ -156,6 +167,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
           setUser(currentUser);
           setToken(freshToken);
           setAuthenticated(true);
+          setSessionRecovering(false);
           setError(undefined);
         } catch (authError) {
           if (!active || logoutRequestedRef.current) {
@@ -163,6 +175,27 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
           }
 
           const code = authError instanceof Error ? authError.message : undefined;
+
+          // A network/5xx or temporary Keycloak refresh problem must not
+          // redirect staff to login. Hide privileged content until a fresh
+          // token AND authoritative application roles are available again.
+          if (
+            client.authenticated &&
+            client.token &&
+            code !== 'ACCOUNT_BANNED' &&
+            code !== 'EMAIL_NOT_VERIFIED' &&
+            code !== 'AUTHENTICATION_FAILED' &&
+            code !== 'AUTHENTICATION_REQUIRED'
+          ) {
+            currentUserRef.current = undefined;
+            setAuthenticated(false);
+            setToken(undefined);
+            setUser(undefined);
+            setSessionRecovering(true);
+            setError('AUTH_TEMPORARY_UNAVAILABLE');
+            return;
+          }
+
           clearSession(
             code === 'ACCOUNT_BANNED' || code === 'EMAIL_NOT_VERIFIED'
               ? code
@@ -261,6 +294,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     setAuthenticated(false);
     setToken(undefined);
     setUser(undefined);
+    setSessionRecovering(false);
     setError(undefined);
 
     await client.logout({
@@ -284,13 +318,16 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     setAuthenticated(true);
     setToken(freshToken);
     setUser(currentUser);
+    setSessionRecovering(false);
     setError(undefined);
+    return currentUser;
   }, [apiUrl, authUrl]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       authenticated,
       initialized,
+      sessionRecovering,
       login,
       loginWithGoogle,
       logout,
@@ -299,7 +336,18 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       user,
       error,
     }),
-    [authenticated, initialized, login, loginWithGoogle, logout, refreshUser, token, user, error],
+    [
+      authenticated,
+      initialized,
+      sessionRecovering,
+      login,
+      loginWithGoogle,
+      logout,
+      refreshUser,
+      token,
+      user,
+      error,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
+import { getAdminMenuDestination } from '../../features/admin/admin-access';
 import styles from './app-shell.module.css';
 
 const navigationItems = [
@@ -50,7 +51,7 @@ function Navigation({ mobile = false, onNavigate }: { mobile?: boolean; onNaviga
 }
 
 function UserMenu() {
-  const { authenticated, initialized, login, logout, user } = useAuth();
+  const { authenticated, initialized, sessionRecovering, login, logout, user } = useAuth();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDetailsElement>(null);
 
@@ -66,7 +67,7 @@ function UserMenu() {
     }
   }
 
-  if (!initialized) {
+  if (!initialized || sessionRecovering) {
     return <div className={styles.userPlaceholder} aria-hidden="true" />;
   }
 
@@ -77,6 +78,8 @@ function UserMenu() {
       </button>
     );
   }
+
+  const adminDestination = getAdminMenuDestination(user);
 
   return (
     <details ref={menuRef} className={styles.userMenu}>
@@ -109,6 +112,12 @@ function UserMenu() {
         <Link href="/einstellungen" className={styles.userMenuItem} onClick={closeMenu}>
           Einstellungen
         </Link>
+
+        {adminDestination ? (
+          <Link href={adminDestination} className={styles.userMenuItem} onClick={closeMenu}>
+            Admin-Bereich
+          </Link>
+        ) : null}
 
         <button
           type="button"

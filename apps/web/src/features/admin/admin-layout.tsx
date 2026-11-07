@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
-import { canAccessAdminPath, getAdminNavigation } from './admin-access';
+import { canAccessAdminPath, getAdminNavigation, getPostLoginDestination } from './admin-access';
 
 import styles from './admin-layout.module.css';
 
@@ -20,19 +20,21 @@ function isCurrentPath(pathname: string, href: string): boolean {
 export function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { initialized, authenticated, user } = useAuth();
+  const { initialized, authenticated, sessionRecovering, user } = useAuth();
   const allowed = initialized && authenticated && canAccessAdminPath(user, pathname);
   const navigation = getAdminNavigation(user);
 
   useEffect(() => {
-    if (!initialized) return;
+    // A transient identity-service error is NOT a logout. Keep the
+    // protected workspace hidden until the session can be revalidated.
+    if (!initialized || sessionRecovering || (authenticated && !user)) return;
 
     if (!authenticated) {
       router.replace('/login');
-    } else if (!canAccessAdminPath(user, pathname)) {
-      router.replace('/');
+    } else if (user && !canAccessAdminPath(user, pathname)) {
+      router.replace(getPostLoginDestination(user));
     }
-  }, [initialized, authenticated, user, pathname, router]);
+  }, [initialized, authenticated, sessionRecovering, user, pathname, router]);
 
   // Keep the entire admin navigation and page subtree out of the DOM until
   // the verified backend identity has appropriate privileges.

@@ -13,6 +13,7 @@ function Probe() {
       { id: 'auth-status' },
       auth.authenticated ? 'authenticated' : 'anonymous',
     ),
+    React.createElement('div', { id: 'session-recovering' }, String(auth.sessionRecovering)),
     React.createElement('div', { id: 'auth-error' }, auth.error ?? ''),
     React.createElement('div', { id: 'token-fingerprint' }, auth.token?.slice(-12) ?? ''),
     React.createElement('div', { id: 'user-status' }, auth.user?.status ?? ''),
