@@ -5,6 +5,10 @@ on:
       - develop
     paths:
       - 'apps/web/src/features/auth/**'
+      - 'apps/web/src/features/admin/admin-access.ts'
+      - 'apps/web/src/components/layout/app-shell.tsx'
+      - 'apps/web/src/app/login/login-client.tsx'
+      - 'apps/web/test/role-login-menu.browser.cjs'
       - 'apps/web/test/token-refresh.browser.cjs'
       - 'apps/web/test/auth-provider.browser.cjs'
       - 'apps/web/test/auth-provider-browser-harness.tsx'
@@ -43,6 +47,10 @@ jobs:
         env:
           PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
         run: node apps/web/test/auth-provider.browser.cjs
+      - name: Verify role-aware login and profile menu in Chromium
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/role-login-menu.browser.cjs
       - name: Verify Phase 17 editorial media desktop/mobile in Chromium
         env:
           PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
