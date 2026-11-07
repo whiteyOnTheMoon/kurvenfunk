@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
+import { getPostLoginDestination } from '../auth/post-login-destination';
 import { ClubSelection } from './club-selection';
 import { NicknameSelection } from './nickname-selection';
 
@@ -86,9 +87,9 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
         return;
       }
 
-      await refreshUser();
+      const currentUser = await refreshUser();
 
-      router.replace('/');
+      router.replace(getPostLoginDestination(currentUser));
       router.refresh();
     } catch {
       setError('Your onboarding could not be completed.');
