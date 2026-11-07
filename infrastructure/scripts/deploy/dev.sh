@@ -27,6 +27,14 @@ if [[ ! -f ".env.dev" ]]; then
   exit 1
 fi
 
+# DEV-only optional gateway. Keep default deployment behavior unchanged.
+COMPOSE_FILES=(-f compose.yml -f compose.dev.yml)
+AUTH_GATEWAY_ENABLED=false
+if grep -Eq '^[[:space:]]*AUTH_GATEWAY_ENABLED=(true|"true")[[:space:]]*$' .env.dev; then
+  AUTH_GATEWAY_ENABLED=true
+  COMPOSE_FILES+=(-f compose.dev.auth-gateway.yml)
+fi
+
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "ERROR: Working tree is not clean."
   git status --short
@@ -82,8 +90,7 @@ echo "=== Validate Compose configuration ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  -f compose.yml \
-  -f compose.dev.yml \
+  "${COMPOSE_FILES[@]}" \
   config --quiet
 
 echo
@@ -91,8 +98,7 @@ echo "=== Build application and migration images ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  -f compose.yml \
-  -f compose.dev.yml \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   build \
   web api worker migrate
@@ -105,8 +111,7 @@ echo "=== Apply DEV database migrations before starting updated services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  -f compose.yml \
-  -f compose.dev.yml \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   run --rm -T migrate
 
@@ -115,16 +120,14 @@ echo "=== Update DEV environment ==="
 if ! docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  -f compose.yml \
-  -f compose.dev.yml \
+  "${COMPOSE_FILES[@]}" \
   up -d --remove-orphans; then
   echo "ERROR: Docker Compose failed while starting DEV services."
   echo "=== Recent API container logs ==="
   docker compose \
     -p "$COMPOSE_PROJECT" \
     --env-file .env.dev \
-    -f compose.yml \
-    -f compose.dev.yml \
+    "${COMPOSE_FILES[@]}" \
     logs --tail=100 api || true
   exit 1
 fi
@@ -142,8 +145,7 @@ wait_for_health() {
       docker compose \
         -p "$COMPOSE_PROJECT" \
         --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
+        "${COMPOSE_FILES[@]}" \
         ps -q "$service"
     )"
 
@@ -169,8 +171,7 @@ wait_for_health() {
       docker compose \
         -p "$COMPOSE_PROJECT" \
         --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
+        "${COMPOSE_FILES[@]}" \
         logs --tail=100 "$service"
       return 1
     fi
@@ -192,6 +193,10 @@ wait_for_health api
 wait_for_health worker
 wait_for_health web
 
+if [[ "$AUTH_GATEWAY_ENABLED" == true ]]; then
+  wait_for_health auth-gateway
+fi
+
 echo
 echo "=== Internal smoke tests ==="
 curl --fail --silent --show-error \
@@ -208,8 +213,7 @@ echo "=== DEV Services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  -f compose.yml \
-  -f compose.dev.yml \
+  "${COMPOSE_FILES[@]}" \
   ps
 
 echo
