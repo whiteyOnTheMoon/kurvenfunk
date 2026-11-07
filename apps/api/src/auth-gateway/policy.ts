@@ -10,10 +10,7 @@ export const AUTH_LIMITS = {
 
 export type AuthAction = keyof typeof AUTH_LIMITS;
 
-export function classifyAuthRequest(
-  method: string,
-  pathname: string,
-): AuthAction | null {
+export function classifyAuthRequest(method: string, pathname: string): AuthAction | null {
   if (method !== 'POST') return null;
   const prefix = '/realms/kurvenfunk';
   if (!pathname.startsWith(prefix + '/')) return null;
@@ -26,20 +23,14 @@ export function classifyAuthRequest(
 }
 
 export function normalizeAddress(value: string): string | null {
-  if (
-    typeof value !== 'string' ||
-    value.trim() !== value ||
-    value.includes('%')
-  ) {
+  if (typeof value !== 'string' || value.trim() !== value || value.includes('%')) {
     return null;
   }
   const kind = isIP(value);
   if (kind === 4) return value;
   if (kind !== 6) return null;
   try {
-    const normalized = new URL('http://[' + value + ']/')
-      .hostname.slice(1, -1)
-      .toLowerCase();
+    const normalized = new URL('http://[' + value + ']/').hostname.slice(1, -1).toLowerCase();
     const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/u.exec(normalized);
     if (!mapped) return normalized;
     const hi = Number.parseInt(mapped[1], 16);
