@@ -7,7 +7,7 @@ import type { Request } from 'express';
 export function normalizeSocketAddress(address: string | undefined): string | null {
   if (!address) return null;
   const value = address.startsWith('::ffff:') ? address.slice(7) : address;
-  return isIP(value) > 0 ? value.toLowerCase() : null;
+  return !value.includes('%') && isIP(value) > 0 ? value.toLowerCase() : null;
 }
 
 /**
@@ -26,7 +26,12 @@ export function validatedCloudflareIp(
     return null;
   }
 
-  if (typeof header !== 'string' || header !== header.trim() || isIP(header) === 0) {
+  if (
+    typeof header !== 'string' ||
+    header !== header.trim() ||
+    header.includes('%') ||
+    isIP(header) === 0
+  ) {
     return null;
   }
 
