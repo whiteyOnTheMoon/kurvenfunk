@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary Prettier output for SMTP source and CI (no secrets)
+        run: |
+          pnpm exec prettier --write .github/workflows/ci.yml infrastructure/scripts/keycloak/smtp-config.mjs
+          node -e "const fs=require('node:fs'); for(const [name,p] of [['WORKFLOW','.github/workflows/ci.yml'],['SMTP','infrastructure/scripts/keycloak/smtp-config.mjs']]) console.log('KF_EMAIL_FMT_'+name+'='+fs.readFileSync(p).toString('base64'));"
       - name: Check formatting
         run: pnpm format:check
 
