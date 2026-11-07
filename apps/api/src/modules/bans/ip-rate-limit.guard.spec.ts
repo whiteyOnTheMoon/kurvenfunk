@@ -1,4 +1,4 @@
-import { HttpException, ServiceUnavailableException, type ExecutionContext } from '@nestjs/common';
+import { ServiceUnavailableException, type ExecutionContext } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 
@@ -6,7 +6,7 @@ import type { IpIdentityService } from './ip-identity.service';
 import { classifyIpLimitedWrite, IpRateLimitGuard, IP_RATE_LIMITS } from './ip-rate-limit.guard';
 import type { TrustedClientIpService } from './trusted-client-ip.service';
 
-const redisEval = jest.fn<Promise<number>, unknown[]>();
+const redisEval = jest.fn(async (..._args: unknown[]): Promise<number> => 1);
 const redisDisconnect = jest.fn();
 
 jest.mock('ioredis', () => ({
@@ -27,7 +27,7 @@ function context(method: string, originalUrl: string): ExecutionContext {
 
 function setup(enabled = true) {
   const ip = {
-    fromRequest: jest.fn<Promise<string | null>, unknown[]>().mockResolvedValue('203.0.113.22'),
+    fromRequest: jest.fn(async (..._args: unknown[]): Promise<string | null> => '203.0.113.22'),
   };
   const identity = {
     isConfigured: true,
@@ -40,7 +40,7 @@ function setup(enabled = true) {
       return fallback;
     },
     getOrThrow: () => 'test-redis-secret',
-  } as ConfigService;
+  } as unknown as ConfigService;
 
   const guard = new IpRateLimitGuard(
     identity as unknown as IpIdentityService,
@@ -107,7 +107,7 @@ describe('Task 182 – API IP rate limits', () => {
       expect(JSON.stringify(redisEval.mock.calls)).not.toContain('203.0.113.22');
       expect(JSON.stringify(redisEval.mock.calls)).toContain('ip-write-rate:v1:v2:reports:');
       expect(redisEval.mock.calls[0]?.[2]).toBe(1);
-      expect(redisEval.mock.calls[0]?.[4]).toBe(60000);
+      expect(redisEval.mock.calls[0]?.[3]).toBe(60000);
     } finally {
       guard.onModuleDestroy();
     }
