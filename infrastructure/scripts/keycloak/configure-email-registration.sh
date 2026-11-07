@@ -9,6 +9,13 @@ ROOT_DIR="$(
 ENV_FILE="${1:-.env.dev}"
 COMPOSE_OVERLAY="${2:-compose.dev.yml}"
 
+# Legacy registration bootstrap is intentionally restricted to DEV Mailpit.
+# Use configure-transactional-email.sh for STAGING/PROD SMTP instead.
+if [[ "$ENV_FILE" != ".env.dev" || "$COMPOSE_OVERLAY" != "compose.dev.yml" ]]; then
+  echo "KEYCLOAK_LEGACY_MAILPIT_DEV_ONLY" >&2
+  exit 1
+fi
+
 REALM="${KEYCLOAK_REALM:-kurvenfunk}"
 
 cd "$ROOT_DIR"
