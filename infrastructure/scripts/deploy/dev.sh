@@ -27,200 +27,10 @@ if [[ ! -f ".env.dev" ]]; then
   exit 1
 fi
 
-# Opt-in DEV-only auth gateway. The ordinary rollout remains unchanged.
-# When enabled, include this overlay for EVERY compose operation, especially
-# up --remove-orphans, so the gateway is not unintentionally removed.
+# DEV-only optional gateway. Keep default deployment behavior unchanged.
 COMPOSE_FILES=(-f compose.yml -f compose.dev.yml)
 AUTH_GATEWAY_ENABLED=false
-if grep -Eq '^[[:space:]]*AUTH_GATEWAY_ENABLED=(true|"true")[[:space:]]*
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "ERROR: Working tree is not clean."
-  git status --short
-  exit 1
-fi
-
-CURRENT_BRANCH="$(git branch --show-current)"
-
-if [[ "$CURRENT_BRANCH" != "$BRANCH" ]]; then
-  echo "ERROR: Expected branch '$BRANCH', currently on '$CURRENT_BRANCH'."
-  exit 1
-fi
-
-echo "=== Fetch repository ==="
-git fetch origin "$BRANCH"
-
-LOCAL_COMMIT="$(git rev-parse HEAD)"
-REMOTE_COMMIT="$(git rev-parse "origin/$BRANCH")"
-
-echo "Local:    $LOCAL_COMMIT"
-echo "Remote:   $REMOTE_COMMIT"
-
-if [[ -n "$EXPECTED_COMMIT" ]]; then
-  echo "Expected: $EXPECTED_COMMIT"
-
-  if [[ "$REMOTE_COMMIT" != "$EXPECTED_COMMIT" ]]; then
-    echo
-    echo "SKIP: origin/$BRANCH no longer points to the CI-tested commit."
-    echo "A newer commit is already present on $BRANCH."
-    exit 0
-  fi
-fi
-
-if [[ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]]; then
-  echo
-  echo "=== Update repository ==="
-  git pull --ff-only origin "$BRANCH"
-else
-  echo "Repository is already up to date."
-fi
-
-DEPLOYED_COMMIT="$(git rev-parse HEAD)"
-
-if [[ -n "$EXPECTED_COMMIT" && "$DEPLOYED_COMMIT" != "$EXPECTED_COMMIT" ]]; then
-  echo "ERROR: Checked out commit does not match expected CI commit."
-  echo "Expected: $EXPECTED_COMMIT"
-  echo "Actual:   $DEPLOYED_COMMIT"
-  exit 1
-fi
-
-echo
-echo "=== Validate Compose configuration ==="
-docker compose \
-  -p "$COMPOSE_PROJECT" \
-  --env-file .env.dev \
-  "${COMPOSE_FILES[@]}" \
-  config --quiet
-
-echo
-echo "=== Build application and migration images ==="
-docker compose \
-  -p "$COMPOSE_PROJECT" \
-  --env-file .env.dev \
-  "${COMPOSE_FILES[@]}" \
-  --profile deployment \
-  build \
-  web api worker migrate
-
-echo
-echo "=== Apply DEV database migrations before starting updated services ==="
-# The dedicated migrate service has the current Prisma migration files.
-# Fail the deployment if a migration fails; do not start a newer API/worker
-# against an outdated schema. The migrate service waits for healthy Postgres.
-docker compose \
-  -p "$COMPOSE_PROJECT" \
-  --env-file .env.dev \
-  "${COMPOSE_FILES[@]}" \
-  --profile deployment \
-  run --rm -T migrate
-
-echo
-echo "=== Update DEV environment ==="
-if ! docker compose \
-  -p "$COMPOSE_PROJECT" \
-  --env-file .env.dev \
-  "${COMPOSE_FILES[@]}" \
-  up -d --remove-orphans; then
-  echo "ERROR: Docker Compose failed while starting DEV services."
-  echo "=== Recent API container logs ==="
-  docker compose \
-    -p "$COMPOSE_PROJECT" \
-    --env-file .env.dev \
-    -f compose.yml \
-    -f compose.dev.yml \
-    logs --tail=100 api || true
-  exit 1
-fi
-
-echo
-echo "=== Wait for application healthchecks ==="
-
-wait_for_health() {
-  local service="$1"
-  local max_attempts=30
-  local attempt=1
-
-  while (( attempt <= max_attempts )); do
-    container_id="$(
-      docker compose \
-        -p "$COMPOSE_PROJECT" \
-        --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
-        ps -q "$service"
-    )"
-
-    if [[ -z "$container_id" ]]; then
-      echo "ERROR: No container found for service '$service'."
-      return 1
-    fi
-
-    status="$(
-      docker inspect \
-        --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
-        "$container_id"
-    )"
-
-    echo "$service: $status"
-
-    if [[ "$status" == "healthy" ]]; then
-      return 0
-    fi
-
-    if [[ "$status" == "unhealthy" || "$status" == "exited" || "$status" == "dead" ]]; then
-      echo "ERROR: Service '$service' failed."
-      docker compose \
-        -p "$COMPOSE_PROJECT" \
-        --env-file .env.dev \
-        -f compose.yml \
-        -f compose.dev.yml \
-        logs --tail=100 "$service"
-      return 1
-    fi
-
-    sleep 5
-    ((attempt++))
-  done
-
-  echo "ERROR: Timed out waiting for '$service' to become healthy."
-  return 1
-}
-
-wait_for_health postgres
-wait_for_health redis
-wait_for_health keycloak
-wait_for_health meilisearch
-wait_for_health minio
-wait_for_health api
-wait_for_health worker
-wait_for_health web
-
-if [[ "$AUTH_GATEWAY_ENABLED" == true ]]; then
-  wait_for_health auth-gateway
-fi
-
-echo
-echo "=== Internal smoke tests ==="
-curl --fail --silent --show-error \
-  http://127.0.0.1:3100/health >/dev/null
-
-curl --fail --silent --show-error \
-  http://127.0.0.1:3101/api/v1/health >/dev/null
-
-echo "Web health: OK"
-echo "API health: OK"
-
-echo
-echo "=== DEV Services ==="
-docker compose \
-  -p "$COMPOSE_PROJECT" \
-  --env-file .env.dev \
-  "${COMPOSE_FILES[@]}" \
-  ps
-
-echo
-echo "=== Deployment complete ==="
-git log -1 --oneline
- .env.dev; then
+if grep -Eq '^[[:space:]]*AUTH_GATEWAY_ENABLED=(true|"true")[[:space:]]*$' .env.dev; then
   AUTH_GATEWAY_ENABLED=true
   COMPOSE_FILES+=(-f compose.dev.auth-gateway.yml)
 fi
@@ -385,6 +195,10 @@ wait_for_health minio
 wait_for_health api
 wait_for_health worker
 wait_for_health web
+
+if [[ "$AUTH_GATEWAY_ENABLED" == true ]]; then
+  wait_for_health auth-gateway
+fi
 
 echo
 echo "=== Internal smoke tests ==="
