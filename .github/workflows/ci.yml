@@ -58,6 +58,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary Task 179 deterministic formatter inspection
+        run: |
+          pnpm exec prettier --write apps/api/src/modules/permissions/permissions.service.spec.ts apps/api/test/phase20-sanctions.e2e-spec.ts infrastructure/scripts/verify/dev-phase20-matrix.mjs
+          echo P179_FORM_0_BEGIN
+          base64 -w0 apps/api/src/modules/permissions/permissions.service.spec.ts
+          echo
+          echo P179_FORM_0_END
+          echo P179_FORM_1_BEGIN
+          base64 -w0 apps/api/test/phase20-sanctions.e2e-spec.ts
+          echo
+          echo P179_FORM_1_END
+          echo P179_FORM_2_BEGIN
+          base64 -w0 infrastructure/scripts/verify/dev-phase20-matrix.mjs
+          echo
+          echo P179_FORM_2_END
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
