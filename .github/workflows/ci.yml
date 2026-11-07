@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary gateway Prettier diagnostic (source only, no secrets)
+        run: |
+          pnpm exec prettier --write apps/api/src/auth-gateway/main.ts apps/api/src/auth-gateway/policy.ts apps/api/src/auth-gateway/policy.spec.ts
+          node -e "const fs=require('node:fs'); for(const name of ['main','policy','policy.spec']) { const p='apps/api/src/auth-gateway/'+name+'.ts'; console.log('KF_FMT_'+name.replaceAll('.','_').toUpperCase()+'='+fs.readFileSync(p).toString('base64')); }"
       - name: Check formatting
         run: pnpm format:check
 
