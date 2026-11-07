@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
-import { getAdminMenuDestination } from '../../features/auth/post-login-destination';
+import { getAdminMenuDestination } from '../../features/admin/admin-access';
 import styles from './app-shell.module.css';
 
 const navigationItems = [
