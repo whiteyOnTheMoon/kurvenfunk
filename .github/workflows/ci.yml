@@ -58,15 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary Task 182 test file formatter
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/bans/ip-rate-limit.guard.spec.ts
-          echo P182_TEST_FORMAT_BEGIN
-          base64 -w0 apps/api/src/modules/bans/ip-rate-limit.guard.spec.ts
-          echo
-          echo P182_TEST_FORMAT_END
-          exit 1
-
       - name: Check formatting
         run: pnpm format:check
 
