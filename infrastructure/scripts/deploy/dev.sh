@@ -88,7 +88,7 @@ echo "=== Validate Compose configuration ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   config --quiet
 
 echo
@@ -96,7 +96,7 @@ echo "=== Build application and migration images ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   build \
   web api worker migrate
@@ -109,7 +109,7 @@ echo "=== Apply DEV database migrations before starting updated services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   run --rm -T migrate
 
@@ -118,7 +118,7 @@ echo "=== Update DEV environment ==="
 if ! docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   up -d --remove-orphans; then
   echo "ERROR: Docker Compose failed while starting DEV services."
   echo "=== Recent API container logs ==="
@@ -214,7 +214,7 @@ echo "=== DEV Services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   ps
 
 echo
@@ -280,7 +280,7 @@ echo "=== Validate Compose configuration ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   config --quiet
 
 echo
@@ -288,7 +288,7 @@ echo "=== Build application and migration images ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   build \
   web api worker migrate
@@ -301,7 +301,7 @@ echo "=== Apply DEV database migrations before starting updated services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   --profile deployment \
   run --rm -T migrate
 
@@ -310,7 +310,7 @@ echo "=== Update DEV environment ==="
 if ! docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   up -d --remove-orphans; then
   echo "ERROR: Docker Compose failed while starting DEV services."
   echo "=== Recent API container logs ==="
@@ -402,7 +402,7 @@ echo "=== DEV Services ==="
 docker compose \
   -p "$COMPOSE_PROJECT" \
   --env-file .env.dev \
-  "\${COMPOSE_FILES[@]}" \
+  "${COMPOSE_FILES[@]}" \
   ps
 
 echo
