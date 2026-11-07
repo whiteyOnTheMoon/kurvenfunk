@@ -22,10 +22,9 @@ describe('Task 181 – BansModule injection', () => {
     try {
       const identity = moduleRef.get(IpIdentityService);
       expect(identity.isConfigured).toBe(true);
-      expect(identity.hash('192.0.2.4')).toMatchObject({
-        hashKeyVersion: 'v1',
-        ipHash: expect.stringMatching(/^[a-f0-9]{64}$/),
-      });
+      const hashed = identity.hash('192.0.2.4');
+      expect(hashed.hashKeyVersion).toBe('v1');
+      expect(hashed.ipHash).toMatch(/^[a-f0-9]{64}$/);
     } finally {
       await moduleRef.close();
     }
