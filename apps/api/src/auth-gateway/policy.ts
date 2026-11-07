@@ -10,7 +10,10 @@ export const AUTH_LIMITS = {
 
 export type AuthAction = keyof typeof AUTH_LIMITS;
 
-export function classifyAuthRequest(method: string, pathname: string): AuthAction | null {
+export function classifyAuthRequest(
+  method: string,
+  pathname: string,
+): AuthAction | null {
   if (method !== 'POST') return null;
   const prefix = '/realms/kurvenfunk';
   if (!pathname.startsWith(prefix + '/')) return null;
@@ -23,14 +26,20 @@ export function classifyAuthRequest(method: string, pathname: string): AuthActio
 }
 
 export function normalizeAddress(value: string): string | null {
-  if (typeof value !== 'string' || value.trim() !== value || value.includes('%')) {
+  if (
+    typeof value !== 'string' ||
+    value.trim() !== value ||
+    value.includes('%')
+  ) {
     return null;
   }
   const kind = isIP(value);
   if (kind === 4) return value;
   if (kind !== 6) return null;
   try {
-    const normalized = new URL('http://[' + value + ']/').hostname.slice(1, -1).toLowerCase();
+    const normalized = new URL('http://[' + value + ']/')
+      .hostname.slice(1, -1)
+      .toLowerCase();
     const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/u.exec(normalized);
     if (!mapped) return normalized;
     const hi = Number.parseInt(mapped[1], 16);
@@ -47,7 +56,9 @@ export function verifiedClientIp(
   peers: readonly string[],
 ): string | null {
   const remote = remoteAddress ? normalizeAddress(remoteAddress) : null;
-  if (!remote || !peers.some((value) => normalizeAddress(value) === remote)) return null;
+  if (!remote || !peers.some((value) => normalizeAddress(value) === remote)) {
+    return null;
+  }
   if (typeof cloudflareHeader !== 'string') return null;
   return normalizeAddress(cloudflareHeader);
 }
@@ -63,7 +74,9 @@ export function rateKey(address: string, secretBase64Url: string): string {
   ) {
     throw new Error('AUTH_GATEWAY_IDENTITY_UNAVAILABLE');
   }
-  return createHmac('sha256', secret).update('kurvenfunk:auth-ip:v1:' + ip).digest('hex');
+  return createHmac('sha256', secret)
+    .update('kurvenfunk:auth-ip:v1:' + ip)
+    .digest('hex');
 }
 
 // Fixed-window atomic counter. No raw client addresses in Redis keys.
