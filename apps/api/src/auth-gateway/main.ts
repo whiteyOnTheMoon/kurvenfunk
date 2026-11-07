@@ -84,7 +84,7 @@ async function handleRequest(
   if (action) {
     try {
       const quota = AUTH_LIMITS[action];
-      const digest = rateKey(clientIp, identitySecret);
+      const digest = rateKey(clientIp, identitySecret ?? '');
       const key = 'kurvenfunk:auth-gateway:v1:' + action + ':' + digest;
       const count: unknown = await redis.eval(COUNTER_LUA, 1, key, quota.windowMs);
       if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) {
