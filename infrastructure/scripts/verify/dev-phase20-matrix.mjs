@@ -399,7 +399,6 @@ async function execute() {
   );
   console.log('PHASE20_179_DEV_KEYCLOAK_HTTP_MATRIX: PASS');
 
-
   const forbiddenPost = await api(
     'POST',
     '/articles/11111111-1111-4111-8111-111111111111/comments',
