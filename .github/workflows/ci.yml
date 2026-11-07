@@ -58,6 +58,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary Task 182 deterministic Prettier inspection
+        run: |
+          pnpm exec prettier --write apps/api/src/modules/bans/ip-rate-limit.guard.ts infrastructure/scripts/maintenance/prune-merged-branches.mjs
+          echo P182_FORMAT_0_BEGIN
+          base64 -w0 apps/api/src/modules/bans/ip-rate-limit.guard.ts
+          echo
+          echo P182_FORMAT_0_END
+          echo P182_FORMAT_1_BEGIN
+          base64 -w0 infrastructure/scripts/maintenance/prune-merged-branches.mjs
+          echo
+          echo P182_FORMAT_1_END
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
