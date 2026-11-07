@@ -9,7 +9,9 @@ import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
-import type { DatabaseService as WorkerDatabaseService } from '../../worker/src/database/database.service';
+import type {
+  DatabaseService as WorkerDatabaseService,
+} from '../../worker/src/database/database.service';
 import { SanctionExpirationService } from '../../worker/src/services/sanction-expiration.service';
 
 describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
@@ -65,7 +67,8 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       response.end(JSON.stringify({ keys: [publicKey] }));
     });
     await new Promise<void>((resolve) => jwksServer.listen(0, '127.0.0.1', resolve));
-    process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/jwks`;
+    const jwksAddress = jwksServer.address() as AddressInfo;
+    process.env.KEYCLOAK_JWKS_URL = `http://127.0.0.1:${jwksAddress.port}/jwks`;
 
     db = createPrismaClient();
     const [moderator, limitedUser, bannedUser, editor, article] = await Promise.all([
@@ -156,7 +159,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     }
   });
 
-  it('enforces permission matrix, creates one audited LIMITED sanction, and restores ACTIVE on expiry', async () => {
+  it('enforces LIMITED permission matrix and restores ACTIVE on expiry', async () => {
     const moderatorToken = await token(moderatorSubject);
     const userToken = await token(limitedSubject);
     const editorToken = await token(editorSubject);
@@ -267,7 +270,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     expect((restored.body as { data: { status: string } }).data.status).toBe('ACTIVE');
   }, 30000);
 
-  it('denies BANNED authentication and never restores BANNED after older LIMITED expiry', async () => {
+  it('blocks BANNED tokens and never reactivates after LIMITED expiry', async () => {
     const bannedToken = await token(bannedSubject);
     await request(app.getHttpServer())
       .get('/api/v1/auth/me')
