@@ -3,13 +3,7 @@ import { lookup } from 'node:dns/promises';
 
 import Redis from 'ioredis';
 
-import {
-  AUTH_LIMITS,
-  classifyAuthRequest,
-  COUNTER_LUA,
-  rateKey,
-  verifiedClientIp,
-} from './policy';
+import { AUTH_LIMITS, classifyAuthRequest, COUNTER_LUA, rateKey, verifiedClientIp } from './policy';
 
 const port = Number(process.env.AUTH_GATEWAY_PORT || 8080);
 const redisPassword = process.env.REDIS_PASSWORD;
@@ -48,7 +42,10 @@ function reject(response: import('node:http').ServerResponse, status: number): v
   response.end(status === 429 ? 'Too many requests' : 'Service unavailable');
 }
 
-const server = createServer(async (incoming, response) => {
+async function handleRequest(
+  incoming: import('node:http').IncomingMessage,
+  response: import('node:http').ServerResponse,
+): Promise<void> {
   if (incoming.url === '/_gateway/health' && incoming.method === 'GET') {
     response.writeHead(200, { 'content-type': 'text/plain' });
     response.end('ok');
@@ -87,7 +84,7 @@ const server = createServer(async (incoming, response) => {
   if (action) {
     try {
       const quota = AUTH_LIMITS[action];
-      const digest = rateKey(clientIp, identitySecret!);
+      const digest = rateKey(clientIp, identitySecret);
       const key = 'kurvenfunk:auth-gateway:v1:' + action + ':' + digest;
       const count: unknown = await redis.eval(COUNTER_LUA, 1, key, quota.windowMs);
       if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) {
@@ -149,6 +146,13 @@ const server = createServer(async (incoming, response) => {
   });
 
   incoming.pipe(upstreamRequest);
+}
+
+const server = createServer((incoming, response) => {
+  void handleRequest(incoming, response).catch(() => {
+    if (!response.headersSent) reject(response, 503);
+    else response.destroy();
+  });
 });
 
 server.on('clientError', (_error, socket) => {
