@@ -137,8 +137,7 @@ async function getTokenFor(username, password) {
     const html = await response.text();
     const forms = html.match(/<form\b[^>]*>/gi) ?? [];
     const form = forms.find(
-      (item) => /id=["']kc-form-login["']/i.test(item) ||
-        /login-actions\/authenticate/i.test(item),
+      (item) => /id=["']kc-form-login["']/i.test(item) || /login-actions\/authenticate/i.test(item),
     );
     check(Boolean(form), 'PKCE_PASSWORD_FORM_NOT_FOUND');
     const action = form.match(/\baction=["']([^"']+)["']/i)?.[1];
