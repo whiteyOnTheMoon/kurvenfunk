@@ -157,9 +157,19 @@ async function main() {
       width: 390,
     });
     await verify({ role: 'EDITOR', path: '/admin/artikel/neu', allowed: true });
-    await verify({ role: 'EDITOR', path: '/admin/system', allowed: false, redirect: '/admin/artikel' });
+    await verify({
+      role: 'EDITOR',
+      path: '/admin/system',
+      allowed: false,
+      redirect: '/admin/artikel',
+    });
     await verify({ role: 'MODERATOR', path: '/admin/moderation', allowed: true, width: 390 });
-    await verify({ role: 'MODERATOR', path: '/admin/artikel', allowed: false, redirect: '/admin/moderation' });
+    await verify({
+      role: 'MODERATOR',
+      path: '/admin/artikel',
+      allowed: false,
+      redirect: '/admin/moderation',
+    });
     await verify({ role: 'ADMIN', path: '/admin/system', allowed: true });
     await verify({ role: 'SUPERADMIN', path: '/admin/benutzer', allowed: true });
     await verify({
