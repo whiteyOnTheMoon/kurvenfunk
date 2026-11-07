@@ -458,6 +458,9 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       moderatorNote: 'Private validation fixture',
     };
     const path = '/api/v1/moderation/limited-sanctions';
+    const previousBannedLimits = await db.sanction.count({
+      where: { userId: bannedUserId, type: 'LIMITED' },
+    });
 
     await request(app.getHttpServer())
       .post(path)
@@ -486,7 +489,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       .expect(404);
     expect(
       await db.sanction.count({ where: { userId: bannedUserId, type: 'LIMITED' } }),
-    ).toBe(0);
+    ).toBe(previousBannedLimits);
   }, 30000);
 
 });
