@@ -493,4 +493,181 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       previousBannedLimits,
     );
   }, 30000);
+
+  it('Task 179: LIMITED can read and vote but cannot create, reply, edit or moderate', async () => {
+    const idSuffix = randomUUID().slice(0, 8);
+    const targetSubject = 'phase20-matrix-' + idSuffix;
+    const target = await db.user.create({
+      data: {
+        keycloakSubject: targetSubject,
+        nickname: 'p20matrix' + idSuffix,
+        status: 'ACTIVE',
+        onboardingCompleted: true,
+        roleAssignments: { create: { role: 'USER' } },
+      },
+      select: { id: true },
+    });
+    const moderatorToken = await token(moderatorSubject);
+    const userToken = await token(targetSubject);
+    await request(app.getHttpServer())
+      .post('/api/v1/moderation/limited-sanctions')
+      .set('Authorization', 'Bearer ' + moderatorToken)
+      .send({
+        userId: target.id,
+        duration: '24H',
+        reasonCode: 'MATRIX_TEST',
+        moderatorNote: 'Private isolated task179 acceptance',
+      })
+      .expect(201);
+
+    const profile = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', 'Bearer ' + userToken)
+      .expect(200);
+    expect((profile.body as { data: { status: string } }).data.status).toBe('LIMITED');
+
+    // A real schedule needs an active season. Isolate all sports fixtures to the
+    // disposable E2E database; no external or DEV competition data is mutated.
+    const competitionSlug = 'phase20-matrix-' + idSuffix;
+    const competition = await db.competition.create({
+      data: { name: 'Phase 20 matrix', slug: competitionSlug, type: 'LEAGUE' },
+      select: { id: true },
+    });
+    const [home, away] = await Promise.all([
+      db.club.create({
+        data: {
+          name: 'Phase 20 Matrix Home ' + idSuffix,
+          slug: 'phase20-matrix-home-' + idSuffix,
+          color1Hex: '#123456',
+          color1Rgba: 'rgba(18, 52, 86, 1)',
+        },
+        select: { id: true },
+      }),
+      db.club.create({
+        data: {
+          name: 'Phase 20 Matrix Away ' + idSuffix,
+          slug: 'phase20-matrix-away-' + idSuffix,
+          color1Hex: '#654321',
+          color1Rgba: 'rgba(101, 67, 33, 1)',
+        },
+        select: { id: true },
+      }),
+    ]);
+    const season = await db.season.create({
+      data: {
+        competitionId: competition.id,
+        name: 'Phase 20 Test Season',
+        slug: '2026',
+        startDate: new Date('2026-01-01T00:00:00Z'),
+        endDate: new Date('2026-12-31T00:00:00Z'),
+        status: 'ACTIVE',
+        active: true,
+      },
+      select: { id: true },
+    });
+    const match = await db.match.create({
+      data: {
+        competitionId: competition.id,
+        seasonId: season.id,
+        homeClubId: home.id,
+        awayClubId: away.id,
+        kickoff: new Date('2026-11-07T18:00:00Z'),
+        status: 'SCHEDULED',
+      },
+      select: { id: true },
+    });
+
+    await request(app.getHttpServer()).get('/api/v1/articles?limit=10').expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/by-slug/phase20-e2e-' + suffix)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/' + articleId + '/comments')
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/matches?competition=' + competitionSlug)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/matches/' + match.id)
+      .expect(200);
+    await request(app.getHttpServer()).get('/api/v1/competitions').expect(200);
+    await request(app.getHttpServer()).get('/api/v1/clubs').expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/reactions/comments?ids=' + commentId)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put('/api/v1/comments/' + commentId + '/votes')
+      .set('Authorization', 'Bearer ' + userToken)
+      .send({ type: 'UPVOTE' })
+      .expect(200);
+    const ownVote = await request(app.getHttpServer())
+      .get('/api/v1/comments/' + commentId + '/votes/me')
+      .set('Authorization', 'Bearer ' + userToken)
+      .expect(200);
+    expect((ownVote.body as { data: { viewerVote: string } }).data.viewerVote).toBe('UPVOTE');
+    await request(app.getHttpServer())
+      .delete('/api/v1/comments/' + commentId + '/votes')
+      .set('Authorization', 'Bearer ' + userToken)
+      .expect(200);
+
+    const commentPath = '/api/v1/articles/' + articleId + '/comments';
+    await request(app.getHttpServer())
+      .post(commentPath)
+      .set('Authorization', 'Bearer ' + userToken)
+      .send({ body: 'LIMITED must not post' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .post(commentPath + '/' + commentId + '/replies')
+      .set('Authorization', 'Bearer ' + userToken)
+      .send({ body: 'LIMITED must not reply' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .patch(commentPath + '/' + commentId)
+      .set('Authorization', 'Bearer ' + userToken)
+      .send({ body: 'LIMITED must not edit' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .delete(commentPath + '/' + commentId)
+      .set('Authorization', 'Bearer ' + userToken)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/api/v1/moderation/comment-reports')
+      .set('Authorization', 'Bearer ' + userToken)
+      .expect(403);
+    expect(
+      await db.comment.count({
+        where: { articleId, authorId: target.id },
+      }),
+    ).toBe(0);
+  }, 30000);
+
+  it('Task 179: LIMITED elevated moderator cannot use moderation or posting permissions', async () => {
+    const idSuffix = randomUUID().slice(0, 8);
+    const subject = 'phase20-matrix-moderator-' + idSuffix;
+    await db.user.create({
+      data: {
+        keycloakSubject: subject,
+        nickname: 'p20matrixmod' + idSuffix,
+        status: 'LIMITED',
+        onboardingCompleted: true,
+        roleAssignments: { create: { role: 'MODERATOR' } },
+      },
+    });
+    const accessToken = await token(subject);
+    await request(app.getHttpServer())
+      .post('/api/v1/articles/' + articleId + '/comments')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ body: 'Must not bypass with MODERATOR role' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/api/v1/moderation/comment-reports')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .expect(403);
+    await request(app.getHttpServer())
+      .put('/api/v1/comments/' + commentId + '/votes')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ type: 'DOWNVOTE' })
+      .expect(200);
+  }, 30000);
 });

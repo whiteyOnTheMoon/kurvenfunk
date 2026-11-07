@@ -133,4 +133,54 @@ describe('PermissionsService', () => {
       ),
     ).toBe(false);
   });
+
+  describe('Task 179 – complete LIMITED write-permission matrix', () => {
+    const roles: PermissionRole[] = [
+      'USER',
+      'TRUSTED_USER',
+      'MODERATOR',
+      'EDITOR',
+      'ADMIN',
+      'SUPERADMIN',
+    ];
+
+    it.each(roles)('allows %s to vote while LIMITED', (role) => {
+      expect(can(PERMISSIONS.COMMENT_VOTE, [role], 'LIMITED')).toBe(true);
+    });
+
+    it.each(
+      Object.values(PERMISSIONS).filter((permission) => permission !== PERMISSIONS.COMMENT_VOTE),
+    )('forbids %s for every LIMITED role, including elevated roles', (permission) => {
+      for (const role of roles) {
+        expect(can(permission, [role], 'LIMITED')).toBe(false);
+      }
+    });
+
+    it.each([
+      PERMISSIONS.COMMENT_CREATE,
+      PERMISSIONS.COMMENT_EDIT,
+      PERMISSIONS.COMMENT_DELETE,
+      PERMISSIONS.THREAD_CREATE,
+      PERMISSIONS.THREAD_REPLY,
+    ] as const)('denies posting/editing permission %s for LIMITED', (permission) => {
+      expect(can(permission, ['USER'], 'LIMITED')).toBe(false);
+      expect(can(permission, ['MODERATOR', 'ADMIN'], 'LIMITED')).toBe(false);
+    });
+
+    it('denies a combined vote-and-write requirement for LIMITED', () => {
+      expect(
+        service.hasAllPermissions({ roles: ['SUPERADMIN'], status: 'LIMITED' }, [
+          PERMISSIONS.COMMENT_VOTE,
+          PERMISSIONS.THREAD_CREATE,
+        ]),
+      ).toBe(false);
+    });
+
+    it.each(Object.values(PERMISSIONS))(
+      'denies %s for BANNED, including elevated roles',
+      (permission) => {
+        expect(can(permission, ['SUPERADMIN'], 'BANNED')).toBe(false);
+      },
+    );
+  });
 });
