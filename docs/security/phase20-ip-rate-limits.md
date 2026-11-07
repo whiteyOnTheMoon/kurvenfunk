@@ -79,3 +79,37 @@ remain independent.
 See also docs/security/phase20-ip-hashing.md for key version rotation and
 infrastructure/scripts/maintenance/prune-merged-branches.mjs for guarded
 branch cleanup.
+
+## Cloudflare WAF: one-shot DEV deployment and acceptance
+
+The WAF rule definitions are in infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs.
+A Cloudflare Tunnel token CANNOT be used as a WAF administration token.
+
+GitHub Actions needs two scoped secrets: CLOUDFLARE_WAF_API_TOKEN (read zone
+metadata plus read/edit zone Rulesets/WAF) and CLOUDFLARE_ZONE_ID. Do not
+paste token contents into chat, logs, the Git repository or issue comments.
+The script refuses any zone not exactly named kurvenfunk.at.
+
+A merge commit with [phase20-182-cf-finalize] starts the one-time, post-DEV
+Cloudflare WAF job. It creates only missing DEV-only auth rate-limit rules,
+then reads all four back. Existing unrelated WAF rules are never overwritten
+or deleted; owned rule drift, plan limits and missing credentials fail closed.
+
+Stable managed refs: kf_20_182_dev_login, kf_20_182_dev_register,
+kf_20_182_dev_reset, kf_20_182_dev_token. The script may also run with
+--audit for read-only verification, using the same two environment secrets.
+
+Plan guard: Cloudflare Free supports one rate-limit rule with a 10-second
+window and does not permit the necessary hostname+method filtering.
+Pro supports two rules and lacks method filtering. This four-rule deployment
+requires Business or Enterprise; the script refuses Free/Pro/unknown plans.
+Do not create a cross-hostname rate-limit rule on this shared production zone.
+
+Separate LIVE acceptance is still mandatory: normal public DEV Keycloak
+authorization-code + PKCE, registration and password reset must work; controlled
+test-only requests must trigger the expected 429 / Cloudflare limit while
+unrelated routes keep working. Avoid repeated authentication against real users.
+
+Until Cloudflare readback, real DEV flows and the API enabled configuration
+(IP_RATE_LIMIT_ENABLED=true plus a private, persistent HMAC key) are confirmed,
+Task 182 remains PARTIAL / NOT DONE. Synthetic Redis smoke alone is insufficient.
