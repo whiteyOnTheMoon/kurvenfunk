@@ -4,9 +4,8 @@ import type { Request } from 'express';
 
 import type { IpIdentityService } from './ip-identity.service';
 import { classifyIpLimitedWrite, IpRateLimitGuard, IP_RATE_LIMITS } from './ip-rate-limit.guard';
-import type { TrustedClientIpService } from './trusted-client-ip.service';
 
-const redisEval = jest.fn(async (..._args: unknown[]): Promise<number> => 1);
+const redisEval = jest.fn<(...args: unknown[]) => Promise<number>>().mockResolvedValue(1);
 const redisDisconnect = jest.fn();
 
 jest.mock('ioredis', () => ({
@@ -27,7 +26,7 @@ function context(method: string, originalUrl: string): ExecutionContext {
 
 function setup(enabled = true) {
   const ip = {
-    fromRequest: jest.fn(async (..._args: unknown[]): Promise<string | null> => '203.0.113.22'),
+    fromRequest: jest.fn<() => Promise<string | null>>().mockResolvedValue('203.0.113.22'),
   };
   const identity = {
     isConfigured: true,
@@ -44,7 +43,7 @@ function setup(enabled = true) {
 
   const guard = new IpRateLimitGuard(
     identity as unknown as IpIdentityService,
-    ip as unknown as TrustedClientIpService,
+    ip,
     config,
   );
   return { guard, ip, identity };
