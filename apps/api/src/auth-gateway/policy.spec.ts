@@ -43,7 +43,6 @@ describe('Task 182 DEV Keycloak auth gateway', () => {
     expect(normalizeAddress('2001:db8::1%eth0')).toBeNull();
   });
 
-
   it('forwards only gateway-generated proxy identity to Keycloak', () => {
     const headers = safeUpstreamHeaders(
       {
