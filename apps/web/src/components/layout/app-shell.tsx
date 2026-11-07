@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
-import { canEnterAdmin } from '../../features/admin/admin-access';
-import { getPostLoginDestination } from '../../features/auth/post-login-destination';
+import { getAdminMenuDestination } from '../../features/auth/post-login-destination';
 import styles from './app-shell.module.css';
 
 const navigationItems = [
@@ -80,6 +79,8 @@ function UserMenu() {
     );
   }
 
+  const adminDestination = getAdminMenuDestination(user);
+
   return (
     <details ref={menuRef} className={styles.userMenu}>
       <summary className={styles.userMenuTrigger}>
@@ -112,9 +113,9 @@ function UserMenu() {
           Einstellungen
         </Link>
 
-        {canEnterAdmin(user) ? (
+        {adminDestination ? (
           <Link
-            href={getPostLoginDestination(user)}
+            href={adminDestination}
             className={styles.userMenuItem}
             onClick={closeMenu}
           >
