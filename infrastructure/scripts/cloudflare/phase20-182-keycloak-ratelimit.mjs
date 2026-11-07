@@ -62,7 +62,7 @@ export function rulesAreEquivalent(actual, expected) {
     x.period === y.period &&
     x.requests_per_period === y.requests_per_period &&
     x.mitigation_timeout === y.mitigation_timeout &&
-    x.requests_to_origin === y.requests_to_origin &&
+    (x.requests_to_origin ?? false) === y.requests_to_origin &&
     Array.isArray(x.characteristics) &&
     x.characteristics.length === y.characteristics.length &&
     y.characteristics.every((v) => x.characteristics.includes(v)),
