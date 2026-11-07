@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
-import { getPostLoginDestination } from '../auth/post-login-destination';
+import { getPostLoginDestination } from '../admin/admin-access';
 import { ClubSelection } from './club-selection';
 import { NicknameSelection } from './nickname-selection';
 
