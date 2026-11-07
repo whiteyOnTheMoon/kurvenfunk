@@ -135,6 +135,7 @@ async function main() {
   if (command === '--validate') {
     console.log('KEYCLOAK_MAIL_CONFIG: VALID (' + target + ')');
   } else if (command === '--emit') {
+    if (process.stdout.isTTY) throw new Error('MAIL_EMIT_REQUIRES_PIPE');
     // Secrets are deliberately written only to a closed CLI pipe.
     // NEVER invoke --emit interactively, redirect to logs, or use shell tracing.
     process.stdout.write(JSON.stringify(config) + '\n');
