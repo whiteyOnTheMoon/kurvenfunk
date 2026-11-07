@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
-import { getPostLoginDestination } from '../../features/auth/post-login-destination';
+import { getPostLoginDestination } from '../../features/admin/admin-access';
 
 export function LoginClient() {
   const { authenticated, error, initialized, login, loginWithGoogle, sessionRecovering, user } =
