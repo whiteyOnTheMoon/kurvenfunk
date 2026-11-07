@@ -47,6 +47,11 @@ async function handleRequest(
   response: import('node:http').ServerResponse,
 ): Promise<void> {
   if (incoming.url === '/_gateway/health' && incoming.method === 'GET') {
+    const peer = incoming.socket.remoteAddress;
+    if (peer !== '127.0.0.1' && peer !== '::1' && peer !== '::ffff:127.0.0.1') {
+      reject(response, 503);
+      return;
+    }
     response.writeHead(200, { 'content-type': 'text/plain' });
     response.end('ok');
     return;
@@ -55,6 +60,12 @@ async function handleRequest(
   let pathname: string;
   try {
     pathname = new URL(incoming.url || '/', 'https://' + expectedHost).pathname;
+    // Do not allow alternate encodings that could be decoded differently by Keycloak.
+    // Only the query string (OIDC codes, sessions) may contain percent escapes.
+    if (pathname.startsWith('/realms/') && pathname.includes('%')) {
+      reject(response, 503);
+      return;
+    }
   } catch {
     reject(response, 503);
     return;
@@ -111,7 +122,14 @@ async function handleRequest(
       key === 'proxy-connection' ||
       key === 'transfer-encoding' ||
       key === 'upgrade' ||
-      key === 'keep-alive'
+      key === 'keep-alive' ||
+      key === 'x-real-ip' ||
+      key === 'x-original-forwarded-for' ||
+      key === 'true-client-ip' ||
+      key === 'x-cluster-client-ip' ||
+      key === 'proxy-authorization' ||
+      key === 'te' ||
+      key === 'trailer'
     ) {
       delete headers[key];
     }
@@ -158,6 +176,10 @@ const server = createServer((incoming, response) => {
 server.on('clientError', (_error, socket) => {
   socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
 });
+
+server.requestTimeout = 30_000;
+server.headersTimeout = 15_000;
+server.keepAliveTimeout = 5_000;
 
 server.listen(port, '0.0.0.0', () => {
   console.log('AUTH_GATEWAY_DEV_READY');
