@@ -124,6 +124,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     moderatorId = moderator.id;
     limitedUserId = limitedUser.id;
     bannedUserId = bannedUser.id;
+    expect(editor.id).toBeTruthy();
     articleId = article.id;
 
     commentId = (
