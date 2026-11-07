@@ -25,3 +25,7 @@ export function getPostLoginDestination(user: AdminIdentity): string {
 
   return '/';
 }
+
+export function getAdminMenuDestination(user: AdminIdentity | undefined): string | null {
+  return user && canEnterAdmin(user) ? getPostLoginDestination(user) : null;
+}
