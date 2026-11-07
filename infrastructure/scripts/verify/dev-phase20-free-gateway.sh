@@ -14,7 +14,11 @@ if [[ "$(id -un)" != "ap" || "$(git branch --show-current)" != "develop" ||
 fi
 
 chmod 600 .env.dev
-if grep -Eq '^[[:space:]]*AUTH_GATEWAY_ENABLED=(true|"true")[[:space:]]*
+if grep -Fxq 'AUTH_GATEWAY_ENABLED=true' .env.dev ||
+  grep -Fxq 'AUTH_GATEWAY_ENABLED="true"' .env.dev; then
+  echo "PHASE20_182_FREE_DEV_GATEWAY: ALREADY_ENABLED" >&2
+  exit 1
+fi
 
 backup="$(mktemp /tmp/kurvenfunk-auth-gateway-env.XXXXXX)"
 cp -p .env.dev "$backup"
