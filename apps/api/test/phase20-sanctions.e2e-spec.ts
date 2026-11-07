@@ -587,7 +587,9 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     await request(app.getHttpServer())
       .get('/api/v1/matches?competition=' + competitionSlug)
       .expect(200);
-    await request(app.getHttpServer()).get('/api/v1/matches/' + match.id).expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/matches/' + match.id)
+      .expect(200);
     await request(app.getHttpServer()).get('/api/v1/competitions').expect(200);
     await request(app.getHttpServer()).get('/api/v1/clubs').expect(200);
     await request(app.getHttpServer())
