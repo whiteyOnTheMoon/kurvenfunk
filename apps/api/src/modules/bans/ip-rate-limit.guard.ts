@@ -68,7 +68,7 @@ function unavailable(): ServiceUnavailableException {
  */
 @Injectable()
 export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
-  private readonly redis: Redis;
+  private readonly redis: Redis | null;
   private readonly enabled: boolean;
 
   constructor(
@@ -77,7 +77,7 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
     config: ConfigService,
   ) {
     this.enabled = config.get<string>('IP_RATE_LIMIT_ENABLED', 'false') === 'true';
-    this.redis = new Redis({
+    this.redis = this.enabled ? new Redis({
       host: config.get<string>('REDIS_HOST', 'redis'),
       port: Number(config.get<number>('REDIS_PORT', 6379)),
       password: config.getOrThrow<string>('REDIS_PASSWORD'),
@@ -85,7 +85,7 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
       connectTimeout: 1500,
       maxRetriesPerRequest: 1,
       retryStrategy: () => null,
-    });
+    }) : null;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -109,7 +109,7 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
 
     let count: unknown;
     try {
-      count = await this.redis.eval(RATE_LUA, 1, key, RATE_WINDOW_MS);
+      count = await this.redis?.eval(RATE_LUA, 1, key, RATE_WINDOW_MS);
     } catch {
       throw unavailable();
     }
@@ -132,7 +132,7 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
   }
 
   onModuleDestroy(): void {
-    if (this.redis.status !== 'end') {
+    if (this.redis && this.redis.status !== 'end') {
       this.redis.disconnect();
     }
   }
