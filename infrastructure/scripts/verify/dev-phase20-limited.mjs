@@ -1,6 +1,6 @@
 // DEV-only Task 178: temporary real Keycloak identities + real HTTP API validation.
 // Run only via the guarded VPS launcher. Never display tokens, passwords or raw responses.
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createPrismaClient } from '@kurvenfunk/database';
 
 let database;
@@ -47,25 +47,132 @@ async function admin(method, suffix, payload) {
   });
 }
 
+function captureCookies(response, jar) {
+  for (const entry of response.headers.getSetCookie()) {
+    const first = entry.split(';', 1)[0];
+    const separator = first.indexOf('=');
+    if (separator > 0) {
+      const name = first.slice(0, separator);
+      const value = first.slice(separator + 1);
+      if (value) {
+        jar.set(name, value);
+      } else {
+        jar.delete(name);
+      }
+    }
+  }
+}
+
+function privateKeycloakUrl(address) {
+  const url = new URL(address);
+  if (url.hostname === 'auth-dev.kurvenfunk.at') {
+    url.protocol = 'http:';
+    url.hostname = 'keycloak';
+    url.port = '8080';
+  }
+  check(url.protocol === 'http:' && url.hostname === 'keycloak', 'PKCE_UNTRUSTED_REDIRECT');
+  return url;
+}
+
+async function sessionRequest(jar, method, address, body) {
+  const response = await request(privateKeycloakUrl(address), {
+    method,
+    redirect: 'manual',
+    headers: {
+      cookie: [...jar.entries()].map(([name, value]) => name + '=' + value).join('; '),
+      ...(body === undefined ? {} : { 'content-type': 'application/x-www-form-urlencoded' }),
+    },
+    ...(body === undefined ? {} : { body }),
+  });
+  captureCookies(response, jar);
+  return response;
+}
+
 async function getTokenFor(username, password) {
+  const web = new URL(process.env.WEB_URL ?? '');
+  check(web.hostname === 'dev.kurvenfunk.at' && web.protocol === 'https:', 'DEV_WEB_URL_REQUIRED');
+  const redirectUri = new URL('/login', web).href;
+  const codeVerifier = randomBytes(48).toString('base64url');
+  const challenge = createHash('sha256').update(codeVerifier).digest('base64url');
+  const state = randomBytes(24).toString('hex');
+  const authorizeUrl = new URL(
+    '/realms/' + realm + '/protocol/openid-connect/auth',
+    process.env.KEYCLOAK_ADMIN_INTERNAL_URL,
+  );
+  authorizeUrl.search = new URLSearchParams({
+    client_id: 'kurvenfunk-web',
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    response_mode: 'query',
+    scope: 'openid',
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  }).toString();
+
+  const jar = new Map();
+  let current = authorizeUrl;
+  let response = await sessionRequest(jar, 'GET', current);
+  let submitted = false;
+  let authorizationCode;
+
+  for (let redirects = 0; redirects < 10; redirects += 1) {
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      check(Boolean(location), 'PKCE_REDIRECT_MISSING');
+      const next = new URL(location, current);
+      if (next.origin === web.origin && next.pathname === '/login') {
+        check(next.searchParams.get('state') === state, 'PKCE_STATE_MISMATCH');
+        authorizationCode = next.searchParams.get('code');
+        check(Boolean(authorizationCode), 'PKCE_AUTHORIZATION_CODE_MISSING');
+        break;
+      }
+      current = next;
+      response = await sessionRequest(jar, 'GET', current);
+      continue;
+    }
+
+    check(response.status === 200, 'PKCE_LOGIN_PAGE_UNAVAILABLE');
+    check(!submitted, 'PKCE_LOGIN_NOT_ACCEPTED');
+    const html = await response.text();
+    const forms = html.match(/<form\b[^>]*>/gi) ?? [];
+    const form = forms.find(
+      (item) => /id=["']kc-form-login["']/i.test(item) ||
+        /login-actions\/authenticate/i.test(item),
+    );
+    check(Boolean(form), 'PKCE_PASSWORD_FORM_NOT_FOUND');
+    const action = form.match(/\baction=["']([^"']+)["']/i)?.[1];
+    check(Boolean(action), 'PKCE_PASSWORD_FORM_ACTION_MISSING');
+    const unescaped = action.replaceAll('&amp;', '&').replaceAll('&#38;', '&');
+    current = new URL(unescaped, current);
+    response = await sessionRequest(
+      jar,
+      'POST',
+      current,
+      new URLSearchParams({ username, password, credentialId: '' }),
+    );
+    submitted = true;
+  }
+  check(Boolean(authorizationCode), 'PKCE_REDIRECT_LIMIT_REACHED');
+
   const tokenUrl = new URL(
     '/realms/' + realm + '/protocol/openid-connect/token',
     process.env.KEYCLOAK_ADMIN_INTERNAL_URL,
   );
-  const response = await request(tokenUrl, {
+  const result = await request(tokenUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'password',
+      grant_type: 'authorization_code',
       client_id: 'kurvenfunk-web',
-      username,
-      password,
-      scope: 'openid',
+      code: authorizationCode,
+      redirect_uri: redirectUri,
+      code_verifier: codeVerifier,
     }),
   });
-  check(response.status === 200, 'KEYCLOAK_TEST_USER_TOKEN_UNAVAILABLE');
-  const payload = await jsonOrNull(response);
-  check(typeof payload?.access_token === 'string', 'KEYCLOAK_TEST_USER_TOKEN_MISSING');
+  check(result.status === 200, 'PKCE_TOKEN_EXCHANGE_FAILED');
+  const payload = await jsonOrNull(result);
+  check(typeof payload?.access_token === 'string', 'PKCE_ACCESS_TOKEN_MISSING');
   return payload.access_token;
 }
 
