@@ -1,13 +1,29 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
+import { getPostLoginDestination } from '../../features/auth/post-login-destination';
 
 export function LoginClient() {
-  const { authenticated, error, initialized, login, loginWithGoogle, logout, user } = useAuth();
+  const { authenticated, error, initialized, login, loginWithGoogle, sessionRecovering, user } =
+    useAuth();
+  const router = useRouter();
+  const destination = authenticated && user ? getPostLoginDestination(user) : undefined;
+
+  useEffect(() => {
+    if (initialized && destination) {
+      router.replace(destination);
+    }
+  }, [initialized, destination, router]);
 
   if (!initialized) {
     return <p>Checking login status…</p>;
+  }
+
+  if (sessionRecovering) {
+    return <p role="status">Deine Sitzung wird erneut geprüft …</p>;
   }
 
   if (error === 'ACCOUNT_BANNED') {
@@ -37,20 +53,11 @@ export function LoginClient() {
   if (authenticated && user) {
     return (
       <main>
-        <h1>Login erfolgreich</h1>
-        <p>Kontostatus: {user.status === 'LIMITED' ? 'Vorübergehend eingeschränkt' : 'Aktiv'}</p>
-        {user.status === 'LIMITED' && (
-          <p>
-            Du kannst weiterhin lesen und abstimmen, aber derzeit keine Kommentare oder Beiträge
-            schreiben.
-          </p>
-        )}
+        <h1>Anmeldung erfolgreich</h1>
+        <p role="status">Du wirst zu deinem Bereich weitergeleitet …</p>
         <p>
-          <Link href="/">Continue to Kurvenfunk</Link>
+          <Link href={destination ?? '/'}>Jetzt weiter</Link>
         </p>
-        <button type="button" onClick={() => void logout()}>
-          Logout
-        </button>
       </main>
     );
   }
