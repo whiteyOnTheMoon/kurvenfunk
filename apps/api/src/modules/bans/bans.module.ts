@@ -1,4 +1,9 @@
 import { Module } from '@nestjs/common';
 
-@Module({})
+import { IpIdentityService } from './ip-identity.service';
+
+@Module({
+  providers: [IpIdentityService],
+  exports: [IpIdentityService],
+})
 export class BansModule {}
