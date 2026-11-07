@@ -36,12 +36,16 @@ Keep a documented rollback to the old route.
 2. Confirm Keycloak KC_PROXY_HEADERS=xforwarded and local host-loopback
    127.0.0.1:3102 is not publicly accessible. Internal backend services can
    reach Keycloak directly and must be treated as trusted infrastructure.
-3. Configure IP_HASH_HMAC_SECRET in the permission-restricted DEV .env.dev
-   before running any overlay. Never paste secrets into GitHub/chat/logs.
-4. Include compose.yml, compose.dev.yml and compose.dev.auth-gateway.yml
-   in a Docker Compose config --quiet verification. Start only auth-gateway
-   after Redis and Keycloak are healthy, with up -d --no-deps auth-gateway.
-5. Test synthetic proxy/PKCE/registration/reset and forged-header behavior
+3. The one-shot workflow marker [phase20-182-free-preflight] runs ONLY after
+   a successful develop DEV deployment and invokes the guarded script
+   infrastructure/scripts/verify/dev-phase20-free-gateway.sh. It ensures
+   .env.dev is private (0600), generates a persistent random HMAC secret if
+   absent (never prints it), and opts in AUTH_GATEWAY_ENABLED=true.
+4. The guarded preflight builds and starts the gateway with the Compose overlay,
+   checks container health and tests rejection of an API-container request
+   forging CF-Connecting-IP. On failure it restores the previous .env.dev and
+   removes the gateway. The public auth-dev tunnel still points at Keycloak.
+5. Complete synthetic proxy/PKCE/registration/reset and forged-header checks
    BEFORE changing the tunnel route. Record an immediate rollback procedure.
 6. DEV deployment uses the overlay ONLY when .env.dev explicitly contains
    AUTH_GATEWAY_ENABLED=true, preserving the gateway during up --remove-orphans.
