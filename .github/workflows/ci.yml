@@ -58,6 +58,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary Task 178 PKCE formatter inspection
+        run: |
+          pnpm exec prettier --write infrastructure/scripts/verify/dev-phase20-limited.mjs
+          echo PHASE178_PKCE_FORMAT_BEGIN
+          base64 -w0 infrastructure/scripts/verify/dev-phase20-limited.mjs
+          echo
+          echo PHASE178_PKCE_FORMAT_END
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
