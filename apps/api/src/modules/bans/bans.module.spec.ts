@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
 import { BansModule } from './bans.module';
@@ -10,17 +10,14 @@ describe('Task 181 – BansModule injection', () => {
   it('exports the HMAC identity service without enabling an IP enforcement guard', async () => {
     const secret = randomBytes(32).toString('base64url');
     const moduleRef = await Test.createTestingModule({
-      imports: [BansModule],
-      providers: [
-        {
-          provide: ConfigService,
-          useValue: {
-            get: (name: string, fallback?: string) =>
-              name === 'IP_HASH_HMAC_SECRET' ? secret : fallback,
-          },
-        },
-      ],
-    }).compile();
+      imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), BansModule],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: (name: string, fallback?: string) =>
+          name === 'IP_HASH_HMAC_SECRET' ? secret : fallback,
+      })
+      .compile();
 
     try {
       const identity = moduleRef.get(IpIdentityService);
