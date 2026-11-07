@@ -526,6 +526,57 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       .expect(200);
     expect((profile.body as { data: { status: string } }).data.status).toBe('LIMITED');
 
+    // A real schedule needs an active season. Isolate all sports fixtures to the
+    // disposable E2E database; no external or DEV competition data is mutated.
+    const competitionSlug = 'phase20-matrix-' + idSuffix;
+    const competition = await db.competition.create({
+      data: { name: 'Phase 20 matrix', slug: competitionSlug, type: 'LEAGUE' },
+      select: { id: true },
+    });
+    const [home, away] = await Promise.all([
+      db.club.create({
+        data: {
+          name: 'Phase 20 Matrix Home ' + idSuffix,
+          slug: 'phase20-matrix-home-' + idSuffix,
+          color1Hex: '#123456',
+          color1Rgba: 'rgba(18, 52, 86, 1)',
+        },
+        select: { id: true },
+      }),
+      db.club.create({
+        data: {
+          name: 'Phase 20 Matrix Away ' + idSuffix,
+          slug: 'phase20-matrix-away-' + idSuffix,
+          color1Hex: '#654321',
+          color1Rgba: 'rgba(101, 67, 33, 1)',
+        },
+        select: { id: true },
+      }),
+    ]);
+    const season = await db.season.create({
+      data: {
+        competitionId: competition.id,
+        name: 'Phase 20 Test Season',
+        slug: '2026',
+        startDate: new Date('2026-01-01T00:00:00Z'),
+        endDate: new Date('2026-12-31T00:00:00Z'),
+        status: 'ACTIVE',
+        active: true,
+      },
+      select: { id: true },
+    });
+    const match = await db.match.create({
+      data: {
+        competitionId: competition.id,
+        seasonId: season.id,
+        homeClubId: home.id,
+        awayClubId: away.id,
+        kickoff: new Date('2026-11-07T18:00:00Z'),
+        status: 'SCHEDULED',
+      },
+      select: { id: true },
+    });
+
     await request(app.getHttpServer()).get('/api/v1/articles?limit=10').expect(200);
     await request(app.getHttpServer())
       .get('/api/v1/articles/by-slug/phase20-e2e-' + suffix)
@@ -533,7 +584,10 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     await request(app.getHttpServer())
       .get('/api/v1/articles/' + articleId + '/comments')
       .expect(200);
-    await request(app.getHttpServer()).get('/api/v1/matches').expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/matches?competition=' + competitionSlug)
+      .expect(200);
+    await request(app.getHttpServer()).get('/api/v1/matches/' + match.id).expect(200);
     await request(app.getHttpServer()).get('/api/v1/competitions').expect(200);
     await request(app.getHttpServer()).get('/api/v1/clubs').expect(200);
     await request(app.getHttpServer())
