@@ -41,7 +41,10 @@ const redis = new Redis({
 });
 
 function reject(response: import('node:http').ServerResponse, status: number): void {
-  response.writeHead(status, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+  response.writeHead(status, {
+    'content-type': 'text/plain; charset=utf-8',
+    'cache-control': 'no-store',
+  });
   response.end(status === 429 ? 'Too many requests' : 'Service unavailable');
 }
 
