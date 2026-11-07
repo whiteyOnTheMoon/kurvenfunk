@@ -41,11 +41,7 @@ function setup(enabled = true) {
     getOrThrow: () => 'test-redis-secret',
   } as unknown as ConfigService;
 
-  const guard = new IpRateLimitGuard(
-    identity as unknown as IpIdentityService,
-    ip,
-    config,
-  );
+  const guard = new IpRateLimitGuard(identity as unknown as IpIdentityService, ip, config);
   return { guard, ip, identity };
 }
 
