@@ -9,9 +9,7 @@ import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
-import type {
-  DatabaseService as WorkerDatabaseService,
-} from '../../worker/src/database/database.service';
+import type { DatabaseService as WorkerDatabaseService } from '../../worker/src/database/database.service';
 import { SanctionExpirationService } from '../../worker/src/services/sanction-expiration.service';
 
 describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
@@ -249,9 +247,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     expect((await db.user.findUniqueOrThrow({ where: { id: limitedUserId } })).status).toBe(
       'ACTIVE',
     );
-    expect(await db.auditLog.count({ where: { sanctionId, action: 'SANCTION_EXPIRED' } })).toBe(
-      1,
-    );
+    expect(await db.auditLog.count({ where: { sanctionId, action: 'SANCTION_EXPIRED' } })).toBe(1);
     expect(
       await db.auditLog.count({
         where: { sanctionId, action: 'USER_STATUS_CHANGED', reason: 'LIMITED_EXPIRED' },
@@ -259,9 +255,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     ).toBe(1);
 
     await worker.expireDueSanctions(new Date());
-    expect(await db.auditLog.count({ where: { sanctionId, action: 'SANCTION_EXPIRED' } })).toBe(
-      1,
-    );
+    expect(await db.auditLog.count({ where: { sanctionId, action: 'SANCTION_EXPIRED' } })).toBe(1);
 
     const restored = await request(app.getHttpServer())
       .get('/api/v1/auth/me')
