@@ -89,6 +89,10 @@ temporären, nur im Keycloak-Container gespeicherten 0600-JSON-File,
 konfiguriert den Realm `kurvenfunk`, löscht die temporäre Datei und
 vergleicht die nicht geheimen SMTP-Einstellungen.
 
+Zur Keycloak-Administration verwendet es den bereits eingerichteten separaten
+`KEYCLOAK_CONFIG_ADMIN_USERNAME` / `KEYCLOAK_CONFIG_ADMIN_PASSWORD` aus der
+privaten Umgebungsdatei; die Bootstrap-Zugangsdaten werden nicht verwendet.
+
 Das Tool ändert nur `smtpServer`, nicht `registrationAllowed`,
 `verifyEmail`, `resetPasswordAllowed` oder bestehende Keycloak-Benutzer.
 Die bereits vorhandene DEV-Registrierungskonfiguration nutzt Mailpit.
