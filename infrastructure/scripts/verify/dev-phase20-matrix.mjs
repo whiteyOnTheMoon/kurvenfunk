@@ -357,10 +357,7 @@ async function execute() {
   // A 404 schedule on DEV means there is no current active season. That must
   // not be confused with a LIMITED auth denial (403/401).
   const scheduleRead = await api('GET', '/matches', readerToken);
-  check(
-    scheduleRead.status === 200 || scheduleRead.status === 404,
-    'LIMITED_MATCH_READ_FORBIDDEN',
-  );
+  check(scheduleRead.status === 200 || scheduleRead.status === 404, 'LIMITED_MATCH_READ_FORBIDDEN');
   const availableMatch = await database.match.findFirst({ select: { id: true } });
   if (availableMatch) {
     check(
