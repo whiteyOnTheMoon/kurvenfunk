@@ -218,7 +218,9 @@ async function main() {
     assert.equal(await page.evaluate(() => localStorage.getItem('token')), null);
     assert.deepEqual(pageErrors, []);
 
-    process.stdout.write('React AuthProvider Chromium refresh, transient identity recovery and logout: PASS\n');
+    process.stdout.write(
+      'React AuthProvider Chromium refresh, transient identity recovery and logout: PASS\n',
+    );
   } finally {
     if (browser) await browser.close();
     await close(webServer);
