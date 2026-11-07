@@ -58,6 +58,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary Task 178 Prettier layout diagnosis
+        run: |
+          pnpm exec prettier --write apps/api/test/phase20-sanctions.e2e-spec.ts
+          git diff -- apps/api/test/phase20-sanctions.e2e-spec.ts
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
