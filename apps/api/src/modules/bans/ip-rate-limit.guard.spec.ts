@@ -11,7 +11,7 @@ const redisDisconnect = jest.fn();
 jest.mock('ioredis', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
-    eval: (...args: unknown[]) => redisEval(...args),
+    eval: (...args: unknown[]): Promise<number> => redisEval(...args) as Promise<number>,
     disconnect: redisDisconnect,
     status: 'wait',
   })),
@@ -101,8 +101,9 @@ describe('Task 182 – API IP rate limits', () => {
       expect(redisEval).toHaveBeenCalledTimes(1);
       expect(JSON.stringify(redisEval.mock.calls)).not.toContain('203.0.113.22');
       expect(JSON.stringify(redisEval.mock.calls)).toContain('ip-write-rate:v1:v2:reports:');
-      expect(redisEval.mock.calls[0]?.[2]).toBe(1);
-      expect(redisEval.mock.calls[0]?.[3]).toBe(60000);
+      const calls = redisEval.mock.calls as unknown[][];
+      expect(calls[0]?.[2]).toBe(1);
+      expect(calls[0]?.[3]).toBe(60000);
     } finally {
       guard.onModuleDestroy();
     }
