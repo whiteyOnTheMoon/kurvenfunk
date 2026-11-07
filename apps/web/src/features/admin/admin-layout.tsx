@@ -5,8 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect } from 'react';
 
 import { useAuth } from '../auth/auth-provider';
-import { canAccessAdminPath, getAdminNavigation } from './admin-access';
-import { getPostLoginDestination } from '../auth/post-login-destination';
+import { canAccessAdminPath, getAdminNavigation, getPostLoginDestination } from './admin-access';
 
 import styles from './admin-layout.module.css';
 
