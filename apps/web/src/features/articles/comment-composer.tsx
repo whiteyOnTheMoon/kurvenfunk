@@ -489,7 +489,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
       comment.status !== 'VISIBLE' ||
       !token ||
       !user ||
-      user.status === 'BANNED' ||
+      user.status !== 'ACTIVE' ||
       comment.author?.id !== user.id ||
       deletingCommentId
     ) {
@@ -713,7 +713,7 @@ export function CommentComposer({ apiUrl, articleId, initialCommentCount }: Comm
 
               {authenticated &&
               user &&
-              user.status !== 'BANNED' &&
+              user.status === 'ACTIVE' &&
               comment.author?.id === user.id ? (
                 <button
                   className={styles.deleteButton}
