@@ -316,7 +316,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     ['3D', 72],
     ['7D', 168],
     ['30D', 720],
-  ] as const)('persists %s LIMITED duration, audit, notification and private notes', async (duration, hours) => {
+  ] as const)('stores %s LIMITED duration with audit and notification', async (duration, hours) => {
     const suffix178 = randomUUID().slice(0, 8);
     const subject = `phase20-duration-${suffix178}`;
     const target = await db.user.create({
@@ -403,7 +403,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     ).toBe(2);
   }, 30000);
 
-  it('serializes concurrent LIMITED requests for one target with exactly one sanction', async () => {
+  it('serializes concurrent LIMITED attempts', async () => {
     const suffix178 = randomUUID().slice(0, 8);
     const target = await db.user.create({
       data: {
@@ -449,7 +449,7 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     ).toBe(1);
   }, 30000);
 
-  it('rejects invalid targets and attempts to limit a banned or moderator-owned account', async () => {
+  it('rejects invalid, self and banned targets', async () => {
     const moderatorToken = await token(moderatorSubject);
     const input = {
       userId: randomUUID(),
