@@ -3,7 +3,7 @@ import { lookup } from 'node:dns/promises';
 
 import Redis from 'ioredis';
 
-import { AUTH_LIMITS, classifyAuthRequest, COUNTER_LUA, rateKey, verifiedClientIp } from './policy';
+import { AUTH_LIMITS, classifyAuthRequest, COUNTER_LUA, rateKey, safeUpstreamHeaders, verifiedClientIp } from './policy';
 
 const port = Number(process.env.AUTH_GATEWAY_PORT || 8080);
 const redisPassword = process.env.REDIS_PASSWORD;
@@ -112,35 +112,7 @@ async function handleRequest(
     }
   }
 
-  const headers: Record<string, string | string[] | undefined> = { ...incoming.headers };
-  for (const key of Object.keys(headers)) {
-    if (
-      key.startsWith('cf-') ||
-      key.startsWith('x-forwarded-') ||
-      key === 'forwarded' ||
-      key === 'connection' ||
-      key === 'proxy-connection' ||
-      key === 'transfer-encoding' ||
-      key === 'upgrade' ||
-      key === 'keep-alive' ||
-      key === 'x-real-ip' ||
-      key === 'x-original-forwarded-for' ||
-      key === 'true-client-ip' ||
-      key === 'x-cluster-client-ip' ||
-      key === 'proxy-authorization' ||
-      key === 'te' ||
-      key === 'trailer'
-    ) {
-      delete headers[key];
-    }
-  }
-
-  // Keycloak's KC_PROXY_HEADERS=xforwarded consumes ONLY gateway-generated values.
-  headers.host = expectedHost;
-  headers['x-forwarded-proto'] = 'https';
-  headers['x-forwarded-host'] = expectedHost;
-  headers['x-forwarded-port'] = '443';
-  headers['x-forwarded-for'] = clientIp;
+  const headers = safeUpstreamHeaders(incoming.headers, clientIp, expectedHost);
 
   const upstreamRequest = proxyRequest(
     {
