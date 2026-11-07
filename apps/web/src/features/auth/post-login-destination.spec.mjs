@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getPostLoginDestination } from './post-login-destination.ts';
+import { getAdminMenuDestination, getPostLoginDestination } from './post-login-destination.ts';
 
 const identity = (roles, status = 'ACTIVE', onboardingCompleted = true) => ({
   roles,
@@ -35,4 +35,16 @@ test('restricted staff never get an admin landing route', () => {
   assert.equal(getPostLoginDestination(identity(['EDITOR'], 'LIMITED')), '/');
   assert.equal(getPostLoginDestination(identity(['MODERATOR'], 'BANNED')), '/');
   assert.equal(getPostLoginDestination(identity(['ADMIN'], 'BANNED')), '/');
+});
+
+test('profile menu exposes admin only to active, onboarded staff', () => {
+  for (const roles of [[], ['USER'], ['TRUSTED_USER']]) {
+    assert.equal(getAdminMenuDestination(identity(roles)), null);
+  }
+  assert.equal(getAdminMenuDestination(undefined), null);
+  assert.equal(getAdminMenuDestination(identity(['ADMIN'], 'LIMITED')), null);
+  assert.equal(getAdminMenuDestination(identity(['MODERATOR'], 'ACTIVE', false)), null);
+  assert.equal(getAdminMenuDestination(identity(['MODERATOR'])), '/admin/moderation');
+  assert.equal(getAdminMenuDestination(identity(['EDITOR'])), '/admin/artikel');
+  assert.equal(getAdminMenuDestination(identity(['SUPERADMIN'])), '/admin');
 });
