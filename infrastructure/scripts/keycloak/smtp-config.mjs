@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 
 const ENVIRONMENTS = new Set(['dev', 'staging', 'prod']);
 const MAILBOX = /^[a-zA-Z0-9.!#$%&'*+/=?^_\x60{|}~-]+@(?:[a-zA-Z0-9-]+\.)+at$/u;
-const DNS_HOST = /^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/u;
+const DNS_HOST =
+  /^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/u;
 
 function required(value, code) {
   if (typeof value !== 'string' || !value || /[\r\n\0]/u.test(value)) {
@@ -13,10 +14,7 @@ function required(value, code) {
 
 function mailbox(value, code) {
   const address = required(value, code);
-  if (
-    !MAILBOX.test(address) ||
-    !/@(?:[a-z0-9-]+\.)*kurvenfunk\.at$/iu.test(address)
-  ) {
+  if (!MAILBOX.test(address) || !/@(?:[a-z0-9-]+\.)*kurvenfunk\.at$/iu.test(address)) {
     throw new Error(code);
   }
   return address;
@@ -84,10 +82,10 @@ export function buildKeycloakEmailConfig(values, target) {
   }
   const port = required(values.MAIL_SMTP_PORT, 'MAIL_SMTP_PORT_MISSING');
   const encryption = required(values.MAIL_SMTP_ENCRYPTION, 'MAIL_ENCRYPTION_REQUIRED');
-  if (
-    !((port === '465' && encryption === 'ssl') ||
-      (port === '587' && encryption === 'starttls'))
-  ) {
+  if (!(
+    (port === '465' && encryption === 'ssl') ||
+    (port === '587' && encryption === 'starttls')
+  )) {
     throw new Error('MAIL_ENCRYPTION_REQUIRED');
   }
   const username = required(values.MAIL_SMTP_USERNAME, 'MAIL_SMTP_USERNAME_MISSING');
