@@ -39,8 +39,9 @@ async function api(path, method = 'GET') {
 async function pages(resource) {
   const items = [];
   for (let page = 1; page <= 20; page += 1) {
-    const data = await api(resource + (resource.includes('?') ? '&' : '?') +
-      'per_page=100&page=' + page);
+    const data = await api(
+      resource + (resource.includes('?') ? '&' : '?') + 'per_page=100&page=' + page,
+    );
     if (!Array.isArray(data)) throw new Error('GITHUB_PAGINATION_UNEXPECTED');
     items.push(...data);
     if (data.length < 100) return items;
@@ -54,10 +55,7 @@ if (develop.commit.sha !== expectedSha) {
   throw new Error('BRANCH_CLEANUP_DEVELOP_MOVED');
 }
 
-const [branches, pulls] = await Promise.all([
-  pages('/branches'),
-  pages('/pulls?state=all'),
-]);
+const [branches, pulls] = await Promise.all([pages('/branches'), pages('/pulls?state=all')]);
 const protectedNames = new Set(['develop', 'main']);
 const openHeads = new Set(
   pulls
@@ -70,7 +68,8 @@ for (const pr of pulls) {
     !pr.merged_at ||
     pr.head.repo?.full_name !== repo ||
     !['main', 'develop'].includes(pr.base.ref)
-  ) continue;
+  )
+    continue;
 
   const key = pr.head.ref + ':' + pr.head.sha;
   mergedAtExactTip.set(key, true);
@@ -102,8 +101,11 @@ for (const branch of branches) {
   // Recheck just before the irreversible operation. Do not delete branches
   // updated since the listing or those that gained a new open PR.
   const current = await api('/branches/' + encodeURIComponent(name));
-  const openNow = await api('/pulls?state=open&head=' +
-    encodeURIComponent(repo.split('/')[0] + ':' + name) + '&per_page=100');
+  const openNow = await api(
+    '/pulls?state=open&head=' +
+      encodeURIComponent(repo.split('/')[0] + ':' + name) +
+      '&per_page=100',
+  );
 
   if (current.protected || current.commit.sha !== branch.commit.sha || openNow.length) {
     retained.moved += 1;
@@ -117,5 +119,6 @@ for (const branch of branches) {
   console.log('REMOVED_MERGED_PR_BRANCH ' + name);
 }
 
-console.log('BRANCH_CLEANUP_RESULT ' +
-  JSON.stringify({ before: branches.length, deleted, retained }));
+console.log(
+  'BRANCH_CLEANUP_RESULT ' + JSON.stringify({ before: branches.length, deleted, retained }),
+);
