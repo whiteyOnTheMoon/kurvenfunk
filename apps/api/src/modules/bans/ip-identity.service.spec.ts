@@ -51,14 +51,13 @@ describe('Task 181 – keyed IP pseudonymization', () => {
     expect(identity.hash('2001:db8::2')).not.toEqual(identity.hash('2001:db8::1'));
   });
 
-  it.each([
-    '::ffff:203.0.113.22',
-    '0:0:0:0:0:ffff:cb00:7116',
-    '::FFFF:CB00:7116',
-  ])('treats IPv4-mapped IPv6 %s as the same native IPv4 address', (mapped) => {
-    const identity = createIdentity();
-    expect(identity.hash(mapped)).toEqual(identity.hash('203.0.113.22'));
-  });
+  it.each(['::ffff:203.0.113.22', '0:0:0:0:0:ffff:cb00:7116', '::FFFF:CB00:7116'])(
+    'treats IPv4-mapped IPv6 %s as the same native IPv4 address',
+    (mapped) => {
+      const identity = createIdentity();
+      expect(identity.hash(mapped)).toEqual(identity.hash('203.0.113.22'));
+    },
+  );
 
   it.each([
     'not-an-ip',
@@ -108,10 +107,7 @@ describe('Task 181 – keyed IP pseudonymization', () => {
 
     expect(rotated.isConfigured).toBe(true);
     expect(rotated.hash(address).hashKeyVersion).toBe('v2');
-    expect(rotated.candidateHashes(address)).toEqual([
-      rotated.hash(address),
-      old.hash(address),
-    ]);
+    expect(rotated.candidateHashes(address)).toEqual([rotated.hash(address), old.hash(address)]);
     expect(rotated.hash(address)).not.toEqual(old.hash(address));
   });
 
@@ -150,8 +146,6 @@ describe('Task 181 – keyed IP pseudonymization', () => {
     const identity = createIdentity(overrides);
     expect(identity.isConfigured).toBe(false);
     expect(() => identity.hash('203.0.113.22')).toThrow(ServiceUnavailableException);
-    expect(() => identity.candidateHashes('203.0.113.22')).toThrow(
-      ServiceUnavailableException,
-    );
+    expect(() => identity.candidateHashes('203.0.113.22')).toThrow(ServiceUnavailableException);
   });
 });
