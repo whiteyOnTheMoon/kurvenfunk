@@ -12,6 +12,18 @@ const apiEnvSchema = z
 
     REDIS_PASSWORD: z.string().min(1),
 
+    // Task 181: optional until trusted-proxy IP protection is enabled in Tasks 182–185.
+    // Empty strings from Docker Compose are treated as disabled, not as HMAC keys.
+    IP_HASH_HMAC_SECRET: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(43).max(128).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    ),
+    IP_HASH_KEY_VERSION: z.string().regex(/^v[1-9][0-9]{0,2}$/).default('v1'),
+    IP_HASH_PREVIOUS_KEYS_JSON: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().optional(),
+    ),
+
     DATABASE_URL: z.string().url(),
     WEB_URL: z.string().url(),
     KEYCLOAK_ISSUER: z.string().url(),
