@@ -114,11 +114,7 @@ function UserMenu() {
         </Link>
 
         {adminDestination ? (
-          <Link
-            href={adminDestination}
-            className={styles.userMenuItem}
-            onClick={closeMenu}
-          >
+          <Link href={adminDestination} className={styles.userMenuItem} onClick={closeMenu}>
             Admin-Bereich
           </Link>
         ) : null}
