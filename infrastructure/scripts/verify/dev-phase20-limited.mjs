@@ -132,7 +132,6 @@ async function createIdentity(role) {
 }
 
 async function execute() {
-  check(process.env.APP_ENV === 'development', 'DEV_ENVIRONMENT_REQUIRED');
   const databaseUrl = new URL(process.env.DATABASE_URL ?? '');
   const keycloakUrl = new URL(process.env.KEYCLOAK_ADMIN_INTERNAL_URL ?? '');
   const issuer = new URL(process.env.KEYCLOAK_ISSUER ?? '');
