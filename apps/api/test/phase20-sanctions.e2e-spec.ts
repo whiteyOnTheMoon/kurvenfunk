@@ -494,7 +494,6 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
     );
   }, 30000);
 
-
   it('Task 179: LIMITED can read and vote but cannot create, reply, edit or moderate', async () => {
     const idSuffix = randomUUID().slice(0, 8);
     const targetSubject = 'phase20-matrix-' + idSuffix;
