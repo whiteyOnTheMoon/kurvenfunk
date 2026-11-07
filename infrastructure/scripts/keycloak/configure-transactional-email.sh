@@ -39,17 +39,43 @@ compose=(docker compose -p "$project" --env-file "$env_file" -f compose.yml -f "
 "${compose[@]}" config --quiet
 
 authenticate() {
-  "${compose[@]}" exec -T keycloak sh -ec '
-    : "${KC_BOOTSTRAP_ADMIN_USERNAME:?}"
-    : "${KC_BOOTSTRAP_ADMIN_PASSWORD:?}"
+  # The initial bootstrap account may no longer be active. Use the dedicated
+  # Keycloak configuration admin already present in the private environment.
+  # Password is transferred only over stdin, never in the Docker exec args.
+  python3 - "$env_file" <<'PY' | "${compose[@]}" exec -T keycloak sh -ec '
+    IFS= read -r config_user
+    IFS= read -r config_password
+    test -n "$config_user" && test -n "$config_password"
     /opt/keycloak/bin/kcadm.sh config credentials \
       --server http://127.0.0.1:8080 \
       --realm master \
-      --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
-      --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null 2>&1
-  ' || { echo "KEYCLOAK_MAIL_ADMIN_AUTH_FAILED" >&2; return 1; }
+      --user "$config_user" \
+      --password "$config_password" >/dev/null 2>&1
+  '
+from pathlib import Path
+import sys
+
+entries = {}
+for raw in Path(sys.argv[1]).read_text().splitlines():
+    line = raw.strip()
+    if not line or line.startswith('#') or '=' not in line:
+        continue
+    name, value = line.split('=', 1)
+    if name in ('KEYCLOAK_CONFIG_ADMIN_USERNAME', 'KEYCLOAK_CONFIG_ADMIN_PASSWORD'):
+        if name in entries:
+            raise SystemExit('KEYCLOAK_MAIL_ADMIN_CONFIG_DUPLICATE')
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if not value or any(char in value for char in '\r\n\x00'):
+            raise SystemExit('KEYCLOAK_MAIL_ADMIN_CONFIG_INVALID')
+        entries[name] = value
+for name in ('KEYCLOAK_CONFIG_ADMIN_USERNAME', 'KEYCLOAK_CONFIG_ADMIN_PASSWORD'):
+    if name not in entries:
+        raise SystemExit('KEYCLOAK_MAIL_ADMIN_CONFIG_MISSING')
+    print(entries[name])
+PY
 }
-authenticate
+authenticate || { echo "KEYCLOAK_MAIL_ADMIN_AUTH_FAILED" >&2; exit 1; }
 
 if [[ "$mode" == --apply ]]; then
   # The pipe is secret-bearing: never enable shell trace or tee it to a file.
