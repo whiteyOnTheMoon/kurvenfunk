@@ -75,6 +75,8 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase20-banned.sh
           node --check infrastructure/scripts/verify/dev-phase20-banned.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-ip-hashing.sh
+          bash -n infrastructure/scripts/verify/dev-phase20-ip-rate-limits.sh
+          node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
 
       - name: Generate Prisma client
         run: pnpm --filter=@kurvenfunk/database generate
@@ -444,3 +446,65 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-ip-hashing.sh"
+
+  phase20-182-dev-api:
+    name: Task 182 DEV API rate-limit smoke (synthetic Redis data)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-182-dev-api]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    concurrency:
+      group: phase20-182-dev-api
+      cancel-in-progress: false
+    steps:
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Check API Redis counter and proxy identity safely on DEV
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-ip-rate-limits.sh"
+
+  prune-merged-branches:
+    name: Remove safely verifiable obsolete PR branches
+    needs:
+      - deploy-dev
+      - phase20-182-dev-api
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-182-cleanup]') &&
+      needs.phase20-182-dev-api.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v7
+      - name: Prune only unchanged heads of merged PRs, preserving unmerged work
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+        run: node infrastructure/scripts/maintenance/prune-merged-branches.mjs
