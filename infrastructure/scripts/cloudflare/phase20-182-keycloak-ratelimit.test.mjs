@@ -89,7 +89,9 @@ test('unconfigured/invalid tokens fail before any network request', async () => 
       mode: 'apply',
       zoneId: 'invalid',
       token,
-      fetcher: async () => { called = true; },
+      fetcher: async () => {
+        called = true;
+      },
     }),
     /CF_WAF_CREDENTIALS_OR_MODE_MISSING/,
   );
@@ -187,10 +189,7 @@ test('refuses plan limits, rule drift and API failures rather than widening scop
   assert.ok(drifted.calls.every((call) => call.method === 'GET'));
 
   const capacity = fakeFetch({
-    initialRules: [
-      { ref: 'external1' },
-      { ref: 'external2' },
-    ],
+    initialRules: [{ ref: 'external1' }, { ref: 'external2' }],
   });
   await assert.rejects(
     manageRules({ mode: 'apply', zoneId, token, fetcher: capacity.fetcher }),
