@@ -165,7 +165,10 @@ async function execute() {
   check(tokenResponse.status === 200, 'KEYCLOAK_DEV_ADMIN_TOKEN_FAILED');
   const adminResult = await jsonOrNull(tokenResponse);
   adminToken = adminResult?.access_token;
-  check(typeof adminToken === 'string' && adminToken.length > 0, 'KEYCLOAK_DEV_ADMIN_TOKEN_MISSING');
+  check(
+    typeof adminToken === 'string' && adminToken.length > 0,
+    'KEYCLOAK_DEV_ADMIN_TOKEN_MISSING',
+  );
 
   const moderator = await createIdentity('MODERATOR');
   const reader = await createIdentity('USER');
@@ -175,8 +178,7 @@ async function execute() {
   const before = await api('GET', '/auth/me', moderatorToken);
   check(before.status === 200, 'MODERATOR_AUTH_FAILED');
   check(
-    before.body?.data?.id === moderator.id &&
-      before.body?.data?.roles?.includes('MODERATOR'),
+    before.body?.data?.id === moderator.id && before.body?.data?.roles?.includes('MODERATOR'),
     'MODERATOR_ROLE_NOT_CONFIRMED',
   );
 
@@ -280,9 +282,13 @@ async function cleanup() {
         });
         check(
           records.length === ids.length &&
-            records.every((user) => user.nickname?.startsWith('Phase20 178 ') &&
-              createdDatabase.some((entry) =>
-                entry.id === user.id && entry.subject === user.keycloakSubject)),
+            records.every(
+              (user) =>
+                user.nickname?.startsWith('Phase20 178 ') &&
+                createdDatabase.some(
+                  (entry) => entry.id === user.id && entry.subject === user.keycloakSubject,
+                ),
+            ),
           'TEST_CLEANUP_IDENTITY_GUARD_FAILED',
         );
         await database.$transaction(async (tx) => {
@@ -313,15 +319,11 @@ async function cleanup() {
     for (const created of [...createdKeycloak].reverse()) {
       try {
         check(
-          created.username.startsWith('kf-p178-') &&
-            created.username.endsWith('@example.test'),
+          created.username.startsWith('kf-p178-') && created.username.endsWith('@example.test'),
           'TEST_KEYCLOAK_CLEANUP_IDENTITY_GUARD_FAILED',
         );
         const response = await admin('DELETE', '/users/' + encodeURIComponent(created.subject));
-        check(
-          response.status === 204 || response.status === 404,
-          'TEST_KEYCLOAK_CLEANUP_REJECTED',
-        );
+        check(response.status === 204 || response.status === 404, 'TEST_KEYCLOAK_CLEANUP_REJECTED');
       } catch {
         cleanupFailed = true;
         console.error('PHASE20_178_DEV_KEYCLOAK_CLEANUP_FAILED');
