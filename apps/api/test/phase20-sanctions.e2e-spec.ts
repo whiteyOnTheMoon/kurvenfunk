@@ -670,4 +670,162 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       .send({ type: 'DOWNVOTE' })
       .expect(200);
   }, 30000);
+
+
+  it('Task 180: direct red card bans real HTTP operations, persists audit and rejects stale tokens', async () => {
+    const unique = randomUUID().slice(0, 8);
+    const adminSubject = 'phase20-ban-admin-' + unique;
+    const targetSubject = 'phase20-ban-target-' + unique;
+    const [administrator, target] = await Promise.all([
+      db.user.create({
+        data: {
+          keycloakSubject: adminSubject,
+          nickname: 'p20banadmin' + unique,
+          status: 'ACTIVE',
+          onboardingCompleted: true,
+          roleAssignments: { create: { role: 'ADMIN' } },
+        },
+        select: { id: true },
+      }),
+      db.user.create({
+        data: {
+          keycloakSubject: targetSubject,
+          nickname: 'p20bantarget' + unique,
+          status: 'ACTIVE',
+          onboardingCompleted: true,
+          roleAssignments: { create: { role: 'USER' } },
+        },
+        select: { id: true },
+      }),
+    ]);
+    const adminToken = await token(adminSubject);
+    const preBanToken = await token(targetSubject);
+
+    const before = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', 'Bearer ' + preBanToken)
+      .expect(200);
+    expect((before.body as { data: { status: string } }).data.status).toBe('ACTIVE');
+
+    const ban = await request(app.getHttpServer())
+      .post('/api/v1/moderation/red-cards')
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({
+        userId: target.id,
+        reasonCode: 'PHASE20_180_TEST',
+        moderatorNote: 'Private synthetic ban acceptance reason',
+        userMessage: 'Your synthetic account was suspended',
+        sourceType: 'NONE',
+      })
+      .expect(201);
+    const data = (ban.body as {
+      data: {
+        id: string;
+        userId: string;
+        type: string;
+        accountStatus: string;
+        sessionRevocation: string;
+      };
+    }).data;
+    expect(data).toMatchObject({
+      userId: target.id,
+      type: 'RED',
+      accountStatus: 'BANNED',
+    });
+    expect(['REVOKED', 'PENDING']).toContain(data.sessionRevocation);
+    expect(JSON.stringify(ban.body)).not.toContain('Private synthetic ban acceptance reason');
+
+    const user = await db.user.findUniqueOrThrow({
+      where: { id: target.id },
+      select: { status: true },
+    });
+    expect(user.status).toBe('BANNED');
+    expect(
+      await db.moderationCard.count({
+        where: { userId: target.id, type: 'RED', status: 'ACTIVE' },
+      }),
+    ).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: {
+          moderationCardId: data.id,
+          actorUserId: administrator.id,
+          action: { in: ['MODERATION_CARD_CREATED', 'USER_STATUS_CHANGED'] },
+        },
+      }),
+    ).toBe(2);
+    const notification = await db.notification.findFirstOrThrow({
+      where: { userId: target.id, type: 'RED_CARD', sourceId: data.id },
+      select: { body: true, metadata: true },
+    });
+    expect(notification.body).toContain('PHASE20_180_TEST');
+    expect(JSON.stringify(notification)).not.toContain('Private synthetic ban acceptance reason');
+    expect(['PENDING', 'REVOKED']).toContain(
+      (notification.metadata as { sessionRevocation?: string }).sessionRevocation,
+    );
+
+    const after = await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', 'Bearer ' + preBanToken)
+      .expect(403);
+    expect((after.body as { code: string }).code).toBe('ACCOUNT_BANNED');
+
+    const freshToken = await token(targetSubject);
+    const forbiddenActions = [
+      { method: 'get', route: '/api/v1/auth/me' },
+      {
+        method: 'post',
+        route: '/api/v1/articles/' + articleId + '/comments',
+        body: { body: 'Must be denied for banned users' },
+      },
+      {
+        method: 'post',
+        route: '/api/v1/articles/' + articleId + '/comments/' + commentId + '/replies',
+        body: { body: 'Must deny banned replies' },
+      },
+      {
+        method: 'patch',
+        route: '/api/v1/articles/' + articleId + '/comments/' + commentId,
+        body: { body: 'Must deny banned edits' },
+      },
+      { method: 'delete', route: '/api/v1/articles/' + articleId + '/comments/' + commentId },
+      {
+        method: 'put',
+        route: '/api/v1/comments/' + commentId + '/votes',
+        body: { type: 'UPVOTE' },
+      },
+      { method: 'delete', route: '/api/v1/comments/' + commentId + '/votes' },
+      {
+        method: 'post',
+        route: '/api/v1/comments/' + commentId + '/reports',
+        body: { reason: 'SPAM' },
+      },
+      { method: 'get', route: '/api/v1/reactions/comments/me?ids=' + commentId },
+      { method: 'get', route: '/api/v1/moderation/comment-reports' },
+    ] as const;
+
+    for (const action of forbiddenActions) {
+      const response = await request(app.getHttpServer())[action.method](action.route)
+        .set('Authorization', 'Bearer ' + freshToken)
+        .send('body' in action ? action.body : undefined);
+      expect(response.status).toBe(403);
+      expect((response.body as { code: string }).code).toBe('ACCOUNT_BANNED');
+    }
+    expect(
+      await db.reaction.count({ where: { userId: target.id } }),
+    ).toBe(0);
+    expect(
+      await db.comment.count({ where: { authorId: target.id } }),
+    ).toBe(0);
+    expect(
+      await db.moderationReport.count({ where: { reporterId: target.id } }),
+    ).toBe(0);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/' + articleId + '/comments')
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/comments/' + commentId + '/votes')
+      .expect(200);
+  }, 30000);
 });
