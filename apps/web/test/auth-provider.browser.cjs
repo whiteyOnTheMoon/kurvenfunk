@@ -36,6 +36,7 @@ async function main() {
   });
   const bundle = built.outputFiles[0].text;
   const meRequests = [];
+  let failMeNext = false;
 
   const apiServer = createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -58,6 +59,13 @@ async function main() {
     const credential = req.headers.authorization;
     meRequests.push(credential);
     res.setHeader('Content-Type', 'application/json');
+    if (failMeNext) {
+      failMeNext = false;
+      res.writeHead(503);
+      res.end(JSON.stringify({ code: 'IDENTITY_TEMPORARILY_UNAVAILABLE' }));
+      return;
+    }
+
     if (!credential?.startsWith('Bearer ')) {
       res.writeHead(401);
       res.end(JSON.stringify({ code: 'UNAUTHORIZED' }));
@@ -121,6 +129,7 @@ async function main() {
     await waitText('#auth-ready', 'true');
     await waitText('#auth-status', 'authenticated');
     await waitText('#user-status', 'ACTIVE');
+    await waitText('#session-recovering', 'false');
     assert.deepEqual(meRequests, ['Bearer initial-browser-token']);
 
     const originalCalls = await page.evaluate(() => window.__mockKeycloak.refreshCalls);
@@ -136,13 +145,38 @@ async function main() {
     assert.equal(await page.locator('#user-status').textContent(), 'ACTIVE');
     assert.equal(await page.evaluate(() => window.__mockKeycloak.refreshCalls), originalCalls + 1);
 
+    // An upstream /auth/me 503 must hide protected state without logging
+    // out the Keycloak session or leaking the previous access token.
+    failMeNext = true;
+    await page.evaluate(() => {
+      const client = window.__mockKeycloak;
+      client.nextToken = 'identity-down-browser-token';
+      client.onTokenExpired();
+    });
+    await waitText('#auth-status', 'anonymous');
+    await waitText('#session-recovering', 'true');
+    await waitText('#auth-error', 'AUTH_TEMPORARY_UNAVAILABLE');
+    await waitText('#token-fingerprint', '');
+    await waitText('#user-status', '');
+    assert.equal(await page.evaluate(() => window.__mockKeycloak.authenticated), true);
+
+    await page.evaluate(() => {
+      window.__mockKeycloak.nextToken = 'identity-restored-browser-token';
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitText('#auth-status', 'authenticated');
+    await waitText('#session-recovering', 'false');
+    await waitText('#token-fingerprint', 'identity-restored-browser-token'.slice(-12));
+
+    // A transient Keycloak refresh error must also remain recoverable.
     await page.evaluate(() => {
       const client = window.__mockKeycloak;
       client.failNext = true;
       client.onTokenExpired();
     });
     await waitText('#auth-status', 'anonymous');
-    await waitText('#auth-error', 'AUTHENTICATION_FAILED');
+    await waitText('#session-recovering', 'true');
+    await waitText('#auth-error', 'AUTH_TEMPORARY_UNAVAILABLE');
     await waitText('#token-fingerprint', '');
     await waitText('#user-status', '');
 
@@ -157,9 +191,12 @@ async function main() {
     await waitText('#user-status', 'ACTIVE');
     await waitText('#token-fingerprint', 'recovered-browser-token'.slice(-12));
     await waitText('#auth-error', '');
+    await waitText('#session-recovering', 'false');
     assert.deepEqual(meRequests, [
       'Bearer initial-browser-token',
       'Bearer rotated-browser-token',
+      'Bearer identity-down-browser-token',
+      'Bearer identity-restored-browser-token',
       'Bearer recovered-browser-token',
     ]);
 
@@ -181,7 +218,7 @@ async function main() {
     assert.equal(await page.evaluate(() => localStorage.getItem('token')), null);
     assert.deepEqual(pageErrors, []);
 
-    process.stdout.write('React AuthProvider Chromium refresh, recovery and logout: PASS\n');
+    process.stdout.write('React AuthProvider Chromium refresh, transient identity recovery and logout: PASS\n');
   } finally {
     if (browser) await browser.close();
     await close(webServer);
