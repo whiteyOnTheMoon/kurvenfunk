@@ -28,10 +28,8 @@ describe('Task 181 – keyed IP pseudonymization', () => {
     const address = '203.0.113.22';
     const result = identity.hash(address);
 
-    expect(result).toEqual({
-      hashKeyVersion: 'v2',
-      ipHash: expect.stringMatching(/^[a-f0-9]{64}$/),
-    });
+    expect(result.hashKeyVersion).toBe('v2');
+    expect(result.ipHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.ipHash).toBe(
       createHmac('sha256', Buffer.from(CURRENT_KEY, 'base64url'))
         .update('kurvenfunk:ip:v2:' + address)
@@ -75,14 +73,16 @@ describe('Task 181 – keyed IP pseudonymization', () => {
     expect(() => createIdentity().hash(null as unknown as string)).toThrow(
       ServiceUnavailableException,
     );
-    expect(() => createIdentity().hash('untrusted-user-header')).toThrow(
-      expect.objectContaining({
-        response: {
-          code: 'IP_ADDRESS_INVALID',
-          message: 'Invalid network address.',
-        },
-      }),
-    );
+    try {
+      createIdentity().hash('untrusted-user-header');
+      throw new Error('Expected invalid address rejection');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ServiceUnavailableException);
+      expect((error as ServiceUnavailableException).getResponse()).toEqual({
+        code: 'IP_ADDRESS_INVALID',
+        message: 'Invalid network address.',
+      });
+    }
   });
 
   it('separates environment keys and versions', () => {
