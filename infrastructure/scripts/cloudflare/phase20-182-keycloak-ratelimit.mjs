@@ -1,7 +1,6 @@
+#!/usr/bin/env node
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-
-#!/usr/bin/env node
 // Task 182: fail-closed Cloudflare WAF deployment/audit for DEV Keycloak only.
 // No production hostname or existing unrelated rule is ever modified.
 const hostname = 'auth-dev.kurvenfunk.at';
