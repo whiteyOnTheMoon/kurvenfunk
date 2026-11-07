@@ -336,7 +336,18 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       user,
       error,
     }),
-    [authenticated, initialized, sessionRecovering, login, loginWithGoogle, logout, refreshUser, token, user, error],
+    [
+      authenticated,
+      initialized,
+      sessionRecovering,
+      login,
+      loginWithGoogle,
+      logout,
+      refreshUser,
+      token,
+      user,
+      error,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
