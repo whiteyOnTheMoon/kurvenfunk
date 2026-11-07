@@ -102,7 +102,7 @@ describe('Task 182 – API IP rate limits', () => {
       expect(JSON.stringify(redisEval.mock.calls)).not.toContain('203.0.113.22');
       expect(JSON.stringify(redisEval.mock.calls)).toContain('ip-write-rate:v1:v2:reports:');
       const calls = redisEval.mock.calls as unknown[][];
-      expect(calls[0]?.[2]).toBe(1);
+      expect(calls[0]?.[1]).toBe(1);
       expect(calls[0]?.[3]).toBe(60000);
     } finally {
       guard.onModuleDestroy();
