@@ -43,9 +43,12 @@ Keep a documented rollback to the old route.
    after Redis and Keycloak are healthy, with up -d --no-deps auth-gateway.
 5. Test synthetic proxy/PKCE/registration/reset and forged-header behavior
    BEFORE changing the tunnel route. Record an immediate rollback procedure.
-6. IMPORTANT: the existing normal DEV deploy script uses up --remove-orphans
-   without this overlay and can remove the gateway. Integrate the overlay
-   into deployment management BEFORE forwarding public traffic through it.
+6. DEV deployment uses the overlay ONLY when .env.dev explicitly contains
+   AUTH_GATEWAY_ENABLED=true, preserving the gateway during up --remove-orphans.
+   Without that setting, the gateway remains opt-in and is not managed by the
+   normal deployment. Set this flag only after the pre-cutover acceptance.
+   A standalone compose command using fewer compose files can still remove an
+   enabled gateway; always use the full overlay-aware compose file set.
 
 ## Acceptance before Task 182 DONE
 
