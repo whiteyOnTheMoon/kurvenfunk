@@ -311,4 +311,182 @@ describe('Phase 20 LIMITED/BANNED/expiration isolated HTTP acceptance', () => {
       }),
     ).toBe(0);
   }, 25000);
+  it.each([
+    ['24H', 24],
+    ['3D', 72],
+    ['7D', 168],
+    ['30D', 720],
+  ] as const)('persists %s LIMITED duration, audit, notification and private notes', async (duration, hours) => {
+    const suffix178 = randomUUID().slice(0, 8);
+    const subject = `phase20-duration-${suffix178}`;
+    const target = await db.user.create({
+      data: {
+        keycloakSubject: subject,
+        nickname: `p178${suffix178}`,
+        status: 'ACTIVE',
+        onboardingCompleted: true,
+        roleAssignments: { create: { role: 'USER' } },
+      },
+      select: { id: true },
+    });
+    const moderatorToken = await token(moderatorSubject);
+    const internalNote = 'Private evidence for the isolated duration acceptance test';
+    const userMessage = 'Your account is temporarily limited.';
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/moderation/limited-sanctions')
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({
+        userId: target.id,
+        duration,
+        reasonCode: 'TEST_POLICY',
+        moderatorNote: internalNote,
+        userMessage,
+      })
+      .expect(201);
+
+    const body = response.body as {
+      data: { id: string; userId: string; accountStatus: string; expiresAt: string };
+    };
+    expect(body.data).toMatchObject({
+      userId: target.id,
+      accountStatus: 'LIMITED',
+    });
+    expect(JSON.stringify(response.body)).not.toContain(internalNote);
+
+    const sanction = await db.sanction.findUniqueOrThrow({
+      where: { id: body.data.id },
+      select: {
+        type: true,
+        status: true,
+        userId: true,
+        createdById: true,
+        reasonCode: true,
+        internalNote: true,
+        userMessage: true,
+        startsAt: true,
+        expiresAt: true,
+      },
+    });
+    expect(sanction).toMatchObject({
+      userId: target.id,
+      type: 'LIMITED',
+      status: 'ACTIVE',
+      createdById: moderatorId,
+      reasonCode: 'TEST_POLICY',
+      internalNote,
+      userMessage,
+    });
+    expect(sanction.expiresAt!.getTime() - sanction.startsAt.getTime()).toBe(
+      hours * 60 * 60 * 1000,
+    );
+    expect(new Date(body.data.expiresAt).getTime()).toBe(sanction.expiresAt!.getTime());
+    expect((await db.user.findUniqueOrThrow({ where: { id: target.id } })).status).toBe(
+      'LIMITED',
+    );
+
+    const notification = await db.notification.findFirstOrThrow({
+      where: { userId: target.id, type: 'LIMITED', sourceId: body.data.id },
+      select: { body: true, dedupeKey: true },
+    });
+    expect(notification.dedupeKey).toBe(`limited-sanction:${body.data.id}`);
+    expect(notification.body).toContain(userMessage);
+    expect(notification.body).not.toContain(internalNote);
+    expect(
+      await db.auditLog.count({
+        where: {
+          sanctionId: body.data.id,
+          actorUserId: moderatorId,
+          action: { in: ['SANCTION_CREATED', 'USER_STATUS_CHANGED'] },
+        },
+      }),
+    ).toBe(2);
+  }, 30000);
+
+  it('serializes concurrent LIMITED requests for one target with exactly one sanction', async () => {
+    const suffix178 = randomUUID().slice(0, 8);
+    const target = await db.user.create({
+      data: {
+        keycloakSubject: `phase20-race-${suffix178}`,
+        nickname: `p178race${suffix178}`,
+        status: 'ACTIVE',
+        onboardingCompleted: true,
+        roleAssignments: { create: { role: 'USER' } },
+      },
+      select: { id: true },
+    });
+    const moderatorToken = await token(moderatorSubject);
+    const input = {
+      userId: target.id,
+      duration: '3D',
+      reasonCode: 'TEST_POLICY',
+      moderatorNote: 'Concurrency test, private note',
+    };
+    const outcomes = await Promise.all([
+      request(app.getHttpServer())
+        .post('/api/v1/moderation/limited-sanctions')
+        .set('Authorization', `Bearer ${moderatorToken}`)
+        .send(input),
+      request(app.getHttpServer())
+        .post('/api/v1/moderation/limited-sanctions')
+        .set('Authorization', `Bearer ${moderatorToken}`)
+        .send(input),
+    ]);
+
+    expect(outcomes.map((response) => response.status).sort()).toEqual([201, 409]);
+    expect(
+      await db.sanction.count({
+        where: { userId: target.id, type: 'LIMITED', status: 'ACTIVE' },
+      }),
+    ).toBe(1);
+    expect(
+      await db.notification.count({ where: { userId: target.id, type: 'LIMITED' } }),
+    ).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: { targetUserId: target.id, action: 'SANCTION_CREATED' },
+      }),
+    ).toBe(1);
+  }, 30000);
+
+  it('rejects invalid targets and attempts to limit a banned or moderator-owned account', async () => {
+    const moderatorToken = await token(moderatorSubject);
+    const input = {
+      userId: randomUUID(),
+      duration: '24H',
+      reasonCode: 'TEST_POLICY',
+      moderatorNote: 'Private validation fixture',
+    };
+    const path = '/api/v1/moderation/limited-sanctions';
+
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({ ...input, duration: 'FOREVER' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({ ...input, moderatorId })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({ ...input, userId: moderatorId })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send({ ...input, userId: bannedUserId })
+      .expect(409);
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${moderatorToken}`)
+      .send(input)
+      .expect(404);
+    expect(
+      await db.sanction.count({ where: { userId: bannedUserId, type: 'LIMITED' } }),
+    ).toBe(0);
+  }, 30000);
+
 });
