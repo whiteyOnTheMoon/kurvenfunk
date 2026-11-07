@@ -5,6 +5,7 @@ import {
   classifyAuthRequest,
   normalizeAddress,
   rateKey,
+  safeUpstreamHeaders,
   verifiedClientIp,
 } from './policy';
 
@@ -40,6 +41,47 @@ describe('Task 182 DEV Keycloak auth gateway', () => {
     expect(normalizeAddress('2001:0DB8:0:0:0:0:0:1')).toBe('2001:db8::1');
     expect(normalizeAddress('203.0.113.7 ')).toBeNull();
     expect(normalizeAddress('2001:db8::1%eth0')).toBeNull();
+  });
+
+
+  it('forwards only gateway-generated proxy identity to Keycloak', () => {
+    const headers = safeUpstreamHeaders(
+      {
+        'x-forwarded-for': '198.51.100.11',
+        'x-forwarded-proto': 'http',
+        'x-original-forwarded-for': '198.51.100.11',
+        'x-real-ip': '198.51.100.11',
+        'cf-connecting-ip': '198.51.100.11',
+        'true-client-ip': '198.51.100.11',
+        forwarded: 'for=198.51.100.11',
+        connection: 'keep-alive',
+        'proxy-authorization': 'fake',
+        'x-client-data': 'normal',
+        accept: 'text/html',
+      },
+      '203.0.113.7',
+      'auth-dev.kurvenfunk.at',
+    );
+    expect(headers).toMatchObject({
+      host: 'auth-dev.kurvenfunk.at',
+      'x-forwarded-for': '203.0.113.7',
+      'x-forwarded-proto': 'https',
+      'x-forwarded-host': 'auth-dev.kurvenfunk.at',
+      'x-forwarded-port': '443',
+      accept: 'text/html',
+      'x-client-data': 'normal',
+    });
+    for (const key of [
+      'x-real-ip',
+      'x-original-forwarded-for',
+      'cf-connecting-ip',
+      'true-client-ip',
+      'forwarded',
+      'connection',
+      'proxy-authorization',
+    ]) {
+      expect(headers[key]).toBeUndefined();
+    }
   });
 
   it('stores keyed HMAC pseudonyms, never raw IPs or naked SHA digests', () => {
