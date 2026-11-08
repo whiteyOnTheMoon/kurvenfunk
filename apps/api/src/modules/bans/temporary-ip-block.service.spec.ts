@@ -130,14 +130,18 @@ describe('Task 183 temporary IP block service', () => {
     const note = 'Private evidence for revocation';
     const result = await service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', note);
     expect(result).toMatchObject({ id: BLOCK, active: false, sanctionId: SANCTION });
-    expect(tx.iPBlock.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ id: BLOCK, active: true, source: 'MANUAL' }),
-      data: expect.objectContaining({ active: false, deactivatedById: ACTOR }),
-    }));
-    expect(tx.sanction.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: SANCTION, status: 'ACTIVE' },
-      data: expect.objectContaining({ status: 'REVOKED', revokedById: ACTOR }),
-    }));
+    expect(tx.iPBlock.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: BLOCK, active: true, source: 'MANUAL' }),
+        data: expect.objectContaining({ active: false, deactivatedById: ACTOR }),
+      }),
+    );
+    expect(tx.sanction.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: SANCTION, status: 'ACTIVE' },
+        data: expect.objectContaining({ status: 'REVOKED', revokedById: ACTOR }),
+      }),
+    );
     expect(tx.auditLog.create.mock.calls).toMatchObject([
       [{ data: { action: 'IP_BLOCK_DEACTIVATED', actorUserId: ACTOR } }],
       [{ data: { action: 'SANCTION_REVOKED', actorUserId: ACTOR } }],
@@ -151,17 +155,29 @@ describe('Task 183 temporary IP block service', () => {
   it('does not revoke an automatic block, missing block or already revoked sanction', async () => {
     const { service, tx } = setup();
     tx.iPBlock.findUnique.mockResolvedValueOnce(null);
-    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 404 });
+    await expect(
+      service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence'),
+    ).rejects.toMatchObject({ status: 404 });
     tx.iPBlock.findUnique.mockResolvedValueOnce({
-      id: BLOCK, source: 'RATE_LIMIT_ESCALATION', active: true,
-      expiresAt: new Date(Date.now() + 60_000), sanction: null,
+      id: BLOCK,
+      source: 'RATE_LIMIT_ESCALATION',
+      active: true,
+      expiresAt: new Date(Date.now() + 60_000),
+      sanction: null,
     });
-    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 404 });
+    await expect(
+      service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence'),
+    ).rejects.toMatchObject({ status: 404 });
     tx.iPBlock.findUnique.mockResolvedValueOnce({
-      id: BLOCK, source: 'MANUAL', active: false,
-      expiresAt: new Date(Date.now() + 60_000), sanction: { id: SANCTION, status: 'REVOKED' },
+      id: BLOCK,
+      source: 'MANUAL',
+      active: false,
+      expiresAt: new Date(Date.now() + 60_000),
+      sanction: { id: SANCTION, status: 'REVOKED' },
     });
-    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 409 });
+    await expect(
+      service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence'),
+    ).rejects.toMatchObject({ status: 409 });
     expect(tx.iPBlock.updateMany).not.toHaveBeenCalled();
     expect(tx.auditLog.create).not.toHaveBeenCalled();
   });
@@ -169,7 +185,9 @@ describe('Task 183 temporary IP block service', () => {
   it('fails closed if manual revocation races with expiry and never writes an orphan audit', async () => {
     const { service, tx } = setup();
     tx.iPBlock.updateMany.mockResolvedValueOnce({ count: 0 });
-    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 409 });
+    await expect(
+      service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence'),
+    ).rejects.toMatchObject({ status: 409 });
     expect(tx.sanction.updateMany).not.toHaveBeenCalled();
     expect(tx.auditLog.create).not.toHaveBeenCalled();
   });

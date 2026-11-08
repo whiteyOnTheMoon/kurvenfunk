@@ -95,8 +95,7 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
       (command.source === 'MANUAL' &&
         (!command.actorUserId || !UUID_PATTERN.test(command.actorUserId))) ||
       (command.source !== 'MANUAL' && command.actorUserId !== undefined) ||
-      (command.source === 'MANUAL' &&
-        !['24H', '3D', '7D', '30D'].includes(command.duration)) ||
+      (command.source === 'MANUAL' && !['24H', '3D', '7D', '30D'].includes(command.duration)) ||
       (command.source === 'RATE_LIMIT_ESCALATION' &&
         (command.duration !== '15M' || command.internalNote !== undefined)) ||
       (command.internalNote !== undefined &&

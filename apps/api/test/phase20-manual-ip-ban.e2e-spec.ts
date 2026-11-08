@@ -207,9 +207,7 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
     expect(block.createdById).toBe(subjectIds.get(subjects.root));
     expect(block.reasonCode).toBe(input.reasonCode);
     expect(block.internalNote).toBe(note);
-    expect(block.expiresAt!.getTime() - block.startsAt.getTime()).toBe(
-      3 * 24 * 60 * 60_000,
-    );
+    expect(block.expiresAt!.getTime() - block.startsAt.getTime()).toBe(3 * 24 * 60 * 60_000);
     expect(JSON.stringify(block)).not.toContain(address);
     expect(sanction).toMatchObject({
       id: body.data.sanctionId,
@@ -220,12 +218,18 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
       reasonCode: input.reasonCode,
       internalNote: note,
     });
-    expect(await db.auditLog.count({
-      where: { ipBlockId: body.data.id, actorUserId: subjectIds.get(subjects.root) },
-    })).toBe(2);
-    expect((await db.user.findUniqueOrThrow({
-      where: { id: subjectIds.get(subjects.user)! },
-    })).status).toBe('ACTIVE');
+    expect(
+      await db.auditLog.count({
+        where: { ipBlockId: body.data.id, actorUserId: subjectIds.get(subjects.root) },
+      }),
+    ).toBe(2);
+    expect(
+      (
+        await db.user.findUniqueOrThrow({
+          where: { id: subjectIds.get(subjects.user)! },
+        })
+      ).status,
+    ).toBe('ACTIVE');
 
     await request(app.getHttpServer())
       .post(endpoint)
@@ -235,7 +239,10 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
     expect(await db.iPBlock.count({ where: { source: 'MANUAL' } })).toBe(1);
 
     const revoke = endpoint + '/' + body.data.id + '/revoke';
-    const reverse = { reasonCode: 'FALSE_POSITIVE', moderatorNote: 'Private reason to reverse ban' };
+    const reverse = {
+      reasonCode: 'FALSE_POSITIVE',
+      moderatorNote: 'Private reason to reverse ban',
+    };
     for (const subject of [subjects.user, subjects.moderator, subjects.admin, subjects.limited]) {
       await request(app.getHttpServer())
         .post(revoke)
@@ -249,7 +256,9 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
       .send(reverse)
       .expect(200);
     expect(revoked.body.data).toMatchObject({
-      id: block.id, sanctionId: sanction.id, active: false,
+      id: block.id,
+      sanctionId: sanction.id,
+      active: false,
     });
     expect(JSON.stringify(revoked.body)).not.toContain(address);
     expect(JSON.stringify(revoked.body)).not.toContain(reverse.moderatorNote);
@@ -290,11 +299,15 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
       .set('Authorization', auth)
       .send({ reasonCode: 'EXPIRED', moderatorNote: 'Already expired' })
       .expect(409);
-    expect(await db.auditLog.count({
-      where: { ipBlockId: blockId, action: 'IP_BLOCK_EXPIRED' },
-    })).toBe(1);
-    expect(await db.auditLog.count({
-      where: { ipBlockId: blockId, action: 'IP_BLOCK_DEACTIVATED' },
-    })).toBe(0);
+    expect(
+      await db.auditLog.count({
+        where: { ipBlockId: blockId, action: 'IP_BLOCK_EXPIRED' },
+      }),
+    ).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: { ipBlockId: blockId, action: 'IP_BLOCK_DEACTIVATED' },
+      }),
+    ).toBe(0);
   }, 30000);
 });
