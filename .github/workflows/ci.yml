@@ -634,7 +634,6 @@ jobs:
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-187-dashboard.sh"
 
-
   phase20-185-dev-smoke:
     name: Task 185 DEV synthetic RED-linked temporary IP protection (cleanup required)
     needs:
