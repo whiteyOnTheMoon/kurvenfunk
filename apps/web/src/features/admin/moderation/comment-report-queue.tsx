@@ -39,7 +39,13 @@ async function readPayload<T>(response: Response): Promise<T> {
   return payload.data;
 }
 
-export function CommentReportQueue({ apiUrl, embedded = false }: { apiUrl: string; embedded?: boolean }) {
+export function CommentReportQueue({
+  apiUrl,
+  embedded = false,
+}: {
+  apiUrl: string;
+  embedded?: boolean;
+}) {
   const { authenticated, initialized, token } = useAuth();
   const [reports, setReports] = useState<CommentReport[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -138,7 +144,9 @@ export function CommentReportQueue({ apiUrl, embedded = false }: { apiUrl: strin
         <p className={styles.eyebrow}>Community · Phase 19</p>
         {embedded ? <h2>Kommentarmeldungen</h2> : <h1>Kommentarmeldungen</h1>}
         <p>Offene Meldungen prüfen, Maßnahmen ergreifen und Entscheidungen dokumentieren.</p>
-        {!embedded ? <p>Karten, Sanktionen und Einsprüche sind weitere Aufgaben von Phase 20.</p> : null}
+        {!embedded ? (
+          <p>Karten, Sanktionen und Einsprüche sind weitere Aufgaben von Phase 20.</p>
+        ) : null}
         <div className={styles.refreshActions}>
           <button
             type="button"
