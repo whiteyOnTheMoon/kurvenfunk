@@ -7,7 +7,7 @@ services:
       - --save
       - ''
       - --appendonly
-      - 'no'
+      - 'yes'
       - --requirepass
       - ci-only-182-redis
     networks:
