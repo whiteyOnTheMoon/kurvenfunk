@@ -85,6 +85,10 @@ jobs:
           node --test infrastructure/scripts/keycloak/branding.test.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-182-free-live.sh
           bash -n infrastructure/scripts/verify/dev-phase20-182-api-activate.sh
+          bash -n infrastructure/scripts/verify/dev-phase20-182-final-preflight.sh
+          bash -n infrastructure/scripts/verify/phase20-182-isolated.sh
+          node --check infrastructure/scripts/verify/phase20-182-isolated-http.mjs
+          node --check infrastructure/scripts/verify/phase20-182-public-quotas.mjs
           node --check infrastructure/scripts/verify/phase20-182-public-edge.mjs
           node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
           node --check infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs
@@ -350,6 +354,62 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Run isolated API E2E
         run: pnpm --filter api test:e2e
+
+  phase20-182-isolated-recovery:
+    name: Task 182 isolated gateway HTTP quota, Redis outage and recovery
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs:
+      - ci
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact pull request commit
+        uses: actions/checkout@v7
+      - name: Build and test isolated gateway + Redis without DEV impact
+        run: bash infrastructure/scripts/verify/phase20-182-isolated.sh
+
+  phase20-182-final-dev:
+    name: Task 182 final bounded public DEV 429 acceptance
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-182-final-dev]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    concurrency:
+      group: phase20-182-final-dev
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v7
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Read-only verify active DEV gateway and API rate limiter
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-182-final-preflight.sh"
+      - name: Controlled public login, registration, reset, comments and reports quotas
+        run: node infrastructure/scripts/verify/phase20-182-public-quotas.mjs
 
   phase20-178-dev-http:
     name: Task 178 real DEV Keycloak HTTP acceptance (synthetic users)

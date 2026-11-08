@@ -16,7 +16,7 @@ export IP_HASH_HMAC_SECRET
 IP_HASH_HMAC_SECRET="$(node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('base64url'))")"
 
 project="kf182ci${GITHUB_RUN_ID:-0}"
-compose=(docker compose --project-directory "$ROOT" -p "$project" -f infrastructure/tests/phase20-182.compose.yml)
+compose=(docker compose -p "$project" -f infrastructure/tests/phase20-182.compose.yml)
 cleanup() {
   "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
 }
