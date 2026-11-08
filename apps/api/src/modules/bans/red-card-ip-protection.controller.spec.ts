@@ -1,5 +1,13 @@
 import 'reflect-metadata';
 
+// Avoid loading the real Prisma/Keycloak dependency tree in a controller unit test.
+jest.mock('./red-card-ip-protection.service', () => ({
+  RedCardIpProtectionService: jest.fn(),
+}));
+jest.mock('../auth/auth.guard', () => ({
+  AuthGuard: jest.fn(),
+}));
+
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   PERMISSIONS,
