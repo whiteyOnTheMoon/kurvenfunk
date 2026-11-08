@@ -1,5 +1,10 @@
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import { ConflictException, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  type OnModuleDestroy,
+} from '@nestjs/common';
 
 import { IpIdentityService } from './ip-identity.service';
 
@@ -20,6 +25,7 @@ export interface TemporaryIpBlockCommand {
   reasonCode: string;
   source: 'MANUAL' | 'RATE_LIMIT_ESCALATION';
   actorUserId?: string;
+  internalNote?: string;
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -57,14 +63,17 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
     address: string,
     duration: Exclude<TemporaryIpDuration, '15M' | '1H'>,
     actorUserId: string,
+    reasonCode = 'MANUAL_SECURITY_ACTION',
+    internalNote?: string,
   ) {
     if (!UUID_PATTERN.test(actorUserId)) throw new Error('IP_TEMP_BLOCK_ACTOR_INVALID');
     return this.issue({
       address,
       duration,
       source: 'MANUAL',
-      reasonCode: 'MANUAL_SECURITY_ACTION',
+      reasonCode,
       actorUserId,
+      internalNote,
     });
   }
 
@@ -85,7 +94,13 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
       !['MANUAL', 'RATE_LIMIT_ESCALATION'].includes(command.source) ||
       (command.source === 'MANUAL' &&
         (!command.actorUserId || !UUID_PATTERN.test(command.actorUserId))) ||
-      (command.source !== 'MANUAL' && command.actorUserId !== undefined)
+      (command.source !== 'MANUAL' && command.actorUserId !== undefined) ||
+      (command.source === 'MANUAL' &&
+        !['24H', '3D', '7D', '30D'].includes(command.duration)) ||
+      (command.source === 'RATE_LIMIT_ESCALATION' &&
+        (command.duration !== '15M' || command.internalNote !== undefined)) ||
+      (command.internalNote !== undefined &&
+        (command.internalNote.length < 1 || command.internalNote.length > 2000))
     ) {
       throw new Error('IP_TEMP_BLOCK_COMMAND_INVALID');
     }
@@ -123,6 +138,7 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
               hashKeyVersion: current.hashKeyVersion,
               source: command.source,
               reasonCode: command.reasonCode,
+              internalNote: command.internalNote ?? null,
               createdById: command.actorUserId ?? null,
               active: true,
               startsAt,
@@ -141,6 +157,7 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
                     type: 'IP_BLOCK',
                     status: 'ACTIVE',
                     reasonCode: command.reasonCode,
+                    internalNote: command.internalNote ?? null,
                     createdById: command.actorUserId,
                     startsAt,
                     expiresAt,
@@ -201,6 +218,129 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
           code: 'IP_TEMP_BLOCK_CONCURRENT_CREATE',
           message: 'The network restriction has changed concurrently.',
         });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Reverse a manual decision, without ever retrieving or exposing its HMAC or
+   * the network address. A compare-and-update makes concurrent revocations
+   * and expiry-worker races auditable and non-duplicating.
+   */
+  async revokeManual(
+    blockId: string,
+    actorUserId: string,
+    reasonCode: string,
+    moderatorNote: string,
+  ) {
+    if (
+      !UUID_PATTERN.test(blockId) ||
+      !UUID_PATTERN.test(actorUserId) ||
+      !REASON_PATTERN.test(reasonCode) ||
+      moderatorNote.length < 1 ||
+      moderatorNote.length > 2000
+    ) {
+      throw new Error('MANUAL_IP_BAN_REVOCATION_INVALID');
+    }
+
+    const at = new Date();
+    try {
+      return await this.database.$transaction(
+        async (tx) => {
+          const block = await tx.iPBlock.findUnique({
+            where: { id: blockId },
+            select: {
+              id: true,
+              source: true,
+              active: true,
+              expiresAt: true,
+              sanction: { select: { id: true, status: true } },
+            },
+          });
+
+          if (!block || block.source !== 'MANUAL') {
+            throw new NotFoundException({
+              code: 'MANUAL_IP_BAN_NOT_FOUND',
+              message: 'Manual network restriction not found.',
+            });
+          }
+
+          if (
+            !block.active ||
+            !block.expiresAt ||
+            block.expiresAt <= at ||
+            block.sanction?.status !== 'ACTIVE'
+          ) {
+            throw new ConflictException({
+              code: 'MANUAL_IP_BAN_NOT_ACTIVE',
+              message: 'This network restriction is no longer active.',
+            });
+          }
+
+          const updated = await tx.iPBlock.updateMany({
+            where: { id: block.id, source: 'MANUAL', active: true, expiresAt: { gt: at } },
+            data: {
+              active: false,
+              deactivatedAt: at,
+              deactivatedById: actorUserId,
+              deactivationReason: reasonCode,
+            },
+          });
+          if (updated.count !== 1) {
+            throw new ConflictException({ code: 'MANUAL_IP_BAN_CONCURRENT_UPDATE' });
+          }
+
+          const sanctionId = block.sanction.id;
+          const revoked = await tx.sanction.updateMany({
+            where: { id: sanctionId, status: 'ACTIVE' },
+            data: {
+              status: 'REVOKED',
+              revokedAt: at,
+              revokedById: actorUserId,
+              revocationReason: reasonCode,
+            },
+          });
+          if (revoked.count !== 1) {
+            throw new ConflictException({ code: 'MANUAL_IP_BAN_CONCURRENT_UPDATE' });
+          }
+
+          await tx.auditLog.create({
+            data: {
+              actorType: 'USER',
+              actorUserId,
+              action: 'IP_BLOCK_DEACTIVATED',
+              category: 'IP_PROTECTION',
+              targetType: 'IP_BLOCK',
+              targetId: block.id,
+              ipBlockId: block.id,
+              sanctionId,
+              reason: reasonCode,
+              metadata: { moderatorNote },
+            },
+          });
+          await tx.auditLog.create({
+            data: {
+              actorType: 'USER',
+              actorUserId,
+              action: 'SANCTION_REVOKED',
+              category: 'SANCTION',
+              targetType: 'SANCTION',
+              targetId: sanctionId,
+              sanctionId,
+              ipBlockId: block.id,
+              reason: reasonCode,
+            },
+          });
+
+          return { id: block.id, active: false, revokedAt: at, sanctionId };
+        },
+        { isolationLevel: 'Serializable' },
+      );
+    } catch (error) {
+      const caught: unknown = error;
+      if (caught && typeof caught === 'object' && 'code' in caught && caught.code === 'P2034') {
+        throw new ConflictException({ code: 'MANUAL_IP_BAN_CONCURRENT_UPDATE' });
       }
       throw error;
     }
