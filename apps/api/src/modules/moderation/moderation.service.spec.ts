@@ -579,6 +579,91 @@ describe('ModerationService – Yellow Cards', () => {
     });
   });
 
+  it('recovers a durable PENDING revocation immediately after API module initialization', async () => {
+    revoker.isConfigured = true;
+    notificationFindMany.mockResolvedValueOnce([
+      {
+        id: 'pending-restart',
+        metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'PENDING' },
+        user: { status: 'BANNED', keycloakSubject: SOURCE_ID },
+      },
+    ]);
+
+    let confirmUpdate: (() => void) | undefined;
+    const completed = new Promise<void>((resolve) => {
+      confirmUpdate = resolve;
+    });
+    notificationUpdate.mockImplementationOnce(async () => {
+      confirmUpdate?.();
+      return { id: 'pending-restart' };
+    });
+
+    service.onModuleInit();
+    await completed;
+
+    expect(notificationFindMany).toHaveBeenCalledTimes(1);
+    expect(revoker.revokeSessions).toHaveBeenCalledWith(SOURCE_ID);
+    expect(notificationUpdate).toHaveBeenCalledWith({
+      where: { id: 'pending-restart' },
+      data: { metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'REVOKED' } },
+    });
+    await service.onModuleDestroy();
+  });
+
+  it('keeps pending work during a Keycloak failure, then retries it after recovery', async () => {
+    revoker.isConfigured = true;
+    notificationFindMany.mockResolvedValue([
+      {
+        id: 'pending-keycloak-outage',
+        metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'PENDING' },
+        user: { status: 'BANNED', keycloakSubject: SOURCE_ID },
+      },
+    ]);
+    revoker.revokeSessions.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+    await service.retryPendingSessionRevocations();
+    expect(notificationUpdate).not.toHaveBeenCalled();
+    await service.retryPendingSessionRevocations();
+    expect(revoker.revokeSessions).toHaveBeenCalledTimes(2);
+    expect(notificationUpdate).toHaveBeenCalledTimes(1);
+    expect(notificationUpdate).toHaveBeenCalledWith({
+      where: { id: 'pending-keycloak-outage' },
+      data: { metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'REVOKED' } },
+    });
+  });
+
+  it('does not overlap concurrent scans and releases the lock after an error', async () => {
+    revoker.isConfigured = true;
+    notificationFindMany.mockResolvedValueOnce([
+      {
+        id: 'pending-slow-revoke',
+        metadata: { reasonCode: 'SEVERE_ABUSE', sessionRevocation: 'PENDING' },
+        user: { status: 'BANNED', keycloakSubject: SOURCE_ID },
+      },
+    ]);
+
+    let release: ((value: boolean) => void) | undefined;
+    const blockingRevoke = new Promise<boolean>((resolve) => {
+      release = resolve;
+    });
+    revoker.revokeSessions.mockReturnValueOnce(blockingRevoke);
+
+    const inProgress = service.retryPendingSessionRevocations();
+    await service.retryPendingSessionRevocations();
+    expect(notificationFindMany).toHaveBeenCalledTimes(1);
+    if (!release) throw new Error('Expected a pending Keycloak revocation');
+    release(true);
+    await inProgress;
+
+    notificationFindMany.mockRejectedValueOnce(new Error('temporary database outage'));
+    await expect(service.retryPendingSessionRevocations()).rejects.toThrow(
+      'temporary database outage',
+    );
+    notificationFindMany.mockResolvedValueOnce([]);
+    await service.retryPendingSessionRevocations();
+    expect(notificationFindMany).toHaveBeenCalledTimes(3);
+  });
+
   it('disconnects the database during shutdown', async () => {
     await service.onModuleDestroy();
 
