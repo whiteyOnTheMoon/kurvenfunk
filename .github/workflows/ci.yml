@@ -58,16 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Show exact Prettier diff for Task 183 service
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/phase20-183-temporary-ip-blocks'
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/bans/temporary-ip-block.service.ts
-          git diff -- apps/api/src/modules/bans/temporary-ip-block.service.ts
-          if ! git diff --quiet -- apps/api/src/modules/bans/temporary-ip-block.service.ts; then
-            echo 'FORMAT_DIFFERENCE_SHOWN'
-            exit 1
-          fi
-
       - name: Check formatting
         run: pnpm format:check
 

@@ -22,8 +22,7 @@ export interface TemporaryIpBlockCommand {
   actorUserId?: string;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const REASON_PATTERN = /^[A-Z][A-Z0-9_]{1,79}$/u;
 
 /** Expiring IP blocks; no raw IP or secret is ever written to PostgreSQL. */
