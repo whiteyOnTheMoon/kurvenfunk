@@ -1,9 +1,5 @@
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import {
-  ConflictException,
-  Injectable,
-  type OnModuleDestroy,
-} from '@nestjs/common';
+import { ConflictException, Injectable, type OnModuleDestroy } from '@nestjs/common';
 
 import { IpIdentityService } from './ip-identity.service';
 
@@ -26,7 +22,8 @@ export interface TemporaryIpBlockCommand {
   actorUserId?: string;
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const REASON_PATTERN = /^[A-Z][A-Z0-9_]{1,79}$/u;
 
 /** Expiring IP blocks; no raw IP or secret is ever written to PostgreSQL. */
@@ -57,7 +54,11 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
    * authenticated, permission-checked endpoint. Never expose this method
    * directly as an HTTP route.
    */
-  issueManual(address: string, duration: Exclude<TemporaryIpDuration, '15M' | '1H'>, actorUserId: string) {
+  async issueManual(
+    address: string,
+    duration: Exclude<TemporaryIpDuration, '15M' | '1H'>,
+    actorUserId: string,
+  ) {
     if (!UUID_PATTERN.test(actorUserId)) throw new Error('IP_TEMP_BLOCK_ACTOR_INVALID');
     return this.issue({
       address,
@@ -83,7 +84,8 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
       !(command.duration in TEMP_IP_DURATION_MS) ||
       !REASON_PATTERN.test(command.reasonCode) ||
       !['MANUAL', 'RATE_LIMIT_ESCALATION'].includes(command.source) ||
-      (command.source === 'MANUAL' && (!command.actorUserId || !UUID_PATTERN.test(command.actorUserId))) ||
+      (command.source === 'MANUAL' &&
+        (!command.actorUserId || !UUID_PATTERN.test(command.actorUserId))) ||
       (command.source !== 'MANUAL' && command.actorUserId !== undefined)
     ) {
       throw new Error('IP_TEMP_BLOCK_COMMAND_INVALID');
@@ -95,7 +97,8 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
     if (!Number.isFinite(expiresAt.getTime())) throw new Error('IP_TEMP_BLOCK_EXPIRY_INVALID');
 
     try {
-      return await this.database.$transaction(async (tx) => {
+      return await this.database.$transaction(
+        async (tx) => {
         const existing = await tx.iPBlock.findFirst({
           where: {
             OR: candidates.map((candidate) => ({
@@ -108,10 +111,12 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
           },
           select: { id: true },
         });
-        if (existing) throw new ConflictException({
-          code: 'IP_TEMP_BLOCK_ALREADY_ACTIVE',
-          message: 'A restriction for this network is already active.',
-        });
+        if (existing) {
+          throw new ConflictException({
+            code: 'IP_TEMP_BLOCK_ALREADY_ACTIVE',
+            message: 'A restriction for this network is already active.',
+          });
+        }
 
         const record = await tx.iPBlock.create({
           data: {
@@ -129,8 +134,9 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
 
         // A formal manually issued block has a linked sanction.
         // Automatic technical protection never becomes an account sanction.
-        const sanction = command.source === 'MANUAL'
-          ? await tx.sanction.create({
+        const sanction =
+          command.source === 'MANUAL'
+            ? await tx.sanction.create({
               data: {
                 ipBlockId: record.id,
                 type: 'IP_BLOCK',
@@ -140,9 +146,9 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
                 startsAt,
                 expiresAt,
               },
-              select: { id: true },
-            })
-          : null;
+                select: { id: true },
+              })
+            : null;
 
         await tx.auditLog.create({
           data: {
@@ -186,7 +192,9 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
           expiresAt: record.expiresAt,
           sanctionId: sanction?.id ?? null,
         };
-      }, { isolationLevel: 'Serializable' });
+        },
+        { isolationLevel: 'Serializable' },
+      );
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
         throw new ConflictException({
