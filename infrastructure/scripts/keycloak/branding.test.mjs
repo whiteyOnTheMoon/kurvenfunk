@@ -21,8 +21,12 @@ test('theme inherits secure stock Keycloak screens, has local logo and icon', ()
   const styles = get(
     'infrastructure/keycloak/themes/kurvenfunk/login/resources/css/kurvenfunk.css',
   );
-  const english = get('infrastructure/keycloak/themes/kurvenfunk/login/messages/messages_en.properties');
-  const german = get('infrastructure/keycloak/themes/kurvenfunk/login/messages/messages_de.properties');
+  const english = get(
+    'infrastructure/keycloak/themes/kurvenfunk/login/messages/messages_en.properties',
+  );
+  const german = get(
+    'infrastructure/keycloak/themes/kurvenfunk/login/messages/messages_de.properties',
+  );
 
   assert.match(props, /^parent=keycloak\.v2$/m);
   assert.match(props, /^styles=css\/styles\.css css\/kurvenfunk\.css$/m);
