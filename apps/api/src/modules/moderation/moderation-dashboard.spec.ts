@@ -70,26 +70,18 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
     }
 
     for (const role of ['USER', 'TRUSTED_USER', 'EDITOR'] as const) {
-      expect(permissions.hasPermission({ status: 'ACTIVE', roles: [role] }, PERMISSIONS.USER_WARN))
-        .toBe(false);
+      expect(
+        permissions.hasPermission({ status: 'ACTIVE', roles: [role] }, PERMISSIONS.USER_WARN),
+      ).toBe(false);
     }
     expect(
-      permissions.hasPermission(
-        { status: 'ACTIVE', roles: ['MODERATOR'] },
-        PERMISSIONS.USER_WARN,
-      ),
+      permissions.hasPermission({ status: 'ACTIVE', roles: ['MODERATOR'] }, PERMISSIONS.USER_WARN),
     ).toBe(true);
     expect(
-      permissions.hasPermission(
-        { status: 'ACTIVE', roles: ['ADMIN'] },
-        PERMISSIONS.USER_IPBAN,
-      ),
+      permissions.hasPermission({ status: 'ACTIVE', roles: ['ADMIN'] }, PERMISSIONS.USER_IPBAN),
     ).toBe(false);
     expect(
-      permissions.hasPermission(
-        { status: 'ACTIVE', roles: ['MODERATOR'] },
-        PERMISSIONS.USER_IPBAN,
-      ),
+      permissions.hasPermission({ status: 'ACTIVE', roles: ['MODERATOR'] }, PERMISSIONS.USER_IPBAN),
     ).toBe(false);
     expect(
       permissions.hasPermission(
@@ -98,10 +90,12 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
       ),
     ).toBe(true);
     for (const status of ['LIMITED', 'BANNED'] as const) {
-      expect(permissions.hasPermission({ status, roles: ['SUPERADMIN'] }, PERMISSIONS.USER_WARN))
-        .toBe(false);
-      expect(permissions.hasPermission({ status, roles: ['SUPERADMIN'] }, PERMISSIONS.USER_IPBAN))
-        .toBe(false);
+      expect(
+        permissions.hasPermission({ status, roles: ['SUPERADMIN'] }, PERMISSIONS.USER_WARN),
+      ).toBe(false);
+      expect(
+        permissions.hasPermission({ status, roles: ['SUPERADMIN'] }, PERMISSIONS.USER_IPBAN),
+      ).toBe(false);
     }
   });
 
@@ -124,7 +118,8 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
       where: { status: { in: ['OPEN', 'IN_REVIEW'] } },
     });
     const [yellowQuery, redQuery] = database.moderationCard.count.mock.calls.map(
-      (args: unknown[]) => args[0] as { where: { type: string; revokedAt: unknown; OR: unknown[] } },
+      (args: unknown[]) =>
+        args[0] as { where: { type: string; revokedAt: unknown; OR: unknown[] } },
     );
     expect(yellowQuery.where.type).toBe('YELLOW');
     expect(redQuery.where.type).toBe('RED');
