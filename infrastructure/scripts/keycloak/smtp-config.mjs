@@ -88,8 +88,7 @@ export function buildKeycloakEmailConfig(values, target) {
       values.MAIL_M365_CLIENT_SECRET,
       'MAIL_M365_CLIENT_SECRET_MISSING',
     );
-    const uuidPattern =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
     if (!uuidPattern.test(tenantId) || !uuidPattern.test(clientId)) {
       throw new Error('MAIL_M365_ID_INVALID');
     }
@@ -106,8 +105,7 @@ export function buildKeycloakEmailConfig(values, target) {
         ssl: 'false',
         starttls: 'true',
         user: from,
-        authTokenUrl:
-          'https://login.microsoftonline.com/' + tenantId + '/oauth2/v2.0/token',
+        authTokenUrl: 'https://login.microsoftonline.com/' + tenantId + '/oauth2/v2.0/token',
         authTokenScope: 'https://outlook.office365.com/.default',
         authTokenClientId: clientId,
         authTokenClientSecret: clientSecret,
