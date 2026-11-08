@@ -176,6 +176,7 @@ async function run() {
         '--config',
         './test/jest-e2e.json',
         '--runInBand',
+        '--forceExit', // TEMPORARY Task184 diagnosis; remove before merge.
         ...process.argv.slice(2),
       ],
       { cwd: api, env, stdio: 'inherit' },
