@@ -23,10 +23,15 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
   private readonly database: DatabaseClient = createPrismaClient();
   private readonly logger = new Logger(ModerationService.name);
   private retryTimer?: NodeJS.Timeout;
+  private retryInProgress = false;
 
   constructor(private readonly sessionRevoker: KeycloakSessionRevoker) {}
 
   onModuleInit(): void {
+    // Do not wait a full retry interval after a crash or Keycloak recovery.
+    void this.retryPendingSessionRevocations().catch(() => {
+      this.logger.error('Startup Keycloak session revocation recovery failed');
+    });
     this.retryTimer = setInterval(() => {
       void this.retryPendingSessionRevocations().catch(() => {
         this.logger.error('Retrying pending Keycloak session revocations failed');
@@ -37,13 +42,23 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
 
   /** Recovery for a crash or Keycloak outage after a red-card transaction commits. */
   async retryPendingSessionRevocations(): Promise<void> {
-    if (!this.sessionRevoker.isConfigured) {
+    if (!this.sessionRevoker.isConfigured || this.retryInProgress) {
       return;
     }
 
+    this.retryInProgress = true;
+    try {
+      await this.processPendingSessionRevocations();
+    } finally {
+      this.retryInProgress = false;
+    }
+  }
+
+  private async processPendingSessionRevocations(): Promise<void> {
     const pending = await this.database.notification.findMany({
       where: {
         type: 'RED_CARD',
+        user: { status: 'BANNED' },
         metadata: { path: ['sessionRevocation'], equals: 'PENDING' },
       },
       select: {

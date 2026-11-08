@@ -74,6 +74,8 @@ jobs:
           node --check infrastructure/scripts/verify/dev-phase20-matrix.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-banned.sh
           node --check infrastructure/scripts/verify/dev-phase20-banned.mjs
+          bash -n infrastructure/scripts/verify/dev-phase20-session-revoke.sh
+          node --check infrastructure/scripts/verify/dev-phase20-session-revoke.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-ip-hashing.sh
           bash -n infrastructure/scripts/verify/dev-phase20-ip-rate-limits.sh
           bash -n infrastructure/scripts/verify/dev-phase20-free-gateway.sh
@@ -486,6 +488,42 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-matrix.sh"
+
+  phase20-186-dev-session-revoke:
+    name: Task 186 DEV real Keycloak PKCE session revocation & recovery (synthetic users)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-186-dev-session-revoke]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    concurrency:
+      group: phase20-186-dev-session-revoke
+      cancel-in-progress: false
+    steps:
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Exercise red-card ban, session revoke and BANNED access denial on DEV
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-session-revoke.sh"
 
   phase20-180-dev-http:
     name: Task 180 real DEV BANNED handling acceptance (synthetic users)
