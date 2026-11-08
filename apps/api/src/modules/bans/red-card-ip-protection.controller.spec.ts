@@ -40,7 +40,10 @@ describe('Task 185 red-card IP protection controller', () => {
 
       const permissions = new PermissionsService();
       expect(
-        permissions.hasPermission({ status: 'ACTIVE', roles: ['SUPERADMIN'] }, PERMISSIONS.USER_IPBAN),
+        permissions.hasPermission(
+          { status: 'ACTIVE', roles: ['SUPERADMIN'] },
+          PERMISSIONS.USER_IPBAN,
+        ),
       ).toBe(true);
       for (const role of ['USER', 'MODERATOR', 'ADMIN'] as const) {
         expect(
