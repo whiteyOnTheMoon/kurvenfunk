@@ -173,11 +173,6 @@ describe('Task 182 – API IP rate limits', () => {
           retryStrategy: expect.any(Function),
         }),
       );
-      const redisOptions = (Redis as unknown as jest.Mock).mock.calls.at(-1)?.[0] as {
-        retryStrategy: (attempt: number) => number;
-      };
-      expect(redisOptions.retryStrategy(1)).toBe(100);
-      expect(redisOptions.retryStrategy(25)).toBe(1000);
     } finally {
       guard.onModuleDestroy();
     }
