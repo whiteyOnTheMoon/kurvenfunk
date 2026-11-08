@@ -35,7 +35,7 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'redis',
   port: Number(process.env.REDIS_PORT || 6379),
   password: redisPassword,
-  lazyConnect: true,
+  lazyConnect: false,
   connectTimeout: 1500,
   maxRetriesPerRequest: 1,
   // Requests fail immediately during outages; reconnect in the background.
