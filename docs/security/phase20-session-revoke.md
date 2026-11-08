@@ -26,4 +26,14 @@
 5. Strikte Prüfung von Cleanup aller eigenen Benutzer, Sitzungen, Benachrichtigungen und Audit-Datensätze; keine Keycloak-Sicherheitsoptionen verändern, kein STAGING/PROD.
 6. Negative Browser- und Mobil-Regression des BANNED-Zustands, ohne allgemeinen BANNED-Bypass. Einspruchsausnahmen werden erst in Task 189 definiert.
 
+
+## Ausführbarer DEV-Abnahmetest
+
+- `infrastructure/scripts/verify/dev-phase20-session-revoke.sh` verlangt Benutzer `ap`, `develop`, exakten Merge-SHA, sauberen Checkout und `.env.dev` mit `0600`. Der Job läuft einmalig **nur nach erfolgreichem DEV-Deploy** beim Commit-Marker `[phase20-186-dev-session-revoke]`.
+- `dev-phase20-session-revoke.mjs` erstellt ausschließlich drei neue, eindeutig markierte synthetische Keycloak-Konten (`@example.test`) und zugehörige DB-Benutzer. PKCE-Login per echter Keycloak-Browser-Sitzung, normale HTTP-RED-Karte, Keycloak-Sessionliste vor und nach Logout, alte und neue JWT, Browser- und Mobile-User-Agent sowie eingeschränkte Account-Aktionen werden geprüft.
+- Für das dritte, **synthetische** Konto wird der Widerrufsfehler nur in einer isolierten Instanz von `DirectRedCardService` nachgestellt. **Keine** Unterbrechung oder Umkonfiguration des gemeinsamen Keycloak. Der schon gesperrte Account bleibt während der noch aktiven Session durch den API-Status-Guard geschützt; die RED-Benachrichtigung behält `PENDING`.
+- Zwei isolierte Instanzen des echten kompilierten `ModerationService` prüfen erst den weiter ausstehenden Retry und dann die Wiederaufnahme via `onModuleInit()` mit dem **echten** Keycloak-Serviceaccount. Ein strikt auf die neu erstellte Benachrichtigungs-ID begrenzter Datenbankadapter verhindert Berührung anderer DEV-`PENDING`-Benachrichtigungen. Der Bootstrap-Scan ist ein simulierter Modul-/Prozessneustart; die gemeinsame API-Instanz wird nicht unterbrochen.
+- Danach wird `REVOKED`, eine leere Keycloak-Sessionliste, blockiertes Refresh-Token, weiterhin `BANNED` und `403 ACCOUNT_BANNED` für alte Browser-/Mobile-Tokens geprüft. Testdaten und Keycloak-Konten werden in `finally` entfernt, bei einem Cleanup-Fehler schlägt der Job fehl.
+- **Keine** Änderung an bestehenden Keycloak-Accounts, Konfiguration, API- oder Keycloak-Container-Verfügbarkeit, STAGING oder PROD. Keine Zugangsdaten, Cookies oder Tokens in Logs. Vor dem DEV-Smoke darf weder `DONE` dokumentiert noch die Task-Checkbox abgehakt werden.
+
 `DONE` erst nach CI und nachvollziehbarer isolierter sowie realer DEV-Abnahme. Ein positives Unit-Testergebnis alleine bedeutet nur `PARTIAL`.
