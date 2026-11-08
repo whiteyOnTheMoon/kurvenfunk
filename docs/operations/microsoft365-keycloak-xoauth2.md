@@ -67,7 +67,7 @@ In Exchange Online PowerShell als entsprechend berechtigter Administrator:
 - Erst danach die Management Scope anlegen:
   `New-ManagementScope -Name "KURVENFUNK-Mailer-noreply-only" -RecipientRestrictionFilter "Alias -eq 'KurvenfunkNoreply'"`.
   Den konfigurierten Scope mit
-  `Get-ManagementScope -Identity "KURVENFUNK-Mailer-noreply-only" | Format-List Name,RecipientRestrictionFilter`
+  `Get-ManagementScope -Identity "KURVENFUNK-Mailer-noreply-only" | Format-List Name,RecipientFilter`
   gegen die verifizierte Filterung prüfen.
 - `New-ManagementRoleAssignment -Name "KURVENFUNK-Keycloak-SMTP" -Role "Application SMTP.SendAsApp" -App <ApplicationId> -CustomResourceScope "KURVENFUNK-Mailer-noreply-only"`.
 - `Test-ServicePrincipalAuthorization -Identity <ApplicationId> -Resource noreply@kurvenfunk.at`
