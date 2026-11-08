@@ -82,6 +82,66 @@ test('STAGING and PROD both require authenticated encrypted SMTP', () => {
   }
 });
 
+test('Exchange Online uses scoped app OAuth2 and no mailbox password', () => {
+  const settings = {
+    MAIL_TRANSPORT: 'microsoft365',
+    MAIL_FROM: 'noreply@kurvenfunk.at',
+    MAIL_FROM_NAME: 'KURVENFUNK',
+    MAIL_M365_TENANT_ID: '11111111-1111-4111-8111-111111111111',
+    MAIL_M365_CLIENT_ID: '22222222-2222-4222-8222-222222222222',
+    MAIL_M365_CLIENT_SECRET: 'private-only-fixture-not-a-real-secret',
+  };
+  for (const env of ['staging', 'prod']) {
+    const config = buildKeycloakEmailConfig(settings, env);
+    assert.deepEqual(config.smtpServer, {
+      from: 'noreply@kurvenfunk.at',
+      fromDisplayName: 'KURVENFUNK',
+      replyTo: 'noreply@kurvenfunk.at',
+      replyToDisplayName: 'KURVENFUNK',
+      host: 'smtp.office365.com',
+      port: '587',
+      auth: 'true',
+      authType: 'token',
+      ssl: 'false',
+      starttls: 'true',
+      user: 'noreply@kurvenfunk.at',
+      authTokenUrl:
+        'https://login.microsoftonline.com/11111111-1111-4111-8111-111111111111/oauth2/v2.0/token',
+      authTokenScope: 'https://outlook.office365.com/.default',
+      authTokenClientId: '22222222-2222-4222-8222-222222222222',
+      authTokenClientSecret: settings.MAIL_M365_CLIENT_SECRET,
+    });
+    const { authTokenClientSecret: _redacted, ...readback } = config.smtpServer;
+    assert.equal(auditKeycloakEmailConfig({ smtpServer: readback }, config), true);
+    assert.throws(
+      () => auditKeycloakEmailConfig({
+        smtpServer: { ...readback, authTokenScope: 'https://graph.microsoft.com/.default' },
+      }, config),
+      /MAIL_REALM_CONFIG_MISMATCH/u,
+    );
+    assert.throws(
+      () => buildKeycloakEmailConfig({ ...settings, MAIL_FROM: 'no-reply@kurvenfunk.at' }, env),
+      /MAIL_M365_SENDER_INVALID/u,
+    );
+    assert.throws(
+      () => buildKeycloakEmailConfig({ ...settings, MAIL_SMTP_PASSWORD: 'somepassword' }, env),
+      /MAIL_M365_BASIC_AUTH_FORBIDDEN/u,
+    );
+    assert.throws(
+      () => buildKeycloakEmailConfig({ ...settings, MAIL_M365_TENANT_ID: 'common' }, env),
+      /MAIL_M365_ID_INVALID/u,
+    );
+    assert.throws(
+      () => buildKeycloakEmailConfig({ ...settings, MAIL_M365_CLIENT_SECRET: '' }, env),
+      /MAIL_M365_CLIENT_SECRET_MISSING/u,
+    );
+  }
+  assert.throws(
+    () => buildKeycloakEmailConfig(settings, 'dev'),
+    /MAIL_DEV_MUST_USE_MAILPIT/u,
+  );
+});
+
 test('mail config parsing supports private quoted values and rejects duplicates', () => {
   const parsed = parseEmailEnvironment(
     '# ignored\nMAIL_SMTP_PASSWORD="secret=kept#exactly"\nMAIL_FROM=no-reply@kurvenfunk.at\nOTHER_PASSWORD=not-relevant\n',
