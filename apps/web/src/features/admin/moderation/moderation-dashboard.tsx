@@ -129,7 +129,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
         if (!cancelled) setOverview(result);
       } catch (cause) {
         if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : 'Dashboard konnte nicht geladen werden.');
+          setError(
+            cause instanceof Error ? cause.message : 'Dashboard konnte nicht geladen werden.',
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -187,17 +189,27 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
       </header>
 
       {loading && !overview ? <p role="status">Moderationsdaten werden geladen …</p> : null}
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {overview ? (
         <>
           <section aria-label="Moderationskennzahlen" className={styles.stats}>
-            <OverviewStat label="Offene Meldungen und in Prüfung" value={overview.counts.pendingReports} />
+            <OverviewStat
+              label="Offene Meldungen und in Prüfung"
+              value={overview.counts.pendingReports}
+            />
             <OverviewStat label="Aktive gelbe Karten" value={overview.counts.activeYellowCards} />
             <OverviewStat label="Aktive rote Karten" value={overview.counts.activeRedCards} />
             <OverviewStat label="LIMITED-Konten" value={overview.counts.limitedUsers} />
             <OverviewStat label="BANNED-Konten" value={overview.counts.bannedUsers} />
-            <OverviewStat label="Aktive LIMITED-Sanktionen" value={overview.counts.activeLimitedSanctions} />
+            <OverviewStat
+              label="Aktive LIMITED-Sanktionen"
+              value={overview.counts.activeLimitedSanctions}
+            />
           </section>
 
           <div className={styles.columns}>
@@ -206,12 +218,16 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
                 <h2 id="reports-title">Letzte Meldungen</h2>
                 <a href="#kommentarmeldungen">Zur Warteschlange</a>
               </div>
-              {overview.recentReports.length === 0 ? <p>Keine Meldungen vorhanden.</p> : (
+              {overview.recentReports.length === 0 ? (
+                <p>Keine Meldungen vorhanden.</p>
+              ) : (
                 <ul className={styles.items}>
                   {overview.recentReports.map((report) => (
                     <li key={report.id}>
                       <strong>{report.reason.replaceAll('_', ' ')}</strong>
-                      <span>{report.targetType} · {report.status}</span>
+                      <span>
+                        {report.targetType} · {report.status}
+                      </span>
                       <time dateTime={report.createdAt}>{dateLabel(report.createdAt)}</time>
                     </li>
                   ))}
@@ -221,12 +237,18 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
 
             <section className={styles.panel} aria-labelledby="cards-title">
               <h2 id="cards-title">Letzte gelbe und rote Karten</h2>
-              {overview.recentCards.length === 0 ? <p>Keine Karten vorhanden.</p> : (
+              {overview.recentCards.length === 0 ? (
+                <p>Keine Karten vorhanden.</p>
+              ) : (
                 <ul className={styles.items}>
                   {overview.recentCards.map((card) => (
                     <li key={card.id}>
-                      <strong>{card.type === 'RED' ? 'Rote Karte' : 'Gelbe Karte'} · {card.status}</strong>
-                      <span>{personLabel(card.user)} · {card.user.status}</span>
+                      <strong>
+                        {card.type === 'RED' ? 'Rote Karte' : 'Gelbe Karte'} · {card.status}
+                      </strong>
+                      <span>
+                        {personLabel(card.user)} · {card.user.status}
+                      </span>
                       <span>{card.reasonCode.replaceAll('_', ' ')}</span>
                       <time dateTime={card.issuedAt}>{dateLabel(card.issuedAt)}</time>
                     </li>
@@ -237,11 +259,15 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
 
             <section className={styles.panel} aria-labelledby="limited-title">
               <h2 id="limited-title">Letzte LIMITED-Sanktionen</h2>
-              {overview.recentLimitedSanctions.length === 0 ? <p>Keine LIMITED-Sanktionen vorhanden.</p> : (
+              {overview.recentLimitedSanctions.length === 0 ? (
+                <p>Keine LIMITED-Sanktionen vorhanden.</p>
+              ) : (
                 <ul className={styles.items}>
                   {overview.recentLimitedSanctions.map((sanction) => (
                     <li key={sanction.id}>
-                      <strong>{personLabel(sanction.user)} · {sanction.status}</strong>
+                      <strong>
+                        {personLabel(sanction.user)} · {sanction.status}
+                      </strong>
                       <span>{sanction.reasonCode.replaceAll('_', ' ')}</span>
                       <span>Bis: {dateLabel(sanction.expiresAt)}</span>
                     </li>
@@ -253,7 +279,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
             <section className={styles.panel} aria-labelledby="appeals-title">
               <h2 id="appeals-title">Einsprüche</h2>
               <p>Der Einspruchs-Workflow und seine Fallzahlen werden mit Task 20.189 eingeführt.</p>
-              <p className={styles.muted}>Noch keine Einspruchszahlen – nicht als „0“ interpretiert.</p>
+              <p className={styles.muted}>
+                Noch keine Einspruchszahlen – nicht als „0“ interpretiert.
+              </p>
             </section>
           </div>
 
@@ -268,20 +296,29 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
                     <OverviewStat label="Aktive IP-Sperren" value={network.counts.activeBlocks} />
                     <OverviewStat label="Manuell" value={network.counts.activeManual} />
                     <OverviewStat label="Automatisch" value={network.counts.activeAutomatic} />
-                    <OverviewStat label="Mit Sanktion verknüpft" value={network.counts.activeSanction} />
+                    <OverviewStat
+                      label="Mit Sanktion verknüpft"
+                      value={network.counts.activeSanction}
+                    />
                   </div>
-                  <p className={styles.muted}>Es werden weder IP-Adressen noch Hashwerte angezeigt.</p>
+                  <p className={styles.muted}>
+                    Es werden weder IP-Adressen noch Hashwerte angezeigt.
+                  </p>
                   {network.recentBlocks.length > 0 ? (
                     <ul className={styles.networkList}>
                       {network.recentBlocks.map((block) => (
                         <li key={block.id}>
-                          <strong>{block.source} · {block.active ? 'Gespeichert aktiv' : 'Deaktiviert'}</strong>
+                          <strong>
+                            {block.source} · {block.active ? 'Gespeichert aktiv' : 'Deaktiviert'}
+                          </strong>
                           <span>{block.reasonCode.replaceAll('_', ' ')}</span>
                           <span>Ablauf: {dateLabel(block.expiresAt)}</span>
                         </li>
                       ))}
                     </ul>
-                  ) : <p>Keine IP-Sperren vorhanden.</p>}
+                  ) : (
+                    <p>Keine IP-Sperren vorhanden.</p>
+                  )}
                 </>
               ) : null}
             </section>
