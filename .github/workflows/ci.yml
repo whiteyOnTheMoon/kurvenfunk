@@ -578,9 +578,9 @@ jobs:
         run: |
           set -Eeuo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
           chmod 600 ~/.ssh/kurvenfunk_dev
-          printf '%s\\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Verify compiled temporary-IP-block service using synthetic HMAC, Redis and read-only DB
@@ -590,7 +590,7 @@ jobs:
           EXPECTED_COMMIT: ${{ github.sha }}
         run: |
           set -Eeuo pipefail
-          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \\
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-183-smoke.sh"
 
   phase20-182-dev-api:
