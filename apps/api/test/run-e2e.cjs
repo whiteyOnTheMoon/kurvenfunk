@@ -2,7 +2,7 @@
 const { execFileSync, spawnSync } = require('node:child_process');
 const { randomBytes } = require('node:crypto');
 const { setTimeout: delay } = require('node:timers/promises');
-const { resolve } = require('node:path');
+const { basename, resolve } = require('node:path');
 const repo = resolve(__dirname, '../../..');
 const api = resolve(__dirname, '..');
 const containers = [];
@@ -167,21 +167,62 @@ async function run() {
     ]);
     setupStep = 'migrate isolated database';
     command(['--filter', '@kurvenfunk/database', 'exec', 'prisma', 'migrate', 'deploy']);
-    setupStep = 'run isolated HTTP integration tests';
-    const result = spawnSync(
+    // Jest/ts-jest retains substantial heap across multiple integration suites.
+    // Run each suite in its own Node process to bound memory without masking
+    // open handles with --forceExit or increasing the runner-wide heap limit.
+    setupStep = 'discover isolated HTTP integration test suites';
+    const jestBin = require.resolve('jest/bin/jest');
+    const listed = spawnSync(
       process.execPath,
       [
         '--experimental-vm-modules',
-        require.resolve('jest/bin/jest'),
+        jestBin,
         '--config',
         './test/jest-e2e.json',
         '--runInBand',
+        '--listTests',
+        '--json',
         ...process.argv.slice(2),
       ],
-      { cwd: api, env, stdio: 'inherit' },
+      { cwd: api, env, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' },
     );
-    if (result.error) throw result.error;
-    process.exitCode = result.status ?? 1;
+    if (listed.error) throw listed.error;
+    if (listed.status !== 0) throw new Error('Isolated E2E test discovery failed');
+    let suites;
+    try {
+      suites = JSON.parse(listed.stdout);
+    } catch {
+      throw new Error('Isolated E2E test discovery returned invalid JSON');
+    }
+    if (
+      !Array.isArray(suites) ||
+      suites.length === 0 ||
+      suites.some((suite) => typeof suite !== 'string' || !suite.endsWith('.e2e-spec.ts'))
+    ) {
+      throw new Error('Isolated E2E test discovery returned invalid suite paths');
+    }
+    for (const suite of suites) {
+      setupStep = 'run isolated HTTP integration test suite';
+      console.log('[E2E] Running isolated suite:', basename(suite));
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--experimental-vm-modules',
+          jestBin,
+          '--config',
+          './test/jest-e2e.json',
+          '--runInBand',
+          '--runTestsByPath',
+          suite,
+        ],
+        { cwd: api, env, stdio: 'inherit' },
+      );
+      if (result.error) throw result.error;
+      if (result.status !== 0) {
+        process.exitCode = result.status ?? 1;
+        break;
+      }
+    }
   } finally {
     for (const id of containers.reverse()) {
       try {
