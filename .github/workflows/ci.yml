@@ -58,10 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary formatter diagnostic for Exchange email source
-        run: |
-          pnpm exec prettier --write infrastructure/scripts/keycloak/smtp-config.mjs infrastructure/scripts/keycloak/smtp-config.test.mjs
-          node -e "const fs=require('node:fs'); for(const [n,p] of [['CONFIG','infrastructure/scripts/keycloak/smtp-config.mjs'],['TEST','infrastructure/scripts/keycloak/smtp-config.test.mjs']]) console.log('KF_M365_FMT_'+n+'='+fs.readFileSync(p).toString('base64'));"
       - name: Check formatting
         run: pnpm format:check
 
