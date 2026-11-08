@@ -61,16 +61,16 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
         const apiError = body as ApiErrorResponse | undefined;
 
         if (apiError?.code === 'NICKNAME_TAKEN') {
-          setError('This nickname is already taken. Please choose another one.');
+          setError('Dieser Nickname ist bereits vergeben. Bitte wähle einen anderen.');
           return;
         }
 
         if (apiError?.code === 'INVALID_FAVORITE_CLUB') {
-          setError('The selected club is no longer available.');
+          setError('Der ausgewählte Verein ist nicht mehr verfügbar.');
           return;
         }
 
-        setError('Your onboarding could not be completed.');
+        setError('Das Profil konnte nicht gespeichert werden.');
         return;
       }
 
@@ -83,7 +83,7 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
         | undefined;
 
       if (!result?.data?.onboardingCompleted) {
-        setError('Your onboarding could not be completed.');
+        setError('Das Profil konnte nicht gespeichert werden.');
         return;
       }
 
@@ -92,7 +92,7 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
       router.replace(getPostLoginDestination(currentUser));
       router.refresh();
     } catch {
-      setError('Your onboarding could not be completed.');
+      setError('Das Profil konnte nicht gespeichert werden.');
     } finally {
       setSubmitting(false);
     }
@@ -107,15 +107,12 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
       <ClubSelection apiUrl={apiUrl} onSelectionChange={setSelection} />
 
       <section>
-        <h2>Complete setup</h2>
+        <h2>Profil abschließen</h2>
 
-        <p>
-          Save your nickname and choose your favourite club or Neutral before completing your
-          account.
-        </p>
+        <p>Speichere deinen Nickname und deine Vereinsauswahl, um Kurvenfunk zu nutzen.</p>
 
         <button type="button" disabled={!canComplete} onClick={() => void completeOnboarding()}>
-          {submitting ? 'Completing…' : 'Complete onboarding'}
+          {submitting ? 'Wird gespeichert …' : 'Profil einrichten'}
         </button>
 
         {error ? <p role="alert">{error}</p> : null}
