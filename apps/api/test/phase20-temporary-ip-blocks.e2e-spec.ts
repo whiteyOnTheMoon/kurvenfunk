@@ -67,9 +67,7 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
     db = createPrismaClient();
 
     const trustedIp = {
-      async fromRequest() {
-        return address;
-      },
+      fromRequest: () => Promise.resolve(address),
     } as unknown as TrustedClientIpService;
     const guard = new TemporaryIpBlockGuard(trustedIp, service, config);
     const moduleRef = await Test.createTestingModule({
