@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const css = readFileSync(new URL('./page.module.css', import.meta.url), 'utf8');
-const clubs = readFileSync(new URL('../../features/onboarding/club-selection.tsx', import.meta.url), 'utf8');
+const clubs = readFileSync(
+  new URL('../../features/onboarding/club-selection.tsx', import.meta.url),
+  'utf8',
+);
 
 test('onboarding provides a searchable, responsive club selection', () => {
   assert.match(clubs, /type="search"/);
