@@ -33,9 +33,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const REASON_PATTERN = /^[A-Z][A-Z0-9_]{1,79}$/u;
 
 function validEvidence(reasonCode: string, moderatorNote: string): boolean {
-  return REASON_PATTERN.test(reasonCode) &&
+  return (
+    REASON_PATTERN.test(reasonCode) &&
     moderatorNote.trim().length > 0 &&
-    moderatorNote.length <= 2000;
+    moderatorNote.length <= 2000
+  );
 }
 
 /**
