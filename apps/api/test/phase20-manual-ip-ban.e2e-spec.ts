@@ -157,10 +157,14 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
         .send(input)
         .expect(403);
     }
-    expect(await db.iPBlock.count({ where: { createdById: subjectIds.get(subjects.root) } })).toBe(0);
-    expect(await db.sanction.count({
-      where: { type: 'IP_BLOCK', createdById: subjectIds.get(subjects.root) },
-    })).toBe(0);
+    expect(await db.iPBlock.count({ where: { createdById: subjectIds.get(subjects.root) } })).toBe(
+      0,
+    );
+    expect(
+      await db.sanction.count({
+        where: { type: 'IP_BLOCK', createdById: subjectIds.get(subjects.root) },
+      }),
+    ).toBe(0);
   }, 30000);
 
   it('rejects forged actor fields, permanent bans, invalid IP and bad justification', async () => {
@@ -180,7 +184,9 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
         .send(invalid)
         .expect(400);
     }
-    expect(await db.iPBlock.count({ where: { createdById: subjectIds.get(subjects.root) } })).toBe(0);
+    expect(await db.iPBlock.count({ where: { createdById: subjectIds.get(subjects.root) } })).toBe(
+      0,
+    );
   }, 30000);
 
   it('creates a private bounded manual ban and linked audited sanction', async () => {
