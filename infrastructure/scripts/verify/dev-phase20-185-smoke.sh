@@ -30,8 +30,9 @@ const flagsOff = () => process.env.IP_TEMP_BLOCK_ENABLED !== 'true' &&
   process.env.IP_TEMP_AUTO_BLOCK_ENABLED !== 'true';
 if (!flagsOff()) throw new Error('PHASE20_185_DEV_FLAGS_MUST_BE_OFF');
 
+const testSecret = randomBytes(32).toString('base64url');
 const config = { get: (k, fallback) => ({
-  IP_HASH_HMAC_SECRET: randomBytes(32).toString('base64url'),
+  IP_HASH_HMAC_SECRET: testSecret,
   IP_HASH_KEY_VERSION: 'v1',
   IP_HASH_PREVIOUS_KEYS_JSON: '',
 })[k] ?? fallback };
