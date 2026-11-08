@@ -244,7 +244,9 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
       .set('Authorization', auth)
       .send(input)
       .expect(409);
-    expect(await db.iPBlock.count({ where: { source: 'MANUAL' } })).toBe(1);
+    expect(await db.iPBlock.count({
+      where: { source: 'MANUAL', createdById: subjectIds.get(subjects.root) },
+    })).toBe(1);
 
     const revoke = endpoint + '/' + body.data.id + '/revoke';
     const reverse = {
