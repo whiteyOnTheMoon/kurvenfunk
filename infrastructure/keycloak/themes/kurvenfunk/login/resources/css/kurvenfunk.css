@@ -28,7 +28,7 @@ body#keycloak-bg,
   max-width: 464px;
   margin-inline: auto;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "header" "main";
+  grid-template-areas: 'header' 'main';
   align-content: center;
 }
 
@@ -58,8 +58,8 @@ body#keycloak-bg,
   height: 48px;
   flex: 0 0 48px;
   border-radius: 12px;
-  background: url("../img/kurvenfunk-mark.svg") center / contain no-repeat;
-  content: "";
+  background: url('../img/kurvenfunk-mark.svg') center / contain no-repeat;
+  content: '';
 }
 
 #kc-header-wrapper .kc-logo-text,
@@ -128,7 +128,7 @@ label {
 
 .pf-v5-c-button.pf-m-primary,
 #kc-login,
-#kc-form-buttons input[type="submit"] {
+#kc-form-buttons input[type='submit'] {
   min-height: 46px;
   border: 1px solid var(--kf-ink);
   border-radius: 10px;
@@ -140,14 +140,14 @@ label {
 
 .pf-v5-c-button.pf-m-primary:hover,
 #kc-login:hover,
-#kc-form-buttons input[type="submit"]:hover {
+#kc-form-buttons input[type='submit']:hover {
   border-color: #282d31;
   background: #282d31;
 }
 
 .pf-v5-c-button.pf-m-primary:focus-visible,
 #kc-login:focus-visible,
-#kc-form-buttons input[type="submit"]:focus-visible,
+#kc-form-buttons input[type='submit']:focus-visible,
 a:focus-visible {
   outline: 3px solid var(--kf-focus);
   outline-offset: 3px;
