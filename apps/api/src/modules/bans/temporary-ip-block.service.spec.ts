@@ -60,25 +60,20 @@ describe('Task 183 temporary IP block service', () => {
     });
     expect(tx.sanction.create).not.toHaveBeenCalled();
     expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
-    expect(tx.iPBlock.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+    expect(tx.iPBlock.create.mock.calls).toMatchObject([
+      [{
+        data: {
           ipHash: 'f'.repeat(64),
           hashKeyVersion: 'v2',
           source: 'RATE_LIMIT_ESCALATION',
           reasonCode: 'REPEATED_WRITE_ABUSE',
           createdById: null,
-        }),
-      }),
-    );
-    expect(tx.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          actorType: 'SECURITY_AUTOMATION',
-          action: 'IP_BLOCK_CREATED',
-        }),
-      }),
-    );
+        },
+      }],
+    ]);
+    expect(tx.auditLog.create.mock.calls).toMatchObject([
+      [{ data: { actorType: 'SECURITY_AUTOMATION', action: 'IP_BLOCK_CREATED' } }],
+    ]);
     expect(JSON.stringify(tx.iPBlock.create.mock.calls)).not.toContain(RAW_ADDRESS);
     expect(JSON.stringify(tx.auditLog.create.mock.calls)).not.toContain(RAW_ADDRESS);
     await service.onModuleDestroy();
@@ -95,14 +90,9 @@ describe('Task 183 temporary IP block service', () => {
       );
       expect(tx.sanction.create).toHaveBeenCalledTimes(1);
       expect(tx.auditLog.create).toHaveBeenCalledTimes(2);
-      expect(tx.iPBlock.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            source: 'MANUAL',
-            createdById: ACTOR,
-          }),
-        }),
-      );
+      expect(tx.iPBlock.create.mock.calls).toMatchObject([
+        [{ data: { source: 'MANUAL', createdById: ACTOR } }],
+      ]);
     },
   );
 
@@ -112,16 +102,16 @@ describe('Task 183 temporary IP block service', () => {
     await expect(service.issueAutomatic(RAW_ADDRESS)).rejects.toBeInstanceOf(ConflictException);
     expect(tx.iPBlock.create).not.toHaveBeenCalled();
     expect(identity.candidateHashes).toHaveBeenCalledWith(RAW_ADDRESS);
-    expect(tx.iPBlock.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
+    expect(tx.iPBlock.findFirst.mock.calls).toMatchObject([
+      [{
+        where: {
           OR: [
             { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
             { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
           ],
-        }),
-      }),
-    );
+        },
+      }],
+    ]);
   });
 
   it('does not duplicate blocks after a serializable transaction race', async () => {
@@ -158,16 +148,16 @@ describe('Task 183 temporary IP block service', () => {
     database.iPBlock.findFirst.mockResolvedValueOnce({ id: BLOCK, expiresAt: new Date() });
     const result = await service.findActive(RAW_ADDRESS);
     expect(result?.id).toBe(BLOCK);
-    expect(database.iPBlock.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
+    expect(database.iPBlock.findFirst.mock.calls).toMatchObject([
+      [{
+        where: {
           active: true,
           OR: [
             { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
             { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
           ],
-        }),
-      }),
-    );
+        },
+      }],
+    ]);
   });
 });

@@ -26,7 +26,7 @@ function setup(enabled = true) {
       key === 'IP_TEMP_BLOCK_ENABLED' ? (enabled ? 'true' : 'false') : fallback,
   };
   const guard = new TemporaryIpBlockGuard(
-    trustedIp as unknown as TrustedClientIpService,
+    trustedIp,
     blocks as unknown as TemporaryIpBlockService,
     config as ConfigService,
   );
