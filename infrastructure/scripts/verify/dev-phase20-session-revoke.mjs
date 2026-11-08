@@ -501,10 +501,9 @@ async function execute() {
     'GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
   );
   check(activeBefore.status === 200, 'DEFERRED_SESSIONS_QUERY_FAILED');
-  check(Array.isArray(await jsonOrNull(activeBefore)) && (await (async () => {
-    const again = await admin('GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions');
-    return (await jsonOrNull(again))?.length > 0;
-  })()), 'DEFERRED_PKCE_SESSION_MISSING');
+  const sessionsBefore = await jsonOrNull(activeBefore);
+  check(Array.isArray(sessionsBefore) && sessionsBefore.length > 0,
+    'DEFERRED_PKCE_SESSION_MISSING');
 
   // Inject a failing revoker for this *single in-process direct-ban service*.
   // This is not a Keycloak outage or network tampering.
@@ -543,6 +542,9 @@ async function execute() {
     'GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
   );
   check(stillActiveDuringFailure.status === 200, 'DEFERRED_OUTAGE_SESSION_UNAVAILABLE');
+  const sessionsDuringOutage = await jsonOrNull(stillActiveDuringFailure);
+  check(Array.isArray(sessionsDuringOutage) && sessionsDuringOutage.length > 0,
+    'DEFERRED_OUTAGE_DID_NOT_LEAVE_SESSION_ACTIVE');
   // The app's BANNED guard must deny both stale browser and mobile credentials,
   // even before Keycloak's logout eventually succeeds.
   const deniedStale = await api('GET', '/auth/me', deferredToken);
