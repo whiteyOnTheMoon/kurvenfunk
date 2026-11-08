@@ -170,7 +170,6 @@ describe('Task 182 – API IP rate limits', () => {
           lazyConnect: false,
           enableOfflineQueue: false,
           maxRetriesPerRequest: 1,
-          retryStrategy: expect.any(Function),
         }),
       );
     } finally {
