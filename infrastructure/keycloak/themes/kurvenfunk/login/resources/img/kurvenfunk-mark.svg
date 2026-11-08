@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KURVENFUNK">
+  <rect width="64" height="64" rx="15" fill="#0f1113"/>
+  <path d="M15 18v28M15 32l13-14M15 32l14 14" stroke="#fff" stroke-width="6" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="M36 46V18h17M36 32h14" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="52" cy="13" r="6" fill="#a8e63e"/>
+</svg>

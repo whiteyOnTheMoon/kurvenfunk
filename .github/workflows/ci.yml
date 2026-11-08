@@ -81,6 +81,8 @@ jobs:
           bash -n infrastructure/scripts/keycloak/configure-transactional-email.sh
           node --check infrastructure/scripts/keycloak/smtp-config.mjs
           node --test infrastructure/scripts/keycloak/smtp-config.test.mjs
+          bash -n infrastructure/scripts/keycloak/apply-dev-branding.sh
+          node --test infrastructure/scripts/keycloak/branding.test.mjs
           bash -n infrastructure/scripts/verify/dev-phase20-182-free-live.sh
           bash -n infrastructure/scripts/verify/dev-phase20-182-api-activate.sh
           node --check infrastructure/scripts/verify/phase20-182-public-edge.mjs
@@ -230,6 +232,42 @@ jobs:
             -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-ots-import.sh"
+
+  apply-dev-keycloak-branding:
+    name: Apply branded DEV Keycloak login theme (safe rollback)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[auth-dev-branding-apply]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: dev-keycloak-branding
+      cancel-in-progress: false
+    steps:
+      - name: Configure DEV SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Activate and audit DEV login branding
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/keycloak/apply-dev-branding.sh"
 
   deploy-staging:
     name: Deploy STAGING
