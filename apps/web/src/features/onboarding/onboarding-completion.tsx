@@ -109,9 +109,7 @@ export function OnboardingCompletion({ apiUrl }: OnboardingCompletionProps) {
       <section>
         <h2>Profil abschließen</h2>
 
-        <p>
-          Speichere deinen Nickname und deine Vereinsauswahl, um Kurvenfunk zu nutzen.
-        </p>
+        <p>Speichere deinen Nickname und deine Vereinsauswahl, um Kurvenfunk zu nutzen.</p>
 
         <button type="button" disabled={!canComplete} onClick={() => void completeOnboarding()}>
           {submitting ? 'Wird gespeichert …' : 'Profil einrichten'}

@@ -207,7 +207,9 @@ export function ClubSelection({
         </p>
       ) : null}
 
-      {selection?.fanPreference === 'NEUTRAL' ? <p aria-live="polite">Ausgewählt: Neutral</p> : null}
+      {selection?.fanPreference === 'NEUTRAL' ? (
+        <p aria-live="polite">Ausgewählt: Neutral</p>
+      ) : null}
     </section>
   );
 }

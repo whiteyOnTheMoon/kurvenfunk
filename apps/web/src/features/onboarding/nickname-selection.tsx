@@ -123,9 +123,7 @@ export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectio
     <section>
       <h2>Dein Nickname</h2>
 
-      <p>
-        3–24 Zeichen. Erlaubt sind Buchstaben, Zahlen, Unterstriche und Bindestriche.
-      </p>
+      <p>3–24 Zeichen. Erlaubt sind Buchstaben, Zahlen, Unterstriche und Bindestriche.</p>
 
       <div>
         <label htmlFor="nickname">Nickname</label>
