@@ -166,8 +166,13 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
       host: process.env.REDIS_HOST!,
       port: Number(process.env.REDIS_PORT),
       password: process.env.REDIS_PASSWORD,
+      // Do not issue commands before the isolated Redis socket is ready.
+      // Offline queuing is deliberately disabled, as in the API guard.
+      lazyConnect: true,
+      connectTimeout: 1500,
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
+      retryStrategy: () => null,
     });
     const base = 'kurvenfunk:ip-block:e2e:' + randomBytes(16).toString('hex');
     const event = async (timestamp: number) =>
@@ -183,6 +188,7 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
       );
 
     try {
+      await redis.connect();
       expect(await event(600_000)).toBe(0);
       expect(await event(610_000)).toBe(0);
       expect(await event(660_000)).toBe(0);
@@ -190,8 +196,13 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
       expect(await event(725_000)).toBe(0);
       expect(await redis.pttl(base)).toBeGreaterThan(0);
     } finally {
-      await redis.del(base, base + ':once');
-      redis.disconnect();
+      try {
+        if (redis.status === 'ready') {
+          await redis.del(base, base + ':once');
+        }
+      } finally {
+        redis.disconnect();
+      }
     }
   }, 30000);
 });
