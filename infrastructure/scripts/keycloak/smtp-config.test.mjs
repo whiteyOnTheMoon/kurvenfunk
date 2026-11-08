@@ -114,9 +114,13 @@ test('Exchange Online uses scoped app OAuth2 and no mailbox password', () => {
     const { authTokenClientSecret: _redacted, ...readback } = config.smtpServer;
     assert.equal(auditKeycloakEmailConfig({ smtpServer: readback }, config), true);
     assert.throws(
-      () => auditKeycloakEmailConfig({
-        smtpServer: { ...readback, authTokenScope: 'https://graph.microsoft.com/.default' },
-      }, config),
+      () =>
+        auditKeycloakEmailConfig(
+          {
+            smtpServer: { ...readback, authTokenScope: 'https://graph.microsoft.com/.default' },
+          },
+          config,
+        ),
       /MAIL_REALM_CONFIG_MISMATCH/u,
     );
     assert.throws(
@@ -136,10 +140,7 @@ test('Exchange Online uses scoped app OAuth2 and no mailbox password', () => {
       /MAIL_M365_CLIENT_SECRET_MISSING/u,
     );
   }
-  assert.throws(
-    () => buildKeycloakEmailConfig(settings, 'dev'),
-    /MAIL_DEV_MUST_USE_MAILPIT/u,
-  );
+  assert.throws(() => buildKeycloakEmailConfig(settings, 'dev'), /MAIL_DEV_MUST_USE_MAILPIT/u);
 });
 
 test('mail config parsing supports private quoted values and rejects duplicates', () => {
