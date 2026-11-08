@@ -32,6 +32,13 @@ function setup(enabled = true) {
   return { guard, trustedIp, blocks };
 }
 
+// Prevent the ESM Prisma package from loading in CommonJS Jest unit suites.
+jest.mock('@kurvenfunk/database', () => ({
+  createPrismaClient: jest.fn(() => ({
+    $disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 describe('Task 183 fail-closed temporary IP guard', () => {
   it('stays disabled until explicitly opted into the API runtime', async () => {
     const { guard, trustedIp, blocks } = setup(false);

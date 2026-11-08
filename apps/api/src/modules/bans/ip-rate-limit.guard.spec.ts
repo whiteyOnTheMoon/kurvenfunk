@@ -46,6 +46,13 @@ function setup(enabled = true) {
   return { guard, ip, identity };
 }
 
+// Prevent the ESM Prisma package from loading in CommonJS Jest unit suites.
+jest.mock('@kurvenfunk/database', () => ({
+  createPrismaClient: jest.fn(() => ({
+    $disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 describe('Task 182 – API IP rate limits', () => {
   beforeEach(() => {
     jest.clearAllMocks();
