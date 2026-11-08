@@ -1,12 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
-import {
-  Controller,
-  Get,
-  type INestApplication,
-  Post,
-} from '@nestjs/common';
+import { Controller, Get, type INestApplication, Post } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
@@ -97,15 +92,15 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
     expect(created.sanctionId).toBeNull();
     expect(created.expiresAt.getTime() - created.startsAt.getTime()).toBe(15 * 60_000);
 
-    const record = await db.iPBlock.findUniqueOrThrow({
-      where: { id: created.id },
-    });
+    const record = await db.iPBlock.findUniqueOrThrow({ where: { id: created.id } });
     expect(record.source).toBe('RATE_LIMIT_ESCALATION');
     expect(record.ipHash).toMatch(/^[0-9a-f]{64}$/u);
     expect(JSON.stringify(record)).not.toContain(address);
-    expect(await db.auditLog.count({
-      where: { ipBlockId: created.id, action: 'IP_BLOCK_CREATED' },
-    })).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: { ipBlockId: created.id, action: 'IP_BLOCK_CREATED' },
+      }),
+    ).toBe(1);
     expect(await db.sanction.count({ where: { ipBlockId: created.id } })).toBe(0);
 
     const denied = await request(app.getHttpServer()).post(endpoint).send({}).expect(403);
@@ -125,9 +120,11 @@ describe('Task 183 isolated temporary IP block lifecycle and HTTP enforcement', 
     const ended = await db.iPBlock.findUniqueOrThrow({ where: { id: created.id } });
     expect(ended.active).toBe(false);
     expect(ended.deactivationReason).toBe('EXPIRED');
-    expect(await db.auditLog.count({
-      where: { ipBlockId: created.id, action: 'IP_BLOCK_EXPIRED' },
-    })).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: { ipBlockId: created.id, action: 'IP_BLOCK_EXPIRED' },
+      }),
+    ).toBe(1);
   }, 30000);
 
   it('creates a manual expiring block only for an explicit actor, with linked sanction', async () => {
