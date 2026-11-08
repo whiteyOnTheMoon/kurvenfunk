@@ -45,7 +45,7 @@ export const AUTO_ESCALATION_LUA = [
   "if redis.call('ZCARD', KEYS[1]) < 3 then return 0 end",
   "if redis.call('SET', KEYS[2], '1', 'NX', 'EX', ARGV[4]) then return 1 end",
   'return 0',
-].join('\\n');
+].join('\n');
 
 const AUTO_ESCALATION_WINDOW_MS = 30 * 60_000;
 const AUTO_ESCALATION_TTL_SEC = 30 * 60;
