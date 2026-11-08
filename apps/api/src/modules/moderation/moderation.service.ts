@@ -58,6 +58,7 @@ export class ModerationService implements OnModuleDestroy, OnModuleInit {
     const pending = await this.database.notification.findMany({
       where: {
         type: 'RED_CARD',
+        user: { status: 'BANNED' },
         metadata: { path: ['sessionRevocation'], equals: 'PENDING' },
       },
       select: {
