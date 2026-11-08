@@ -1,0 +1,47 @@
+# Entirely disposable CI fixture. No host ports, persistent volumes or DEV connections.
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no', '--requirepass', 'ci-only-182-redis']
+    networks:
+      - isolated
+
+  keycloak:
+    image: node:24-alpine
+    command:
+      - node
+      - -e
+      - "require('node:http').createServer((req, res) => { res.writeHead(200, {'content-type': 'text/plain'}); res.end('isolated-fixture'); }).listen(8080, '0.0.0.0')"
+    networks:
+      - isolated
+
+  cloudflared:
+    image: node:24-alpine
+    command: ['node', '-e', 'setInterval(() => {}, 60000)']
+    volumes:
+      - ../../infrastructure/scripts/verify/phase20-182-isolated-http.mjs:/opt/phase20-182-test.mjs:ro
+    networks:
+      - isolated
+
+  auth-gateway:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/auth-gateway/main.js']
+    environment:
+      AUTH_GATEWAY_PORT: 8080
+      AUTH_GATEWAY_UPSTREAM: keycloak
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ci-only-182-redis
+      IP_HASH_HMAC_SECRET: ${IP_HASH_HMAC_SECRET:?CI_SYNTHETIC_HMAC_REQUIRED}
+    depends_on:
+      - redis
+      - keycloak
+      - cloudflared
+    networks:
+      - isolated
+
+networks:
+  isolated:
+    internal: true
