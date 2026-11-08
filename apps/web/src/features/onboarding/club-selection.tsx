@@ -59,6 +59,7 @@ export function ClubSelection({
   const [selection, setSelection] = useState<Selection>(initialSelection);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -95,6 +96,12 @@ export function ClubSelection({
     return () => controller.abort();
   }, [apiUrl]);
 
+  const visibleClubs = clubs.filter((club) =>
+    `${club.name} ${club.shortName ?? ''}`
+      .toLocaleLowerCase('de-AT')
+      .includes(search.trim().toLocaleLowerCase('de-AT')),
+  );
+
   if (loading) {
     return (
       <section>
@@ -118,10 +125,19 @@ export function ClubSelection({
       <h2>Choose your club</h2>
       <p>Select your favourite club or choose Neutral.</p>
 
+      <label htmlFor="onboarding-club-search">Verein suchen</label>
+      <input
+        id="onboarding-club-search"
+        type="search"
+        placeholder="Vereinsname eingeben …"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+
       <fieldset>
         <legend>Club preference</legend>
 
-        {clubs.map((club) => {
+        {visibleClubs.map((club) => {
           const checked =
             selection?.fanPreference === 'CLUB' && selection.favoriteClubId === club.id;
 
@@ -180,6 +196,10 @@ export function ClubSelection({
           <strong>Neutral</strong>
         </label>
       </fieldset>
+
+      {visibleClubs.length === 0 ? (
+        <p role="status">Kein Verein gefunden. Du kannst Neutral auswählen.</p>
+      ) : null}
 
       {selection?.fanPreference === 'CLUB' ? (
         <p aria-live="polite">
