@@ -1,6 +1,7 @@
 import { ServiceUnavailableException, type ExecutionContext } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
+import Redis from 'ioredis';
 
 import type { IpIdentityService } from './ip-identity.service';
 import { classifyIpLimitedWrite, IpRateLimitGuard, IP_RATE_LIMITS } from './ip-rate-limit.guard';
@@ -156,6 +157,41 @@ describe('Task 182 – API IP rate limits', () => {
       await expect(
         guard.canActivate(context('POST', '/api/v1/comments/uuid/reports')),
       ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    } finally {
+      guard.onModuleDestroy();
+    }
+  });
+
+  it('reconnects in the background while refusing to queue unprotected writes', () => {
+    const { guard } = setup();
+    try {
+      expect(Redis).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lazyConnect: true,
+          enableOfflineQueue: false,
+          maxRetriesPerRequest: 1,
+          retryStrategy: expect.any(Function),
+        }),
+      );
+      const redisOptions = (Redis as unknown as jest.Mock).mock.calls.at(-1)?.[0] as {
+        retryStrategy: (attempt: number) => number;
+      };
+      expect(redisOptions.retryStrategy(1)).toBe(100);
+      expect(redisOptions.retryStrategy(25)).toBe(1000);
+    } finally {
+      guard.onModuleDestroy();
+    }
+  });
+
+  it('rejects requests while Redis is unavailable and enforces quotas after recovery', async () => {
+    const { guard } = setup();
+    const report = context('POST', '/api/v1/comments/uuid/reports');
+    try {
+      redisEval.mockRejectedValueOnce(new Error('synthetic Redis outage'));
+      await expect(guard.canActivate(report)).rejects.toMatchObject({ status: 503 });
+      redisEval.mockResolvedValueOnce(1).mockResolvedValueOnce(11);
+      await expect(guard.canActivate(report)).resolves.toBe(true);
+      await expect(guard.canActivate(report)).rejects.toMatchObject({ status: 429 });
     } finally {
       guard.onModuleDestroy();
     }

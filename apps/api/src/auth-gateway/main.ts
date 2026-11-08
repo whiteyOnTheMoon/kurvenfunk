@@ -38,7 +38,10 @@ const redis = new Redis({
   lazyConnect: true,
   connectTimeout: 1500,
   maxRetriesPerRequest: 1,
-  retryStrategy: () => null,
+  // Requests fail immediately during outages; reconnect in the background.
+  // A disabled retry strategy would leave the gateway at 503 after Redis returns.
+  enableOfflineQueue: false,
+  retryStrategy: (attempt) => Math.min(attempt * 100, 1000),
 });
 
 function reject(response: import('node:http').ServerResponse, status: number): void {

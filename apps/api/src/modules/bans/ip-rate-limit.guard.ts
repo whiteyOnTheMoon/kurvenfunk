@@ -85,7 +85,9 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
           lazyConnect: true,
           connectTimeout: 1500,
           maxRetriesPerRequest: 1,
-          retryStrategy: () => null,
+          // Fail closed without queuing writes, then reconnect automatically.
+          enableOfflineQueue: false,
+          retryStrategy: (attempt) => Math.min(attempt * 100, 1000),
         })
       : null;
   }
