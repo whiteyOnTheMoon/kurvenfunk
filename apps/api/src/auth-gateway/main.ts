@@ -35,10 +35,13 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'redis',
   port: Number(process.env.REDIS_PORT || 6379),
   password: redisPassword,
-  lazyConnect: true,
+  lazyConnect: false,
   connectTimeout: 1500,
   maxRetriesPerRequest: 1,
-  retryStrategy: () => null,
+  // Requests fail immediately during outages; reconnect in the background.
+  // A disabled retry strategy would leave the gateway at 503 after Redis returns.
+  enableOfflineQueue: false,
+  retryStrategy: (attempt) => Math.min(attempt * 100, 1000),
 });
 
 function reject(response: import('node:http').ServerResponse, status: number): void {
