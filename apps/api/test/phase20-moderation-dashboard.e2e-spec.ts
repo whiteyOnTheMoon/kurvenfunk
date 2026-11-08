@@ -241,14 +241,16 @@ describe('Task 187 moderation overview authorization and privacy HTTP E2E', () =
         .get('/api/v1/moderation/dashboard')
         .set('Authorization', authorization)
         .expect(200);
-      const data = (result.body as {
-        data: {
-          counts: Record<string, number>;
-          recentReports: Array<{ id: string }>;
-          recentCards: Array<{ id: string }>;
-          appeals: { available: boolean };
-        };
-      }).data;
+      const data = (
+        result.body as {
+          data: {
+            counts: Record<string, number>;
+            recentReports: Array<{ id: string }>;
+            recentCards: Array<{ id: string }>;
+            appeals: { available: boolean };
+          };
+        }
+      ).data;
 
       expect(data.counts.pendingReports).toBeGreaterThanOrEqual(1);
       expect(data.counts.activeRedCards).toBeGreaterThanOrEqual(1);
@@ -277,13 +279,15 @@ describe('Task 187 moderation overview authorization and privacy HTTP E2E', () =
       .get('/api/v1/moderation/dashboard/ip-blocks')
       .set('Authorization', auth)
       .expect(200);
-    const payload = (result.body as {
-      data: {
-        counts: { activeBlocks: number; activeManual: number };
-        recentBlocks: Array<{ id: string; source: string }>;
-        note: string;
-      };
-    }).data;
+    const payload = (
+      result.body as {
+        data: {
+          counts: { activeBlocks: number; activeManual: number };
+          recentBlocks: Array<{ id: string; source: string }>;
+          note: string;
+        };
+      }
+    ).data;
 
     expect(payload.counts.activeBlocks).toBeGreaterThanOrEqual(1);
     expect(payload.counts.activeManual).toBeGreaterThanOrEqual(1);
@@ -305,15 +309,21 @@ describe('Task 187 moderation overview authorization and privacy HTTP E2E', () =
       .get('/api/v1/moderation/dashboard')
       .set('Authorization', 'Bearer ' + (await signedToken(subjects.root)))
       .expect(200);
-    const data = (result.body as {
-      data: { recentCards: Array<{ id: string }> };
-    }).data;
+    const data = (
+      result.body as {
+        data: { recentCards: Array<{ id: string }> };
+      }
+    ).data;
     expect(data.recentCards.some((card) => card.id === cardId)).toBe(true);
     expect(data.recentCards.some((card) => card.id === yellowId)).toBe(true);
-    expect(await database.moderationCard.count({
-      where: { id: { in: [cardId, yellowId, oldYellowId] } },
-    })).toBe(start);
-    expect(await database.moderationReport.findUnique({ where: { id: reportId } }))
-      .toMatchObject({ status: 'OPEN', details: secretNote });
+    expect(
+      await database.moderationCard.count({
+        where: { id: { in: [cardId, yellowId, oldYellowId] } },
+      }),
+    ).toBe(start);
+    expect(await database.moderationReport.findUnique({ where: { id: reportId } })).toMatchObject({
+      status: 'OPEN',
+      details: secretNote,
+    });
   }, 30000);
 });
