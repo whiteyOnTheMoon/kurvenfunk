@@ -99,104 +99,109 @@ export class TemporaryIpBlockService implements OnModuleDestroy {
     try {
       return await this.database.$transaction(
         async (tx) => {
-        const existing = await tx.iPBlock.findFirst({
-          where: {
-            OR: candidates.map((candidate) => ({
-              ipHash: candidate.ipHash,
-              hashKeyVersion: candidate.hashKeyVersion,
-            })),
-            active: true,
-            startsAt: { lte: startsAt },
-            AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: startsAt } }] }],
-          },
-          select: { id: true },
-        });
-        if (existing) {
-          throw new ConflictException({
-            code: 'IP_TEMP_BLOCK_ALREADY_ACTIVE',
-            message: 'A restriction for this network is already active.',
-          });
-        }
-
-        const record = await tx.iPBlock.create({
-          data: {
-            ipHash: current.ipHash,
-            hashKeyVersion: current.hashKeyVersion,
-            source: command.source,
-            reasonCode: command.reasonCode,
-            createdById: command.actorUserId ?? null,
-            active: true,
-            startsAt,
-            expiresAt,
-          },
-          select: { id: true, startsAt: true, expiresAt: true, active: true },
-        });
-
-        // A formal manually issued block has a linked sanction.
-        // Automatic technical protection never becomes an account sanction.
-        const sanction =
-          command.source === 'MANUAL'
-            ? await tx.sanction.create({
-              data: {
-                ipBlockId: record.id,
-                type: 'IP_BLOCK',
-                status: 'ACTIVE',
-                reasonCode: command.reasonCode,
-                createdById: command.actorUserId,
-                startsAt,
-                expiresAt,
-              },
-                select: { id: true },
-              })
-            : null;
-
-        await tx.auditLog.create({
-          data: {
-            actorType: command.source === 'MANUAL' ? 'USER' : 'SECURITY_AUTOMATION',
-            actorUserId: command.actorUserId ?? null,
-            action: 'IP_BLOCK_CREATED',
-            category: 'IP_PROTECTION',
-            targetType: 'IP_BLOCK',
-            targetId: record.id,
-            ipBlockId: record.id,
-            sanctionId: sanction?.id ?? null,
-            reason: command.reasonCode,
-            metadata: {
-              source: command.source,
-              duration: command.duration,
-              hashKeyVersion: current.hashKeyVersion,
+          const existing = await tx.iPBlock.findFirst({
+            where: {
+              OR: candidates.map((candidate) => ({
+                ipHash: candidate.ipHash,
+                hashKeyVersion: candidate.hashKeyVersion,
+              })),
+              active: true,
+              startsAt: { lte: startsAt },
+              AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: startsAt } }] }],
             },
-          },
-        });
+            select: { id: true },
+          });
+          if (existing) {
+            throw new ConflictException({
+              code: 'IP_TEMP_BLOCK_ALREADY_ACTIVE',
+              message: 'A restriction for this network is already active.',
+            });
+          }
 
-        if (sanction) {
+          const record = await tx.iPBlock.create({
+            data: {
+              ipHash: current.ipHash,
+              hashKeyVersion: current.hashKeyVersion,
+              source: command.source,
+              reasonCode: command.reasonCode,
+              createdById: command.actorUserId ?? null,
+              active: true,
+              startsAt,
+              expiresAt,
+            },
+            select: { id: true, startsAt: true, expiresAt: true, active: true },
+          });
+
+          // A formal manually issued block has a linked sanction.
+          // Automatic technical protection never becomes an account sanction.
+          const sanction =
+            command.source === 'MANUAL'
+              ? await tx.sanction.create({
+                  data: {
+                    ipBlockId: record.id,
+                    type: 'IP_BLOCK',
+                    status: 'ACTIVE',
+                    reasonCode: command.reasonCode,
+                    createdById: command.actorUserId,
+                    startsAt,
+                    expiresAt,
+                  },
+                  select: { id: true },
+                })
+              : null;
+
           await tx.auditLog.create({
             data: {
-              actorType: 'USER',
-              actorUserId: command.actorUserId,
-              action: 'SANCTION_CREATED',
-              category: 'SANCTION',
-              targetType: 'SANCTION',
-              targetId: sanction.id,
+              actorType: command.source === 'MANUAL' ? 'USER' : 'SECURITY_AUTOMATION',
+              actorUserId: command.actorUserId ?? null,
+              action: 'IP_BLOCK_CREATED',
+              category: 'IP_PROTECTION',
+              targetType: 'IP_BLOCK',
+              targetId: record.id,
               ipBlockId: record.id,
-              sanctionId: sanction.id,
+              sanctionId: sanction?.id ?? null,
               reason: command.reasonCode,
+              metadata: {
+                source: command.source,
+                duration: command.duration,
+                hashKeyVersion: current.hashKeyVersion,
+              },
             },
           });
-        }
 
-        return {
-          id: record.id,
-          active: record.active,
-          startsAt: record.startsAt,
-          expiresAt: record.expiresAt,
-          sanctionId: sanction?.id ?? null,
-        };
+          if (sanction) {
+            await tx.auditLog.create({
+              data: {
+                actorType: 'USER',
+                actorUserId: command.actorUserId,
+                action: 'SANCTION_CREATED',
+                category: 'SANCTION',
+                targetType: 'SANCTION',
+                targetId: sanction.id,
+                ipBlockId: record.id,
+                sanctionId: sanction.id,
+                reason: command.reasonCode,
+              },
+            });
+          }
+
+          return {
+            id: record.id,
+            active: record.active,
+            startsAt: record.startsAt,
+            expiresAt: record.expiresAt,
+            sanctionId: sanction?.id ?? null,
+          };
         },
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'P2034'
+      ) {
         throw new ConflictException({
           code: 'IP_TEMP_BLOCK_CONCURRENT_CREATE',
           message: 'The network restriction has changed concurrently.',
