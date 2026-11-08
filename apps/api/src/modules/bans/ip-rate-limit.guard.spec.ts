@@ -167,7 +167,7 @@ describe('Task 182 – API IP rate limits', () => {
     try {
       expect(Redis).toHaveBeenCalledWith(
         expect.objectContaining({
-          lazyConnect: true,
+          lazyConnect: false,
           enableOfflineQueue: false,
           maxRetriesPerRequest: 1,
           retryStrategy: expect.any(Function),
