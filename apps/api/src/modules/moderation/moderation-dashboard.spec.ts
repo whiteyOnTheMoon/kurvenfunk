@@ -132,7 +132,7 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
       database.sanction.findMany,
     ];
     for (const operation of selectionCalls) {
-      const options = operation.mock.calls[0][0] as {
+      const options = (operation.mock.calls as unknown[][])[0]?.[0] as {
         select: Record<string, unknown>;
         take: number;
       };
@@ -156,7 +156,7 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
     });
     expect(result.note).toBe('NETWORK_ADDRESS_NOT_DISPLAYED');
     expect(database.moderationCard.findMany).not.toHaveBeenCalled();
-    const selection = database.iPBlock.findMany.mock.calls[0][0] as {
+    const selection = (database.iPBlock.findMany.mock.calls as unknown[][])[0]?.[0] as {
       select: Record<string, boolean>;
       take: number;
     };
@@ -171,7 +171,7 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
       expect(selection.select).not.toHaveProperty(forbidden);
     }
     expect(database.iPBlock.count.mock.calls).toHaveLength(4);
-    expect(database.iPBlock.count.mock.calls[1][0]).toMatchObject({
+    expect((database.iPBlock.count.mock.calls as unknown[][])[1]?.[0]).toMatchObject({
       where: { active: true, source: 'MANUAL' },
     });
   });
