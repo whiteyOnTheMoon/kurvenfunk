@@ -217,7 +217,8 @@ export class RedCardIpProtectionService implements OnModuleDestroy {
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
+      const caught: unknown = error;
+      if (caught && typeof caught === 'object' && 'code' in caught && caught.code === 'P2034') {
         throw new ConflictException({ code: 'RED_CARD_IP_PROTECTION_CONCURRENT_CREATE' });
       }
       throw error;
@@ -344,7 +345,8 @@ export class RedCardIpProtectionService implements OnModuleDestroy {
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
+      const caught: unknown = error;
+      if (caught && typeof caught === 'object' && 'code' in caught && caught.code === 'P2034') {
         throw new ConflictException({ code: 'RED_CARD_IP_PROTECTION_CONCURRENT_REVOKE' });
       }
       throw error;
