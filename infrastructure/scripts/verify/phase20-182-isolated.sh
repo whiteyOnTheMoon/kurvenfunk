@@ -30,16 +30,29 @@ trap cleanup EXIT
 
 # A different Docker TCP peer must not forge CF-Connecting-IP.
 "${compose[@]}" exec -T keycloak node --input-type=module <<'JS'
-const response = await fetch('http://auth-gateway:8080/realms/kurvenfunk/protocol/openid-connect/token', {
-  method: 'POST',
-  headers: {
-    host: 'auth-dev.kurvenfunk.at',
-    'cf-connecting-ip': '198.51.100.20',
-  },
-  body: 'ci_synthetic=1',
-  signal: AbortSignal.timeout(8000),
+import { request } from 'node:http';
+
+const status = await new Promise((resolve, reject) => {
+  const call = request({
+    hostname: 'auth-gateway',
+    port: 8080,
+    path: '/realms/kurvenfunk/protocol/openid-connect/token',
+    method: 'POST',
+    headers: {
+      host: 'auth-dev.kurvenfunk.at',
+      'cf-connecting-ip': '198.51.100.20',
+    },
+    timeout: 8000,
+  }, (response) => {
+    response.resume();
+    response.on('end', () => resolve(response.statusCode));
+    response.on('error', reject);
+  });
+  call.on('error', reject);
+  call.on('timeout', () => call.destroy(new Error('CI_HTTP_TIMEOUT')));
+  call.end('ci_synthetic=1');
 });
-if (response.status !== 503) throw new Error('CI_FORGED_PEER_ACCEPTED');
+if (status !== 503) throw new Error('CI_FORGED_PEER_ACCEPTED');
 console.log('PHASE20_182_ISOLATED_FORGED_TCP_PEER: PASS');
 JS
 
