@@ -1,0 +1,211 @@
+/*
+ * KURVENFUNK login theme – presentation only.
+ * Upstream Keycloak 26.6.3 templates and form logic are inherited unchanged.
+ */
+:root {
+  --keycloak-bg-logo-url: none;
+  --keycloak-card-top-color: #a8e63e;
+  --kf-ink: #0f1113;
+  --kf-surface: #fff;
+  --kf-border: #e6e8ea;
+  --kf-muted: #626b73;
+  --kf-accent: #a8e63e;
+  --kf-focus: #608b17;
+}
+
+html.login-pf,
+.login-pf body,
+body#keycloak-bg,
+.pf-v5-c-login {
+  min-height: 100%;
+  background: radial-gradient(circle at 95% 5%, #eaf9d0 0, transparent 33%), #f8f9f9;
+  color: var(--kf-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.pf-v5-c-login__container {
+  width: min(calc(100% - 32px), 464px);
+  max-width: 464px;
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'header' 'main';
+  align-content: center;
+}
+
+.pf-v5-c-login__header {
+  display: flex;
+  justify-content: center;
+  padding: 16px 8px 26px;
+}
+
+#kc-header-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--kf-ink) !important;
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.2;
+  text-transform: none;
+  text-align: center;
+}
+
+#kc-header-wrapper::before {
+  display: block;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 12px;
+  background: url('../img/kurvenfunk-mark.svg') center / contain no-repeat;
+  content: '';
+}
+
+#kc-header-wrapper .kc-logo-text,
+#kc-header-wrapper .kc-logo-text span {
+  display: none;
+}
+
+.pf-v5-c-login__main {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--kf-border);
+  border-radius: 20px;
+  background: var(--kf-surface);
+  box-shadow: 0 16px 54px rgb(15 17 19 / 9%);
+}
+
+.pf-v5-c-login__main-header {
+  border-top: 4px solid var(--kf-accent);
+  padding: 30px 32px 12px;
+}
+
+.pf-v5-c-login__main-body {
+  padding: 16px 32px 30px;
+}
+
+.pf-v5-c-login__main-footer {
+  color: var(--kf-muted);
+}
+
+#kc-page-title {
+  margin: 0;
+  color: var(--kf-ink);
+  font-size: clamp(1.3rem, 4vw, 1.7rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.3;
+}
+
+#kc-form-wrapper,
+#kc-content-wrapper,
+#kc-info-wrapper {
+  min-width: 0;
+}
+
+.pf-v5-c-form__label-text,
+label {
+  color: var(--kf-ink);
+}
+
+.pf-v5-c-form-control {
+  overflow: hidden;
+  min-height: 46px;
+  border-radius: 10px;
+  --pf-v5-c-form-control--BorderBottomColor: #c9cdd0;
+}
+
+.pf-v5-c-form-control:focus-within {
+  outline: 2px solid var(--kf-focus);
+  outline-offset: 2px;
+}
+
+.pf-v5-c-form-control input {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.pf-v5-c-button.pf-m-primary,
+#kc-login,
+#kc-form-buttons input[type='submit'] {
+  min-height: 46px;
+  border: 1px solid var(--kf-ink);
+  border-radius: 10px;
+  background: var(--kf-ink);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+#kc-login:hover,
+#kc-form-buttons input[type='submit']:hover {
+  border-color: #282d31;
+  background: #282d31;
+}
+
+.pf-v5-c-button.pf-m-primary:focus-visible,
+#kc-login:focus-visible,
+#kc-form-buttons input[type='submit']:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--kf-focus);
+  outline-offset: 3px;
+}
+
+.pf-v5-c-login a,
+#kc-info a,
+#kc-form-options a,
+#kc-registration a {
+  color: #427600;
+  font-weight: 650;
+}
+
+.pf-v5-c-login a:hover,
+#kc-info a:hover,
+#kc-form-options a:hover,
+#kc-registration a:hover {
+  color: #2d5100;
+  text-decoration: underline;
+}
+
+.pf-v5-c-alert,
+#kc-info {
+  border-radius: 10px;
+}
+
+#kc-info {
+  overflow-wrap: anywhere;
+}
+
+#kc-social-providers .pf-v5-c-button {
+  min-height: 46px;
+  border-radius: 10px;
+}
+
+@media (max-width: 600px) {
+  .pf-v5-c-login__container {
+    width: min(calc(100% - 24px), 464px);
+  }
+
+  .pf-v5-c-login__header {
+    padding: 18px 0;
+  }
+
+  .pf-v5-c-login__main-header {
+    padding: 24px 20px 12px;
+  }
+
+  .pf-v5-c-login__main-body {
+    padding: 14px 20px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+  }
+}

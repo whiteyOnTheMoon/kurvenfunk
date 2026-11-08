@@ -41,6 +41,8 @@ services:
     environment:
       KC_HOSTNAME: https://auth-dev.kurvenfunk.at
       KC_PROXY_HEADERS: xforwarded
+    volumes:
+      - ./infrastructure/keycloak/themes/kurvenfunk:/opt/keycloak/themes/kurvenfunk:ro
     ports:
       - '127.0.0.1:3102:8080'
 
