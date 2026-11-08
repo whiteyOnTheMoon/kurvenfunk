@@ -6,6 +6,13 @@ import { Test } from '@nestjs/testing';
 import { BansModule } from './bans.module';
 import { IpIdentityService } from './ip-identity.service';
 
+// Prevent the ESM Prisma package from loading in CommonJS Jest unit suites.
+jest.mock('@kurvenfunk/database', () => ({
+  createPrismaClient: jest.fn(() => ({
+    $disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 describe('Task 181 – BansModule injection', () => {
   it('exports the HMAC identity service without enabling an IP enforcement guard', async () => {
     const secret = randomBytes(32).toString('base64url');

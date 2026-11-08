@@ -28,6 +28,9 @@ const apiEnvSchema = z
       .regex(/^v[1-9][0-9]{0,2}$/)
       .default('v1'),
     IP_RATE_LIMIT_ENABLED: z.enum(['true', 'false']).default('false'),
+    // Opt-in only. Never auto-block shared IPs on basic rate-limit bursts.
+    IP_TEMP_BLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
+    IP_TEMP_AUTO_BLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
     IP_HASH_PREVIOUS_KEYS_JSON: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.string().optional(),
