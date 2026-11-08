@@ -593,9 +593,9 @@ describe('ModerationService – Yellow Cards', () => {
     const completed = new Promise<void>((resolve) => {
       confirmUpdate = resolve;
     });
-    notificationUpdate.mockImplementationOnce(async () => {
+    notificationUpdate.mockImplementationOnce(() => {
       confirmUpdate?.();
-      return { id: 'pending-restart' };
+      return Promise.resolve({ id: 'pending-restart' });
     });
 
     service.onModuleInit();
