@@ -267,7 +267,10 @@ describe('Task 184 – manual IP bans: authorization, privacy, audit and revocat
       .set('Authorization', auth)
       .send(reverse)
       .expect(200);
-    expect(revoked.body.data).toMatchObject({
+    const revokedBody = revoked.body as {
+      data: { id: string; sanctionId: string; active: boolean };
+    };
+    expect(revokedBody.data).toMatchObject({
       id: block.id,
       sanctionId: sanction.id,
       active: false,
