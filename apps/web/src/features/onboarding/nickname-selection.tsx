@@ -27,19 +27,19 @@ function getLocalNicknameError(nickname: string): string | undefined {
   const trimmedNickname = nickname.trim();
 
   if (trimmedNickname.length < NICKNAME_MIN_LENGTH) {
-    return `Nickname must contain at least ${NICKNAME_MIN_LENGTH} characters.`;
+    return `Der Nickname braucht mindestens ${NICKNAME_MIN_LENGTH} Zeichen.`;
   }
 
   if (trimmedNickname.length > NICKNAME_MAX_LENGTH) {
-    return `Nickname must contain at most ${NICKNAME_MAX_LENGTH} characters.`;
+    return `Der Nickname darf höchstens ${NICKNAME_MAX_LENGTH} Zeichen haben.`;
   }
 
   if (!NICKNAME_PATTERN.test(trimmedNickname)) {
-    return 'Only letters, numbers, underscores and hyphens are allowed.';
+    return 'Erlaubt sind Buchstaben, Zahlen, Unterstriche und Bindestriche.';
   }
 
   if (RESERVED_NICKNAMES.includes(trimmedNickname.toLowerCase())) {
-    return 'This nickname is reserved.';
+    return 'Dieser Nickname ist reserviert.';
   }
 
   return undefined;
@@ -85,23 +85,23 @@ export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectio
           }
 
           setAvailabilityState('error');
-          setAvailabilityMessage('Availability could not be checked.');
+          setAvailabilityMessage('Die Verfügbarkeit konnte nicht geprüft werden.');
           return;
         }
 
         if (!body?.data || body.data.nickname !== trimmedNickname) {
           setAvailabilityState('error');
-          setAvailabilityMessage('Availability could not be checked.');
+          setAvailabilityMessage('Die Verfügbarkeit konnte nicht geprüft werden.');
           return;
         }
 
         if (body.data.available) {
           setAvailabilityState('available');
-          setAvailabilityMessage('This nickname is available.');
+          setAvailabilityMessage('Dieser Nickname ist verfügbar.');
           onNicknameChange?.(body.data.nickname);
         } else {
           setAvailabilityState('unavailable');
-          setAvailabilityMessage('This nickname is already taken.');
+          setAvailabilityMessage('Dieser Nickname ist bereits vergeben.');
         }
       } catch (requestError) {
         if (requestError instanceof DOMException && requestError.name === 'AbortError') {
@@ -109,7 +109,7 @@ export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectio
         }
 
         setAvailabilityState('error');
-        setAvailabilityMessage('Availability could not be checked.');
+        setAvailabilityMessage('Die Verfügbarkeit konnte nicht geprüft werden.');
       }
     }, 400);
 
@@ -121,11 +121,10 @@ export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectio
 
   return (
     <section>
-      <h2>Choose your nickname</h2>
+      <h2>Dein Nickname</h2>
 
       <p>
-        Your nickname must contain 3–24 characters. Letters, numbers, underscores and hyphens are
-        allowed.
+        3–24 Zeichen. Erlaubt sind Buchstaben, Zahlen, Unterstriche und Bindestriche.
       </p>
 
       <div>
@@ -158,7 +157,7 @@ export function NicknameSelection({ apiUrl, onNicknameChange }: NicknameSelectio
               setAvailabilityMessage(localError);
             } else if (token) {
               setAvailabilityState('checking');
-              setAvailabilityMessage('Checking availability…');
+              setAvailabilityMessage('Verfügbarkeit wird geprüft …');
             } else {
               setAvailabilityState('idle');
               setAvailabilityMessage(undefined);

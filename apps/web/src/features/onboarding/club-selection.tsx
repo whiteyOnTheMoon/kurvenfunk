@@ -73,7 +73,7 @@ export function ClubSelection({
         const body = (await response.json().catch(() => undefined)) as ClubsResponse | undefined;
 
         if (!response.ok || !Array.isArray(body?.data)) {
-          setError('The clubs could not be loaded.');
+          setError('Die Vereine konnten nicht geladen werden.');
           return;
         }
 
@@ -83,7 +83,7 @@ export function ClubSelection({
           return;
         }
 
-        setError('The clubs could not be loaded.');
+        setError('Die Vereine konnten nicht geladen werden.');
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -105,8 +105,8 @@ export function ClubSelection({
   if (loading) {
     return (
       <section>
-        <h2>Choose your club</h2>
-        <p>Loading clubs…</p>
+        <h2>Dein Lieblingsverein</h2>
+        <p>Vereine werden geladen …</p>
       </section>
     );
   }
@@ -114,7 +114,7 @@ export function ClubSelection({
   if (error) {
     return (
       <section>
-        <h2>Choose your club</h2>
+        <h2>Dein Lieblingsverein</h2>
         <p role="alert">{error}</p>
       </section>
     );
@@ -122,8 +122,8 @@ export function ClubSelection({
 
   return (
     <section>
-      <h2>Choose your club</h2>
-      <p>Select your favourite club or choose Neutral.</p>
+      <h2>Dein Lieblingsverein</h2>
+      <p>Wähle einen Lieblingsverein oder bleibe neutral.</p>
 
       <label htmlFor="onboarding-club-search">Verein suchen</label>
       <input
@@ -135,7 +135,7 @@ export function ClubSelection({
       />
 
       <fieldset>
-        <legend>Club preference</legend>
+        <legend>Lieblingsverein</legend>
 
         {visibleClubs.map((club) => {
           const checked =
@@ -203,11 +203,11 @@ export function ClubSelection({
 
       {selection?.fanPreference === 'CLUB' ? (
         <p aria-live="polite">
-          Selected: {clubs.find((club) => club.id === selection.favoriteClubId)?.name}
+          Ausgewählt: {clubs.find((club) => club.id === selection.favoriteClubId)?.name}
         </p>
       ) : null}
 
-      {selection?.fanPreference === 'NEUTRAL' ? <p aria-live="polite">Selected: Neutral</p> : null}
+      {selection?.fanPreference === 'NEUTRAL' ? <p aria-live="polite">Ausgewählt: Neutral</p> : null}
     </section>
   );
 }
