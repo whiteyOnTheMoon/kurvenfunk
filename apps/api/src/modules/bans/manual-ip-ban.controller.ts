@@ -1,6 +1,6 @@
 import { isIP } from 'node:net';
 
-import { Body, Controller, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
 import { z } from 'zod';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -67,6 +67,7 @@ export class ManualIpBanController {
   }
 
   @Post(':id/revoke')
+  @HttpCode(HttpStatus.OK)
   @RequirePermissions(PERMISSIONS.USER_IPBAN)
   revoke(
     @Req() request: AuthenticatedRequest,
