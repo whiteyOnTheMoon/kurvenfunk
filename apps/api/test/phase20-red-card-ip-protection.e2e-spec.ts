@@ -50,6 +50,10 @@ describe('Task 185 â red card + optional bounded IP protection', () => {
 
   const endpoint = () => '/api/v1/moderation/red-cards/' + cardId + '/ip-protection';
 
+  // All E2E suites share one disposable database; scope counts to our fixtures.
+  const protectionCount = () =>
+    db.iPBlock.count({ where: { source: 'SANCTION', createdById: ids.get(subjects.root) } });
+
   async function token(subject: string): Promise<string> {
     return new SignJWT({ email_verified: true })
       .setProtectedHeader({ alg: 'RS256', kid: 'p185-' + suffix })
@@ -182,7 +186,7 @@ describe('Task 185 â red card + optional bounded IP protection', () => {
   });
 
   it('keeps RED cards independent of network protection', async () => {
-    expect(await db.iPBlock.count()).toBe(0);
+    expect(await protectionCount()).toBe(0);
     expect(await db.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).toMatchObject({
       status: 'ACTIVE',
       type: 'RED',
@@ -204,7 +208,7 @@ describe('Task 185 â red card + optional bounded IP protection', () => {
         .send(input)
         .expect(403);
     }
-    expect(await db.iPBlock.count()).toBe(0);
+    expect(await protectionCount()).toBe(0);
   }, 30000);
 
   it('requires active RED, explicit shared-IP acknowledgement and strict bounded input', async () => {
@@ -241,7 +245,7 @@ describe('Task 185 â red card + optional bounded IP protection', () => {
       .set('Authorization', auth)
       .send(input)
       .expect(409);
-    expect(await db.iPBlock.count()).toBe(0);
+    expect(await protectionCount()).toBe(0);
   }, 30000);
 
   it('creates an audited SANCTION-sourced block, rejects duplication, revokes only IP', async () => {
@@ -286,7 +290,7 @@ describe('Task 185 â red card + optional bounded IP protection', () => {
       .set('Authorization', auth)
       .send({ ...input, ipAddress: '2001:db8::185' })
       .expect(409);
-    expect(await db.iPBlock.count()).toBe(1);
+    expect(await protectionCount()).toBe(1);
 
     const revoke = endpoint() + '/' + block.id + '/revoke';
     await request(app.getHttpServer())
