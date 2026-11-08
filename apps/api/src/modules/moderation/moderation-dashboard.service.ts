@@ -112,7 +112,9 @@ export class ModerationDashboardService implements OnModuleDestroy {
       await Promise.all([
         this.database.iPBlock.count({ where: active }),
         this.database.iPBlock.count({ where: { ...active, source: 'MANUAL' } }),
-        this.database.iPBlock.count({ where: { ...active, source: { in: ['AUTOMATED_SECURITY', 'RATE_LIMIT_ESCALATION'] } } }),
+        this.database.iPBlock.count({
+          where: { ...active, source: { in: ['AUTOMATED_SECURITY', 'RATE_LIMIT_ESCALATION'] } },
+        }),
         this.database.iPBlock.count({ where: { ...active, source: 'SANCTION' } }),
         this.database.iPBlock.findMany({
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
