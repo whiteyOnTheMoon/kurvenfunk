@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
 import { IpIdentityService } from './ip-identity.service';
+import { ManualIpBanController } from './manual-ip-ban.controller';
 import { IpRateLimitGuard } from './ip-rate-limit.guard';
 import { TemporaryIpBlockGuard } from './temporary-ip-block.guard';
 import { TemporaryIpBlockService } from './temporary-ip-block.service';
 import { TrustedClientIpService } from './trusted-client-ip.service';
 
 @Module({
+  controllers: [ManualIpBanController],
   providers: [
     IpIdentityService,
     TrustedClientIpService,
