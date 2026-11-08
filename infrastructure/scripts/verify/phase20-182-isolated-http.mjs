@@ -1,24 +1,43 @@
 // Runs ONLY inside the disposable cloudflared CI container.
 // No real Keycloak, accounts, mail, domains, user identities or production data.
 import assert from 'node:assert/strict';
+import { request as httpRequest } from 'node:http';
 
 const host = 'auth-dev.kurvenfunk.at';
 const base = 'http://auth-gateway:8080/realms/kurvenfunk';
 const ip = '192.0.2.42';
 
-async function probe(path, address = ip, method = 'POST') {
-  const response = await fetch(base + path, {
-    method,
-    headers: {
-      host,
-      'cf-connecting-ip': address,
-      ...(method === 'POST' ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
-    },
-    ...(method === 'POST' ? { body: 'ci_synthetic=1' } : {}),
-    redirect: 'manual',
-    signal: AbortSignal.timeout(8000),
+async function probe(path, address = ip, method = 'POST', requestHost = host) {
+  return new Promise((resolve, reject) => {
+    const incoming = httpRequest(
+      {
+        hostname: 'auth-gateway',
+        port: 8080,
+        path: '/realms/kurvenfunk' + path,
+        method,
+        headers: {
+          host: requestHost,
+          'cf-connecting-ip': address,
+          ...(method === 'POST' ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
+        },
+        timeout: 8000,
+      },
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          resolve({
+            status: response.statusCode,
+            body: Buffer.concat(chunks).toString('utf8'),
+          });
+        });
+        response.on('error', reject);
+      },
+    );
+    incoming.on('error', reject);
+    incoming.on('timeout', () => incoming.destroy(new Error('CI_HTTP_TIMEOUT')));
+    incoming.end(method === 'POST' ? 'ci_synthetic=1' : undefined);
   });
-  return { status: response.status, body: await response.text() };
 }
 
 async function waitForGateway() {
@@ -58,14 +77,13 @@ if (stage === 'quotas') {
     assert.equal(denied.body, 'Too many requests', name + '_REJECTION_NOT_FROM_GATEWAY');
   }
 
-  const wrongHost = await fetch(base + '/protocol/openid-connect/token', {
-    method: 'POST',
-    headers: { host: 'invalid.example', 'cf-connecting-ip': ip },
-    body: 'ci_synthetic=1',
-    signal: AbortSignal.timeout(8000),
-  });
+  const wrongHost = await probe(
+    '/protocol/openid-connect/token',
+    ip,
+    'POST',
+    'invalid.example',
+  );
   assert.equal(wrongHost.status, 503, 'HOST_REWRITE_NOT_ENFORCED');
-  await wrongHost.arrayBuffer();
   assert.equal((await probe('/.well-known/openid-configuration', ip, 'GET')).status, 200);
   console.log('PHASE20_182_ISOLATED_HTTP_ALL_FOUR_429: PASS');
 }
