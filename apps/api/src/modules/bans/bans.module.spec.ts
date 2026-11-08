@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 // The new Task184 controller references AuthGuard; avoid the ESM-only jose
 // import in this CommonJS dependency-injection unit test.
 jest.mock('../auth/auth.guard', () => ({ AuthGuard: jest.fn() }));
+jest.mock('../auth/keycloak-jwt.service', () => ({ KeycloakJwtService: jest.fn() }));
 
 import { BansModule } from './bans.module';
 import { IpIdentityService } from './ip-identity.service';
