@@ -2,7 +2,6 @@ import type { ExecutionContext } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 
-import type { TrustedClientIpService } from './trusted-client-ip.service';
 import type { TemporaryIpBlockService } from './temporary-ip-block.service';
 import { TemporaryIpBlockGuard } from './temporary-ip-block.guard';
 
