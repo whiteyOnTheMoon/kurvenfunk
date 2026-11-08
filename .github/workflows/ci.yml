@@ -87,6 +87,7 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase20-182-api-activate.sh
           bash -n infrastructure/scripts/verify/dev-phase20-182-final-preflight.sh
           bash -n infrastructure/scripts/verify/phase20-182-isolated.sh
+          node --check infrastructure/tests/phase20-182-mock-keycloak.mjs
           node --check infrastructure/scripts/verify/phase20-182-isolated-http.mjs
           node --check infrastructure/scripts/verify/phase20-182-public-quotas.mjs
           node --check infrastructure/scripts/verify/phase20-182-public-edge.mjs

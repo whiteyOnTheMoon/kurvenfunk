@@ -2,16 +2,22 @@
 services:
   redis:
     image: redis:7.4-alpine
-    command: ['redis-server', '--save', '', '--appendonly', 'no', '--requirepass', 'ci-only-182-redis']
+    command:
+      - redis-server
+      - --save
+      - ''
+      - --appendonly
+      - 'no'
+      - --requirepass
+      - ci-only-182-redis
     networks:
       - isolated
 
   keycloak:
     image: node:24-alpine
-    command:
-      - node
-      - -e
-      - "require('node:http').createServer((req, res) => { res.writeHead(200, {'content-type': 'text/plain'}); res.end('isolated-fixture'); }).listen(8080, '0.0.0.0')"
+    command: ['node', '/opt/mock-keycloak.mjs']
+    volumes:
+      - ./phase20-182-mock-keycloak.mjs:/opt/mock-keycloak.mjs:ro
     networks:
       - isolated
 
