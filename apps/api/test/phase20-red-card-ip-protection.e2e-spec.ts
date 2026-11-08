@@ -12,7 +12,7 @@ import type { App } from 'supertest/types';
 import type { DatabaseService as WorkerDatabaseService } from '../../worker/src/database/database.service';
 import { SanctionExpirationService } from '../../worker/src/services/sanction-expiration.service';
 
-describe('Task 185 – red card + optional bounded IP protection', () => {
+describe('Task 185 â red card + optional bounded IP protection', () => {
   let app: INestApplication<App>;
   let db: DatabaseClient;
   let jwksServer: Server;
@@ -183,9 +183,10 @@ describe('Task 185 – red card + optional bounded IP protection', () => {
 
   it('keeps RED cards independent of network protection', async () => {
     expect(await db.iPBlock.count()).toBe(0);
-    expect(
-      await db.moderationCard.findUniqueOrThrow({ where: { id: cardId } }),
-    ).toMatchObject({ status: 'ACTIVE', type: 'RED' });
+    expect(await db.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).toMatchObject({
+      status: 'ACTIVE',
+      type: 'RED',
+    });
   });
 
   it('rejects anonymous, lower-role, LIMITED and BANNED actors', async () => {
@@ -308,11 +309,12 @@ describe('Task 185 – red card + optional bounded IP protection', () => {
     expect((await db.sanction.findUniqueOrThrow({ where: { id: sanction.id } })).status).toBe(
       'REVOKED',
     );
+    expect((await db.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).status).toBe(
+      'ACTIVE',
+    );
     expect(
-      (await db.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).status,
-    ).toBe('ACTIVE');
-    expect((await db.user.findUniqueOrThrow({ where: { id: ids.get(subjects.target)! } })).status)
-      .toBe('BANNED');
+      (await db.user.findUniqueOrThrow({ where: { id: ids.get(subjects.target)! } })).status,
+    ).toBe('BANNED');
   }, 45000);
 
   it('expires a subsequent bounded block without restoring the banned account', async () => {
@@ -335,10 +337,11 @@ describe('Task 185 – red card + optional bounded IP protection', () => {
     await worker.expireDueSanctions(new Date());
     const expired = await db.iPBlock.findUniqueOrThrow({ where: { id } });
     expect(expired.active).toBe(false);
+    expect(await db.auditLog.count({ where: { ipBlockId: id, action: 'IP_BLOCK_EXPIRED' } })).toBe(
+      1,
+    );
     expect(
-      await db.auditLog.count({ where: { ipBlockId: id, action: 'IP_BLOCK_EXPIRED' } }),
-    ).toBe(1);
-    expect((await db.user.findUniqueOrThrow({ where: { id: ids.get(subjects.target)! } })).status)
-      .toBe('BANNED');
+      (await db.user.findUniqueOrThrow({ where: { id: ids.get(subjects.target)! } })).status,
+    ).toBe('BANNED');
   }, 30000);
 });
