@@ -15,6 +15,14 @@ function setup() {
   const tx = {
     iPBlock: {
       findFirst: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn().mockResolvedValue({
+        id: BLOCK,
+        source: 'MANUAL',
+        active: true,
+        expiresAt: new Date(Date.now() + 60_000),
+        sanction: { id: SANCTION, status: 'ACTIVE' },
+      }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn().mockImplementation((input: { data: { startsAt: Date; expiresAt: Date } }) =>
         Promise.resolve({
           id: BLOCK,
@@ -24,7 +32,10 @@ function setup() {
         }),
       ),
     },
-    sanction: { create: jest.fn().mockResolvedValue({ id: SANCTION }) },
+    sanction: {
+      create: jest.fn().mockResolvedValue({ id: SANCTION }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
     auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit' }) },
   };
   const database = {
@@ -97,6 +108,71 @@ describe('Task 183 temporary IP block service', () => {
       ]);
     },
   );
+
+  it('stores manual justification in restricted records, never in public response or audit', async () => {
+    const { service, tx } = setup();
+    const note = 'Private manual evidence';
+    const created = await service.issueManual(RAW_ADDRESS, '3D', ACTOR, 'REPEATED_ABUSE', note);
+    expect(created).toMatchObject({ id: BLOCK, sanctionId: SANCTION });
+    expect(tx.iPBlock.create.mock.calls[0]?.[0]).toMatchObject({
+      data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' },
+    });
+    expect(tx.sanction.create.mock.calls[0]?.[0]).toMatchObject({
+      data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' },
+    });
+    expect(JSON.stringify(created)).not.toContain(note);
+    expect(JSON.stringify(created)).not.toContain(RAW_ADDRESS);
+    expect(JSON.stringify(tx.auditLog.create.mock.calls)).not.toContain(note);
+  });
+
+  it('revokes an active MANUAL block and sanction atomically with two audits', async () => {
+    const { service, tx, database } = setup();
+    const note = 'Private evidence for revocation';
+    const result = await service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', note);
+    expect(result).toMatchObject({ id: BLOCK, active: false, sanctionId: SANCTION });
+    expect(tx.iPBlock.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: BLOCK, active: true, source: 'MANUAL' }),
+      data: expect.objectContaining({ active: false, deactivatedById: ACTOR }),
+    }));
+    expect(tx.sanction.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: SANCTION, status: 'ACTIVE' },
+      data: expect.objectContaining({ status: 'REVOKED', revokedById: ACTOR }),
+    }));
+    expect(tx.auditLog.create.mock.calls).toMatchObject([
+      [{ data: { action: 'IP_BLOCK_DEACTIVATED', actorUserId: ACTOR } }],
+      [{ data: { action: 'SANCTION_REVOKED', actorUserId: ACTOR } }],
+    ]);
+    expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+    expect(JSON.stringify(result)).not.toContain(note);
+  });
+
+  it('does not revoke an automatic block, missing block or already revoked sanction', async () => {
+    const { service, tx } = setup();
+    tx.iPBlock.findUnique.mockResolvedValueOnce(null);
+    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 404 });
+    tx.iPBlock.findUnique.mockResolvedValueOnce({
+      id: BLOCK, source: 'RATE_LIMIT_ESCALATION', active: true,
+      expiresAt: new Date(Date.now() + 60_000), sanction: null,
+    });
+    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 404 });
+    tx.iPBlock.findUnique.mockResolvedValueOnce({
+      id: BLOCK, source: 'MANUAL', active: false,
+      expiresAt: new Date(Date.now() + 60_000), sanction: { id: SANCTION, status: 'REVOKED' },
+    });
+    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 409 });
+    expect(tx.iPBlock.updateMany).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if manual revocation races with expiry and never writes an orphan audit', async () => {
+    const { service, tx } = setup();
+    tx.iPBlock.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', 'Evidence')).rejects.toMatchObject({ status: 409 });
+    expect(tx.sanction.updateMany).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
 
   it('rejects an existing active block from either current or previous key version', async () => {
     const { service, tx, identity } = setup();
