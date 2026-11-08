@@ -82,7 +82,7 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
           host: config.get<string>('REDIS_HOST', 'redis'),
           port: Number(config.get<number>('REDIS_PORT', 6379)),
           password: config.getOrThrow<string>('REDIS_PASSWORD'),
-          lazyConnect: true,
+          lazyConnect: false,
           connectTimeout: 1500,
           maxRetriesPerRequest: 1,
           // Fail closed without queuing writes, then reconnect automatically.
