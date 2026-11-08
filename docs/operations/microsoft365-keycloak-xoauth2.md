@@ -57,17 +57,18 @@ In Exchange Online PowerShell als entsprechend berechtigter Administrator:
   der eben angelegten App feststellen (nicht die Object ID aus
   `App registrations` mit der Enterprise-App-Instanz verwechseln).
 - `New-ServicePrincipal -AppId <ApplicationId> -ObjectId <ServicePrincipalObjectId> -DisplayName "KURVENFUNK Keycloak Mailer"`.
-- Postfach-Alias prüfen:
-  `Get-Mailbox -Identity noreply@kurvenfunk.at | Format-List Alias,PrimarySmtpAddress,RecipientTypeDetails`.
-- Eine *exakt dieses Postfach* treffende Management Scope erstellen.
-  Falls der Alias tatsächlich `noreply` lautet und nur dieses Postfach
-  matcht:
-  `New-ManagementScope -Name "KURVENFUNK-Mailer-noreply-only" -RecipientRestrictionFilter "Alias -eq 'noreply'"`.
-  Vor Rechtevergabe unbedingt mit
-  `Get-Recipient -RecipientPreviewFilter (Get-ManagementScope "KURVENFUNK-Mailer-noreply-only").RecipientRestrictionFilter`
-  verifizieren: **exakt ein Ergebnis: `noreply@kurvenfunk.at`**.
-  Wenn der Alias abweicht: Scope passend konfigurieren, nicht blind
-  diesen Beispielbefehl ausführen.
+- Echtes Exchange-Postfach verifiziert: `PrimarySmtpAddress=noreply@kurvenfunk.at`,
+  `RecipientTypeDetails=SharedMailbox`, **Alias=`KurvenfunkNoreply`**.
+  Der Alias ist **nicht** `noreply`.
+- Filter vor dem Anlegen der Management Scope prüfen:
+  `Get-Recipient -Filter "Alias -eq 'KurvenfunkNoreply'" -ResultSize Unlimited`.
+  **Exakt ein Ergebnis** muss zurückkommen, dessen primäre Adresse
+  `noreply@kurvenfunk.at` lautet. Bei jeder Abweichung **abbrechen**.
+- Erst danach die Management Scope anlegen:
+  `New-ManagementScope -Name "KURVENFUNK-Mailer-noreply-only" -RecipientRestrictionFilter "Alias -eq 'KurvenfunkNoreply'"`.
+  Den konfigurierten Scope mit
+  `Get-ManagementScope -Identity "KURVENFUNK-Mailer-noreply-only" | Format-List Name,RecipientRestrictionFilter`
+  gegen die verifizierte Filterung prüfen.
 - `New-ManagementRoleAssignment -Name "KURVENFUNK-Keycloak-SMTP" -Role "Application SMTP.SendAsApp" -App <ApplicationId> -CustomResourceScope "KURVENFUNK-Mailer-noreply-only"`.
 - `Test-ServicePrincipalAuthorization -Identity <ApplicationId> -Resource noreply@kurvenfunk.at`
   muss für `Application SMTP.SendAsApp` `InScope=True` zeigen. Nach
