@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { request as httpRequest } from 'node:http';
 
 const host = 'auth-dev.kurvenfunk.at';
-const base = 'http://auth-gateway:8080/realms/kurvenfunk';
 const ip = '192.0.2.42';
 
 async function probe(path, address = ip, method = 'POST', requestHost = host) {
@@ -77,12 +76,7 @@ if (stage === 'quotas') {
     assert.equal(denied.body, 'Too many requests', name + '_REJECTION_NOT_FROM_GATEWAY');
   }
 
-  const wrongHost = await probe(
-    '/protocol/openid-connect/token',
-    ip,
-    'POST',
-    'invalid.example',
-  );
+  const wrongHost = await probe('/protocol/openid-connect/token', ip, 'POST', 'invalid.example');
   assert.equal(wrongHost.status, 503, 'HOST_REWRITE_NOT_ENFORCED');
   assert.equal((await probe('/.well-known/openid-configuration', ip, 'GET')).status, 200);
   console.log('PHASE20_182_ISOLATED_HTTP_ALL_FOUR_429: PASS');
