@@ -61,15 +61,17 @@ describe('Task 183 temporary IP block service', () => {
     expect(tx.sanction.create).not.toHaveBeenCalled();
     expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
     expect(tx.iPBlock.create.mock.calls).toMatchObject([
-      [{
-        data: {
-          ipHash: 'f'.repeat(64),
-          hashKeyVersion: 'v2',
-          source: 'RATE_LIMIT_ESCALATION',
-          reasonCode: 'REPEATED_WRITE_ABUSE',
-          createdById: null,
+      [
+        {
+          data: {
+            ipHash: 'f'.repeat(64),
+            hashKeyVersion: 'v2',
+            source: 'RATE_LIMIT_ESCALATION',
+            reasonCode: 'REPEATED_WRITE_ABUSE',
+            createdById: null,
+          },
         },
-      }],
+      ],
     ]);
     expect(tx.auditLog.create.mock.calls).toMatchObject([
       [{ data: { actorType: 'SECURITY_AUTOMATION', action: 'IP_BLOCK_CREATED' } }],
@@ -103,14 +105,16 @@ describe('Task 183 temporary IP block service', () => {
     expect(tx.iPBlock.create).not.toHaveBeenCalled();
     expect(identity.candidateHashes).toHaveBeenCalledWith(RAW_ADDRESS);
     expect(tx.iPBlock.findFirst.mock.calls).toMatchObject([
-      [{
-        where: {
-          OR: [
-            { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
-            { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
-          ],
+      [
+        {
+          where: {
+            OR: [
+              { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
+              { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
+            ],
+          },
         },
-      }],
+      ],
     ]);
   });
 
@@ -149,15 +153,17 @@ describe('Task 183 temporary IP block service', () => {
     const result = await service.findActive(RAW_ADDRESS);
     expect(result?.id).toBe(BLOCK);
     expect(database.iPBlock.findFirst.mock.calls).toMatchObject([
-      [{
-        where: {
-          active: true,
-          OR: [
-            { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
-            { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
-          ],
+      [
+        {
+          where: {
+            active: true,
+            OR: [
+              { ipHash: 'f'.repeat(64), hashKeyVersion: 'v2' },
+              { ipHash: 'e'.repeat(64), hashKeyVersion: 'v1' },
+            ],
+          },
         },
-      }],
+      ],
     ]);
   });
 });
