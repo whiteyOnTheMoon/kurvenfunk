@@ -299,12 +299,15 @@ async function execute() {
   const httpTargetRecord = createdKeycloak.find((item) => item.username === target.username);
   check(Boolean(httpTargetRecord), 'HTTP_TEST_USER_MISSING');
   const httpSessions = await admin(
-    'GET', '/users/' + encodeURIComponent(httpTargetRecord.subject) + '/sessions',
+    'GET',
+    '/users/' + encodeURIComponent(httpTargetRecord.subject) + '/sessions',
   );
   check(httpSessions.status === 200, 'HTTP_TEST_SESSIONS_UNAVAILABLE');
   const httpSessionsBefore = await jsonOrNull(httpSessions);
-  check(Array.isArray(httpSessionsBefore) && httpSessionsBefore.length > 0,
-    'HTTP_TEST_SESSION_NOT_ACTIVE');
+  check(
+    Array.isArray(httpSessionsBefore) && httpSessionsBefore.length > 0,
+    'HTTP_TEST_SESSION_NOT_ACTIVE',
+  );
 
   const before = await api('GET', '/auth/me', originalTargetToken);
   check(
@@ -488,22 +491,23 @@ async function execute() {
     'BANNED_BLOCKED_ACTION_MUTATED_DATA',
   );
 
-
   // Task 186: isolated failure on a second newly created synthetic account.
   // The real shared Keycloak service stays up. No existing user/session is touched.
   const deferred = await createIdentity('TRUSTED_USER');
   const deferredToken = await getTokenFor(deferred.username, deferred.password);
-  check((await api('GET', '/auth/me', deferredToken)).status === 200,
-    'DEFERRED_TARGET_NOT_ACTIVE');
+  check((await api('GET', '/auth/me', deferredToken)).status === 200, 'DEFERRED_TARGET_NOT_ACTIVE');
   const deferredKeycloak = createdKeycloak.find((item) => item.username === deferred.username);
   check(Boolean(deferredKeycloak), 'DEFERRED_KEYCLOAK_IDENTITY_MISSING');
   const activeBefore = await admin(
-    'GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
+    'GET',
+    '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
   );
   check(activeBefore.status === 200, 'DEFERRED_SESSIONS_QUERY_FAILED');
   const sessionsBefore = await jsonOrNull(activeBefore);
-  check(Array.isArray(sessionsBefore) && sessionsBefore.length > 0,
-    'DEFERRED_PKCE_SESSION_MISSING');
+  check(
+    Array.isArray(sessionsBefore) && sessionsBefore.length > 0,
+    'DEFERRED_PKCE_SESSION_MISSING',
+  );
 
   // Inject a failing revoker for this *single in-process direct-ban service*.
   // This is not a Keycloak outage or network tampering.
@@ -525,8 +529,10 @@ async function execute() {
       userMessage,
       sourceType: 'NONE',
     });
-    check(deferredCard.sessionRevocation === 'PENDING' &&
-      deferredCard.accountStatus === 'BANNED', 'DEFERRED_BAN_NOT_PENDING');
+    check(
+      deferredCard.sessionRevocation === 'PENDING' && deferredCard.accountStatus === 'BANNED',
+      'DEFERRED_BAN_NOT_PENDING',
+    );
   } finally {
     await direct.onModuleDestroy();
   }
@@ -534,22 +540,28 @@ async function execute() {
     where: { userId: deferred.id, sourceId: deferredCard.id, type: 'RED_CARD' },
     select: { id: true, metadata: true },
   });
-  check(deferredNotice?.metadata?.sessionRevocation === 'PENDING',
-    'DEFERRED_PENDING_NOT_DURABLE');
-  check((await database.user.findUnique({ where: { id: deferred.id } }))?.status === 'BANNED',
-    'DEFERRED_ACCOUNT_NOT_BANNED');
+  check(deferredNotice?.metadata?.sessionRevocation === 'PENDING', 'DEFERRED_PENDING_NOT_DURABLE');
+  check(
+    (await database.user.findUnique({ where: { id: deferred.id } }))?.status === 'BANNED',
+    'DEFERRED_ACCOUNT_NOT_BANNED',
+  );
   const stillActiveDuringFailure = await admin(
-    'GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
+    'GET',
+    '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
   );
   check(stillActiveDuringFailure.status === 200, 'DEFERRED_OUTAGE_SESSION_UNAVAILABLE');
   const sessionsDuringOutage = await jsonOrNull(stillActiveDuringFailure);
-  check(Array.isArray(sessionsDuringOutage) && sessionsDuringOutage.length > 0,
-    'DEFERRED_OUTAGE_DID_NOT_LEAVE_SESSION_ACTIVE');
+  check(
+    Array.isArray(sessionsDuringOutage) && sessionsDuringOutage.length > 0,
+    'DEFERRED_OUTAGE_DID_NOT_LEAVE_SESSION_ACTIVE',
+  );
   // The app's BANNED guard must deny both stale browser and mobile credentials,
   // even before Keycloak's logout eventually succeeds.
   const deniedStale = await api('GET', '/auth/me', deferredToken);
-  check(deniedStale.status === 403 && deniedStale.body?.code === 'ACCOUNT_BANNED',
-    'DEFERRED_STALE_JWT_NOT_DENIED');
+  check(
+    deniedStale.status === 403 && deniedStale.body?.code === 'ACCOUNT_BANNED',
+    'DEFERRED_STALE_JWT_NOT_DENIED',
+  );
   const mobileResponse = await request('http://127.0.0.1:3000/api/v1/auth/me', {
     headers: {
       authorization: 'Bearer ' + deferredToken,
@@ -558,8 +570,10 @@ async function execute() {
     },
   });
   const mobileBody = await jsonOrNull(mobileResponse);
-  check(mobileResponse.status === 403 && mobileBody?.code === 'ACCOUNT_BANNED',
-    'DEFERRED_MOBILE_JWT_NOT_DENIED');
+  check(
+    mobileResponse.status === 403 && mobileBody?.code === 'ACCOUNT_BANNED',
+    'DEFERRED_MOBILE_JWT_NOT_DENIED',
+  );
 
   // A scoped DB adapter is critical: the retry may only see or update this
   // test notification, NEVER another DEV account's pending revocations.
@@ -567,16 +581,17 @@ async function execute() {
     return {
       notification: {
         findMany: async (query) => {
-          check(query.where.type === 'RED_CARD' &&
-            query.where.metadata?.equals === 'PENDING',
-            'DEFERRED_SCAN_NOT_BOUNDED');
+          check(
+            query.where.type === 'RED_CARD' && query.where.metadata?.equals === 'PENDING',
+            'DEFERRED_SCAN_NOT_BOUNDED',
+          );
           return database.notification.findMany({
-            ...query, where: { ...query.where, id: deferredNotice.id },
+            ...query,
+            where: { ...query.where, id: deferredNotice.id },
           });
         },
         update: async (query) => {
-          check(query.where.id === deferredNotice.id,
-            'DEFERRED_UPDATE_OUTSIDE_SYNTHETIC_NOTICE');
+          check(query.where.id === deferredNotice.id, 'DEFERRED_UPDATE_OUTSIDE_SYNTHETIC_NOTICE');
           return database.notification.update(query);
         },
       },
@@ -591,10 +606,13 @@ async function execute() {
   try {
     await failedRecovery.retryPendingSessionRevocations();
     const noteAfterFailure = await database.notification.findUnique({
-      where: { id: deferredNotice.id }, select: { metadata: true },
+      where: { id: deferredNotice.id },
+      select: { metadata: true },
     });
-    check(noteAfterFailure?.metadata?.sessionRevocation === 'PENDING',
-      'DEFERRED_FAILURE_LOST_PENDING');
+    check(
+      noteAfterFailure?.metadata?.sessionRevocation === 'PENDING',
+      'DEFERRED_FAILURE_LOST_PENDING',
+    );
   } finally {
     await failedRecovery.onModuleDestroy();
     await failedRecoveryOriginalDb.$disconnect();
@@ -610,7 +628,8 @@ async function execute() {
     let restored = false;
     for (let attempt = 0; attempt < 80; attempt += 1) {
       const observed = await database.notification.findUnique({
-        where: { id: deferredNotice.id }, select: { metadata: true },
+        where: { id: deferredNotice.id },
+        select: { metadata: true },
       });
       if (observed?.metadata?.sessionRevocation === 'REVOKED') {
         restored = true;
@@ -625,13 +644,18 @@ async function execute() {
     await recoveredOriginalDb.$disconnect();
   }
   const activeAfter = await admin(
-    'GET', '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
+    'GET',
+    '/users/' + encodeURIComponent(deferredKeycloak.subject) + '/sessions',
   );
-  check(activeAfter.status === 200 && (await jsonOrNull(activeAfter))?.length === 0,
-    'DEFERRED_KEYCLOAK_SESSIONS_NOT_REVOKED');
+  check(
+    activeAfter.status === 200 && (await jsonOrNull(activeAfter))?.length === 0,
+    'DEFERRED_KEYCLOAK_SESSIONS_NOT_REVOKED',
+  );
   const refresh = await request(
-    new URL('/realms/' + realm + '/protocol/openid-connect/token',
-      process.env.KEYCLOAK_ADMIN_INTERNAL_URL),
+    new URL(
+      '/realms/' + realm + '/protocol/openid-connect/token',
+      process.env.KEYCLOAK_ADMIN_INTERNAL_URL,
+    ),
     {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -642,18 +666,31 @@ async function execute() {
       }),
     },
   );
-  check(refresh.status === 400 || refresh.status === 401,
-    'DEFERRED_REVOKED_SESSION_REFRESH_ALLOWED');
-  check((await database.user.findUnique({ where: { id: deferred.id } }))?.status === 'BANNED',
-    'DEFERRED_REVOKE_UNBANNED_USER');
-  check((await api('GET', '/auth/me', deferredToken)).status === 403,
-    'DEFERRED_REVOKED_STALE_JWT_ALLOWED');
-  check((await database.notification.findUnique({
-    where: { id: deferredNotice.id }, select: { metadata: true },
-  }))?.metadata?.sessionRevocation === 'REVOKED', 'DEFERRED_REVOCATION_STATUS_WRONG');
+  check(
+    refresh.status === 400 || refresh.status === 401,
+    'DEFERRED_REVOKED_SESSION_REFRESH_ALLOWED',
+  );
+  check(
+    (await database.user.findUnique({ where: { id: deferred.id } }))?.status === 'BANNED',
+    'DEFERRED_REVOKE_UNBANNED_USER',
+  );
+  check(
+    (await api('GET', '/auth/me', deferredToken)).status === 403,
+    'DEFERRED_REVOKED_STALE_JWT_ALLOWED',
+  );
+  check(
+    (
+      await database.notification.findUnique({
+        where: { id: deferredNotice.id },
+        select: { metadata: true },
+      })
+    )?.metadata?.sessionRevocation === 'REVOKED',
+    'DEFERRED_REVOCATION_STATUS_WRONG',
+  );
 
-  console.log('PHASE20_186_DEV_SESSION_REVOKE: PASS (real PKCE logout, simulated outage, durable retry on startup, stale JWT and refresh denied)');
-
+  console.log(
+    'PHASE20_186_DEV_SESSION_REVOKE: PASS (real PKCE logout, simulated outage, durable retry on startup, stale JWT and refresh denied)',
+  );
 }
 
 async function cleanup() {
