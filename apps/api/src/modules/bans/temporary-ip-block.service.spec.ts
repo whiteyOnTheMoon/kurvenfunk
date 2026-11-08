@@ -114,12 +114,12 @@ describe('Task 183 temporary IP block service', () => {
     const note = 'Private manual evidence';
     const created = await service.issueManual(RAW_ADDRESS, '3D', ACTOR, 'REPEATED_ABUSE', note);
     expect(created).toMatchObject({ id: BLOCK, sanctionId: SANCTION });
-    expect(tx.iPBlock.create.mock.calls[0]?.[0]).toMatchObject({
-      data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' },
-    });
-    expect(tx.sanction.create.mock.calls[0]?.[0]).toMatchObject({
-      data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' },
-    });
+    expect(tx.iPBlock.create.mock.calls as unknown).toMatchObject([
+      [{ data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' } }],
+    ]);
+    expect(tx.sanction.create.mock.calls as unknown).toMatchObject([
+      [{ data: { internalNote: note, reasonCode: 'REPEATED_ABUSE' } }],
+    ]);
     expect(JSON.stringify(created)).not.toContain(note);
     expect(JSON.stringify(created)).not.toContain(RAW_ADDRESS);
     expect(JSON.stringify(tx.auditLog.create.mock.calls)).not.toContain(note);
@@ -130,18 +130,22 @@ describe('Task 183 temporary IP block service', () => {
     const note = 'Private evidence for revocation';
     const result = await service.revokeManual(BLOCK, ACTOR, 'FALSE_POSITIVE', note);
     expect(result).toMatchObject({ id: BLOCK, active: false, sanctionId: SANCTION });
-    expect(tx.iPBlock.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: BLOCK, active: true, source: 'MANUAL' }),
-        data: expect.objectContaining({ active: false, deactivatedById: ACTOR }),
-      }),
-    );
-    expect(tx.sanction.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: SANCTION, status: 'ACTIVE' },
-        data: expect.objectContaining({ status: 'REVOKED', revokedById: ACTOR }),
-      }),
-    );
+    expect(tx.iPBlock.updateMany.mock.calls as unknown).toMatchObject([
+      [
+        {
+          where: { id: BLOCK, active: true, source: 'MANUAL' },
+          data: { active: false, deactivatedById: ACTOR },
+        },
+      ],
+    ]);
+    expect(tx.sanction.updateMany.mock.calls as unknown).toMatchObject([
+      [
+        {
+          where: { id: SANCTION, status: 'ACTIVE' },
+          data: { status: 'REVOKED', revokedById: ACTOR },
+        },
+      ],
+    ]);
     expect(tx.auditLog.create.mock.calls).toMatchObject([
       [{ data: { action: 'IP_BLOCK_DEACTIVATED', actorUserId: ACTOR } }],
       [{ data: { action: 'SANCTION_REVOKED', actorUserId: ACTOR } }],
