@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Optional,
   type OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import type { Request } from 'express';
 import Redis from 'ioredis';
 
 import { IpIdentityService } from './ip-identity.service';
+import { TemporaryIpBlockService } from './temporary-ip-block.service';
 import { TrustedClientIpService } from './trusted-client-ip.service';
 
 export const IP_RATE_LIMITS = {
@@ -30,6 +32,23 @@ const RATE_LUA = [
   "if n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end",
   'return n',
 ].join('\n');
+
+/**
+ * Record one over-quota event per UTC minute, never one per HTTP request.
+ * Only three distinct minutes in a rolling 30-minute period can trigger
+ * one 15-minute block. All keys contain versioned HMACs, never raw IPs.
+ */
+export const AUTO_ESCALATION_LUA = [
+  "redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1] - ARGV[2])",
+  "redis.call('ZADD', KEYS[1], 'NX', ARGV[1], ARGV[3])",
+  "redis.call('EXPIRE', KEYS[1], ARGV[4])",
+  "if redis.call('ZCARD', KEYS[1]) < 3 then return 0 end",
+  "if redis.call('SET', KEYS[2], '1', 'NX', 'EX', ARGV[4]) then return 1 end",
+  'return 0',
+].join('\\n');
+
+const AUTO_ESCALATION_WINDOW_MS = 30 * 60_000;
+const AUTO_ESCALATION_TTL_SEC = 30 * 60;
 
 export function classifyIpLimitedWrite(method: string, url: string): WriteCategory | null {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return null;
@@ -70,13 +89,21 @@ function unavailable(): ServiceUnavailableException {
 export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
   private readonly redis: Redis | null;
   private readonly enabled: boolean;
+  private readonly autoBlockEnabled: boolean;
 
   constructor(
     private readonly identity: IpIdentityService,
     private readonly trustedIp: TrustedClientIpService,
     config: ConfigService,
+    @Optional() private readonly temporaryBlocks?: TemporaryIpBlockService,
   ) {
     this.enabled = config.get<string>('IP_RATE_LIMIT_ENABLED', 'false') === 'true';
+    const autoRequested = config.get<string>('IP_TEMP_AUTO_BLOCK_ENABLED', 'false') === 'true';
+    const blockEnabled = config.get<string>('IP_TEMP_BLOCK_ENABLED', 'false') === 'true';
+    if (autoRequested && (!this.enabled || !blockEnabled)) {
+      throw new Error('IP_TEMP_AUTO_BLOCK_REQUIRES_BOTH_GUARDS');
+    }
+    this.autoBlockEnabled = autoRequested;
     this.redis = this.enabled
       ? new Redis({
           host: config.get<string>('REDIS_HOST', 'redis'),
@@ -123,6 +150,36 @@ export class IpRateLimitGuard implements CanActivate, OnModuleDestroy {
     }
 
     if (count > IP_RATE_LIMITS[category]) {
+      // A temporary block is never created on a single burst. Automatic
+      // escalation requires three DISTINCT abusive minutes and explicit
+      // operator opt-in, to reduce false positives on shared networks.
+      if (this.autoBlockEnabled && this.temporaryBlocks) {
+        try {
+          const evidenceKey = [
+            'kurvenfunk:ip-write-escalation:v1',
+            hashed.hashKeyVersion,
+            category,
+            hashed.ipHash,
+          ].join(':');
+          const now = Date.now();
+          const shouldBlock: unknown = await this.redis?.eval(
+            AUTO_ESCALATION_LUA,
+            2,
+            evidenceKey,
+            evidenceKey + ':once',
+            now,
+            AUTO_ESCALATION_WINDOW_MS,
+            Math.floor(now / RATE_WINDOW_MS),
+            AUTO_ESCALATION_TTL_SEC,
+          );
+          if (shouldBlock === 1) {
+            await this.temporaryBlocks.issueAutomatic(address);
+          }
+        } catch {
+          // This request is already over quota. Never bypass the 429 or
+          // disclose DB/Redis details if block creation is unavailable.
+        }
+      }
       throw new HttpException(
         {
           code: 'IP_RATE_LIMIT_EXCEEDED',

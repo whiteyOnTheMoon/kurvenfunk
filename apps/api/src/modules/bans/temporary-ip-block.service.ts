@@ -5,7 +5,7 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 
-import { IpIdentityService, type HashedIp } from './ip-identity.service';
+import { IpIdentityService } from './ip-identity.service';
 
 export const TEMP_IP_DURATION_MS = {
   '15M': 15 * 60_000,
