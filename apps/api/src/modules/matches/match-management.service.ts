@@ -209,8 +209,16 @@ export class MatchManagementService implements OnModuleDestroy {
           await this.assertStage(tx, input.stageId, previous.seasonId);
         }
 
-        const match = await tx.match.update({
-          where: { id },
+        // A result may have been recorded after the fixture was read. Do not
+        // overwrite a newly LIVE/FINISHED match with a stale fixture status.
+        const changed = await tx.match.updateMany({
+          where: {
+            id,
+            updatedAt: previous.updatedAt,
+            status: previous.status,
+            homeScore: null,
+            awayScore: null,
+          },
           data: {
             ...(input.homeClubId !== undefined ? { homeClubId: input.homeClubId } : {}),
             ...(input.awayClubId !== undefined ? { awayClubId: input.awayClubId } : {}),
@@ -218,7 +226,17 @@ export class MatchManagementService implements OnModuleDestroy {
             ...(input.kickoff !== undefined ? { kickoff: new Date(input.kickoff) } : {}),
             ...(input.matchday !== undefined ? { matchday: input.matchday } : {}),
             ...(input.status !== undefined ? { status: input.status } : {}),
+            updatedAt: new Date(Math.max(Date.now(), previous.updatedAt.getTime() + 1)),
           },
+        });
+        if (changed.count !== 1) {
+          throw conflict(
+            'MATCH_CONCURRENT_CHANGE',
+            'Spiel wurde inzwischen geändert. Bitte neu laden.',
+          );
+        }
+        const match = await tx.match.findUniqueOrThrow({
+          where: { id },
           select: fixtureSelect,
         });
         await tx.auditLog.create({

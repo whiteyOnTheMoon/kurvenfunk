@@ -74,6 +74,11 @@ export {
   type CreateFixtureInput,
   type UpdateFixtureInput,
 } from './match-management.js';
+export {
+  resultStatusSchema,
+  updateMatchResultSchema,
+  type UpdateMatchResultInput,
+} from './match-result.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,
