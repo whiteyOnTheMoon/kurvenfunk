@@ -77,19 +77,23 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [reload, setReload] = useState(0);
+  const [loadedBearer, setLoadedBearer] = useState<string>();
+  const [loadedReload, setLoadedReload] = useState<number>();
+  const visible = !!bearer && loadedBearer === bearer && loadedReload === reload;
+  const visibleCards = visible ? cards : [];
+  const visibleSanctions = visible ? sanctions : [];
+  const visibleAppeals = visible ? appeals : [];
 
   useEffect(() => {
-    // Old private data disappears immediately when the session changes.
-    setCards([]);
-    setSanctions([]);
-    setAppeals([]);
-    setSelected('');
+    // Render only data loaded for the *current* bearer and request generation.
+    // No synchronous setState in the effect and no stale-account UI flash.
     if (!initialized || !bearer) return;
     let active = true;
     const controller = new AbortController();
-    setLoading(true);
-
     void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setLoading(true);
       try {
         const [eligible, mine] = await Promise.all([
           apiData<{ cards: EligibleCard[]; sanctions: EligibleSanction[] }>(
@@ -105,6 +109,9 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
           setCards(eligible.cards);
           setSanctions(eligible.sanctions);
           setAppeals(mine);
+          setSelected('');
+          setLoadedBearer(bearer);
+          setLoadedReload(reload);
           setNotice(undefined);
         }
       } catch {
@@ -121,7 +128,7 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
   }, [apiUrl, bearer, initialized, reload]);
 
   async function submit() {
-    if (!bearer || busy || reason.trim().length < 10 || reason.trim().length > 2000 || !selected) {
+    if (!bearer || !visible || busy || reason.trim().length < 10 || reason.trim().length > 2000 || !selected) {
       return;
     }
     const [kind, id] = selected.split(':', 2);
@@ -192,17 +199,17 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
         <label htmlFor="appeal-target">Betroffene Karte oder Sanktion</label>
         <select
           id="appeal-target"
-          value={selected}
+          value={visible ? selected : ''}
           onChange={(event) => setSelected(event.target.value)}
           disabled={busy || loading}
         >
           <option value="">Bitte auswählen</option>
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <option key={card.id} value={`card:${card.id}`}>
               Karte {card.type} – {card.reasonCode} ({card.status})
             </option>
           ))}
-          {sanctions.map((sanction) => (
+          {visibleSanctions.map((sanction) => (
             <option key={sanction.id} value={`sanction:${sanction.id}`}>
               {sanction.type} – {sanction.reasonCode} ({sanction.status})
             </option>
@@ -220,7 +227,7 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
         <button
           type="button"
           className={styles.button}
-          disabled={busy || loading || !selected || reason.trim().length < 10}
+          disabled={busy || loading || !visible || !selected || reason.trim().length < 10}
           onClick={() => void submit()}
         >
           {busy ? 'Wird eingereicht …' : 'Einspruch senden'}
@@ -233,11 +240,11 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
 
       <section className={styles.panel} aria-labelledby="my-appeals">
         <h2 id="my-appeals">Bisherige Einsprüche</h2>
-        {appeals.length === 0 && !loading ? (
+        {visibleAppeals.length === 0 && !loading && visible ? (
           <p>Du hast noch keine Einsprüche eingereicht.</p>
         ) : null}
         <ul className={styles.list}>
-          {appeals.map((appeal) => (
+          {visibleAppeals.map((appeal) => (
             <li key={appeal.id}>
               <strong>
                 {appeal.status === 'OPEN'
