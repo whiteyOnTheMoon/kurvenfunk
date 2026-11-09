@@ -203,12 +203,11 @@ describe('Task 194 Club Management isolated HTTP and PostgreSQL E2E', () => {
       { ...validCreate, logoMediaId: randomUUID() },
       { ...validCreate, logoMediaId: blockedMediaId },
     ]) {
-      const status = invalid.logoMediaId && /^[0-9a-f-]{36}$/.test(invalid.logoMediaId) ? 400 : 400;
       await request(app.getHttpServer())
         .post('/api/v1/clubs')
         .set('Authorization', 'Bearer ' + token)
         .send(invalid)
-        .expect(status);
+        .expect(400);
     }
     await request(app.getHttpServer())
       .patch('/api/v1/clubs/' + randomUUID())
