@@ -26,10 +26,10 @@ export const createAppealSchema = z
     reason: z.string().trim().min(10).max(2000),
   })
   .strict()
-  .refine(
-    (input) => Boolean(input.moderationCardId) !== Boolean(input.sanctionId),
-    { message: 'Exactly one card or sanction must be selected.', path: ['sanctionId'] },
-  );
+  .refine((input) => Boolean(input.moderationCardId) !== Boolean(input.sanctionId), {
+    message: 'Exactly one card or sanction must be selected.',
+    path: ['sanctionId'],
+  });
 
 export const decideAppealSchema = z
   .object({
