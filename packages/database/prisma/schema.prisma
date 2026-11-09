@@ -71,6 +71,7 @@ model User {
 
   appealsFiled    Appeal[] @relation("AppealFiledBy")
   appealsReviewed Appeal[] @relation("AppealReviewedBy")
+  appealsProposed Appeal[] @relation("AppealProposedBy")
 
   sanctionsReceived Sanction[] @relation("SanctionTargetUser")
   sanctionsCreated  Sanction[] @relation("SanctionCreatedBy")
@@ -922,6 +923,12 @@ model ModerationReport {
 
 enum AppealStatus {
   OPEN
+  PENDING_APPROVAL
+  ACCEPTED
+  REJECTED
+}
+
+enum AppealDecision {
   ACCEPTED
   REJECTED
 }
@@ -934,6 +941,10 @@ model Appeal {
   reason           String
   status           AppealStatus @default(OPEN)
   reviewedById     String?      @db.Uuid
+  proposedById     String?      @db.Uuid
+  proposedDecision AppealDecision?
+  proposalNote     String?
+  proposedAt       DateTime?
   decisionNote     String?
   resolvedAt       DateTime?
   createdAt        DateTime     @default(now())
@@ -941,12 +952,14 @@ model Appeal {
 
   user           User            @relation("AppealFiledBy", fields: [userId], references: [id], onDelete: Restrict)
   reviewedBy     User?           @relation("AppealReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  proposedBy     User?           @relation("AppealProposedBy", fields: [proposedById], references: [id], onDelete: SetNull)
   moderationCard ModerationCard? @relation(fields: [moderationCardId], references: [id], onDelete: Restrict)
   sanction       Sanction?       @relation(fields: [sanctionId], references: [id], onDelete: Restrict)
 
   @@unique([userId, moderationCardId])
   @@unique([userId, sanctionId])
   @@index([status, createdAt])
+  @@index([proposedById, status])
   @@index([userId, createdAt])
 }
 
@@ -1149,6 +1162,9 @@ enum AuditAction {
   ADMIN_CORRECTION
 
   APPEAL_CREATED
+  APPEAL_DECISION_PROPOSED
+  APPEAL_DECISION_APPROVED
+  APPEAL_DECISION_RETURNED
   APPEAL_RESOLVED
 }
 

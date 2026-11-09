@@ -425,4 +425,159 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
       }),
     ).toBe(4);
   }, 30000);
+
+  it('Task 190: opt-in two-person approval is atomic, separate, reversible and private', async () => {
+    const previous = process.env.APPEAL_FOUR_EYES_ENABLED;
+    process.env.APPEAL_FOUR_EYES_ENABLED = 'true';
+    try {
+      const http = app.getHttpServer();
+      const admin = 'Bearer ' + (await signedToken(subjects.admin));
+      const root = 'Bearer ' + (await signedToken(subjects.root));
+      const mod = 'Bearer ' + (await signedToken(subjects.mod));
+      const other = 'Bearer ' + (await signedToken(subjects.other));
+
+      const policy = await request(http)
+        .get('/api/v1/moderation/appeals/policy')
+        .set('Authorization', mod)
+        .expect(200);
+      expect((policy.body as { data: { appealSecondReviewRequired: boolean } }).data).toEqual({
+        appealSecondReviewRequired: true,
+      });
+
+      const filed = await request(http)
+        .post('/api/v1/appeals')
+        .set('Authorization', other)
+        .send({ moderationCardId: otherCardId, reason: ownReason })
+        .expect(201);
+      const appealId = (filed.body as { data: { id: string } }).data.id;
+
+      const proposal = await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
+        .set('Authorization', admin)
+        .send({ decision: 'ACCEPTED', decisionNote: privateNote })
+        .expect(200);
+      expect((proposal.body as { data: { status: string } }).data.status).toBe('PENDING_APPROVAL');
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('ACTIVE');
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_RESOLVED' },
+        }),
+      ).toBe(0);
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
+        .set('Authorization', admin)
+        .send({ decision: 'ACCEPTED', decisionNote: privateNote })
+        .expect(409);
+      // Turning policy OFF must not bypass an already pending two-person review.
+      process.env.APPEAL_FOUR_EYES_ENABLED = 'false';
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
+        .set('Authorization', root)
+        .send({ decision: 'REJECTED', decisionNote: privateNote })
+        .expect(409);
+      process.env.APPEAL_FOUR_EYES_ENABLED = 'true';
+      await request(http)
+        .get('/api/v1/moderation/appeals/pending')
+        .set('Authorization', mod)
+        .expect(403);
+      const queue = await request(http)
+        .get('/api/v1/moderation/appeals/pending')
+        .set('Authorization', root)
+        .expect(200);
+      expect(JSON.stringify(queue.body)).toContain(appealId);
+
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', admin)
+        .send({ outcome: 'APPROVE', decisionNote: privateNote })
+        .expect(403);
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', mod)
+        .send({ outcome: 'APPROVE', decisionNote: privateNote })
+        .expect(403);
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', root)
+        .send({ outcome: 'APPROVE', decisionNote: 'short' })
+        .expect(400);
+
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', root)
+        .send({ outcome: 'RETURN', decisionNote: 'Weitere Prüfung erforderlich.' })
+        .expect(200);
+      expect((await database.appeal.findUniqueOrThrow({ where: { id: appealId } })).status).toBe(
+        'OPEN',
+      );
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('ACTIVE');
+
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
+        .set('Authorization', root)
+        .send({ decision: 'ACCEPTED', decisionNote: privateNote })
+        .expect(200);
+      const approved = await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', admin)
+        .send({ outcome: 'APPROVE', decisionNote: 'Zweitprüfung bestätigt die Entscheidung.' })
+        .expect(200);
+      expect((approved.body as { data: { status: string } }).data.status).toBe('ACCEPTED');
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('REVOKED');
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
+        .set('Authorization', admin)
+        .send({ outcome: 'APPROVE', decisionNote: privateNote })
+        .expect(409);
+      const mine = await request(http)
+        .get('/api/v1/appeals/mine')
+        .set('Authorization', other)
+        .expect(200);
+      expect(JSON.stringify(mine.body)).not.toContain(privateNote);
+      expect(JSON.stringify(mine.body)).not.toContain('proposedById');
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_PROPOSED' },
+        }),
+      ).toBe(2);
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_APPROVED' },
+        }),
+      ).toBe(1);
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
+        }),
+      ).toBe(1);
+      const returnedAudit = await database.auditLog.findFirst({
+        where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
+        select: { metadata: true },
+      });
+      expect(returnedAudit?.metadata).toMatchObject({
+        reviewNote: 'Weitere Prüfung erforderlich.',
+      });
+    } finally {
+      if (previous === undefined) delete process.env.APPEAL_FOUR_EYES_ENABLED;
+      else process.env.APPEAL_FOUR_EYES_ENABLED = previous;
+    }
+  }, 30000);
 });

@@ -17,6 +17,15 @@ export interface CreateAppealCommand extends CreateAppealInput {
 export interface DecideAppealCommand extends DecideAppealInput {
   appealId: string;
   reviewerId: string;
+  /** Only set by the separate server-side second-review endpoint. */
+  isSecondApproval?: boolean;
+}
+
+export interface ApproveAppealCommand {
+  appealId: string;
+  reviewerId: string;
+  decisionNote: string;
+  outcome: 'APPROVE' | 'RETURN';
 }
 
 /**
@@ -177,6 +186,107 @@ export class AppealsService implements OnModuleDestroy {
     });
   }
 
+  isFourEyesEnabled(): boolean {
+    return process.env.APPEAL_FOUR_EYES_ENABLED === 'true';
+  }
+
+  async listPendingForApproval() {
+    return this.database.appeal.findMany({
+      where: { status: 'PENDING_APPROVAL' },
+      orderBy: [{ proposedAt: 'asc' }, { id: 'asc' }],
+      take: 50,
+      select: {
+        id: true,
+        userId: true,
+        moderationCardId: true,
+        sanctionId: true,
+        reason: true,
+        proposedDecision: true,
+        proposedById: true,
+        proposedAt: true,
+        proposalNote: true,
+      },
+    });
+  }
+
+  async approve(command: ApproveAppealCommand) {
+    if (command.outcome === 'RETURN') {
+      return this.returnForReview(command);
+    }
+    return this.decide({
+      appealId: command.appealId,
+      reviewerId: command.reviewerId,
+      decision: 'ACCEPTED',
+      decisionNote: command.decisionNote,
+      isSecondApproval: true,
+    });
+  }
+
+  private async returnForReview(command: ApproveAppealCommand) {
+    const preliminary = await this.database.appeal.findUnique({
+      where: { id: command.appealId },
+      select: { userId: true },
+    });
+    if (!preliminary) {
+      throw new NotFoundException({ code: 'APPEAL_NOT_FOUND', message: 'Appeal not found.' });
+    }
+    if (preliminary.userId === command.reviewerId) {
+      throw new ForbiddenException({
+        code: 'APPEAL_SELF_REVIEW_FORBIDDEN',
+        message: 'An appeal cannot be reviewed by its author.',
+      });
+    }
+    return this.database.$transaction(async (tx) => {
+      const users = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "User" WHERE "id" = ${preliminary.userId}::uuid FOR UPDATE
+      `;
+      if (!users[0]) {
+        throw new NotFoundException({ code: 'APPEAL_USER_NOT_FOUND', message: 'User not found.' });
+      }
+      const appeal = await tx.appeal.findUnique({
+        where: { id: command.appealId },
+        select: { id: true, userId: true, status: true, proposedById: true },
+      });
+      if (!appeal || appeal.userId !== preliminary.userId || appeal.status !== 'PENDING_APPROVAL') {
+        throw new ConflictException({
+          code: 'APPEAL_NOT_PENDING',
+          message: 'No review proposal is pending.',
+        });
+      }
+      if (!appeal.proposedById || appeal.proposedById === command.reviewerId) {
+        throw new ForbiddenException({
+          code: 'APPEAL_SECOND_REVIEWER_REQUIRED',
+          message: 'A different reviewer must return the proposal.',
+        });
+      }
+      const reopened = await tx.appeal.update({
+        where: { id: appeal.id },
+        data: {
+          status: 'OPEN',
+          proposedById: null,
+          proposedDecision: null,
+          proposalNote: null,
+          proposedAt: null,
+        },
+        select: { id: true, status: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId: command.reviewerId,
+          action: 'APPEAL_DECISION_RETURNED',
+          category: 'MODERATION',
+          targetType: 'APPEAL',
+          targetId: appeal.id,
+          targetUserId: appeal.userId,
+          reason: 'SECOND_REVIEW_RETURNED',
+          metadata: { proposedById: appeal.proposedById, reviewNote: command.decisionNote },
+        },
+      });
+      return reopened;
+    });
+  }
+
   async listOpenForModeration() {
     return this.database.appeal.findMany({
       where: { status: 'OPEN' },
@@ -240,17 +350,70 @@ export class AppealsService implements OnModuleDestroy {
             status: true,
             moderationCardId: true,
             sanctionId: true,
+            proposedById: true,
+            proposedDecision: true,
           },
         });
-        if (!appeal || appeal.userId !== preliminary.userId || appeal.status !== 'OPEN') {
+        if (
+          !appeal ||
+          appeal.userId !== preliminary.userId ||
+          appeal.status !== (command.isSecondApproval ? 'PENDING_APPROVAL' : 'OPEN')
+        ) {
           throw new ConflictException({
             code: 'APPEAL_ALREADY_REVIEWED',
             message: 'This appeal has already been reviewed.',
           });
         }
 
-        const accepted = command.decision === 'ACCEPTED';
+        if (command.isSecondApproval) {
+          if (!appeal.proposedById || appeal.proposedById === command.reviewerId) {
+            throw new ForbiddenException({
+              code: 'APPEAL_SECOND_REVIEWER_REQUIRED',
+              message: 'A different reviewer must approve this proposal.',
+            });
+          }
+          if (appeal.proposedDecision !== 'ACCEPTED' && appeal.proposedDecision !== 'REJECTED') {
+            throw new ConflictException({
+              code: 'APPEAL_PROPOSAL_INVALID',
+              message: 'The pending decision is invalid.',
+            });
+          }
+        }
+
         const now = new Date();
+        if (!command.isSecondApproval && this.isFourEyesEnabled()) {
+          const proposed = await tx.appeal.update({
+            where: { id: appeal.id },
+            data: {
+              status: 'PENDING_APPROVAL',
+              proposedDecision: command.decision,
+              proposalNote: command.decisionNote,
+              proposedById: command.reviewerId,
+              proposedAt: now,
+            },
+            select: { id: true, status: true, proposedAt: true },
+          });
+          await tx.auditLog.create({
+            data: {
+              actorType: 'USER',
+              actorUserId: command.reviewerId,
+              action: 'APPEAL_DECISION_PROPOSED',
+              category: 'MODERATION',
+              targetType: 'APPEAL',
+              targetId: appeal.id,
+              targetUserId: appeal.userId,
+              reason: command.decision,
+              metadata: { proposedDecision: command.decision },
+            },
+          });
+          // No card, sanction, account, or appellant notification changes at proposal time.
+          return proposed;
+        }
+
+        const finalDecision = command.isSecondApproval
+          ? appeal.proposedDecision!
+          : command.decision;
+        const accepted = finalDecision === 'ACCEPTED';
 
         if (accepted && appeal.moderationCardId) {
           const changed = await tx.moderationCard.updateMany({
@@ -375,7 +538,7 @@ export class AppealsService implements OnModuleDestroy {
         const reviewed = await tx.appeal.update({
           where: { id: appeal.id },
           data: {
-            status: command.decision,
+            status: finalDecision,
             reviewedById: command.reviewerId,
             decisionNote: command.decisionNote,
             resolvedAt: now,
@@ -392,8 +555,8 @@ export class AppealsService implements OnModuleDestroy {
             targetType: 'APPEAL',
             targetId: appeal.id,
             targetUserId: appeal.userId,
-            reason: command.decision,
-            metadata: { decision: command.decision },
+            reason: finalDecision,
+            metadata: { decision: finalDecision, proposedById: appeal.proposedById },
           },
         });
 
@@ -409,9 +572,25 @@ export class AppealsService implements OnModuleDestroy {
             sourceId: appeal.id,
             actorUserId: command.reviewerId,
             dedupeKey: `appeal-decision:${appeal.id}`,
-            metadata: { decision: command.decision },
+            metadata: { decision: finalDecision },
           },
         });
+
+        if (command.isSecondApproval) {
+          await tx.auditLog.create({
+            data: {
+              actorType: 'USER',
+              actorUserId: command.reviewerId,
+              action: 'APPEAL_DECISION_APPROVED',
+              category: 'MODERATION',
+              targetType: 'APPEAL',
+              targetId: appeal.id,
+              targetUserId: appeal.userId,
+              reason: finalDecision,
+              metadata: { proposedById: appeal.proposedById },
+            },
+          });
+        }
 
         // Internal decision notes are never returned to the appellant.
         return reviewed;
