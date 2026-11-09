@@ -279,8 +279,8 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
 
   it('closes one season, activates the next, keeps the archive and writes audit logs', async () => {
     const adminToken = await tokenFor(subjects.admin);
-    const first = seasonIds[0]!;
-    const next = seasonIds[1]!;
+    const first = seasonIds[0];
+    const next = seasonIds[1];
 
     await request(app.getHttpServer())
       .patch('/api/v1/seasons/' + first)
