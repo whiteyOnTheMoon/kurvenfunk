@@ -21,6 +21,7 @@ function createDb() {
       findUnique: jest.fn().mockResolvedValue(null),
     },
     user: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+    moderationCard: { count: jest.fn().mockResolvedValue(0) },
     auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit' }) },
     iPBlock: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
   };
@@ -71,6 +72,23 @@ describe('SanctionExpirationService', () => {
         OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       },
     });
+    expect(tx.sanction.count).toHaveBeenCalledWith({
+      where: {
+        userId: USER_ID,
+        type: 'ACCOUNT_BAN',
+        status: 'ACTIVE',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    });
+    expect(tx.moderationCard.count).toHaveBeenCalledWith({
+      where: {
+        userId: USER_ID,
+        type: 'RED',
+        status: 'ACTIVE',
+        revokedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    });
     expect(tx.user.updateMany).toHaveBeenCalledWith({
       where: { id: USER_ID, status: 'LIMITED' },
       data: { status: 'ACTIVE' },
@@ -87,6 +105,30 @@ describe('SanctionExpirationService', () => {
       },
     ]);
     tx.sanction.count.mockResolvedValueOnce(1);
+
+    await service.expireDueSanctions(now);
+
+    expect(tx.user.updateMany).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not lift LIMITED when an active ACCOUNT_BAN exists despite an inconsistent status', async () => {
+    db.sanction.findMany.mockResolvedValueOnce([
+      { id: SANCTION_ID, userId: USER_ID, type: 'LIMITED' },
+    ]);
+    tx.sanction.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+
+    await service.expireDueSanctions(now);
+
+    expect(tx.user.updateMany).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not lift LIMITED when an active RED card exists despite an inconsistent status', async () => {
+    db.sanction.findMany.mockResolvedValueOnce([
+      { id: SANCTION_ID, userId: USER_ID, type: 'LIMITED' },
+    ]);
+    tx.moderationCard.count.mockResolvedValueOnce(1);
 
     await service.expireDueSanctions(now);
 
@@ -153,6 +195,38 @@ describe('SanctionExpirationService', () => {
       data: { status: 'EXPIRED' },
     });
     expect(tx.auditLog.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not falsely audit an inactive linked IP sanction when the block expires', async () => {
+    db.iPBlock.findMany.mockResolvedValueOnce([{ id: BLOCK_ID }]);
+    tx.sanction.findUnique.mockResolvedValueOnce({ id: SANCTION_ID });
+    tx.sanction.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await service.expireDueSanctions(now);
+
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'IP_BLOCK_EXPIRED', ipBlockId: BLOCK_ID }),
+    });
+  });
+
+  it('recovers an overdue sanction at worker startup and stops its timer on shutdown', async () => {
+    jest.useFakeTimers();
+    const spy = jest.spyOn(service, 'expireDueSanctions').mockResolvedValue(undefined);
+    try {
+      service.onModuleInit();
+      await Promise.resolve();
+      expect(spy).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(60_000);
+      expect(spy).toHaveBeenCalledTimes(2);
+      service.onModuleDestroy();
+      await jest.advanceTimersByTimeAsync(60_000);
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      service.onModuleDestroy();
+      spy.mockRestore();
+      jest.useRealTimers();
+    }
   });
 
   it('skips already deactivated IP blocks', async () => {
