@@ -1,3 +1,8 @@
+jest.mock('@kurvenfunk/validation', () => ({
+  createClubSchema: {},
+  updateClubSchema: {},
+}));
+
 jest.mock('./clubs.service', () => ({
   ClubsService: class ClubsService {},
 }));
