@@ -94,7 +94,11 @@ describe('Task 189 appeal security and atomic submission', () => {
   it('uses the DB unique constraint to reject a repeated appeal', async () => {
     database.appeal.create.mockRejectedValue({ code: 'P2002' });
     await expect(
-      service.create({ userId: USER, moderationCardId: CARD, reason: 'Zweiter Versuch für Karte.' }),
+      service.create({
+        userId: USER,
+        moderationCardId: CARD,
+        reason: 'Zweiter Versuch für Karte.',
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(database.auditLog.create).not.toHaveBeenCalled();
   });
