@@ -115,13 +115,20 @@ function ListHeading({
 }
 
 export function UserModerationHistory({ apiUrl, userId }: { apiUrl: string; userId: string }) {
-  const { token, authenticated, initialized } = useAuth();
+  const { token, authenticated, initialized, user } = useAuth();
   const [history, setHistory] = useState<History>();
   const [requestedId, setRequestedId] = useState('');
+  const [loadedActorId, setLoadedActorId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [reload, setReload] = useState(0);
-  const canShow = authenticated && initialized && requestedId === userId && !loading && !error;
+  const canShow =
+    authenticated &&
+    initialized &&
+    requestedId === userId &&
+    loadedActorId === user?.id &&
+    !loading &&
+    !error;
 
   useEffect(() => {
     if (!initialized || !authenticated || !token) {
@@ -154,6 +161,7 @@ export function UserModerationHistory({ apiUrl, userId }: { apiUrl: string; user
         if (!cancelled) {
           setHistory(json.data);
           setRequestedId(userId);
+          setLoadedActorId(user?.id ?? '');
           setError(undefined);
         }
       } catch (cause) {
@@ -171,7 +179,7 @@ export function UserModerationHistory({ apiUrl, userId }: { apiUrl: string; user
       controller.abort();
       setHistory(undefined);
     };
-  }, [apiUrl, userId, initialized, authenticated, token, reload]);
+  }, [apiUrl, userId, initialized, authenticated, token, user?.id, reload]);
 
   if (!initialized || !authenticated) {
     return <p role="status">Moderationsberechtigung wird geprüft …</p>;
