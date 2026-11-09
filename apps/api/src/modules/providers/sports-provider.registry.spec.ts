@@ -125,9 +125,7 @@ describe('SportsProviderRegistry (Phase 21.199)', () => {
   it('fails closed for missing providers and unsupported resource capability', async () => {
     const fetch = jest.fn();
     registry.register(provider(fetch));
-    await expect(registry.fetch('missing', request)).rejects.toThrow(
-      'SPORTS_PROVIDER_NOT_FOUND',
-    );
+    await expect(registry.fetch('missing', request)).rejects.toThrow('SPORTS_PROVIDER_NOT_FOUND');
     await expect(registry.fetch('test-provider', { ...request, resource: 'live' })).rejects.toThrow(
       'SPORTS_PROVIDER_UNSUPPORTED_RESOURCE',
     );
@@ -164,7 +162,9 @@ describe('SportsProviderRegistry (Phase 21.199)', () => {
   it('accepts complete results and live scores without persisting anything', async () => {
     const completed = { ...fixture, status: 'FINISHED', homeScore: 2, awayScore: 1 };
     registry.register(provider(jest.fn().mockResolvedValue({ records: [completed] })));
-    await expect(registry.fetch('test-provider', { ...request, resource: 'results' })).resolves.toEqual({
+    await expect(
+      registry.fetch('test-provider', { ...request, resource: 'results' }),
+    ).resolves.toEqual({
       records: [completed],
     });
   });
