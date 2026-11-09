@@ -547,14 +547,8 @@ async function upsertMatch(params: {
     awayScore: params.awayScore ?? null,
   } as const;
 
-  if (existing) {
-    return prisma.match.update({
-      where: {
-        id: existing.id,
-      },
-      data,
-    });
-  }
+  // Never undo administrative fixture and result corrections on reseed.
+  if (existing) return existing;
 
   return prisma.match.create({
     data,
@@ -566,6 +560,24 @@ async function seedMatches(
   competitions: Awaited<ReturnType<typeof seedCompetitions>>,
 ) {
   console.log('Seeding test matches...');
+
+  // Existing fixtures may have been rescheduled or corrected by an admin.
+  // Do not re-create the old kickoff (nor overwrite scores) when reseeding DEV.
+  const existingFixtureCount = await prisma.match.count({
+    where: {
+      seasonId: {
+        in: [
+          competitions.bundesliga.season.id,
+          competitions.zweiteLiga.season.id,
+          competitions.oefbCup.season.id,
+        ],
+      },
+    },
+  });
+  if (existingFixtureCount > 0) {
+    console.log('Existing sport fixtures found; preserving them without synthetic reseeding.');
+    return [];
+  }
 
   const clubId = (slug: string) => {
     const club = seededClubs.get(slug);

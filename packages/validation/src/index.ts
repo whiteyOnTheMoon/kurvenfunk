@@ -67,6 +67,13 @@ export {
   type CreateClubInput,
   type UpdateClubInput,
 } from './club-management.js';
+export {
+  fixtureStatusSchema,
+  createFixtureSchema,
+  updateFixtureSchema,
+  type CreateFixtureInput,
+  type UpdateFixtureInput,
+} from './match-management.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,
