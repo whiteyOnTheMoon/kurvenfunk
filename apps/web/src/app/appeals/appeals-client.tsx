@@ -128,7 +128,14 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
   }, [apiUrl, bearer, initialized, reload]);
 
   async function submit() {
-    if (!bearer || !visible || busy || reason.trim().length < 10 || reason.trim().length > 2000 || !selected) {
+    if (
+      !bearer ||
+      !visible ||
+      busy ||
+      reason.trim().length < 10 ||
+      reason.trim().length > 2000 ||
+      !selected
+    ) {
       return;
     }
     const [kind, id] = selected.split(':', 2);
