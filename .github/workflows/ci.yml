@@ -58,6 +58,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY: Format output is collected from CI and committed to the PR branch.
+      - name: Task 190 temporary formatter diagnostic
+        run: |
+          pnpm exec prettier --write apps/api/test/phase20-appeals.e2e-spec.ts apps/web/src/features/admin/moderation/moderation-appeals.tsx
+          node -e 'const fs=require("node:fs"); for (const path of ["apps/api/test/phase20-appeals.e2e-spec.ts","apps/web/src/features/admin/moderation/moderation-appeals.tsx"]) console.log("FORMAT190_JSON="+JSON.stringify({path,content:fs.readFileSync(path,"utf8")}))'
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
