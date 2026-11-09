@@ -241,13 +241,21 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
       <header>
         <h2 id="results-admin-title">Ergebnisse verwalten</h2>
         <p>
-          Live-Spielstände, Endergebnisse und abgebrochene Spiele. Korrekturen werden
-          protokolliert. Terminverschiebungen gehören zur Spielverwaltung darüber.
+          Live-Spielstände, Endergebnisse und abgebrochene Spiele. Korrekturen werden protokolliert.
+          Terminverschiebungen gehören zur Spielverwaltung darüber.
         </p>
       </header>
 
-      {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-      {message ? <p role="status" className={styles.success}>{message}</p> : null}
+      {error ? (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p role="status" className={styles.success}>
+          {message}
+        </p>
+      ) : null}
 
       <div className={styles.filters}>
         <label>
@@ -263,7 +271,9 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
             }}
           >
             {competitions.map((competition) => (
-              <option key={competition.id} value={competition.slug}>{competition.name}</option>
+              <option key={competition.id} value={competition.slug}>
+                {competition.name}
+              </option>
             ))}
           </select>
         </label>
@@ -278,7 +288,9 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
             }}
           >
             {seasons.map((season) => (
-              <option key={season.id} value={season.id}>{season.name} ({season.status})</option>
+              <option key={season.id} value={season.id}>
+                {season.name} ({season.status})
+              </option>
             ))}
           </select>
         </label>
@@ -295,7 +307,9 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
                 <article key={match.id} className={styles.match}>
                   <div className={styles.heading}>
                     <div>
-                      <h4>{match.homeClub.name} – {match.awayClub.name}</h4>
+                      <h4>
+                        {match.homeClub.name} – {match.awayClub.name}
+                      </h4>
                       <p>
                         {new Date(match.kickoff).toLocaleString('de-AT')} ·
                         {match.matchday === null ? ' ohne Spieltag' : ` Spieltag ${match.matchday}`}
@@ -322,13 +336,17 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
                         Status
                         <select
                           value={draft.status}
-                          onChange={(event) => setDraft({
-                            ...draft,
-                            status: event.target.value as ResultStatus,
-                          })}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              status: event.target.value as ResultStatus,
+                            })
+                          }
                         >
                           {allowed.map((status) => (
-                            <option key={status} value={status}>{statusLabels[status]}</option>
+                            <option key={status} value={status}>
+                              {statusLabels[status]}
+                            </option>
                           ))}
                         </select>
                       </label>
@@ -340,7 +358,9 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
                           max={999}
                           step={1}
                           value={draft.homeScore}
-                          onChange={(event) => setDraft({ ...draft, homeScore: event.target.value })}
+                          onChange={(event) =>
+                            setDraft({ ...draft, homeScore: event.target.value })
+                          }
                         />
                       </label>
                       <label>
@@ -351,12 +371,14 @@ export function ResultAdmin({ apiUrl }: { apiUrl: string }) {
                           max={999}
                           step={1}
                           value={draft.awayScore}
-                          onChange={(event) => setDraft({ ...draft, awayScore: event.target.value })}
+                          onChange={(event) =>
+                            setDraft({ ...draft, awayScore: event.target.value })
+                          }
                         />
                       </label>
                       <p className={styles.hint}>
-                        Für beendete Spiele beide Torzahlen angeben (0:0 ist gültig).
-                        Bei Live-/abgebrochenen Spielen dürfen beide Werte leer bleiben.
+                        Für beendete Spiele beide Torzahlen angeben (0:0 ist gültig). Bei
+                        Live-/abgebrochenen Spielen dürfen beide Werte leer bleiben.
                       </p>
                       <div className={styles.actions}>
                         <button type="submit" disabled={busy || !scoresValid(draft)}>

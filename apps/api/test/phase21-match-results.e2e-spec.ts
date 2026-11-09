@@ -159,15 +159,17 @@ describe('Task 196 Results isolated HTTP/JWT/PostgreSQL E2E', () => {
       clubIds.push(club.id);
     }
 
-    for (const [index, fixture] of ([
-      { key: 'scheduled', status: 'SCHEDULED', homeScore: null, awayScore: null },
-      { key: 'finished', status: 'FINISHED', homeScore: 2, awayScore: 1 },
-      { key: 'live', status: 'LIVE', homeScore: null, awayScore: null },
-      { key: 'abandoned', status: 'ABANDONED', homeScore: 1, awayScore: 0 },
-      { key: 'postponed', status: 'POSTPONED', homeScore: null, awayScore: null },
-      { key: 'cancelled', status: 'CANCELLED', homeScore: null, awayScore: null },
-      { key: 'concurrent', status: 'LIVE', homeScore: 0, awayScore: 0 },
-    ] as const).entries()) {
+    for (const [index, fixture] of (
+      [
+        { key: 'scheduled', status: 'SCHEDULED', homeScore: null, awayScore: null },
+        { key: 'finished', status: 'FINISHED', homeScore: 2, awayScore: 1 },
+        { key: 'live', status: 'LIVE', homeScore: null, awayScore: null },
+        { key: 'abandoned', status: 'ABANDONED', homeScore: 1, awayScore: 0 },
+        { key: 'postponed', status: 'POSTPONED', homeScore: null, awayScore: null },
+        { key: 'cancelled', status: 'CANCELLED', homeScore: null, awayScore: null },
+        { key: 'concurrent', status: 'LIVE', homeScore: 0, awayScore: 0 },
+      ] as const
+    ).entries()) {
       const match = await database.match.create({
         data: {
           competitionId: competition.id,
@@ -360,15 +362,9 @@ describe('Task 196 Results isolated HTTP/JWT/PostgreSQL E2E', () => {
 
   it('records a live score, finalizes the game, then forbids reversing the final result', async () => {
     const id = fixtureIds.live;
-    expect(
-      (await patch(id, { status: 'LIVE', homeScore: 1, awayScore: 0 })).status,
-    ).toBe(200);
-    expect(
-      (await patch(id, { status: 'FINISHED', homeScore: 1, awayScore: 1 })).status,
-    ).toBe(200);
-    expect(
-      (await patch(id, { status: 'LIVE', homeScore: 1, awayScore: 0 })).status,
-    ).toBe(409);
+    expect((await patch(id, { status: 'LIVE', homeScore: 1, awayScore: 0 })).status).toBe(200);
+    expect((await patch(id, { status: 'FINISHED', homeScore: 1, awayScore: 1 })).status).toBe(200);
+    expect((await patch(id, { status: 'LIVE', homeScore: 1, awayScore: 0 })).status).toBe(409);
 
     const noOp = await patch(id, { status: 'FINISHED', homeScore: 1, awayScore: 1 });
     expect(noOp.status).toBe(200);
@@ -380,12 +376,8 @@ describe('Task 196 Results isolated HTTP/JWT/PostgreSQL E2E', () => {
 
   it('supports abandoned-score correction but never turns an abandoned match into a final', async () => {
     const id = fixtureIds.abandoned;
-    expect(
-      (await patch(id, { status: 'ABANDONED', homeScore: 1, awayScore: 1 })).status,
-    ).toBe(200);
-    expect(
-      (await patch(id, { status: 'FINISHED', homeScore: 1, awayScore: 1 })).status,
-    ).toBe(409);
+    expect((await patch(id, { status: 'ABANDONED', homeScore: 1, awayScore: 1 })).status).toBe(200);
+    expect((await patch(id, { status: 'FINISHED', homeScore: 1, awayScore: 1 })).status).toBe(409);
   });
 
   it('does not create a score for postponed or cancelled games', async () => {

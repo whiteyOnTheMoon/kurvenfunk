@@ -230,7 +230,10 @@ export class MatchManagementService implements OnModuleDestroy {
           },
         });
         if (changed.count !== 1) {
-          throw conflict('MATCH_CONCURRENT_CHANGE', 'Spiel wurde inzwischen geändert. Bitte neu laden.');
+          throw conflict(
+            'MATCH_CONCURRENT_CHANGE',
+            'Spiel wurde inzwischen geändert. Bitte neu laden.',
+          );
         }
         const match = await tx.match.findUniqueOrThrow({
           where: { id },

@@ -83,9 +83,7 @@ export class ResultManagementService implements OnModuleDestroy {
 
       // Compare-and-swap prevents a stale admin edit overwriting a concurrent
       // sports import, fixture edit, or another result correction.
-      const nextUpdatedAt = new Date(
-        Math.max(Date.now(), previous.updatedAt.getTime() + 1),
-      );
+      const nextUpdatedAt = new Date(Math.max(Date.now(), previous.updatedAt.getTime() + 1));
       const changed = await tx.match.updateMany({
         where: {
           id,
