@@ -1,4 +1,4 @@
-import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
+import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import type { CreateClubInput, UpdateClubInput } from '@kurvenfunk/validation';
 import {
   BadRequestException,
@@ -171,7 +171,7 @@ export class ClubsService implements OnModuleDestroy {
   }
 
   private async ensureActiveImage(
-    tx: Parameters<Parameters<DatabaseClient['$transaction']>[0]>[0],
+    tx: Prisma.TransactionClient,
     mediaId: string | null | undefined,
   ): Promise<void> {
     if (mediaId === undefined || mediaId === null) return;

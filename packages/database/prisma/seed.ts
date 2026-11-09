@@ -338,19 +338,8 @@ async function seedClubs() {
       where: {
         slug: clubData.slug,
       },
-      update: {
-        name: clubData.name,
-        shortName: clubData.shortName,
-        color1Hex: clubData.color1Hex,
-        color1Rgba: hexToRgba(clubData.color1Hex),
-        color2Hex: clubData.color2Hex,
-        color2Rgba: hexToRgba(clubData.color2Hex),
-        color3Hex: clubData.color3Hex,
-        color3Rgba: clubData.color3Hex ? hexToRgba(clubData.color3Hex) : null,
-        accentColorHex: clubData.accentColorHex,
-        accentColorRgba: hexToRgba(clubData.accentColorHex),
-        active: true,
-      },
+      // Preserve canonical club branding and administrative changes on future seed runs.
+      update: {},
       create: {
         name: clubData.name,
         shortName: clubData.shortName,
