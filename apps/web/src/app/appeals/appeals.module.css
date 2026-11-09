@@ -89,9 +89,17 @@
   color: var(--kf-text-muted, #64748b);
   font-size: 0.84rem;
 }
-.list p { white-space: pre-wrap; }
+.list p {
+  white-space: pre-wrap;
+}
 @media (max-width: 640px) {
-  .page { padding: 1rem 0.5rem 3rem; }
-  .panel { padding: 1rem; }
-  .button { width: 100%; }
+  .page {
+    padding: 1rem 0.5rem 3rem;
+  }
+  .panel {
+    padding: 1rem;
+  }
+  .button {
+    width: 100%;
+  }
 }
