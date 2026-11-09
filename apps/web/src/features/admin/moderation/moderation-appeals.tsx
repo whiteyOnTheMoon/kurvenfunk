@@ -26,15 +26,20 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
   const [message, setMessage] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [reload, setReload] = useState(0);
+  const [loadedToken, setLoadedToken] = useState<string>();
+  const [loadedReload, setLoadedReload] = useState<number>();
+  const visible = !!token && authenticated && loadedToken === token && loadedReload === reload;
+  const shownItems = visible ? items : [];
 
   useEffect(() => {
-    setItems([]);
-    setNotes({});
+    // Hide any previous staff member's notes and queue while revalidating.
     if (!authenticated || !token) return;
     let active = true;
     const controller = new AbortController();
-    setLoading(true);
     void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setLoading(true);
       try {
         const response = await fetch(`${apiUrl}/api/v1/moderation/appeals`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -47,6 +52,9 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         if (!Array.isArray(data.data)) throw new Error('Ungültige Antwort des Einspruchsdienstes.');
         if (active) {
           setItems(data.data);
+          setNotes({});
+          setLoadedToken(token);
+          setLoadedReload(reload);
           setMessage(undefined);
         }
       } catch {
@@ -63,7 +71,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
 
   async function decide(appealId: string, decision: 'ACCEPTED' | 'REJECTED') {
     const decisionNote = (notes[appealId] ?? '').trim();
-    if (!authenticated || !token || !canDecide || busyId || decisionNote.length < 10) return;
+    if (!authenticated || !token || !visible || !canDecide || busyId || decisionNote.length < 10) return;
     setBusyId(appealId);
     setMessage(undefined);
     try {
@@ -95,9 +103,9 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       </p>
       {loading ? <p role="status">Einsprüche werden geladen …</p> : null}
       {message ? <p role="status">{message}</p> : null}
-      {!loading && items.length === 0 && !message ? <p>Keine offenen Einsprüche.</p> : null}
+      {!loading && visible && shownItems.length === 0 && !message ? <p>Keine offenen Einsprüche.</p> : null}
       <ul className={styles.list}>
-        {items.map((appeal) => (
+        {shownItems.map((appeal) => (
           <li key={appeal.id} className={styles.item}>
             <strong>{appeal.moderationCardId ? 'Karten-Einspruch' : 'Sanktions-Einspruch'}</strong>
             <span>Konto: {appeal.userId}</span>
