@@ -1,0 +1,25 @@
+name: Temporary Phase 21.192 formatter diagnostics
+
+on:
+  push:
+    branches:
+      - feature/phase21-192-competition-management
+
+permissions:
+  contents: read
+
+jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Show exact formatting patch (read-only diagnostic)
+        run: |
+          pnpm exec prettier --write apps/api/src/modules/competitions/competitions.service.ts apps/api/test/phase21-competition-management.e2e-spec.ts apps/web/src/features/admin/competitions/competition-admin.tsx packages/validation/src/competition.ts
+          git diff -- apps/api/src/modules/competitions/competitions.service.ts apps/api/test/phase21-competition-management.e2e-spec.ts apps/web/src/features/admin/competitions/competition-admin.tsx packages/validation/src/competition.ts
