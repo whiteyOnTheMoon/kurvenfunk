@@ -225,7 +225,7 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
       });
       clubIds.push(saved.id);
     }
-    for (const [index, match] of [
+    for (const [index, match] of ([
       { h: 0, a: 1, status: 'FINISHED', hs: 2, as: 0 },
       { h: 1, a: 2, status: 'FINISHED', hs: 0, as: 0 },
       { h: 2, a: 0, status: 'FINISHED', hs: 1, as: 0 },
