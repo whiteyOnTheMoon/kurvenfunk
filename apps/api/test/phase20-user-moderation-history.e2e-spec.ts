@@ -274,12 +274,7 @@ describe('Task 188 private moderation history – isolated HTTP RBAC and privacy
   it('denies anonymous, community, editor, restricted and banned sessions', async () => {
     const path = endpoint(ids.get(subjects.target)!);
     await request(app.getHttpServer()).get(path).expect(401);
-    for (const subject of [
-      subjects.user,
-      subjects.editor,
-      subjects.restricted,
-      subjects.banned,
-    ]) {
+    for (const subject of [subjects.user, subjects.editor, subjects.restricted, subjects.banned]) {
       await request(app.getHttpServer())
         .get(path)
         .set('Authorization', 'Bearer ' + (await token(subject)))
@@ -305,16 +300,20 @@ describe('Task 188 private moderation history – isolated HTTP RBAC and privacy
         };
       };
       expect(body.data.user).toMatchObject({ id: targetId, status: 'ACTIVE' });
-      expect(body.data.reports.items.some((x) => x.id === reportId && x.moderatorNote === note))
-        .toBe(true);
-      expect(body.data.cards.items.some((x) => x.id === cardId && x.status === 'REVOKED'))
-        .toBe(true);
-      expect(body.data.sanctions.items.some((x) => x.id === banId && x.type === 'ACCOUNT_BAN'))
-        .toBe(true);
+      expect(
+        body.data.reports.items.some((x) => x.id === reportId && x.moderatorNote === note),
+      ).toBe(true);
+      expect(body.data.cards.items.some((x) => x.id === cardId && x.status === 'REVOKED')).toBe(
+        true,
+      );
+      expect(
+        body.data.sanctions.items.some((x) => x.id === banId && x.type === 'ACCOUNT_BAN'),
+      ).toBe(true);
       expect(body.data.sanctions.items.some((x) => x.id === limitedId)).toBe(true);
       expect(body.data.sanctions.items.some((x) => x.id === ipSanctionId)).toBe(false);
-      expect(body.data.statusEvents.items.some((x) => x.action === 'USER_STATUS_CHANGED'))
-        .toBe(true);
+      expect(body.data.statusEvents.items.some((x) => x.action === 'USER_STATUS_CHANGED')).toBe(
+        true,
+      );
       const json = JSON.stringify(response.body);
       expect(json).toContain(note);
       expect(json).not.toContain(otherNote);
@@ -336,9 +335,13 @@ describe('Task 188 private moderation history – isolated HTTP RBAC and privacy
 
   it('rejects unknown and invalid UUIDs without disclosure, and never changes stored history', async () => {
     const auth = 'Bearer ' + (await token(subjects.moderator));
-    await request(app.getHttpServer()).get(endpoint('not-a-uuid')).set('Authorization', auth)
+    await request(app.getHttpServer())
+      .get(endpoint('not-a-uuid'))
+      .set('Authorization', auth)
       .expect(400);
-    await request(app.getHttpServer()).get(endpoint(randomUUID())).set('Authorization', auth)
+    await request(app.getHttpServer())
+      .get(endpoint(randomUUID()))
+      .set('Authorization', auth)
       .expect(404);
     const result = await request(app.getHttpServer())
       .get(endpoint(ids.get(subjects.other)!))
@@ -346,9 +349,11 @@ describe('Task 188 private moderation history – isolated HTTP RBAC and privacy
       .expect(200);
     expect(JSON.stringify(result.body)).not.toContain(note);
     expect(JSON.stringify(result.body)).toContain(otherNote);
-    expect((await database.sanction.findUniqueOrThrow({ where: { id: banId } })).status)
-      .toBe('REVOKED');
-    expect((await database.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).status)
-      .toBe('REVOKED');
+    expect((await database.sanction.findUniqueOrThrow({ where: { id: banId } })).status).toBe(
+      'REVOKED',
+    );
+    expect(
+      (await database.moderationCard.findUniqueOrThrow({ where: { id: cardId } })).status,
+    ).toBe('REVOKED');
   }, 30000);
 });
