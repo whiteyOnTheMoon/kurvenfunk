@@ -121,7 +121,11 @@ export function SeasonAdmin({ apiUrl }: { apiUrl: string }) {
         const items = await parseResponse<Season[]>(response);
         if (!cancelled) setSeasons(items);
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Saisonen konnten nicht geladen werden.');
+        if (!cancelled) {
+          setError(
+            cause instanceof Error ? cause.message : 'Saisonen konnten nicht geladen werden.',
+          );
+        }
       } finally {
         if (!cancelled) setLoadingSeasons(false);
       }
@@ -349,7 +353,9 @@ export function SeasonAdmin({ apiUrl }: { apiUrl: string }) {
                           required
                           min={editing.startDate}
                           value={editing.endDate}
-                          onChange={(event) => setEditing({ ...editing, endDate: event.target.value })}
+                          onChange={(event) =>
+                            setEditing({ ...editing, endDate: event.target.value })
+                          }
                         />
                       </label>
                       <label>
