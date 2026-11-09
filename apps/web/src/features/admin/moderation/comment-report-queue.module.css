@@ -138,3 +138,17 @@
     width: 100%;
   }
 }
+
+.embedded {
+  min-width: 0;
+  padding: 0;
+}
+
+.embedded .header {
+  margin-bottom: 1.25rem;
+}
+
+.embedded .header h2 {
+  margin: 0.4rem 0 0.8rem;
+  font-size: 1.2rem;
+}

@@ -1,6 +1,6 @@
-import { CommentReportQueue } from '../../../features/admin/moderation/comment-report-queue';
+import { ModerationDashboard } from '../../../features/admin/moderation/moderation-dashboard';
 import { env } from '../../../lib/env';
 
 export default function AdminModerationPage() {
-  return <CommentReportQueue apiUrl={env.API_URL} />;
+  return <ModerationDashboard apiUrl={env.API_URL} />;
 }
