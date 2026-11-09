@@ -43,3 +43,5 @@ following tasks integrate external data only through a provider interface.
 - Verify migration and collision behavior, historical lookups and immutable slug.
 - Review the DEV UI after green CI; do not mark DONE without DEV acceptance.
 - PR for Task 193 is stacked on Task 192 until Task 192 CI/DEV acceptance is complete.
+
+Note: Task 193 PR targets develop for CI, but it must not merge before Task 192.
