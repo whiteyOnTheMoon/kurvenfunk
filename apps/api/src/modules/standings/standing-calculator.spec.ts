@@ -77,6 +77,29 @@ describe('Phase 21.198 deterministic standings', () => {
     expect(old.rows.find((r) => r.clubId === b)?.deductionPoints).toBe(2);
   });
 
+
+  it('carries full 2026 points and all pre-split goals versus other-group clubs', () => {
+    const regular = [match(a, c, 2, 0), match(b, c, 1, 0)];
+    const group = [match(a, b, 1, 1)];
+    expect(earnedPointsFor(regular, [a, b])).toEqual({ a: 3, b: 3 });
+
+    const fresh = calculateStandings([...regular, ...group], [a, b], {
+      profile: 'AUSTRIAN_BUNDESLIGA_2026',
+      allowExternalOpponents: true,
+    });
+    expect(fresh.rows.map((row) => [row.clubId, row.played, row.points, row.goalDifference]))
+      .toEqual([[a, 2, 4, 2], [b, 2, 4, 1]]);
+
+    const historic = calculateStandings([...regular, ...group], [a, b], {
+      profile: 'AUSTRIAN_BUNDESLIGA_LEGACY',
+      pointsAdjustments: { a: -2, b: -2 },
+      legacyRoundedDown: { a: true, b: true },
+      allowExternalOpponents: true,
+    });
+    expect(historic.rows.map((row) => row.points)).toEqual([2, 2]);
+    expect(historic.rows.map((row) => row.played)).toEqual([2, 2]);
+  });
+
   it('selects no-halving from 2026/27 and historic rule versions from 2018/19', () => {
     expect(profileForCompetition('austrian-bundesliga', '2026-27')).toBe(
       'AUSTRIAN_BUNDESLIGA_2026',
