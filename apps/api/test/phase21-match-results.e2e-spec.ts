@@ -159,7 +159,7 @@ describe('Task 196 Results isolated HTTP/JWT/PostgreSQL E2E', () => {
       clubIds.push(club.id);
     }
 
-    for (const [index, fixture] of [
+    for (const [index, fixture] of ([
       { key: 'scheduled', status: 'SCHEDULED', homeScore: null, awayScore: null },
       { key: 'finished', status: 'FINISHED', homeScore: 2, awayScore: 1 },
       { key: 'live', status: 'LIVE', homeScore: null, awayScore: null },
