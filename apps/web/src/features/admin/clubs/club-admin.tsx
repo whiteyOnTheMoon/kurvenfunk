@@ -296,7 +296,7 @@ export function ClubAdmin({ apiUrl }: { apiUrl: string }) {
   async function save(
     method: 'POST' | 'PATCH',
     path: string,
-    input: ReturnType<typeof buildPayload> | { active: boolean },
+    input: unknown,
   ): Promise<void> {
     if (!token) return;
     setBusy(true);
