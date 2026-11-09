@@ -1,0 +1,34 @@
+name: Phase21-198 formatting snapshot
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: startsWith(github.head_ref, 'feature/phase21-198-standings-calculation')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Format and display exact base64 output
+        run: |
+          for file in \
+            apps/api/src/modules/standings/standing-calculator.spec.ts \
+            apps/web/src/features/admin/standings/standing-admin.tsx
+          do
+            pnpm exec prettier --write "$file" 1>/dev/null
+            echo "KF_FORMAT_START $file"
+            base64 -w 76 "$file"
+            echo "KF_FORMAT_END $file"
+          done
