@@ -66,11 +66,12 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
     };
   }
 
-  async function create(input: Record<string, unknown>, as = actorSubjects.admin) {
+  async function create(input: Record<string, unknown>, status: number, as = actorSubjects.admin) {
     return request(app.getHttpServer())
       .post('/api/v1/standings/admin/season/' + seasonId + '/rows')
       .set('Authorization', 'Bearer ' + (await jwt(as)))
-      .send(input);
+      .send(input)
+      .expect(status);
   }
 
   beforeAll(async () => {
@@ -259,7 +260,7 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
       sample({ stageId: otherStageId }),
       sample({ stageId: 'not-a-uuid' }),
     ]) {
-      await create(input).expect(400);
+      await create(input, 400);
     }
     const token = await jwt(actorSubjects.admin);
     await request(app.getHttpServer())
@@ -276,7 +277,7 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
   });
 
   it('creates a season-wide row and blocks the second row for the same club and null stage', async () => {
-    const response = await create(sample()).expect(201);
+    const response = await create(sample(), 201);
     const row = unwrap(response) as {
       id: string;
       position: number;
@@ -291,7 +292,7 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
     expect(row.deductionPoints).toBe(2);
     expect(row.stageId).toBeNull();
 
-    await create(sample({ position: 2 })).expect(409);
+    await create(sample({ position: 2 }), 409);
     expect(
       await db.standing.count({ where: { seasonId, stageId: null, clubId: clubIds[0] } }),
     ).toBe(1);
@@ -308,12 +309,12 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
   });
 
   it('separates stages and preserves historic inactive clubs', async () => {
-    const first = await create(sample({ stageId: stageIds[0] })).expect(201);
-    const second = await create(sample({ stageId: stageIds[1], clubId: clubIds[2] })).expect(201);
+    const first = await create(sample({ stageId: stageIds[0] }), 201);
+    const second = await create(sample({ stageId: stageIds[1], clubId: clubIds[2] }), 201);
     const firstId = (unwrap(first) as { id: string }).id;
     const secondId = (unwrap(second) as { id: string }).id;
     rowIds.push(firstId, secondId);
-    await create(sample({ stageId: stageIds[0] })).expect(409);
+    await create(sample({ stageId: stageIds[0] }), 409);
 
     const firstRead = await request(app.getHttpServer())
       .get('/api/v1/standings/season/' + seasonId + '?stageId=' + stageIds[0])
