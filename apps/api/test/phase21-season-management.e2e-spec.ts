@@ -161,7 +161,10 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
         .send(sample)
         .expect(403);
     }
-    await request(app.getHttpServer()).patch('/api/v1/seasons/' + randomUUID()).send({}).expect(401);
+    await request(app.getHttpServer())
+      .patch('/api/v1/seasons/' + randomUUID())
+      .send({})
+      .expect(401);
   });
 
   it('validates calendar dates, immutable fields, slugs and unknown competitions', async () => {
@@ -237,7 +240,11 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
       .set('Authorization', 'Bearer ' + adminToken)
       .send(create)
       .expect(201);
-    const planned = responseData(plannedResponse) as { id: string; status: string; active: boolean };
+    const planned = responseData(plannedResponse) as {
+      id: string;
+      status: string;
+      active: boolean;
+    };
     seasonIds.push(planned.id);
     expect(planned.status).toBe('PLANNED');
     expect(planned.active).toBe(false);
