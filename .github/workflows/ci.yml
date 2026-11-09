@@ -636,7 +636,6 @@ jobs:
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-189-appeals.sh"
 
-
   phase20-188-dev-history:
     name: Task 188 DEV read-only account history RBAC/privacy
     needs:
