@@ -65,12 +65,14 @@ describe('Task 188 – private, account-scoped history', () => {
 
     const policy = new PermissionsService();
     for (const role of ['USER', 'TRUSTED_USER', 'EDITOR'] as const) {
-      expect(policy.hasPermission({ roles: [role], status: 'ACTIVE' }, PERMISSIONS.USER_WARN))
-        .toBe(false);
+      expect(policy.hasPermission({ roles: [role], status: 'ACTIVE' }, PERMISSIONS.USER_WARN)).toBe(
+        false,
+      );
     }
     for (const role of ['MODERATOR', 'ADMIN', 'SUPERADMIN'] as const) {
-      expect(policy.hasPermission({ roles: [role], status: 'ACTIVE' }, PERMISSIONS.USER_WARN))
-        .toBe(true);
+      expect(policy.hasPermission({ roles: [role], status: 'ACTIVE' }, PERMISSIONS.USER_WARN)).toBe(
+        true,
+      );
       for (const status of ['LIMITED', 'BANNED'] as const) {
         expect(policy.hasPermission({ roles: [role], status }, PERMISSIONS.USER_WARN)).toBe(false);
       }
@@ -128,7 +130,12 @@ describe('Task 188 – private, account-scoped history', () => {
     expect(eventsQuery.where).toEqual({ targetUserId: USER, action: 'USER_STATUS_CHANGED' });
     expect(eventsQuery.take).toBe(51);
     for (const forbidden of [
-      'metadata', 'reason', 'ipBlockId', 'requestId', 'correlationId', 'actorLabel',
+      'metadata',
+      'reason',
+      'ipBlockId',
+      'requestId',
+      'correlationId',
+      'actorLabel',
     ]) {
       expect(eventsQuery.select).not.toHaveProperty(forbidden);
     }
