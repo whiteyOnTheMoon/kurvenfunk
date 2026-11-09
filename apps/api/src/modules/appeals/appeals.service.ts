@@ -280,7 +280,7 @@ export class AppealsService implements OnModuleDestroy {
           targetId: appeal.id,
           targetUserId: appeal.userId,
           reason: 'SECOND_REVIEW_RETURNED',
-          metadata: { proposedById: appeal.proposedById },
+          metadata: { proposedById: appeal.proposedById, reviewNote: command.decisionNote },
         },
       });
       return reopened;
