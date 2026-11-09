@@ -440,8 +440,9 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .get('/api/v1/moderation/appeals/policy')
         .set('Authorization', mod)
         .expect(200);
-      expect((policy.body as { data: { appealSecondReviewRequired: boolean } }).data)
-        .toEqual({ appealSecondReviewRequired: true });
+      expect((policy.body as { data: { appealSecondReviewRequired: boolean } }).data).toEqual({
+        appealSecondReviewRequired: true,
+      });
 
       const filed = await request(http)
         .post('/api/v1/appeals')
@@ -455,14 +456,19 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .set('Authorization', admin)
         .send({ decision: 'ACCEPTED', decisionNote: privateNote })
         .expect(200);
-      expect((proposal.body as { data: { status: string } }).data.status)
-        .toBe('PENDING_APPROVAL');
-      expect((await database.moderationCard.findUniqueOrThrow({
-        where: { id: otherCardId },
-      })).status).toBe('ACTIVE');
-      expect(await database.auditLog.count({
-        where: { targetId: appealId, action: 'APPEAL_RESOLVED' },
-      })).toBe(0);
+      expect((proposal.body as { data: { status: string } }).data.status).toBe('PENDING_APPROVAL');
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('ACTIVE');
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_RESOLVED' },
+        }),
+      ).toBe(0);
       await request(http)
         .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
         .set('Authorization', admin)
@@ -499,11 +505,16 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .set('Authorization', root)
         .send({ outcome: 'RETURN', decisionNote: 'Weitere Prüfung erforderlich.' })
         .expect(200);
-      expect((await database.appeal.findUniqueOrThrow({ where: { id: appealId } })).status)
-        .toBe('OPEN');
-      expect((await database.moderationCard.findUniqueOrThrow({
-        where: { id: otherCardId },
-      })).status).toBe('ACTIVE');
+      expect((await database.appeal.findUniqueOrThrow({ where: { id: appealId } })).status).toBe(
+        'OPEN',
+      );
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('ACTIVE');
 
       await request(http)
         .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
@@ -516,9 +527,13 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .send({ outcome: 'APPROVE', decisionNote: 'Zweitprüfung bestätigt die Entscheidung.' })
         .expect(200);
       expect((approved.body as { data: { status: string } }).data.status).toBe('ACCEPTED');
-      expect((await database.moderationCard.findUniqueOrThrow({
-        where: { id: otherCardId },
-      })).status).toBe('REVOKED');
+      expect(
+        (
+          await database.moderationCard.findUniqueOrThrow({
+            where: { id: otherCardId },
+          })
+        ).status,
+      ).toBe('REVOKED');
       await request(http)
         .patch('/api/v1/moderation/appeals/' + appealId + '/approval')
         .set('Authorization', admin)
@@ -530,15 +545,21 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .expect(200);
       expect(JSON.stringify(mine.body)).not.toContain(privateNote);
       expect(JSON.stringify(mine.body)).not.toContain('proposedById');
-      expect(await database.auditLog.count({
-        where: { targetId: appealId, action: 'APPEAL_DECISION_PROPOSED' },
-      })).toBe(2);
-      expect(await database.auditLog.count({
-        where: { targetId: appealId, action: 'APPEAL_DECISION_APPROVED' },
-      })).toBe(1);
-      expect(await database.auditLog.count({
-        where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
-      })).toBe(1);
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_PROPOSED' },
+        }),
+      ).toBe(2);
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_APPROVED' },
+        }),
+      ).toBe(1);
+      expect(
+        await database.auditLog.count({
+          where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
+        }),
+      ).toBe(1);
     } finally {
       if (previous === undefined) delete process.env.APPEAL_FOUR_EYES_ENABLED;
       else process.env.APPEAL_FOUR_EYES_ENABLED = previous;
