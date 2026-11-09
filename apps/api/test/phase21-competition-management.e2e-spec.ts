@@ -9,6 +9,10 @@ import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
+function responseData(response: { body: unknown }): unknown {
+  return (response.body as { data: unknown }).data;
+}
+
 describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
   let app: INestApplication<App>;
   let database: DatabaseClient;
@@ -180,8 +184,8 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
       })
       .expect(201);
 
-    competitionId = (created.body.data as { id: string }).id;
-    expect(created.body.data).toMatchObject({
+    competitionId = (responseData(created) as { id: string }).id;
+    expect(responseData(created)).toMatchObject({
       id: competitionId,
       name: 'Test Bundesliga',
       slug,
@@ -191,7 +195,7 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
     });
 
     const publicList = await request(app.getHttpServer()).get('/api/v1/competitions').expect(200);
-    expect(publicList.body.data).toEqual(
+    expect(responseData(publicList)).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: competitionId, slug })]),
     );
     await request(app.getHttpServer()).get(`/api/v1/competitions/${slug}`).expect(200);
@@ -244,7 +248,7 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
       .send({ name: 'Renamed Bundesliga', shortName: null, active: false })
       .expect(200);
 
-    expect(updated.body.data).toMatchObject({
+    expect(responseData(updated)).toMatchObject({
       id: competitionId,
       slug,
       type: 'LEAGUE',
@@ -253,7 +257,7 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
       active: false,
     });
     const publicList = await request(app.getHttpServer()).get('/api/v1/competitions').expect(200);
-    expect(publicList.body.data).not.toEqual(
+    expect(responseData(publicList)).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: competitionId })]),
     );
     await request(app.getHttpServer()).get(`/api/v1/competitions/${slug}`).expect(404);
@@ -262,7 +266,7 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
       .get('/api/v1/competitions/admin/all')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(privateList.body.data).toEqual(
+    expect(responseData(privateList)).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: competitionId, slug, active: false })]),
     );
     const saved = await database.competition.findUnique({ where: { id: competitionId } });
