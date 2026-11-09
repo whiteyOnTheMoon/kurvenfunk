@@ -30,15 +30,20 @@ describe('Phase 21.198 deterministic standings', () => {
   });
 
   it('uses Austrian 2026 direct-duel tiebreak before overall goal difference', () => {
+    const d = 'd';
     const fixtures = [
-      match(a,b,1,0), // a has the direct duel
-      match(a,c,0,5),
-      match(b,c,5,0),
+      match(a, b, 1, 0), // a wins the direct duel
+      match(a, c, 0, 1),
+      match(b, c, 5, 0),
+      match(a, d, 1, 0),
+      match(b, d, 1, 0),
     ];
-    // Both a and b finish on three points, but b has a larger goal difference.
-    const result = calculateStandings(fixtures,[a,b,c],{profile:'AUSTRIAN_BUNDESLIGA_2026'});
-    expect(result.rows.map(r=>r.clubId)).toEqual([a,b,c]);
-    expect(result.rows.find(r=>r.clubId===a)?.goalDifference).toBe(-4);
+    // a and b each get 6 points, but b has much better overall goal difference.
+    const result = calculateStandings(fixtures, [a, b, c, d], {
+      profile: 'AUSTRIAN_BUNDESLIGA_2026',
+    });
+    expect(result.rows.map((row) => row.clubId)).toEqual([a, b, c, d]);
+    expect(result.rows.find((row) => row.clubId === a)?.goalDifference).toBe(1);
   });
 
   it('does not treat a remaining fully tied official rank as definitive', () => {
