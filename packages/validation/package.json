@@ -12,7 +12,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/*.spec.ts",
+    "test": "pnpm build && node --experimental-strip-types --test src/*.spec.ts",
     "build": "tsc"
   },
   "dependencies": {
