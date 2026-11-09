@@ -11,12 +11,7 @@ export const SPORTS_PROVIDER_RESOURCES = ['clubs', 'fixtures', 'results', 'live'
 export type SportsProviderResource = (typeof SPORTS_PROVIDER_RESOURCES)[number];
 
 export type SportsProviderMatchStatus =
-  | 'SCHEDULED'
-  | 'LIVE'
-  | 'FINISHED'
-  | 'POSTPONED'
-  | 'CANCELLED'
-  | 'ABANDONED';
+  'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'ABANDONED';
 
 export type SportsProviderCapabilities = Readonly<Record<SportsProviderResource, boolean>>;
 
