@@ -104,7 +104,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
   const { initialized, authenticated, token, user } = useAuth();
   const router = useRouter();
   const [lookupId, setLookupId] = useState('');
-  const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(lookupId.trim());
+  const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    lookupId.trim(),
+  );
   function openHistory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validId || !authenticated) return;
@@ -225,8 +227,8 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
           <section className={styles.panel} aria-labelledby="history-title">
             <h2 id="history-title">Vertrauliche Nutzerhistorie</h2>
             <p className={styles.muted}>
-              Meldungen, Karten, frühere Sperren und interne Notizen für ein einzelnes Konto.
-              Nur für berechtigte Moderationskonten.
+              Meldungen, Karten, frühere Sperren und interne Notizen für ein einzelnes Konto. Nur
+              für berechtigte Moderationskonten.
             </p>
             <form className={styles.historyLookup} onSubmit={openHistory}>
               <label htmlFor="moderation-user-id">Nutzer-ID (UUID)</label>
@@ -239,7 +241,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
                 onChange={(event) => setLookupId(event.target.value)}
                 placeholder="xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxxxxxx"
               />
-              <button type="submit" disabled={!validId}>Historie öffnen</button>
+              <button type="submit" disabled={!validId}>
+                Historie öffnen
+              </button>
             </form>
           </section>
 
@@ -281,7 +285,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
                         {personLabel(card.user)} · {card.user.status}
                       </span>
                       <span>{card.reasonCode.replaceAll('_', ' ')}</span>
-                      <a href={`/admin/moderation/benutzer/${encodeURIComponent(card.user.id)}`}>Nutzerhistorie ansehen</a>
+                      <a href={`/admin/moderation/benutzer/${encodeURIComponent(card.user.id)}`}>
+                        Nutzerhistorie ansehen
+                      </a>
                       <time dateTime={card.issuedAt}>{dateLabel(card.issuedAt)}</time>
                     </li>
                   ))}
@@ -301,7 +307,13 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
                         {personLabel(sanction.user)} · {sanction.status}
                       </strong>
                       <span>{sanction.reasonCode.replaceAll('_', ' ')}</span>
-                      {sanction.user ? <a href={`/admin/moderation/benutzer/${encodeURIComponent(sanction.user.id)}`}>Nutzerhistorie ansehen</a> : null}
+                      {sanction.user ? (
+                        <a
+                          href={`/admin/moderation/benutzer/${encodeURIComponent(sanction.user.id)}`}
+                        >
+                          Nutzerhistorie ansehen
+                        </a>
+                      ) : null}
                       <span>Bis: {dateLabel(sanction.expiresAt)}</span>
                     </li>
                   ))}
