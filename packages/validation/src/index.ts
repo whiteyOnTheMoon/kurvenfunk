@@ -79,6 +79,12 @@ export {
   updateMatchResultSchema,
   type UpdateMatchResultInput,
 } from './match-result.js';
+export {
+  createStandingSchema,
+  updateStandingSchema,
+  type CreateStandingInput,
+  type UpdateStandingInput,
+} from './standing-management.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,
