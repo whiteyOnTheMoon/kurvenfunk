@@ -131,6 +131,10 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
     expect(yellowQuery.where.revokedAt).toBeNull();
     expect(redQuery.where.OR).toHaveLength(2);
 
+    expect(database.moderationCard.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { type: { in: ['YELLOW', 'RED'] } } }),
+    );
+
     const selectionCalls = [
       database.moderationReport.findMany,
       database.moderationCard.findMany,
