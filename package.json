@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write packages/types/src/sports-provider.ts apps/api/src/modules/providers/sports-provider.registry.ts apps/api/src/modules/providers/sports-provider.registry.spec.ts && git diff -- packages/types/src/sports-provider.ts apps/api/src/modules/providers/sports-provider.registry.ts apps/api/src/modules/providers/sports-provider.registry.spec.ts && prettier --check ."
   }
 }
