@@ -56,7 +56,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       setLoading(true);
       try {
         const response = await fetch(`${apiUrl}/api/v1/moderation/appeals`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `*** },
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -65,7 +65,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         const data = (await response.json()) as { data?: AppealForStaff[] };
         if (!Array.isArray(data.data)) throw new Error('Ungültige Antwort des Einspruchsdienstes.');
         const policyResponse = await fetch(`${apiUrl}/api/v1/moderation/appeals/policy`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `*** },
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -78,14 +78,11 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         }
         let waiting: PendingReview[] = [];
         if (canDecide) {
-          const waitingResponse = await fetch(
-            `${apiUrl}/api/v1/moderation/appeals/pending`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-              cache: 'no-store',
-              signal: controller.signal,
-            },
-          );
+          const waitingResponse = await fetch(`${apiUrl}/api/v1/moderation/appeals/pending`, {
+            headers: { Authorization: `*** },
+            cache: 'no-store',
+            signal: controller.signal,
+          });
           if (!waitingResponse.ok) throw new Error('Zweitprüfungen konnten nicht geladen werden.');
           const waitingData = (await waitingResponse.json()) as { data?: PendingReview[] };
           if (!Array.isArray(waitingData.data)) throw new Error('Ungültige Zweitprüfungen.');
@@ -124,7 +121,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         `${apiUrl}/api/v1/moderation/appeals/${encodeURIComponent(appealId)}/decision`,
         {
           method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `*** 'Content-Type': 'application/json' },
           cache: 'no-store',
           body: JSON.stringify({ decision, decisionNote }),
         },
@@ -155,7 +152,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         `${apiUrl}/api/v1/moderation/appeals/${encodeURIComponent(appealId)}/approval`,
         {
           method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `*** 'Content-Type': 'application/json' },
           cache: 'no-store',
           body: JSON.stringify({ outcome, decisionNote }),
         },
@@ -236,7 +233,9 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       {canDecide && visible ? (
         <section aria-label="Offene Zweitprüfungen">
           <h3>Freigaben durch eine zweite Person</h3>
-          {shownPending.length === 0 ? <p className={styles.muted}>Keine offenen Freigaben.</p> : null}
+          {shownPending.length === 0 ? (
+            <p className={styles.muted}>Keine offenen Freigaben.</p>
+          ) : null}
           <ul className={styles.list}>
             {shownPending.map((item) => (
               <li key={item.id} className={styles.item}>
