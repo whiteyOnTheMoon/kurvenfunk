@@ -318,7 +318,9 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
     const seasons = responseData(archive) as { id: string; slug: string }[];
     expect(seasons).toHaveLength(2);
     expect(seasons.map((item) => item.slug)).toEqual(['2027-28', '2026-27']);
-    const current = await request(app.getHttpServer()).get(baseUrl + '/current').expect(200);
+    const current = await request(app.getHttpServer())
+      .get(baseUrl + '/current')
+      .expect(200);
     expect((responseData(current) as { id: string }).id).toBe(next);
 
     const audit = await database.auditLog.findMany({
