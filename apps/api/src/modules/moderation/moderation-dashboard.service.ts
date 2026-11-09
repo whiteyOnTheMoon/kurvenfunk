@@ -55,6 +55,7 @@ export class ModerationDashboardService implements OnModuleDestroy {
         },
       }),
       this.database.moderationCard.findMany({
+        where: { type: { in: ['YELLOW', 'RED'] } },
         orderBy: [{ issuedAt: 'desc' }, { id: 'desc' }],
         take: 12,
         select: {
