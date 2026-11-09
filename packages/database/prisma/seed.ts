@@ -415,13 +415,8 @@ async function seedCompetition(params: {
     where: {
       slug: params.slug,
     },
-    update: {
-      name: params.name,
-      shortName: params.shortName,
-      type: params.type,
-      countryCode: 'AT',
-      active: true,
-    },
+    // Preserve admin-managed competition metadata on subsequent seed runs.
+    update: {},
     create: {
       name: params.name,
       shortName: params.shortName,

@@ -1,11 +1,6 @@
-import { AdminPlaceholder } from '../../../features/admin/admin-placeholder';
+import { CompetitionAdmin } from '../../../features/admin/competitions/competition-admin';
+import { env } from '../../../lib/env';
 
 export default function AdminSportsDataPage() {
-  return (
-    <AdminPlaceholder
-      eyebrow="Fußballdaten"
-      title="Sportdaten"
-      description="Wettbewerbe, Vereine, Spiele, Ergebnisse und Tabellen verwalten."
-    />
-  );
+  return <CompetitionAdmin apiUrl={env.API_URL} />;
 }

@@ -47,6 +47,12 @@ export {
   type CreateTagInput,
   type UpdateTagInput,
 } from './tag.js';
+export {
+  createCompetitionSchema,
+  updateCompetitionSchema,
+  type CreateCompetitionInput,
+  type UpdateCompetitionInput,
+} from './competition.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,
