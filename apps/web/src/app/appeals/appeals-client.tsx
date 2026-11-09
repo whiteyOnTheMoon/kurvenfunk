@@ -258,9 +258,9 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
                   ? 'In Prüfung'
                   : appeal.status === 'PENDING_APPROVAL'
                     ? 'Wartet auf zweite Prüfung'
-                  : appeal.status === 'ACCEPTED'
-                    ? 'Angenommen'
-                    : 'Abgelehnt'}
+                    : appeal.status === 'ACCEPTED'
+                      ? 'Angenommen'
+                      : 'Abgelehnt'}
               </strong>
               <time dateTime={appeal.createdAt}>
                 {new Date(appeal.createdAt).toLocaleDateString('de-AT')}
