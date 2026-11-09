@@ -244,7 +244,7 @@ export function calculateStandings(
   const unresolvedTies: string[][] = [];
   for (let index = 0; index < sorted.length;) {
     let end = index + 1;
-    while (end < sorted.length && compare(sorted[index]!, sorted[end]!) === 0) end++;
+    while (end < sorted.length && compare(sorted[index], sorted[end]) === 0) end++;
     if (end - index > 1) unresolvedTies.push(sorted.slice(index, end).map((row) => row.clubId));
     index = end;
   }
