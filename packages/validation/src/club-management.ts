@@ -18,12 +18,10 @@ const officialWebsiteSchema = z
   .trim()
   .max(2048)
   .url()
-  .refine((value) => {
-    const url = new URL(value);
-    return (
-      (url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password
-    );
-  }, 'Expected an absolute HTTP(S) website without credentials')
+  .regex(
+    /^https?:\/\/[^@/?#]+(?:[/?#]|$)/i,
+    'Expected an absolute HTTP(S) website without credentials',
+  )
   .nullable();
 
 const clubFields = {
