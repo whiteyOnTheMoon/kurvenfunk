@@ -174,7 +174,7 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
     ].entries()) {
       const season = await db.season.create({
         data: {
-          competitionId: group.compId!,
+          competitionId: group.compId,
           name: group.slug,
           slug: group.slug,
           status: group.active ? 'ACTIVE' : 'PLANNED',
@@ -235,11 +235,11 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
     ).entries()) {
       const saved = await db.match.create({
         data: {
-          competitionId: competitionId!,
+          competitionId: competitionId,
           seasonId: seasonId!,
-          stageId: stageId!,
-          homeClubId: clubIds[match.h]!,
-          awayClubId: clubIds[match.a]!,
+          stageId: stageId,
+          homeClubId: clubIds[match.h],
+          awayClubId: clubIds[match.a],
           kickoff: new Date('2026-10-' + String(11 + index) + 'T17:30:00.000Z'),
           matchday: index + 1,
           status: match.status,
@@ -399,7 +399,7 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
     });
     await db.match.update({
       where: { id: matchIds[0] },
-      data: { homeScore: 3 },
+      data: { homeScore: 3, updatedAt: new Date(Date.now() + 5000) },
     });
     await apply(before, true, 409);
     expect((await db.standing.findUniqueOrThrow({ where: { id: saved.id } })).goalsFor).toBe(2);
