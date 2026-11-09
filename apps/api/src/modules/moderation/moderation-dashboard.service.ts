@@ -5,7 +5,7 @@ import { Injectable, type OnModuleDestroy } from '@nestjs/common';
  * Task 187 – bounded, read-only moderation overview.
  * The API projects only safe dashboard fields: no evidence, private notes,
  * audit metadata, raw IP or keyed IP pseudonyms leave this service.
- * Appeals do not have a persisted model until Task 189.
+ * Task 189 adds the persisted and permission-gated appeal queue.
  */
 @Injectable()
 export class ModerationDashboardService implements OnModuleDestroy {
@@ -20,6 +20,7 @@ export class ModerationDashboardService implements OnModuleDestroy {
     };
     const [
       pendingReports,
+      pendingAppeals,
       activeYellowCards,
       activeRedCards,
       limitedUsers,
@@ -32,6 +33,7 @@ export class ModerationDashboardService implements OnModuleDestroy {
       this.database.moderationReport.count({
         where: { status: { in: ['OPEN', 'IN_REVIEW'] } },
       }),
+      this.database.appeal.count({ where: { status: 'OPEN' } }),
       this.database.moderationCard.count({ where: { type: 'YELLOW', ...activeCard } }),
       this.database.moderationCard.count({ where: { type: 'RED', ...activeCard } }),
       this.database.user.count({ where: { status: 'LIMITED' } }),
@@ -87,6 +89,7 @@ export class ModerationDashboardService implements OnModuleDestroy {
       asOf: now,
       counts: {
         pendingReports,
+        pendingAppeals,
         activeYellowCards,
         activeRedCards,
         limitedUsers,
@@ -96,7 +99,7 @@ export class ModerationDashboardService implements OnModuleDestroy {
       recentReports,
       recentCards,
       recentLimitedSanctions,
-      appeals: { available: false, trackingTask: '20.189' as const },
+      appeals: { available: true, pending: pendingAppeals },
       ipBlocks: { access: 'SUPERADMIN_ONLY' as const },
     };
   }
