@@ -36,6 +36,8 @@ export interface CalculationOptions {
   deductionPoints?: Readonly<Record<string, number>>;
   /** Pre-2026 Bundesliga only: a halved point was rounded down for this club. */
   legacyRoundedDown?: Readonly<Record<string, boolean>>;
+  /** For group standings, include results versus clubs in the other group. */
+  allowExternalOpponents?: boolean;
 }
 
 export interface CalculationResult {
@@ -122,7 +124,10 @@ export function calculateStandings(
   const finished: CalculationMatch[] = [];
   let excludedMatches = 0;
   for (const fixture of matches) {
-    if (!current.has(fixture.homeClubId) || !current.has(fixture.awayClubId)) {
+    const hasHome = current.has(fixture.homeClubId);
+    const hasAway = current.has(fixture.awayClubId);
+    if (!hasHome && !hasAway && options.allowExternalOpponents) continue;
+    if ((!hasHome || !hasAway) && !options.allowExternalOpponents) {
       throw new Error('CALCULATION_MATCH_OUTSIDE_SCOPE');
     }
     if (fixture.homeClubId === fixture.awayClubId) {
@@ -144,7 +149,12 @@ export function calculateStandings(
     ) {
       throw new Error('CALCULATION_INVALID_FINAL_SCORE');
     }
-    countMatch(current.get(fixture.homeClubId)!, current.get(fixture.awayClubId)!, h, a);
+    countMatch(
+      current.get(fixture.homeClubId) ?? zero(fixture.homeClubId, 0),
+      current.get(fixture.awayClubId) ?? zero(fixture.awayClubId, 0),
+      h,
+      a,
+    );
     finished.push(fixture);
   }
 
