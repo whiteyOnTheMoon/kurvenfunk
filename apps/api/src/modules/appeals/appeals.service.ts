@@ -117,7 +117,7 @@ export class AppealsService implements OnModuleDestroy {
         },
         { isolationLevel: 'ReadCommitted' },
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
         throw new ConflictException({
           code: 'APPEAL_ALREADY_EXISTS',
