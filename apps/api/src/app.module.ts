@@ -5,6 +5,7 @@ import { APPLICATION_QUEUE_NAMES, DEFAULT_JOB_OPTIONS } from '@kurvenfunk/types'
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validateEnvironment } from './config/env.validation';
 import { AdminModule } from './modules/admin/admin.module';
+import { AppealsModule } from './modules/appeals/appeals.module';
 import { ArticlesModule } from './modules/articles/articles.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -89,6 +90,7 @@ import { UsersModule } from './modules/users/users.module';
     PostsModule,
 
     NotificationsModule,
+    AppealsModule,
     ModerationModule,
     SanctionsModule,
     BansModule,

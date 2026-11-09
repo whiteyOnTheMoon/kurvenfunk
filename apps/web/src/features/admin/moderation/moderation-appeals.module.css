@@ -1,0 +1,74 @@
+.root {
+  display: grid;
+  gap: 0.8rem;
+}
+.root h2 {
+  margin: 0;
+  font-size: 1.13rem;
+}
+.muted {
+  color: var(--kf-text-muted, #64748b);
+  font-size: 0.9rem;
+}
+.list {
+  display: grid;
+  gap: 0.9rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.item {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--kf-border, #d4d4d8);
+  border-radius: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.item span {
+  color: var(--kf-text-muted, #64748b);
+  font-size: 0.85rem;
+}
+.reason {
+  white-space: pre-wrap;
+  margin: 0.3rem 0;
+}
+.actions {
+  display: grid;
+  gap: 0.7rem;
+}
+.actions label {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.actions textarea {
+  width: 100%;
+  min-width: 0;
+  background: var(--kf-surface, #fff);
+  color: inherit;
+  border: 1px solid var(--kf-border, #d4d4d8);
+  border-radius: 0.6rem;
+  padding: 0.6rem;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+.buttons button {
+  background: var(--kf-surface-subtle, #f4f4f5);
+  color: inherit;
+  border: 1px solid var(--kf-border, #d4d4d8);
+  border-radius: 0.55rem;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+}
+.buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.actions textarea:focus-visible,
+.buttons button:focus-visible {
+  outline: 3px solid var(--kf-focus, #2563eb);
+  outline-offset: 2px;
+}

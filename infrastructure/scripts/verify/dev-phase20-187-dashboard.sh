@@ -69,7 +69,7 @@ try {
   // No changes, test data creation or personal-data output. All data remain
   // inside the DEV API process and only boolean assertions leave the server.
   const overview = await service.overview();
-  assert(overview.appeals?.available === false);
+  assert(overview.appeals?.available === true);
   assert(overview.ipBlocks?.access === 'SUPERADMIN_ONLY');
   for (const count of Object.values(overview.counts)) {
     assert(Number.isSafeInteger(count) && count >= 0);
