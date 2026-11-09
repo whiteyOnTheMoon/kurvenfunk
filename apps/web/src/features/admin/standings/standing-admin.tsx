@@ -576,9 +576,8 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
           <section className={styles.panel} aria-labelledby="standing-calc-title">
             <h3 id="standing-calc-title">Tabelle aus Ergebnissen berechnen</h3>
             <p className={styles.hint}>
-              Nur abgeschlossene Spiele werden gezählt. Zuerst Vorschau prüfen,
-              danach ausdrücklich übernehmen. Vorhandene Tabellenwerte bleiben
-              bis zur Bestätigung unverändert.
+              Nur abgeschlossene Spiele werden gezählt. Zuerst Vorschau prüfen, danach ausdrücklich
+              übernehmen. Vorhandene Tabellenwerte bleiben bis zur Bestätigung unverändert.
             </p>
             <button
               type="button"
@@ -587,18 +586,20 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
             >
               {calculationBusy ? 'Berechnung läuft …' : 'Berechnungsvorschau erstellen'}
             </button>
-            {calculation && calculation.seasonId === seasonId &&
+            {calculation &&
+            calculation.seasonId === seasonId &&
             calculation.stageId === (stageId || null) ? (
               <div className={styles.list} aria-live="polite">
                 <p>
-                  Regelprofil: <strong>{calculation.profile}</strong> ·
-                  abgeschlossene Spiele: {calculation.finishedMatches} ·
-                  noch nicht abgeschlossene Spiele: {calculation.excludedMatches}
+                  Regelprofil: <strong>{calculation.profile}</strong> · abgeschlossene Spiele:{' '}
+                  {calculation.finishedMatches} · noch nicht abgeschlossene Spiele:{' '}
+                  {calculation.excludedMatches}
                 </p>
                 {calculation.rows.map((row) => (
                   <div key={row.clubId} className={styles.heading}>
                     <span>
-                      {row.position}. {clubs.find((club) => club.id === row.clubId)?.name ?? row.clubId}
+                      {row.position}.{' '}
+                      {clubs.find((club) => club.id === row.clubId)?.name ?? row.clubId}
                       {' · '}Sp {row.played} · S {row.won} · U {row.drawn} · N {row.lost}
                     </span>
                     <span>
@@ -610,9 +611,8 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
                 ))}
                 {calculation.unresolvedTies.length > 0 ? (
                   <p className={styles.error} role="alert">
-                    Einige Tabellenplätze sind nach den verfügbaren direkten Duellen
-                    und weiteren Kriterien noch nicht eindeutig. Automatisches
-                    Übernehmen ist dafür gesperrt.
+                    Einige Tabellenplätze sind nach den verfügbaren direkten Duellen und weiteren
+                    Kriterien noch nicht eindeutig. Automatisches Übernehmen ist dafür gesperrt.
                   </p>
                 ) : null}
                 {calculation.finishedMatches === 0 ? (
@@ -625,8 +625,8 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
                       checked={overwriteConfirmed}
                       onChange={(event) => setOverwriteConfirmed(event.target.checked)}
                     />
-                    Ich bestätige das Ersetzen bestehender Tabellenwerte
-                    ({calculation.existingCount} Zeilen).
+                    Ich bestätige das Ersetzen bestehender Tabellenwerte (
+                    {calculation.existingCount} Zeilen).
                   </label>
                 ) : null}
                 <div className={styles.actions}>

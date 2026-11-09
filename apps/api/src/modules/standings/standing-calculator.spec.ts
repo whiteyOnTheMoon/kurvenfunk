@@ -8,7 +8,13 @@ import {
 const a = 'a';
 const b = 'b';
 const c = 'c';
-function match(homeClubId: string, awayClubId: string, homeScore: number | null, awayScore: number | null, status = 'FINISHED'): CalculationMatch {
+function match(
+  homeClubId: string,
+  awayClubId: string,
+  homeScore: number | null,
+  awayScore: number | null,
+  status = 'FINISHED',
+): CalculationMatch {
   return { homeClubId, awayClubId, homeScore, awayScore, status };
 }
 
@@ -21,12 +27,18 @@ describe('Phase 21.198 deterministic standings', () => {
     );
     expect(result.finishedMatches).toBe(2);
     expect(result.excludedMatches).toBe(1);
-    expect(result.rows.map((r) => [r.clubId, r.position, r.played, r.points, r.goalDifference]))
-      .toEqual([[a, 1, 2, 4, 1], [b, 2, 2, 1, -1], [c, 3, 0, 0, 0]]);
+    expect(
+      result.rows.map((r) => [r.clubId, r.position, r.played, r.points, r.goalDifference]),
+    ).toEqual([
+      [a, 1, 2, 4, 1],
+      [b, 2, 2, 1, -1],
+      [c, 3, 0, 0, 0],
+    ]);
     expect(result.rows.find((r) => r.clubId === a)?.awayGoals).toBe(0);
-    expect(earnedPointsFor([match(a,b,2,1)], [a,b])).toEqual({a:3,b:0});
-    expect(() => calculateStandings([match(a, b, null, 0)], [a,b], {profile:'STANDARD'}))
-      .toThrow('CALCULATION_INVALID_FINAL_SCORE');
+    expect(earnedPointsFor([match(a, b, 2, 1)], [a, b])).toEqual({ a: 3, b: 0 });
+    expect(() =>
+      calculateStandings([match(a, b, null, 0)], [a, b], { profile: 'STANDARD' }),
+    ).toThrow('CALCULATION_INVALID_FINAL_SCORE');
   });
 
   it('uses Austrian 2026 direct-duel tiebreak before overall goal difference', () => {
@@ -47,26 +59,32 @@ describe('Phase 21.198 deterministic standings', () => {
   });
 
   it('does not treat a remaining fully tied official rank as definitive', () => {
-    const preview = calculateStandings([match(a,b,0,0)], [a,b], {profile:'AUSTRIAN_BUNDESLIGA_2026'});
-    expect(preview.unresolvedTies).toEqual([[a,b]]);
+    const preview = calculateStandings([match(a, b, 0, 0)], [a, b], {
+      profile: 'AUSTRIAN_BUNDESLIGA_2026',
+    });
+    expect(preview.unresolvedTies).toEqual([[a, b]]);
   });
 
   it('preserves independent deductions and legacy rounded-down tiebreak priority', () => {
-    const fixtures = [match(a,b,1,0),match(b,c,2,0),match(c,a,1,0)];
-    const old = calculateStandings(fixtures,[a,b,c],{
-      profile:'AUSTRIAN_BUNDESLIGA_LEGACY',
-      pointsAdjustments:{a:-1,b:-1,c:-1},
-      deductionPoints:{b:2},
-      legacyRoundedDown:{a:true},
+    const fixtures = [match(a, b, 1, 0), match(b, c, 2, 0), match(c, a, 1, 0)];
+    const old = calculateStandings(fixtures, [a, b, c], {
+      profile: 'AUSTRIAN_BUNDESLIGA_LEGACY',
+      pointsAdjustments: { a: -1, b: -1, c: -1 },
+      deductionPoints: { b: 2 },
+      legacyRoundedDown: { a: true },
     });
     expect(old.rows[0]?.clubId).toBe(a);
-    expect(old.rows.find(r=>r.clubId===b)?.deductionPoints).toBe(2);
+    expect(old.rows.find((r) => r.clubId === b)?.deductionPoints).toBe(2);
   });
 
   it('selects no-halving from 2026/27 and historic rule versions from 2018/19', () => {
-    expect(profileForCompetition('austrian-bundesliga','2026-27')).toBe('AUSTRIAN_BUNDESLIGA_2026');
-    expect(profileForCompetition('austrian-bundesliga','2025-26')).toBe('AUSTRIAN_BUNDESLIGA_LEGACY');
-    expect(profileForCompetition('austrian-2-liga','2026-27')).toBe('STANDARD');
-    expect(() => profileForCompetition('austrian-bundesliga','2015-16')).toThrow();
+    expect(profileForCompetition('austrian-bundesliga', '2026-27')).toBe(
+      'AUSTRIAN_BUNDESLIGA_2026',
+    );
+    expect(profileForCompetition('austrian-bundesliga', '2025-26')).toBe(
+      'AUSTRIAN_BUNDESLIGA_LEGACY',
+    );
+    expect(profileForCompetition('austrian-2-liga', '2026-27')).toBe('STANDARD');
+    expect(() => profileForCompetition('austrian-bundesliga', '2015-16')).toThrow();
   });
 });

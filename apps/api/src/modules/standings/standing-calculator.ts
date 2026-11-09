@@ -171,7 +171,9 @@ export function calculateStandings(
   const cohorts = new Map<string, string[]>();
   for (const row of current.values()) {
     const legacy = options.legacyRoundedDown?.[row.clubId] ? '1' : '0';
-    const key = [row.points, options.profile === 'AUSTRIAN_BUNDESLIGA_LEGACY' ? legacy : ''].join(':');
+    const key = [row.points, options.profile === 'AUSTRIAN_BUNDESLIGA_LEGACY' ? legacy : ''].join(
+      ':',
+    );
     const idsAtPoints = cohorts.get(key) ?? [];
     idsAtPoints.push(row.clubId);
     cohorts.set(key, idsAtPoints);
@@ -204,7 +206,8 @@ export function calculateStandings(
     if (options.profile === 'AUSTRIAN_BUNDESLIGA_LEGACY') {
       // In the old final-group rules, the team that had a half-point
       // rounded DOWN at the split ranks first on equal overall points.
-      result = Number(Boolean(options.legacyRoundedDown?.[right.clubId])) -
+      result =
+        Number(Boolean(options.legacyRoundedDown?.[right.clubId])) -
         Number(Boolean(options.legacyRoundedDown?.[left.clubId]));
       if (result) return result;
     }
@@ -239,7 +242,7 @@ export function calculateStandings(
     (left, right) => compare(left, right) || left.clubId.localeCompare(right.clubId),
   );
   const unresolvedTies: string[][] = [];
-  for (let index = 0; index < sorted.length; ) {
+  for (let index = 0; index < sorted.length;) {
     let end = index + 1;
     while (end < sorted.length && compare(sorted[index]!, sorted[end]!) === 0) end++;
     if (end - index > 1) unresolvedTies.push(sorted.slice(index, end).map((row) => row.clubId));
@@ -264,10 +267,7 @@ export function calculateStandings(
 }
 
 /** Selects historical rules by season, not by the current wall-clock year. */
-export function profileForCompetition(
-  competitionSlug: string,
-  seasonSlug: string,
-): RankingProfile {
+export function profileForCompetition(competitionSlug: string, seasonSlug: string): RankingProfile {
   if (competitionSlug !== 'austrian-bundesliga') return 'STANDARD';
   const year = Number(seasonSlug.slice(0, 4));
   if (!/^\d{4}-\d{2}$/.test(seasonSlug) || !Number.isInteger(year) || year < 2018) {

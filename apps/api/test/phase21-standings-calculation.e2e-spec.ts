@@ -225,12 +225,14 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
       });
       clubIds.push(saved.id);
     }
-    for (const [index, match] of ([
-      { h: 0, a: 1, status: 'FINISHED', hs: 2, as: 0 },
-      { h: 1, a: 2, status: 'FINISHED', hs: 0, as: 0 },
-      { h: 2, a: 0, status: 'FINISHED', hs: 1, as: 0 },
-      { h: 1, a: 0, status: 'SCHEDULED', hs: null, as: null },
-    ] as const).entries()) {
+    for (const [index, match] of (
+      [
+        { h: 0, a: 1, status: 'FINISHED', hs: 2, as: 0 },
+        { h: 1, a: 2, status: 'FINISHED', hs: 0, as: 0 },
+        { h: 2, a: 0, status: 'FINISHED', hs: 1, as: 0 },
+        { h: 1, a: 0, status: 'SCHEDULED', hs: null, as: null },
+      ] as const
+    ).entries()) {
       const saved = await db.match.create({
         data: {
           competitionId: competitionId!,
@@ -349,8 +351,11 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
     expect(data.canApply).toBe(true);
     expect(data.unresolvedTies).toEqual([]);
     expect(data.previewHash).toMatch(/^[a-f0-9]{64}$/);
-    expect(data.rows.map((row) => [row.clubId, row.position, row.points]))
-      .toEqual([[clubIds[2], 1, 4], [clubIds[0], 2, 3], [clubIds[1], 3, 1]]);
+    expect(data.rows.map((row) => [row.clubId, row.position, row.points])).toEqual([
+      [clubIds[2], 1, 4],
+      [clubIds[0], 2, 3],
+      [clubIds[1], 3, 1],
+    ]);
     expect(await db.standing.count({ where: { seasonId } })).toBe(0);
   });
 
@@ -366,12 +371,14 @@ describe('Phase 21.198 Standings Calculation HTTP/Postgres/JWT E2E', () => {
     const rows = await db.standing.findMany({ where: { seasonId, stageId } });
     expect(rows).toHaveLength(3);
     expect(rows.find((row) => row.clubId === clubIds[2])?.points).toBe(4);
-    expect(await db.auditLog.count({
-      where: {
-        targetType: 'SYSTEM',
-        targetId: { in: rows.map((row) => row.id) },
-      },
-    })).toBe(3);
+    expect(
+      await db.auditLog.count({
+        where: {
+          targetType: 'SYSTEM',
+          targetId: { in: rows.map((row) => row.id) },
+        },
+      }),
+    ).toBe(3);
 
     const second = unwrap(await preview()) as Preview;
     expect(second.existingCount).toBe(3);

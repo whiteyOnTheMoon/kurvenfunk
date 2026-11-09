@@ -145,7 +145,10 @@ export class StandingCalculationService implements OnModuleDestroy {
     });
     if (!season) throw new NotFoundException({ code: 'SEASON_NOT_FOUND' });
     if (season.competition.type !== 'LEAGUE') {
-      throw invalid('STANDING_CALC_ONLY_LEAGUES', 'Automatische Tabellen sind nur für Ligabewerbe verfügbar.');
+      throw invalid(
+        'STANDING_CALC_ONLY_LEAGUES',
+        'Automatische Tabellen sind nur für Ligabewerbe verfügbar.',
+      );
     }
     const stage = stageId ? season.stages.find((item) => item.id === stageId) : null;
     if (stageId && !stage) {
@@ -158,7 +161,10 @@ export class StandingCalculationService implements OnModuleDestroy {
     try {
       profile = profileForCompetition(season.competition.slug, season.slug);
     } catch {
-      throw invalid('STANDING_CALC_UNSUPPORTED_RULES', 'Für diese historische Saison fehlt ein geprüfter Regelsatz.');
+      throw invalid(
+        'STANDING_CALC_UNSUPPORTED_RULES',
+        'Für diese historische Saison fehlt ein geprüfter Regelsatz.',
+      );
     }
     const fixtures = await tx.match.findMany({
       where: { seasonId },
@@ -177,7 +183,10 @@ export class StandingCalculationService implements OnModuleDestroy {
     });
     const matches = fixtures as Fixture[];
     if (matches.some((fixture) => fixture.competitionId !== season.competitionId)) {
-      throw conflict('STANDING_CALC_INVALID_MATCH_COMPETITION', 'Spiele mit falschem Wettbewerb gefunden.');
+      throw conflict(
+        'STANDING_CALC_INVALID_MATCH_COMPETITION',
+        'Spiele mit falschem Wettbewerb gefunden.',
+      );
     }
 
     const existingRows = await tx.standing.findMany({
@@ -210,9 +219,14 @@ export class StandingCalculationService implements OnModuleDestroy {
       );
       const parent = stage.parentStageId
         ? earlierRegular.find((item) => item.id === stage.parentStageId)
-        : earlierRegular.length === 1 ? earlierRegular[0] : undefined;
+        : earlierRegular.length === 1
+          ? earlierRegular[0]
+          : undefined;
       if (!parent) {
-        throw conflict('STANDING_CALC_REGULAR_STAGE_MISSING', 'Grunddurchgang nicht eindeutig zugeordnet.');
+        throw conflict(
+          'STANDING_CALC_REGULAR_STAGE_MISSING',
+          'Grunddurchgang nicht eindeutig zugeordnet.',
+        );
       }
       regularStageId = parent.id;
       const regularFixtures = matches.filter((fixture) => fixture.stageId === parent.id);
@@ -237,7 +251,10 @@ export class StandingCalculationService implements OnModuleDestroy {
         );
       }
       if ([...members].some((id) => !regularMembers.has(id))) {
-        throw conflict('STANDING_CALC_GROUP_INVALID', 'Eine Gruppe enthält einen Verein außerhalb des Grunddurchgangs.');
+        throw conflict(
+          'STANDING_CALC_GROUP_INVALID',
+          'Eine Gruppe enthält einen Verein außerhalb des Grunddurchgangs.',
+        );
       }
       countMatches = [...regularFixtures, ...inStage];
       allowExternalOpponents = true;
@@ -254,16 +271,13 @@ export class StandingCalculationService implements OnModuleDestroy {
         [...members].map((id) => {
           const earned = regularPoints[id] ?? 0;
           const net = earned - (regDeductions[id] ?? 0);
-          const carry = profile === 'AUSTRIAN_BUNDESLIGA_LEGACY'
-            ? Math.floor(net / 2) : net;
+          const carry = profile === 'AUSTRIAN_BUNDESLIGA_LEGACY' ? Math.floor(net / 2) : net;
           roundedDown[id] = profile === 'AUSTRIAN_BUNDESLIGA_LEGACY' && net % 2 !== 0;
           return [id, carry - earned - (deductions[id] ?? 0)];
         }),
       );
     } else {
-      adjustments = Object.fromEntries(
-        [...members].map((id) => [id, -(deductions[id] ?? 0)]),
-      );
+      adjustments = Object.fromEntries([...members].map((id) => [id, -(deductions[id] ?? 0)]));
     }
 
     let calculation;
@@ -326,7 +340,9 @@ export class StandingCalculationService implements OnModuleDestroy {
   }
 
   async preview(seasonId: string, stageId: string | null) {
-    const preview = await this.database.$transaction((tx) => this.buildPreview(tx, seasonId, stageId));
+    const preview = await this.database.$transaction((tx) =>
+      this.buildPreview(tx, seasonId, stageId),
+    );
     return this.publicPreview(preview);
   }
 
@@ -335,7 +351,8 @@ export class StandingCalculationService implements OnModuleDestroy {
     const rows = preview.rows.map((row) => ({
       ...row,
       existingId: existing.get(row.clubId)?.id ?? null,
-      changed: !existing.has(row.clubId) ||
+      changed:
+        !existing.has(row.clubId) ||
         JSON.stringify(statData(row)) !== JSON.stringify(previousStats(existing.get(row.clubId)!)),
     }));
     return {
@@ -347,8 +364,8 @@ export class StandingCalculationService implements OnModuleDestroy {
       unresolvedTies: preview.unresolvedTies,
       existingCount: preview.existingRows.length,
       previewHash: preview.previewHash,
-      canApply: preview.finishedMatches > 0 && rows.length > 0 &&
-        preview.unresolvedTies.length === 0,
+      canApply:
+        preview.finishedMatches > 0 && rows.length > 0 && preview.unresolvedTies.length === 0,
       rows,
     };
   }
@@ -361,112 +378,132 @@ export class StandingCalculationService implements OnModuleDestroy {
     actorUserId: string,
   ) {
     try {
-      return await this.database.$transaction(async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${seasonId + ':' + (stageId ?? 'season')}, 198))`;
-        const preview = await this.buildPreview(tx, seasonId, stageId);
-        if (expectedPreviewHash !== preview.previewHash) {
-          throw conflict('STANDING_CALC_STALE_PREVIEW', 'Spiele oder Tabellen wurden geändert. Vorschau neu laden.');
-        }
-        if (preview.finishedMatches === 0 || preview.rows.length === 0) {
-          throw conflict('STANDING_CALC_NO_RESULTS', 'Keine abgeschlossenen Spiele für diese Tabelle vorhanden.');
-        }
-        if (preview.unresolvedTies.length) {
-          throw conflict('STANDING_CALC_TIES_UNRESOLVED', 'Offizielle Tabellenreihenfolge bei Gleichstand nicht eindeutig.');
-        }
-        if (preview.existingRows.length && !overwriteExisting) {
-          throw conflict('STANDING_CALC_OVERWRITE_CONFIRMATION_REQUIRED', 'Bestehende Tabellenwerte nur nach ausdrücklicher Bestätigung ersetzen.');
-        }
-        const existing = new Map(preview.existingRows.map((row) => [row.clubId, row]));
-        let created = 0;
-        let updated = 0;
-        let unchanged = 0;
-        for (const row of preview.rows) {
-          const previous = existing.get(row.clubId);
-          const data = statData(row);
-          if (!previous) {
-            const record = await tx.standing.create({
-              data: {
-                competitionId: preview.season.competitionId,
-                seasonId,
-                stageId,
-                clubId: row.clubId,
-                ...data,
-                sortOrder: null,
-              },
-              select: { id: true },
-            });
-            created++;
-            await tx.auditLog.create({
-              data: {
-                actorType: 'USER',
-                actorUserId,
-                action: 'ADMIN_CORRECTION',
-                category: 'SYSTEM',
-                targetType: 'SYSTEM',
-                targetId: record.id,
-                metadata: {
-                  entity: 'STANDING_CALCULATION',
-                  operation: 'CREATE',
-                  seasonId,
-                  stageId,
-                  profile: preview.profile,
-                  sourceHash: preview.previewHash,
-                  after: data,
-                },
-              },
-            });
-          } else if (JSON.stringify(data) === JSON.stringify(previousStats(previous))) {
-            unchanged++;
-          } else {
-            const changed = await tx.standing.updateMany({
-              where: { id: previous.id, updatedAt: previous.updatedAt },
-              data: {
-                ...data,
-                updatedAt: new Date(Math.max(Date.now(), previous.updatedAt.getTime() + 1)),
-              },
-            });
-            if (changed.count !== 1) {
-              throw conflict('STANDING_CALC_STALE_PREVIEW', 'Tabellenzeile wurde geändert.');
-            }
-            updated++;
-            await tx.auditLog.create({
-              data: {
-                actorType: 'USER',
-                actorUserId,
-                action: 'ADMIN_CORRECTION',
-                category: 'SYSTEM',
-                targetType: 'SYSTEM',
-                targetId: previous.id,
-                metadata: {
-                  entity: 'STANDING_CALCULATION',
-                  operation: 'UPDATE',
-                  seasonId,
-                  stageId,
-                  profile: preview.profile,
-                  sourceHash: preview.previewHash,
-                  before: previousStats(previous),
-                  after: data,
-                },
-              },
-            });
+      return await this.database.$transaction(
+        async (tx) => {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${seasonId + ':' + (stageId ?? 'season')}, 198))`;
+          const preview = await this.buildPreview(tx, seasonId, stageId);
+          if (expectedPreviewHash !== preview.previewHash) {
+            throw conflict(
+              'STANDING_CALC_STALE_PREVIEW',
+              'Spiele oder Tabellen wurden geändert. Vorschau neu laden.',
+            );
           }
-        }
-        return {
-          seasonId,
-          stageId,
-          profile: preview.profile,
-          created,
-          updated,
-          unchanged,
-          previewHash: preview.previewHash,
-        };
-      }, { isolationLevel: 'Serializable', timeout: 30000 });
+          if (preview.finishedMatches === 0 || preview.rows.length === 0) {
+            throw conflict(
+              'STANDING_CALC_NO_RESULTS',
+              'Keine abgeschlossenen Spiele für diese Tabelle vorhanden.',
+            );
+          }
+          if (preview.unresolvedTies.length) {
+            throw conflict(
+              'STANDING_CALC_TIES_UNRESOLVED',
+              'Offizielle Tabellenreihenfolge bei Gleichstand nicht eindeutig.',
+            );
+          }
+          if (preview.existingRows.length && !overwriteExisting) {
+            throw conflict(
+              'STANDING_CALC_OVERWRITE_CONFIRMATION_REQUIRED',
+              'Bestehende Tabellenwerte nur nach ausdrücklicher Bestätigung ersetzen.',
+            );
+          }
+          const existing = new Map(preview.existingRows.map((row) => [row.clubId, row]));
+          let created = 0;
+          let updated = 0;
+          let unchanged = 0;
+          for (const row of preview.rows) {
+            const previous = existing.get(row.clubId);
+            const data = statData(row);
+            if (!previous) {
+              const record = await tx.standing.create({
+                data: {
+                  competitionId: preview.season.competitionId,
+                  seasonId,
+                  stageId,
+                  clubId: row.clubId,
+                  ...data,
+                  sortOrder: null,
+                },
+                select: { id: true },
+              });
+              created++;
+              await tx.auditLog.create({
+                data: {
+                  actorType: 'USER',
+                  actorUserId,
+                  action: 'ADMIN_CORRECTION',
+                  category: 'SYSTEM',
+                  targetType: 'SYSTEM',
+                  targetId: record.id,
+                  metadata: {
+                    entity: 'STANDING_CALCULATION',
+                    operation: 'CREATE',
+                    seasonId,
+                    stageId,
+                    profile: preview.profile,
+                    sourceHash: preview.previewHash,
+                    after: data,
+                  },
+                },
+              });
+            } else if (JSON.stringify(data) === JSON.stringify(previousStats(previous))) {
+              unchanged++;
+            } else {
+              const changed = await tx.standing.updateMany({
+                where: { id: previous.id, updatedAt: previous.updatedAt },
+                data: {
+                  ...data,
+                  updatedAt: new Date(Math.max(Date.now(), previous.updatedAt.getTime() + 1)),
+                },
+              });
+              if (changed.count !== 1) {
+                throw conflict('STANDING_CALC_STALE_PREVIEW', 'Tabellenzeile wurde geändert.');
+              }
+              updated++;
+              await tx.auditLog.create({
+                data: {
+                  actorType: 'USER',
+                  actorUserId,
+                  action: 'ADMIN_CORRECTION',
+                  category: 'SYSTEM',
+                  targetType: 'SYSTEM',
+                  targetId: previous.id,
+                  metadata: {
+                    entity: 'STANDING_CALCULATION',
+                    operation: 'UPDATE',
+                    seasonId,
+                    stageId,
+                    profile: preview.profile,
+                    sourceHash: preview.previewHash,
+                    before: previousStats(previous),
+                    after: data,
+                  },
+                },
+              });
+            }
+          }
+          return {
+            seasonId,
+            stageId,
+            profile: preview.profile,
+            created,
+            updated,
+            unchanged,
+            previewHash: preview.previewHash,
+          };
+        },
+        { isolationLevel: 'Serializable', timeout: 30000 },
+      );
     } catch (error) {
       if (
-        error && typeof error === 'object' && 'code' in error &&
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
         (error.code === 'P2034' || error.code === 'P2002')
       ) {
-        throw conflict('STANDING_CALC_CONCURRENT_CHANGE', 'Konkurrierende Tabellenänderung. Vorschau neu laden.');
+        throw conflict(
+          'STANDING_CALC_CONCURRENT_CHANGE',
+          'Konkurrierende Tabellenänderung. Vorschau neu laden.',
+        );
       }
       throw error;
     }
