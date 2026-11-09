@@ -112,6 +112,34 @@ export class SanctionExpirationService implements OnModuleInit, OnModuleDestroy 
             return;
           }
 
+          // A concurrent direct RED/ACCOUNT_BAN must never be undone by a
+          // LIMITED expiry, even if a legacy account status is inconsistent.
+          // This transaction holds the User row lock used by all issuers and
+          // by appeal decisions, so the checks and restoration are serialized.
+          const [activeBans, activeRedCards] = await Promise.all([
+            tx.sanction.count({
+              where: {
+                userId: candidate.userId,
+                type: 'ACCOUNT_BAN',
+                status: 'ACTIVE',
+                OR: [{ expiresAt: null }, { expiresAt: { gt: at } }],
+              },
+            }),
+            tx.moderationCard.count({
+              where: {
+                userId: candidate.userId,
+                type: 'RED',
+                status: 'ACTIVE',
+                revokedAt: null,
+                OR: [{ expiresAt: null }, { expiresAt: { gt: at } }],
+              },
+            }),
+          ]);
+
+          if (activeBans > 0 || activeRedCards > 0) {
+            return;
+          }
+
           const restored = await tx.user.updateMany({
             where: { id: candidate.userId, status: 'LIMITED' },
             data: { status: 'ACTIVE' },
@@ -171,23 +199,27 @@ export class SanctionExpirationService implements OnModuleInit, OnModuleDestroy 
           });
 
           if (linked) {
-            await tx.sanction.updateMany({
-              where: { id: linked.id, status: 'ACTIVE' },
+            const expired = await tx.sanction.updateMany({
+              where: { id: linked.id, status: 'ACTIVE', type: 'IP_BLOCK', ipBlockId: block.id },
               data: { status: 'EXPIRED' },
             });
 
-            await tx.auditLog.create({
-              data: {
-                actorType: 'WORKER',
-                action: 'SANCTION_EXPIRED',
-                category: 'SANCTION',
-                targetType: 'SANCTION',
-                targetId: linked.id,
-                sanctionId: linked.id,
-                ipBlockId: block.id,
-                reason: 'IP_BLOCK_EXPIRED',
-              },
-            });
+            // A previously revoked or already expired linked sanction must
+            // never receive a second, misleading SANCTION_EXPIRED audit.
+            if (expired.count === 1) {
+              await tx.auditLog.create({
+                data: {
+                  actorType: 'WORKER',
+                  action: 'SANCTION_EXPIRED',
+                  category: 'SANCTION',
+                  targetType: 'SANCTION',
+                  targetId: linked.id,
+                  sanctionId: linked.id,
+                  ipBlockId: block.id,
+                  reason: 'IP_BLOCK_EXPIRED',
+                },
+              });
+            }
           }
 
           await tx.auditLog.create({
