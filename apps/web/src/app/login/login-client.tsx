@@ -34,6 +34,7 @@ export function LoginClient() {
           Dein Kurvenfunk-Konto ist gesperrt. Du kannst dich nicht an Community-Aktionen beteiligen.
         </p>
         <p>Öffentliche Nachrichten, Ergebnisse und Tabellen bleiben zugänglich.</p>
+        <p><Link href="/appeals">Einspruch einreichen oder Bearbeitungsstand ansehen</Link></p>
         <p>
           <Link href="/">Zur Startseite</Link>
         </p>
