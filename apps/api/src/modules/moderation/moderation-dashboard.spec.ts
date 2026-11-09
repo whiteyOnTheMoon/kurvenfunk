@@ -15,6 +15,11 @@ jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: jest.fn(),
 }));
 
+// Keep this controller unit test isolated from jose ESM/Keycloak internals.
+jest.mock('../auth/auth.guard', () => ({
+  AuthGuard: jest.fn(),
+}));
+
 describe('Task 187 moderation dashboard authorization and privacy', () => {
   let database: {
     moderationReport: { count: jest.Mock; findMany: jest.Mock };
