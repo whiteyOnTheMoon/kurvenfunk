@@ -118,7 +118,9 @@ async function parseResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => null)) as ApiPayload<T> | null;
   if (!response.ok || !payload || payload.data === undefined) {
     const reason = payload?.error?.message;
-    throw new Error(Array.isArray(reason) ? reason.join(', ') : (reason ?? 'Anfrage fehlgeschlagen.'));
+    throw new Error(
+      Array.isArray(reason) ? reason.join(', ') : (reason ?? 'Anfrage fehlgeschlagen.'),
+    );
   }
   return payload.data;
 }
@@ -152,7 +154,10 @@ function StandingEditor({
           step={1}
           value={draft[key]}
           onChange={(event) =>
-            onChange({ ...draft, [key]: event.target.value === '' ? 0 : Number(event.target.value) })
+            onChange({
+              ...draft,
+              [key]: event.target.value === '' ? 0 : Number(event.target.value),
+            })
           }
         />
       </label>
@@ -177,7 +182,9 @@ function StandingEditor({
         >
           <option value="">Verein auswählen</option>
           {clubs.map((club) => (
-            <option key={club.id} value={club.id}>{club.name}</option>
+            <option key={club.id} value={club.id}>
+              {club.name}
+            </option>
           ))}
           {!creating && !clubs.some((club) => club.id === draft.clubId) ? (
             <option value={draft.clubId}>Historischer Verein</option>
@@ -204,16 +211,18 @@ function StandingEditor({
         />
       </label>
       <p className={styles.hint}>
-        Spiele und Tordifferenz werden aus den eingegebenen Werten abgeleitet.
-        Die Punkte bleiben unabhängig, z. B. bei Punktabzügen oder Ligaregeln.
-        Eine automatische Berechnung aus Ergebnissen folgt mit Task 198.
+        Spiele und Tordifferenz werden aus den eingegebenen Werten abgeleitet. Die Punkte bleiben
+        unabhängig, z. B. bei Punktabzügen oder Ligaregeln. Eine automatische Berechnung aus
+        Ergebnissen folgt mit Task 198.
       </p>
       <div className={styles.actions}>
         <button type="submit" disabled={busy || !draft.clubId}>
           {creating ? 'Tabellenzeile anlegen' : 'Zeile korrigieren'}
         </button>
         {onCancel ? (
-          <button type="button" disabled={busy} onClick={onCancel}>Abbrechen</button>
+          <button type="button" disabled={busy} onClick={onCancel}>
+            Abbrechen
+          </button>
         ) : null}
       </div>
     </form>
@@ -245,10 +254,12 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       try {
         const [competitionResponse, clubsResponse] = await Promise.all([
           fetch(`${apiUrl}/api/v1/competitions/admin/all`, {
-            headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
           }),
           fetch(`${apiUrl}/api/v1/clubs/admin/all`, {
-            headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
           }),
         ]);
         const competitionList = await parseResponse<Competition[]>(competitionResponse);
@@ -265,7 +276,9 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       }
     }
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [apiUrl, initialized, authenticated, token]);
 
   useEffect(() => {
@@ -287,7 +300,9 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       }
     }
     void loadSeasons();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [apiUrl, competitionSlug, token]);
 
   useEffect(() => {
@@ -310,14 +325,17 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       }
     }
     void loadTable();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [apiUrl, seasonId, stageId, token]);
 
   async function reload() {
     if (!seasonId || !token) return;
     const query = stageId ? `?stageId=${encodeURIComponent(stageId)}` : '';
     const response = await fetch(`${apiUrl}/api/v1/standings/admin/season/${seasonId}${query}`, {
-      headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
     });
     setTable(await parseResponse<TableData>(response));
   }
@@ -370,49 +388,74 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
     <section className={styles.page} aria-labelledby="standings-admin-title">
       <header>
         <h2 id="standings-admin-title">Tabellen verwalten</h2>
-        <p>Manuelle Tabellenzeilen pro Saison und Phase pflegen – ohne automatische Neuberechnung.</p>
+        <p>
+          Manuelle Tabellenzeilen pro Saison und Phase pflegen – ohne automatische Neuberechnung.
+        </p>
       </header>
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
-      {message ? <p className={styles.success} role="status">{message}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className={styles.success} role="status">
+          {message}
+        </p>
+      ) : null}
       <div className={styles.filters}>
         <label>
           Wettbewerb
-          <select value={competitionSlug} onChange={(event) => {
-            setCompetitionSlug(event.target.value);
-            setSeasonId('');
-            setSeasons([]);
-            setStageId('');
-            setAvailableStages([]);
-            setTable(null);
-          }}>
+          <select
+            value={competitionSlug}
+            onChange={(event) => {
+              setCompetitionSlug(event.target.value);
+              setSeasonId('');
+              setSeasons([]);
+              setStageId('');
+              setAvailableStages([]);
+              setTable(null);
+            }}
+          >
             {competitions.map((competition) => (
-              <option key={competition.id} value={competition.slug}>{competition.name}</option>
+              <option key={competition.id} value={competition.slug}>
+                {competition.name}
+              </option>
             ))}
           </select>
         </label>
         <label>
           Saison
-          <select value={seasonId} onChange={(event) => {
-            setSeasonId(event.target.value);
-            setStageId('');
-            setAvailableStages([]);
-            setTable(null);
-          }}>
+          <select
+            value={seasonId}
+            onChange={(event) => {
+              setSeasonId(event.target.value);
+              setStageId('');
+              setAvailableStages([]);
+              setTable(null);
+            }}
+          >
             {seasons.map((season) => (
-              <option key={season.id} value={season.id}>{season.name} ({season.status})</option>
+              <option key={season.id} value={season.id}>
+                {season.name} ({season.status})
+              </option>
             ))}
           </select>
         </label>
         <label>
           Tabellenphase
-          <select value={stageId} onChange={(event) => {
-            setStageId(event.target.value);
-            setEditingId(null);
-            setTable(null);
-          }}>
+          <select
+            value={stageId}
+            onChange={(event) => {
+              setStageId(event.target.value);
+              setEditingId(null);
+              setTable(null);
+            }}
+          >
             <option value="">Saisontabelle (ohne Phase)</option>
             {availableStages.map((stage) => (
-              <option key={stage.id} value={stage.id}>{stage.name}</option>
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
             ))}
           </select>
         </label>
@@ -439,7 +482,9 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
               {table.standings.map((row) => (
                 <article className={styles.item} key={row.id}>
                   <div className={styles.heading}>
-                    <strong>{row.position}. {row.club.name}</strong>
+                    <strong>
+                      {row.position}. {row.club.name}
+                    </strong>
                     <span>
                       Sp {row.played} · S {row.won} · U {row.drawn} · N {row.lost}
                       {' · '}Tore {row.goalsFor}:{row.goalsAgainst}
@@ -458,11 +503,15 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
                       creating={false}
                     />
                   ) : (
-                    <button type="button" disabled={busy} onClick={() => {
-                      setEditingId(row.id);
-                      setEditing(toDraft(row));
-                      setError(null);
-                    }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setEditingId(row.id);
+                        setEditing(toDraft(row));
+                        setError(null);
+                      }}
+                    >
                       Korrigieren
                     </button>
                   )}

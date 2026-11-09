@@ -292,8 +292,9 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
     expect(row.stageId).toBeNull();
 
     await create(sample({ position: 2 })).expect(409);
-    expect(await db.standing.count({ where: { seasonId, stageId: null, clubId: clubIds[0] } }))
-      .toBe(1);
+    expect(
+      await db.standing.count({ where: { seasonId, stageId: null, clubId: clubIds[0] } }),
+    ).toBe(1);
 
     const publicResponse = await request(app.getHttpServer())
       .get('/api/v1/standings/season/' + seasonId)
@@ -308,8 +309,7 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
 
   it('separates stages and preserves historic inactive clubs', async () => {
     const first = await create(sample({ stageId: stageIds[0] })).expect(201);
-    const second = await create(sample({ stageId: stageIds[1], clubId: clubIds[2] }))
-      .expect(201);
+    const second = await create(sample({ stageId: stageIds[1], clubId: clubIds[2] })).expect(201);
     const firstId = (unwrap(first) as { id: string }).id;
     const secondId = (unwrap(second) as { id: string }).id;
     rowIds.push(firstId, secondId);
@@ -324,8 +324,9 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
     const secondRead = await request(app.getHttpServer())
       .get('/api/v1/standings/season/' + seasonId + '?stageId=' + stageIds[1])
       .expect(200);
-    const secondRows = (unwrap(secondRead) as { standings: { id: string; club: { active: boolean } }[] })
-      .standings;
+    const secondRows = (
+      unwrap(secondRead) as { standings: { id: string; club: { active: boolean } }[] }
+    ).standings;
     expect(secondRows.map((row) => row.id)).toEqual([secondId]);
     expect(secondRows[0]?.club.active).toBe(false);
   });

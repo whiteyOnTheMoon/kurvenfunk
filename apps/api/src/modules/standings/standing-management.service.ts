@@ -101,7 +101,7 @@ export class StandingManagementService implements OnModuleDestroy {
     if (stageId && !season.stages.some((stage) => stage.id === stageId)) {
       throw invalid('STANDING_STAGE_SEASON_MISMATCH', 'Die Phase gehört nicht zur Saison.');
     }
-    const stage = stageId ? season.stages.find((item) => item.id === stageId) ?? null : null;
+    const stage = stageId ? (season.stages.find((item) => item.id === stageId) ?? null) : null;
     const rows = await this.database.standing.findMany({
       where: { seasonId, stageId: stageId ?? null },
       orderBy: [{ position: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
@@ -183,7 +183,10 @@ export class StandingManagementService implements OnModuleDestroy {
       });
     } catch (error) {
       if (isDbError(error, 'P2002')) {
-        throw conflict('STANDING_DUPLICATE_CLUB', 'Der Verein hat bereits eine Tabellenzeile in dieser Phase.');
+        throw conflict(
+          'STANDING_DUPLICATE_CLUB',
+          'Der Verein hat bereits eine Tabellenzeile in dieser Phase.',
+        );
       }
       throw error;
     }
@@ -194,7 +197,10 @@ export class StandingManagementService implements OnModuleDestroy {
       const previous = await tx.standing.findUnique({ where: { id }, select: rowSelect });
       if (!previous) throw notFound('STANDING_NOT_FOUND', 'Tabellenzeile wurde nicht gefunden.');
       if (previous.updatedAt.getTime() !== new Date(input.expectedUpdatedAt).getTime()) {
-        throw conflict('STANDING_STALE', 'Tabellenzeile wurde zwischenzeitlich geändert. Bitte neu laden.');
+        throw conflict(
+          'STANDING_STALE',
+          'Tabellenzeile wurde zwischenzeitlich geändert. Bitte neu laden.',
+        );
       }
       const changed = await tx.standing.updateMany({
         where: { id, updatedAt: previous.updatedAt },
@@ -214,7 +220,10 @@ export class StandingManagementService implements OnModuleDestroy {
         },
       });
       if (changed.count !== 1) {
-        throw conflict('STANDING_STALE', 'Tabellenzeile wurde zwischenzeitlich geändert. Bitte neu laden.');
+        throw conflict(
+          'STANDING_STALE',
+          'Tabellenzeile wurde zwischenzeitlich geändert. Bitte neu laden.',
+        );
       }
       const standing = await tx.standing.findUniqueOrThrow({ where: { id }, select: rowSelect });
       await tx.auditLog.create({
