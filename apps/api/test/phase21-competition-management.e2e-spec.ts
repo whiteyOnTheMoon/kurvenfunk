@@ -260,7 +260,10 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
     expect(responseData(publicList)).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: competitionId })]),
     );
-    await request(app.getHttpServer()).get(`/api/v1/competitions/${slug}`).expect(404);
+    const historical = await request(app.getHttpServer())
+      .get(`/api/v1/competitions/${slug}`)
+      .expect(200);
+    expect(responseData(historical)).toMatchObject({ id: competitionId, active: false });
 
     const privateList = await request(app.getHttpServer())
       .get('/api/v1/competitions/admin/all')

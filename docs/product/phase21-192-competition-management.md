@@ -10,7 +10,7 @@ introducing season, club, match, results, standing or provider logic.
 ## API
 
 - `GET /api/v1/competitions`: existing public list, **active only**.
-- `GET /api/v1/competitions/:slug`: public details, **active only**.
+- `GET /api/v1/competitions/:slug`: public details, including **inactive historical competitions**.
 - `GET /api/v1/competitions/admin/all`: authenticated list including inactive competitions.
 - `POST /api/v1/competitions`: create a canonical competition.
 - `PATCH /api/v1/competitions/:id`: update name, short name, country code, or active flag.
@@ -38,7 +38,7 @@ an intentionally deactivated competition. Seed creation remains idempotent.
 Run full PR CI (format/lint/typecheck/unit/build, isolated PostgreSQL/Redis
 HTTP E2E) and review the resulting logs. The new E2E covers:
 anonymous/role/status 401/403; invalid payload 400; create 201;
-duplicate slug 409; public active and private historical reads; update;
+duplicate slug 409; public active-list and historical-detail reads; update;
 immutable identity; audit persistence; refusal to physically delete.
 
 Any DEV deployment or browser test must use synthetic competition records

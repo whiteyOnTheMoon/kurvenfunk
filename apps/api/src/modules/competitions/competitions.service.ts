@@ -42,9 +42,9 @@ export class CompetitionsService implements OnModuleDestroy {
     });
   }
 
-  async findActiveBySlug(slug: string) {
+  async findBySlug(slug: string) {
     const competition = await this.database.competition.findFirst({
-      where: { slug, active: true },
+      where: { slug },
       select: competitionDetailsSelect,
     });
 

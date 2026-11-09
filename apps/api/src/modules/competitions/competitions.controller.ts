@@ -28,8 +28,8 @@ export class CompetitionsController {
   }
 
   @Get(':slug')
-  findActiveBySlug(@Param('slug') slug: string) {
-    return this.competitionsService.findActiveBySlug(slug);
+  findBySlug(@Param('slug') slug: string) {
+    return this.competitionsService.findBySlug(slug);
   }
 
   @Post()
