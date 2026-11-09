@@ -1,4 +1,12 @@
 import { Module } from '@nestjs/common';
 
-@Module({})
+import { AuthModule } from '../auth/auth.module';
+import { SeasonsController } from './seasons.controller';
+import { SeasonsService } from './seasons.service';
+
+@Module({
+  imports: [AuthModule],
+  controllers: [SeasonsController],
+  providers: [SeasonsService],
+})
 export class SeasonsModule {}
