@@ -377,6 +377,7 @@ describe('Phase 21.197 Standings PostgreSQL/Redis and signed JWT E2E', () => {
     const audit = await db.auditLog.findMany({
       where: { targetType: 'SYSTEM', targetId: id },
       select: { metadata: true, actorUserId: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     expect(audit).toHaveLength(2);
     expect(audit[1]?.actorUserId).not.toBeNull();
