@@ -40,9 +40,12 @@ interface AuthContextValue {
   sessionRecovering: boolean;
   login: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginForAppeals: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<CurrentUser>;
   token?: string;
+  /** Narrow appeal-only bearer retained for an account rejected as BANNED. */
+  appealToken?: string;
   user?: CurrentUser;
   error?: string;
 }
@@ -113,6 +116,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
   const [sessionRecovering, setSessionRecovering] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [token, setToken] = useState<string>();
+  const [appealToken, setAppealToken] = useState<string>();
   const [user, setUser] = useState<CurrentUser>();
   const [error, setError] = useState<string>();
   const currentUserRef = useRef<CurrentUser | undefined>(undefined);
@@ -131,6 +135,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       currentUserRef.current = undefined;
       setAuthenticated(false);
       setToken(undefined);
+      setAppealToken(undefined);
       setUser(undefined);
       setSessionRecovering(false);
       setError(reason);
@@ -166,6 +171,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
           currentUserRef.current = currentUser;
           setUser(currentUser);
           setToken(freshToken);
+          setAppealToken(undefined);
           setAuthenticated(true);
           setSessionRecovering(false);
           setError(undefined);
@@ -201,6 +207,12 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
               ? code
               : 'AUTHENTICATION_FAILED',
           );
+          // Keep ONLY a narrow appeals bearer when the server specifically
+          // confirms ACCOUNT_BANNED. Never give it to ordinary token consumers,
+          // the admin UI, or unverified/temporarily failed identities.
+          if (code === 'ACCOUNT_BANNED' && client.authenticated && client.token) {
+            setAppealToken(client.token);
+          }
         }
       })();
 
@@ -286,6 +298,11 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     });
   }, [authUrl]);
 
+  const loginForAppeals = useCallback(async () => {
+    const client = getKeycloak(authUrl);
+    await client.login({ redirectUri: `${window.location.origin}/appeals` });
+  }, [authUrl]);
+
   const logout = useCallback(async () => {
     const client = getKeycloak(authUrl);
 
@@ -293,6 +310,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     currentUserRef.current = undefined;
     setAuthenticated(false);
     setToken(undefined);
+    setAppealToken(undefined);
     setUser(undefined);
     setSessionRecovering(false);
     setError(undefined);
@@ -317,6 +335,7 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
     currentUserRef.current = currentUser;
     setAuthenticated(true);
     setToken(freshToken);
+    setAppealToken(undefined);
     setUser(currentUser);
     setSessionRecovering(false);
     setError(undefined);
@@ -330,9 +349,11 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       sessionRecovering,
       login,
       loginWithGoogle,
+      loginForAppeals,
       logout,
       refreshUser,
       token,
+      appealToken,
       user,
       error,
     }),
@@ -342,9 +363,11 @@ export function AuthProvider({ apiUrl, authUrl, children }: AuthProviderProps) {
       sessionRecovering,
       login,
       loginWithGoogle,
+      loginForAppeals,
       logout,
       refreshUser,
       token,
+      appealToken,
       user,
       error,
     ],
