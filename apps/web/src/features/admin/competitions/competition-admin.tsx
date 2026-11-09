@@ -148,8 +148,16 @@ export function CompetitionAdmin({ apiUrl }: { apiUrl: string }) {
         <p>Start: österreichische Bundesliga. Inaktive Wettbewerbe bleiben historisch erhalten.</p>
       </header>
 
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
-      {message ? <p className={styles.success} role="status">{message}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className={styles.success} role="status">
+          {message}
+        </p>
+      ) : null}
 
       <section className={styles.panel} aria-labelledby="competition-create-title">
         <h2 id="competition-create-title">Neuer Wettbewerb</h2>
@@ -214,7 +222,9 @@ export function CompetitionAdmin({ apiUrl }: { apiUrl: string }) {
               onChange={(event) => setNewCountry(event.target.value.toUpperCase())}
             />
           </label>
-          <button type="submit" disabled={busy}>Wettbewerb erstellen</button>
+          <button type="submit" disabled={busy}>
+            Wettbewerb erstellen
+          </button>
         </form>
       </section>
 
@@ -273,7 +283,9 @@ export function CompetitionAdmin({ apiUrl }: { apiUrl: string }) {
                       onChange={(event) => setDraft({ ...draft, countryCode: event.target.value })}
                     />
                   </label>
-                  <button type="submit" disabled={busy}>Änderungen speichern</button>
+                  <button type="submit" disabled={busy}>
+                    Änderungen speichern
+                  </button>
                   <button type="button" disabled={busy} onClick={() => setEditingId(null)}>
                     Abbrechen
                   </button>

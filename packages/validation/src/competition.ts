@@ -4,7 +4,10 @@ import { slugSchema } from './common.js';
 
 const competitionNameSchema = z.string().trim().min(1).max(120);
 const shortNameSchema = z.string().trim().min(1).max(60).nullable();
-const countryCodeSchema = z.string().regex(/^[A-Z]{2}$/).nullable();
+const countryCodeSchema = z
+  .string()
+  .regex(/^[A-Z]{2}$/)
+  .nullable();
 
 export const createCompetitionSchema = z
   .object({

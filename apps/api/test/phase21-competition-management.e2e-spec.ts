@@ -224,11 +224,7 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
 
   it('updates metadata and deactivates without deleting historical identity', async () => {
     const token = await tokenFor(subjects.admin);
-    const invalidUpdates = [
-      { slug: `${slug}-changed` },
-      { type: 'CUP' },
-      {},
-    ];
+    const invalidUpdates = [{ slug: `${slug}-changed` }, { type: 'CUP' }, {}];
     for (const input of invalidUpdates) {
       await request(app.getHttpServer())
         .patch(`/api/v1/competitions/${competitionId}`)
@@ -267,17 +263,15 @@ describe('Task 192 Competition Management HTTP and PostgreSQL E2E', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(privateList.body.data).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: competitionId, slug, active: false }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ id: competitionId, slug, active: false })]),
     );
     const saved = await database.competition.findUnique({ where: { id: competitionId } });
     expect(saved).toMatchObject({ slug, active: false });
     const audit = await database.auditLog.findMany({ where: { targetId: competitionId } });
     expect(audit).toHaveLength(2);
-    expect(audit.some((row) => row.metadata && JSON.stringify(row.metadata).includes('UPDATE'))).toBe(
-      true,
-    );
+    expect(
+      audit.some((row) => row.metadata && JSON.stringify(row.metadata).includes('UPDATE')),
+    ).toBe(true);
   });
 
   it('does not expose a destructive competition delete operation', async () => {
