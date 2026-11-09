@@ -28,7 +28,9 @@
   margin: 0.25rem 0 0.6rem;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
 }
-.heading p, .hint, .card span {
+.heading p,
+.hint,
+.card span {
   color: var(--kf-text-muted, #64748b);
 }
 .eyebrow {
@@ -37,14 +39,16 @@
   font-size: 0.75rem;
   font-weight: 750;
 }
-.summary, .section {
+.summary,
+.section {
   border: 1px solid var(--kf-border, #d4d4d8);
   border-radius: 0.9rem;
   background: var(--kf-surface, #fff);
   padding: 1.3rem;
   min-width: 0;
 }
-.summary h2, .section h2 {
+.summary h2,
+.section h2 {
   font-size: 1.18rem;
   margin: 0 0 0.85rem;
 }
@@ -90,6 +94,11 @@
   color: var(--kf-danger, #b91c1c);
 }
 @media (max-width: 640px) {
-  .summary, .section { padding: 0.9rem; }
-  .card { padding: 0.75rem; }
+  .summary,
+  .section {
+    padding: 0.9rem;
+  }
+  .card {
+    padding: 0.75rem;
+  }
 }
