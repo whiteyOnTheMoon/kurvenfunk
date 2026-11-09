@@ -9,15 +9,23 @@ import { ModerationDashboardService } from './moderation-dashboard.service';
 import { KeycloakSessionRevoker } from './keycloak-session-revoker';
 import { DirectRedCardController, ModerationController } from './moderation.controller';
 import { ModerationService } from './moderation.service';
+import { UserModerationHistoryController } from './user-moderation-history.controller';
+import { UserModerationHistoryService } from './user-moderation-history.service';
 
 @Module({
   imports: [AuthModule, UsersModule],
-  controllers: [ModerationController, DirectRedCardController, ModerationDashboardController],
+  controllers: [
+    ModerationController,
+    DirectRedCardController,
+    ModerationDashboardController,
+    UserModerationHistoryController,
+  ],
   providers: [
     ModerationService,
     DirectRedCardService,
     KeycloakSessionRevoker,
     ModerationDashboardService,
+    UserModerationHistoryService,
   ],
 })
 export class ModerationModule {}
