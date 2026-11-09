@@ -1,0 +1,154 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.panel {
+  padding: 1.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 225px), 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.form label,
+.search {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.form input,
+.search input {
+  width: 100%;
+  border: 1px solid #94a3b8;
+  border-radius: 0.4rem;
+  padding: 0.65rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.form input:disabled {
+  background: #e2e8f0;
+}
+
+.form button,
+.actions button {
+  border: 1px solid #64748b;
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+}
+
+.form button:disabled,
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.colorRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.swatch {
+  display: inline-block;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 auto;
+  border: 1px solid #64748b;
+  border-radius: 0.25rem;
+}
+
+.hint {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+
+.search {
+  max-width: 28rem;
+  margin: 0.75rem 0 1.2rem;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.item {
+  padding: 1rem 0;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.6rem;
+}
+
+.heading h4 {
+  margin: 0;
+}
+
+.heading p {
+  margin: 0.3rem 0;
+}
+
+.colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.colorChip {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.active,
+.inactive {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.active {
+  color: #15803d;
+}
+
+.inactive {
+  color: #b45309;
+}
+
+.error,
+.success {
+  border-radius: 0.5rem;
+  padding: 0.7rem;
+}
+
+.error {
+  border: 1px solid #b91c1c;
+}
+
+.success {
+  border: 1px solid #15803d;
+}

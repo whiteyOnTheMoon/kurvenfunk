@@ -1,3 +1,12 @@
+jest.mock('../permissions/require-permissions.decorator', () => ({
+  RequirePermissions: () => () => undefined,
+}));
+
+jest.mock('@kurvenfunk/validation', () => ({
+  createClubSchema: {},
+  updateClubSchema: {},
+}));
+
 jest.mock('./clubs.service', () => ({
   ClubsService: class ClubsService {},
 }));

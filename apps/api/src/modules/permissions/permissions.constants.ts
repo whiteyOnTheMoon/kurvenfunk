@@ -16,6 +16,7 @@ export const PERMISSIONS = {
   IMPORT_REPLAY: 'import.replay',
   COMPETITION_MANAGE: 'competition.manage',
   SEASON_MANAGE: 'season.manage',
+  CLUB_MANAGE: 'club.manage',
 
   USER_WARN: 'user.warn',
   USER_LIMIT: 'user.limit',

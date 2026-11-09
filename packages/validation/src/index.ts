@@ -60,6 +60,13 @@ export {
   type CreateSeasonInput,
   type UpdateSeasonInput,
 } from './season.js';
+export {
+  clubColorSchema,
+  createClubSchema,
+  updateClubSchema,
+  type CreateClubInput,
+  type UpdateClubInput,
+} from './club-management.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,

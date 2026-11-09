@@ -1,3 +1,4 @@
+import { ClubAdmin } from '../../../features/admin/clubs/club-admin';
 import { CompetitionAdmin } from '../../../features/admin/competitions/competition-admin';
 import { SeasonAdmin } from '../../../features/admin/seasons/season-admin';
 import { env } from '../../../lib/env';
@@ -7,6 +8,7 @@ export default function AdminSportsDataPage() {
     <>
       <CompetitionAdmin apiUrl={env.API_URL} />
       <SeasonAdmin apiUrl={env.API_URL} />
+      <ClubAdmin apiUrl={env.API_URL} />
     </>
   );
 }
