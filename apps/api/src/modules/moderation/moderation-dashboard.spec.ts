@@ -27,6 +27,7 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
     sanction: { count: jest.Mock; findMany: jest.Mock };
     user: { count: jest.Mock };
     iPBlock: { count: jest.Mock; findMany: jest.Mock };
+    appeal: { count: jest.Mock };
     $disconnect: jest.Mock;
   };
   let service: ModerationDashboardService;
@@ -47,6 +48,7 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       user: { count: jest.fn().mockResolvedValue(5) },
+      appeal: { count: jest.fn().mockResolvedValue(7) },
       iPBlock: {
         count: jest.fn().mockResolvedValue(6),
         findMany: jest.fn().mockResolvedValue([]),
@@ -104,21 +106,23 @@ describe('Task 187 moderation dashboard authorization and privacy', () => {
     }
   });
 
-  it('dashboard counts pending and unexpired records, excluding IP data and appeal inventions', async () => {
+  it('dashboard counts real pending appeals and unexpired records without exposing IP data', async () => {
     const result = await service.overview();
     expect(result.counts).toEqual({
       pendingReports: 2,
+      pendingAppeals: 7,
       activeYellowCards: 3,
       activeRedCards: 3,
       limitedUsers: 5,
       bannedUsers: 5,
       activeLimitedSanctions: 4,
     });
-    expect(result.appeals).toEqual({ available: false, trackingTask: '20.189' });
+    expect(result.appeals).toEqual({ available: true, pending: 7 });
     expect(result.ipBlocks).toEqual({ access: 'SUPERADMIN_ONLY' });
     expect(database.iPBlock.count).not.toHaveBeenCalled();
     expect(database.iPBlock.findMany).not.toHaveBeenCalled();
 
+    expect(database.appeal.count).toHaveBeenCalledWith({ where: { status: 'OPEN' } });
     expect(database.moderationReport.count).toHaveBeenCalledWith({
       where: { status: { in: ['OPEN', 'IN_REVIEW'] } },
     });
