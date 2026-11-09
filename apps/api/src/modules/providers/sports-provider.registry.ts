@@ -10,14 +10,7 @@ import type {
 import { Injectable } from '@nestjs/common';
 
 const RESOURCES: readonly SportsProviderResource[] = ['clubs', 'fixtures', 'results', 'live'];
-const STATUSES = [
-  'SCHEDULED',
-  'LIVE',
-  'FINISHED',
-  'POSTPONED',
-  'CANCELLED',
-  'ABANDONED',
-] as const;
+const STATUSES = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED', 'ABANDONED'] as const;
 const MAX_PAGE_RECORDS = 500;
 const KEY_PATTERN = /^[a-z][a-z0-9-]{1,39}$/;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
@@ -167,7 +160,8 @@ export class SportsProviderRegistry {
     if (start && end && Date.parse(start) > Date.parse(end)) {
       return invalid('SPORTS_PROVIDER_INVALID_WINDOW');
     }
-    if (!provider.capabilities[input.resource]) return invalid('SPORTS_PROVIDER_UNSUPPORTED_RESOURCE');
+    if (!provider.capabilities[input.resource])
+      return invalid('SPORTS_PROVIDER_UNSUPPORTED_RESOURCE');
 
     // Copy inputs so adapters cannot mutate the caller's query.
     const response = await provider.fetch({ ...input });
