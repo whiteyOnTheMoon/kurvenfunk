@@ -100,6 +100,12 @@ function previousStats(row: ExistingStanding) {
   };
 }
 
+function isConcurrentWriteError(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const code = (value as { code?: unknown }).code;
+  return code === 'P2034' || code === 'P2002';
+}
+
 function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
@@ -205,7 +211,7 @@ export class StandingCalculationService implements OnModuleDestroy {
     const deductions = Object.fromEntries(
       existingRows.map((row) => [row.clubId, row.deductionPoints]),
     ) as Record<string, number>;
-    let roundedDown: Record<string, boolean> = {};
+    const roundedDown: Record<string, boolean> = {};
     let regularRows: ExistingStanding[] = [];
     let allowExternalOpponents = false;
     let regularStageId: string | null = null;
@@ -494,12 +500,7 @@ export class StandingCalculationService implements OnModuleDestroy {
         { isolationLevel: 'Serializable', timeout: 30000 },
       );
     } catch (error) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        (error.code === 'P2034' || error.code === 'P2002')
-      ) {
+      if (isConcurrentWriteError(error)) {
         throw conflict(
           'STANDING_CALC_CONCURRENT_CHANGE',
           'Konkurrierende Tabellenänderung. Vorschau neu laden.',
