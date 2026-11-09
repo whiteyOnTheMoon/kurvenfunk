@@ -191,7 +191,7 @@ describe('SanctionExpirationService', () => {
       data: { active: false, deactivatedAt: now, deactivationReason: 'EXPIRED' },
     });
     expect(tx.sanction.updateMany).toHaveBeenCalledWith({
-      where: { id: SANCTION_ID, status: 'ACTIVE' },
+      where: { id: SANCTION_ID, status: 'ACTIVE', type: 'IP_BLOCK', ipBlockId: BLOCK_ID },
       data: { status: 'EXPIRED' },
     });
     expect(tx.auditLog.create).toHaveBeenCalledTimes(2);
