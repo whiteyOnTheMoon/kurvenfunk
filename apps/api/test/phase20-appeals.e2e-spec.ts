@@ -201,10 +201,7 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
           await database.notification.deleteMany({ where: { userId: { in: owners } } });
           await database.auditLog.deleteMany({
             where: {
-              OR: [
-                { actorUserId: { in: owners } },
-                { targetUserId: { in: owners } },
-              ],
+              OR: [{ actorUserId: { in: owners } }, { targetUserId: { in: owners } }],
             },
           });
           await database.appeal.deleteMany({ where: { userId: { in: owners } } });
@@ -231,7 +228,9 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
     const http = app.getHttpServer();
     await request(http).get('/api/v1/appeals/eligible').expect(401);
     await request(http).get('/api/v1/appeals/mine').expect(401);
-    await request(http).post('/api/v1/appeals').send({ reason: ownReason, moderationCardId: redId })
+    await request(http)
+      .post('/api/v1/appeals')
+      .send({ reason: ownReason, moderationCardId: redId })
       .expect(401);
 
     const auth = 'Bearer ' + (await signedToken(subjects.banned));
@@ -242,12 +241,14 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
       .get('/api/v1/appeals/eligible')
       .set('Authorization', auth)
       .expect(200);
-    const data = (eligible.body as {
-      data: {
-        cards: Array<{ id: string }>;
-        sanctions: Array<{ id: string; type: string }>;
-      };
-    }).data;
+    const data = (
+      eligible.body as {
+        data: {
+          cards: Array<{ id: string }>;
+          sanctions: Array<{ id: string; type: string }>;
+        };
+      }
+    ).data;
     expect(eligible.headers['cache-control']).toContain('no-store');
     expect(data.cards.some((item) => item.id === redId)).toBe(true);
     expect(data.sanctions.some((item) => item.id === banId)).toBe(true);
@@ -260,42 +261,51 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
     const auth = 'Bearer ' + (await signedToken(subjects.banned));
     const http = app.getHttpServer();
 
-    await request(http).post('/api/v1/appeals')
+    await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ moderationCardId: otherCardId, reason: ownReason })
       .expect(404);
-    await request(http).post('/api/v1/appeals')
+    await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ sanctionId: ipSanctionId, reason: ownReason })
       .expect(404);
-    await request(http).post('/api/v1/appeals')
+    await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ moderationCardId: redId, sanctionId: banId, reason: ownReason })
       .expect(400);
-    await request(http).post('/api/v1/appeals')
+    await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ moderationCardId: redId, reason: 'short' })
       .expect(400);
 
-    const appeal = await request(http).post('/api/v1/appeals')
+    const appeal = await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ moderationCardId: redId, reason: ownReason })
       .expect(201);
     redAppealId = (appeal.body as { data: { id: string } }).data.id;
     expect(appeal.headers['cache-control']).toContain('no-store');
-    await request(http).post('/api/v1/appeals')
+    await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ moderationCardId: redId, reason: ownReason })
       .expect(409);
 
-    const second = await request(http).post('/api/v1/appeals')
+    const second = await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', auth)
       .send({ sanctionId: banId, reason: ownReason })
       .expect(201);
     banAppealId = (second.body as { data: { id: string } }).data.id;
 
-    const mine = await request(http).get('/api/v1/appeals/mine')
-      .set('Authorization', auth).expect(200);
+    const mine = await request(http)
+      .get('/api/v1/appeals/mine')
+      .set('Authorization', auth)
+      .expect(200);
     const serialized = JSON.stringify(mine.body);
     expect(serialized).toContain(redAppealId);
     expect(serialized).toContain(banAppealId);
@@ -303,7 +313,8 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
     expect(serialized).not.toContain('reviewedById');
     expect(serialized).not.toContain('decisionNote');
 
-    const otherMine = await request(http).get('/api/v1/appeals/mine')
+    const otherMine = await request(http)
+      .get('/api/v1/appeals/mine')
       .set('Authorization', 'Bearer ' + (await signedToken(subjects.other)))
       .expect(200);
     expect((otherMine.body as { data: unknown[] }).data).toEqual([]);
@@ -315,36 +326,42 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
     const admin = 'Bearer ' + (await signedToken(subjects.admin));
     const user = 'Bearer ' + (await signedToken(subjects.user));
 
-    await request(http).get('/api/v1/moderation/appeals')
-      .set('Authorization', user).expect(403);
-    const queue = await request(http).get('/api/v1/moderation/appeals')
-      .set('Authorization', moderator).expect(200);
+    await request(http).get('/api/v1/moderation/appeals').set('Authorization', user).expect(403);
+    const queue = await request(http)
+      .get('/api/v1/moderation/appeals')
+      .set('Authorization', moderator)
+      .expect(200);
     expect(JSON.stringify(queue.body)).toContain(redAppealId);
     expect(JSON.stringify(queue.body)).not.toContain(privateNote);
-    await request(http).patch('/api/v1/moderation/appeals/' + redAppealId + '/decision')
+    await request(http)
+      .patch('/api/v1/moderation/appeals/' + redAppealId + '/decision')
       .set('Authorization', moderator)
       .send({ decision: 'ACCEPTED', decisionNote: privateNote })
       .expect(403);
 
     const applicant = 'Bearer ' + (await signedToken(subjects.selfAdmin));
-    const own = await request(http).post('/api/v1/appeals')
+    const own = await request(http)
+      .post('/api/v1/appeals')
       .set('Authorization', applicant)
       .send({ moderationCardId: selfCardId, reason: ownReason })
       .expect(201);
     selfAppealId = (own.body as { data: { id: string } }).data.id;
-    await request(http).patch('/api/v1/moderation/appeals/' + selfAppealId + '/decision')
+    await request(http)
+      .patch('/api/v1/moderation/appeals/' + selfAppealId + '/decision')
       .set('Authorization', applicant)
       .send({ decision: 'ACCEPTED', decisionNote: privateNote })
       .expect(403);
 
-    const rejected = await request(http).patch('/api/v1/moderation/appeals/' + selfAppealId + '/decision')
+    const rejected = await request(http)
+      .patch('/api/v1/moderation/appeals/' + selfAppealId + '/decision')
       .set('Authorization', admin)
       .send({ decision: 'REJECTED', decisionNote: privateNote })
       .expect(200);
     expect((rejected.body as { data: { status: string } }).data.status).toBe('REJECTED');
     expect(JSON.stringify(rejected.body)).not.toContain(privateNote);
-    expect((await database.moderationCard.findUniqueOrThrow({ where: { id: selfCardId } })).status)
-      .toBe('ACTIVE');
+    expect(
+      (await database.moderationCard.findUniqueOrThrow({ where: { id: selfCardId } })).status,
+    ).toBe('ACTIVE');
   }, 30000);
 
   it('accepts only the targeted RED, keeps BANNED while another ban remains, then restores safely', async () => {
@@ -358,12 +375,15 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
       .expect(200);
     expect((first.body as { data: { status: string } }).data.status).toBe('ACCEPTED');
     expect(JSON.stringify(first.body)).not.toContain(privateNote);
-    expect((await database.moderationCard.findUniqueOrThrow({ where: { id: redId } })).status)
-      .toBe('REVOKED');
-    expect((await database.user.findUniqueOrThrow({ where: { id: ids.get(subjects.banned)! } })).status)
-      .toBe('BANNED');
+    expect((await database.moderationCard.findUniqueOrThrow({ where: { id: redId } })).status).toBe(
+      'REVOKED',
+    );
+    expect(
+      (await database.user.findUniqueOrThrow({ where: { id: ids.get(subjects.banned)! } })).status,
+    ).toBe('BANNED');
     await request(http).get('/api/v1/auth/me').set('Authorization', bannedAuth).expect(403);
-    await request(http).patch('/api/v1/moderation/appeals/' + redAppealId + '/decision')
+    await request(http)
+      .patch('/api/v1/moderation/appeals/' + redAppealId + '/decision')
       .set('Authorization', reviewer)
       .send({ decision: 'ACCEPTED', decisionNote: privateNote })
       .expect(409);
@@ -374,24 +394,35 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
       .send({ decision: 'ACCEPTED', decisionNote: privateNote })
       .expect(200);
     expect((second.body as { data: { status: string } }).data.status).toBe('ACCEPTED');
-    expect((await database.sanction.findUniqueOrThrow({ where: { id: banId } })).status)
-      .toBe('REVOKED');
-    expect((await database.user.findUniqueOrThrow({ where: { id: ids.get(subjects.banned)! } })).status)
-      .toBe('ACTIVE');
+    expect((await database.sanction.findUniqueOrThrow({ where: { id: banId } })).status).toBe(
+      'REVOKED',
+    );
+    expect(
+      (await database.user.findUniqueOrThrow({ where: { id: ids.get(subjects.banned)! } })).status,
+    ).toBe('ACTIVE');
 
     // A normal appeal review never changes the separate SUPERADMIN IP-block.
-    expect((await database.iPBlock.findUniqueOrThrow({ where: { id: blockId } })).active).toBe(true);
-    expect((await database.sanction.findUniqueOrThrow({ where: { id: ipSanctionId } })).status)
-      .toBe('ACTIVE');
+    expect((await database.iPBlock.findUniqueOrThrow({ where: { id: blockId } })).active).toBe(
+      true,
+    );
+    expect(
+      (await database.sanction.findUniqueOrThrow({ where: { id: ipSanctionId } })).status,
+    ).toBe('ACTIVE');
 
-    const own = await request(http).get('/api/v1/appeals/mine')
-      .set('Authorization', bannedAuth).expect(200);
+    const own = await request(http)
+      .get('/api/v1/appeals/mine')
+      .set('Authorization', bannedAuth)
+      .expect(200);
     expect(JSON.stringify(own.body)).not.toContain(privateNote);
-    expect((await database.auditLog.count({
-      where: { targetUserId: ids.get(subjects.banned), action: 'APPEAL_RESOLVED' },
-    }))).toBe(2);
-    expect((await database.notification.count({
-      where: { userId: ids.get(subjects.banned), type: 'APPEAL' },
-    }))).toBe(4);
+    expect(
+      await database.auditLog.count({
+        where: { targetUserId: ids.get(subjects.banned), action: 'APPEAL_RESOLVED' },
+      }),
+    ).toBe(2);
+    expect(
+      await database.notification.count({
+        where: { userId: ids.get(subjects.banned), type: 'APPEAL' },
+      }),
+    ).toBe(4);
   }, 30000);
 });
