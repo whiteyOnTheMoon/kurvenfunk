@@ -474,6 +474,14 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
         .set('Authorization', admin)
         .send({ decision: 'ACCEPTED', decisionNote: privateNote })
         .expect(409);
+      // Turning policy OFF must not bypass an already pending two-person review.
+      process.env.APPEAL_FOUR_EYES_ENABLED = 'false';
+      await request(http)
+        .patch('/api/v1/moderation/appeals/' + appealId + '/decision')
+        .set('Authorization', root)
+        .send({ decision: 'REJECTED', decisionNote: privateNote })
+        .expect(409);
+      process.env.APPEAL_FOUR_EYES_ENABLED = 'true';
       await request(http)
         .get('/api/v1/moderation/appeals/pending')
         .set('Authorization', mod)
@@ -560,6 +568,13 @@ describe('Task 189 – BANNED appeal identity, private filing and audited review
           where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
         }),
       ).toBe(1);
+      const returnedAudit = await database.auditLog.findFirst({
+        where: { targetId: appealId, action: 'APPEAL_DECISION_RETURNED' },
+        select: { metadata: true },
+      });
+      expect(returnedAudit?.metadata).toMatchObject({
+        reviewNote: 'Weitere Prüfung erforderlich.',
+      });
     } finally {
       if (previous === undefined) delete process.env.APPEAL_FOUR_EYES_ENABLED;
       else process.env.APPEAL_FOUR_EYES_ENABLED = previous;
