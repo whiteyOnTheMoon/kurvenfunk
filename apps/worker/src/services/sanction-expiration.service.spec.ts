@@ -205,9 +205,10 @@ describe('SanctionExpirationService', () => {
     await service.expireDueSanctions(now);
 
     expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
-    expect(tx.auditLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: 'IP_BLOCK_EXPIRED', ipBlockId: BLOCK_ID }),
-    });
+    const auditArgs = (tx.auditLog.create.mock.calls as unknown[][])[0]?.[0] as {
+      data: { action: string; ipBlockId: string };
+    };
+    expect(auditArgs.data).toMatchObject({ action: 'IP_BLOCK_EXPIRED', ipBlockId: BLOCK_ID });
   });
 
   it('recovers an overdue sanction at worker startup and stops its timer on shutdown', async () => {
