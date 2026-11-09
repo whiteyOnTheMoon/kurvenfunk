@@ -53,6 +53,13 @@ export {
   type CreateCompetitionInput,
   type UpdateCompetitionInput,
 } from './competition.js';
+export {
+  createSeasonSchema,
+  updateSeasonSchema,
+  seasonStatusSchema,
+  type CreateSeasonInput,
+  type UpdateSeasonInput,
+} from './season.js';
 export * from './media.js';
 export {
   COMMENT_BODY_MAX_LENGTH,

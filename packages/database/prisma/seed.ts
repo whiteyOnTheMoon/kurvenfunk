@@ -434,13 +434,8 @@ async function seedCompetition(params: {
         slug: '2026-27',
       },
     },
-    update: {
-      name: '2026/27',
-      startDate: new Date(params.seasonStart),
-      endDate: new Date(params.seasonEnd),
-      status: 'ACTIVE',
-      active: true,
-    },
+    // Preserve administrative season lifecycle, dates and names on subsequent seeds.
+    update: {},
     create: {
       competitionId: competition.id,
       name: '2026/27',
