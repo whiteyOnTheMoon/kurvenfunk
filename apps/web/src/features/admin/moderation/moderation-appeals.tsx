@@ -56,7 +56,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       setLoading(true);
       try {
         const response = await fetch(`${apiUrl}/api/v1/moderation/appeals`, {
-          headers: { Authorization: `*** },
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -65,7 +65,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         const data = (await response.json()) as { data?: AppealForStaff[] };
         if (!Array.isArray(data.data)) throw new Error('Ungültige Antwort des Einspruchsdienstes.');
         const policyResponse = await fetch(`${apiUrl}/api/v1/moderation/appeals/policy`, {
-          headers: { Authorization: `*** },
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -79,7 +79,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         let waiting: PendingReview[] = [];
         if (canDecide) {
           const waitingResponse = await fetch(`${apiUrl}/api/v1/moderation/appeals/pending`, {
-            headers: { Authorization: `*** },
+            headers: { Authorization: `Bearer ${token}` },
             cache: 'no-store',
             signal: controller.signal,
           });
@@ -121,7 +121,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         `${apiUrl}/api/v1/moderation/appeals/${encodeURIComponent(appealId)}/decision`,
         {
           method: 'PATCH',
-          headers: { Authorization: `*** 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           cache: 'no-store',
           body: JSON.stringify({ decision, decisionNote }),
         },
@@ -152,7 +152,7 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
         `${apiUrl}/api/v1/moderation/appeals/${encodeURIComponent(appealId)}/approval`,
         {
           method: 'PATCH',
-          headers: { Authorization: `*** 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           cache: 'no-store',
           body: JSON.stringify({ outcome, decisionNote }),
         },
