@@ -6,12 +6,14 @@ import type { FormEvent } from 'react';
 
 import { useAuth } from '../../auth/auth-provider';
 import { CommentReportQueue } from './comment-report-queue';
+import { ModerationAppeals } from './moderation-appeals';
 import styles from './moderation-dashboard.module.css';
 
 interface Overview {
   asOf: string;
   counts: {
     pendingReports: number;
+    pendingAppeals: number;
     activeYellowCards: number;
     activeRedCards: number;
     limitedUsers: number;
@@ -42,7 +44,7 @@ interface Overview {
     expiresAt: string | null;
     user: { id: string; nickname: string | null; status: string } | null;
   }>;
-  appeals: { available: false; trackingTask: '20.189' };
+  appeals: { available: true; pending: number };
 }
 
 interface IpSummary {
@@ -210,6 +212,7 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
       {overview ? (
         <>
           <section aria-label="Moderationskennzahlen" className={styles.stats}>
+            <OverviewStat label="Offene Einsprüche" value={overview.counts.pendingAppeals} />
             <OverviewStat
               label="Offene Meldungen und in Prüfung"
               value={overview.counts.pendingReports}
@@ -322,11 +325,9 @@ export function ModerationDashboard({ apiUrl }: { apiUrl: string }) {
             </section>
 
             <section className={styles.panel} aria-labelledby="appeals-title">
-              <h2 id="appeals-title">Einsprüche</h2>
-              <p>Der Einspruchs-Workflow und seine Fallzahlen werden mit Task 20.189 eingeführt.</p>
-              <p className={styles.muted}>
-                Noch keine Einspruchszahlen – nicht als „0“ interpretiert.
-              </p>
+              <div id="appeals-title">
+                <ModerationAppeals apiUrl={apiUrl} />
+              </div>
             </section>
           </div>
 
