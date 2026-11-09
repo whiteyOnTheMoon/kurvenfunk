@@ -226,7 +226,10 @@ export class AppealsService implements OnModuleDestroy {
         `;
         const target = lockedUsers[0];
         if (!target) {
-          throw new NotFoundException({ code: 'APPEAL_USER_NOT_FOUND', message: 'User not found.' });
+          throw new NotFoundException({
+            code: 'APPEAL_USER_NOT_FOUND',
+            message: 'User not found.',
+          });
         }
 
         const appeal = await tx.appeal.findUnique({
@@ -314,8 +317,6 @@ export class AppealsService implements OnModuleDestroy {
               },
             });
           }
-
-
         }
 
         if (accepted) {
@@ -347,11 +348,8 @@ export class AppealsService implements OnModuleDestroy {
             }),
           ]);
 
-          const nextStatus = activeReds > 0 || activeBans > 0
-            ? 'BANNED'
-            : activeLimits > 0
-              ? 'LIMITED'
-              : 'ACTIVE';
+          const nextStatus =
+            activeReds > 0 || activeBans > 0 ? 'BANNED' : activeLimits > 0 ? 'LIMITED' : 'ACTIVE';
 
           if (nextStatus !== target.status) {
             await tx.user.update({
