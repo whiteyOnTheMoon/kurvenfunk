@@ -40,7 +40,10 @@ function matchNotFound(): NotFoundException {
 }
 
 function seasonNotFound(): NotFoundException {
-  return new NotFoundException({ code: 'SEASON_NOT_FOUND', message: 'Saison wurde nicht gefunden.' });
+  return new NotFoundException({
+    code: 'SEASON_NOT_FOUND',
+    message: 'Saison wurde nicht gefunden.',
+  });
 }
 
 function databaseCode(error: unknown, code: string): boolean {

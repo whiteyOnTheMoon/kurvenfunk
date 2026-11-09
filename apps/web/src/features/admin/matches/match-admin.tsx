@@ -93,9 +93,7 @@ const emptyDraft: FixtureDraft = {
 
 function localDateTime(iso: string): string {
   const date = new Date(iso);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
 function toDraft(fixture: Fixture): FixtureDraft {
@@ -374,24 +372,22 @@ export function MatchAdmin({ apiUrl }: { apiUrl: string }) {
     setMessage(null);
     try {
       const payload = toPayload(data);
-      const input = method === 'POST'
-        ? {
-            ...payload,
-            competitionId: fixtures.season.competitionId,
-            seasonId: fixtures.season.id,
-          }
-        : payload;
-      const response = await fetch(
-        `${apiUrl}/api/v1/matches${id ? `/${id}` : ''}`,
-        {
-          method,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(input),
+      const input =
+        method === 'POST'
+          ? {
+              ...payload,
+              competitionId: fixtures.season.competitionId,
+              seasonId: fixtures.season.id,
+            }
+          : payload;
+      const response = await fetch(`${apiUrl}/api/v1/matches${id ? `/${id}` : ''}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify(input),
+      });
       await parseResponse<Fixture>(response);
       await refresh();
       setDraft({ ...emptyDraft });
@@ -414,12 +410,20 @@ export function MatchAdmin({ apiUrl }: { apiUrl: string }) {
       <header>
         <h2 id="match-admin-title">Spielansetzungen verwalten</h2>
         <p>
-          Teams, Spieltage, Phasen und Anstoßzeiten pflegen oder Spiele verschieben. Ergebnisse
-          und Live-Spiele werden erst in der gesonderten Ergebnisverwaltung bearbeitet.
+          Teams, Spieltage, Phasen und Anstoßzeiten pflegen oder Spiele verschieben. Ergebnisse und
+          Live-Spiele werden erst in der gesonderten Ergebnisverwaltung bearbeitet.
         </p>
       </header>
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
-      {message ? <p className={styles.success} role="status">{message}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className={styles.success} role="status">
+          {message}
+        </p>
+      ) : null}
       <div className={styles.filters}>
         <label>
           Wettbewerb
@@ -434,7 +438,9 @@ export function MatchAdmin({ apiUrl }: { apiUrl: string }) {
             }}
           >
             {competitions.map((competition) => (
-              <option key={competition.id} value={competition.slug}>{competition.name}</option>
+              <option key={competition.id} value={competition.slug}>
+                {competition.name}
+              </option>
             ))}
           </select>
         </label>
@@ -449,7 +455,9 @@ export function MatchAdmin({ apiUrl }: { apiUrl: string }) {
             }}
           >
             {seasons.map((season) => (
-              <option key={season.id} value={season.id}>{season.name} ({season.status})</option>
+              <option key={season.id} value={season.id}>
+                {season.name} ({season.status})
+              </option>
             ))}
           </select>
         </label>
@@ -470,21 +478,30 @@ export function MatchAdmin({ apiUrl }: { apiUrl: string }) {
           </section>
           <section className={styles.panel} aria-labelledby="fixture-list-title">
             <h3 id="fixture-list-title">Spiele der Saison ({fixtures.matches.length})</h3>
-            {fixtures.matches.length === 0 ? <p>Für diese Saison sind noch keine Spiele angelegt.</p> : null}
+            {fixtures.matches.length === 0 ? (
+              <p>Für diese Saison sind noch keine Spiele angelegt.</p>
+            ) : null}
             <div className={styles.list}>
               {fixtures.matches.map((match) => {
-                const editable = editableStatuses.includes(match.status as FixtureStatus)
-                  && match.homeScore === null
-                  && match.awayScore === null;
+                const editable =
+                  editableStatuses.includes(match.status as FixtureStatus) &&
+                  match.homeScore === null &&
+                  match.awayScore === null;
                 return (
                   <article key={match.id} className={styles.match}>
                     <div className={styles.heading}>
                       <div>
-                        <h4>{match.homeClub.name} – {match.awayClub.name}</h4>
+                        <h4>
+                          {match.homeClub.name} – {match.awayClub.name}
+                        </h4>
                         <p>
                           {new Date(match.kickoff).toLocaleString('de-AT')} ·
-                          {match.matchday === null ? ' ohne Spieltag' : ` Spieltag ${match.matchday}`}
-                          {match.stageId ? ` · ${match.stageId === fixtures.season.stages.find((stage) => stage.id === match.stageId)?.id ? fixtures.season.stages.find((stage) => stage.id === match.stageId)?.name : 'Phase'}` : ''}
+                          {match.matchday === null
+                            ? ' ohne Spieltag'
+                            : ` Spieltag ${match.matchday}`}
+                          {match.stageId
+                            ? ` · ${match.stageId === fixtures.season.stages.find((stage) => stage.id === match.stageId)?.id ? fixtures.season.stages.find((stage) => stage.id === match.stageId)?.name : 'Phase'}`
+                            : ''}
                         </p>
                       </div>
                       <span>{statusNames[match.status]}</span>

@@ -185,7 +185,8 @@ describe('Task 195 Match Management isolated HTTP and PostgreSQL E2E', () => {
           await database.match.deleteMany({ where: { id: { in: createdMatchIds } } });
         }
         if (stageIds.length) await database.stage.deleteMany({ where: { id: { in: stageIds } } });
-        if (seasonIds.length) await database.season.deleteMany({ where: { id: { in: seasonIds } } });
+        if (seasonIds.length)
+          await database.season.deleteMany({ where: { id: { in: seasonIds } } });
         if (competitionIds.length) {
           await database.competition.deleteMany({ where: { id: { in: competitionIds } } });
         }
@@ -222,7 +223,9 @@ describe('Task 195 Match Management isolated HTTP and PostgreSQL E2E', () => {
   }
 
   it('restricts admin fixture writes and reads to active ADMIN/SUPERADMIN', async () => {
-    await request(app.getHttpServer()).get('/api/v1/matches/admin/season/' + seasonId).expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/matches/admin/season/' + seasonId)
+      .expect(401);
     await request(app.getHttpServer()).post('/api/v1/matches').send(sample()).expect(401);
     for (const subject of [subjects.editor, subjects.limited, subjects.banned]) {
       const token = await tokenFor(subject);
@@ -392,6 +395,8 @@ describe('Task 195 Match Management isolated HTTP and PostgreSQL E2E', () => {
     expect(persisted.kickoff.toISOString()).toBe('2026-10-23T17:30:00.000Z');
     expect(persisted.homeScore).toBe(2);
 
-    await request(app.getHttpServer()).delete('/api/v1/matches/' + matchId).expect(404);
+    await request(app.getHttpServer())
+      .delete('/api/v1/matches/' + matchId)
+      .expect(404);
   });
 });
