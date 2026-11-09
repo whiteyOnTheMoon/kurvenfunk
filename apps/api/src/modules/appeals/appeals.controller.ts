@@ -38,6 +38,14 @@ export const decideAppealSchema = z
   })
   .strict();
 
+export const approveAppealSchema = z
+  .object({
+    outcome: z.enum(['APPROVE', 'RETURN']),
+    decisionNote: z.string().trim().min(10).max(2000),
+  })
+  .strict();
+
+export type ApproveAppealInput = z.infer<typeof approveAppealSchema>;
 export type CreateAppealInput = z.infer<typeof createAppealSchema>;
 export type DecideAppealInput = z.infer<typeof decideAppealSchema>;
 
@@ -82,6 +90,35 @@ export class ModerationAppealsController {
   @RequirePermissions(PERMISSIONS.USER_WARN)
   listOpen() {
     return this.appeals.listOpenForModeration();
+  }
+
+  @Get('policy')
+  @Header('Cache-Control', 'private, no-store')
+  @RequirePermissions(PERMISSIONS.USER_WARN)
+  policy() {
+    return { appealSecondReviewRequired: this.appeals.isFourEyesEnabled() };
+  }
+
+  @Get('pending')
+  @Header('Cache-Control', 'private, no-store')
+  @RequirePermissions(PERMISSIONS.USER_BAN)
+  listPending() {
+    return this.appeals.listPendingForApproval();
+  }
+
+  @Patch(':appealId/approval')
+  @Header('Cache-Control', 'private, no-store')
+  @RequirePermissions(PERMISSIONS.USER_BAN)
+  approve(
+    @Param('appealId', new ParseUUIDPipe({ version: '4' })) appealId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(approveAppealSchema)) input: ApproveAppealInput,
+  ) {
+    return this.appeals.approve({
+      ...input,
+      appealId,
+      reviewerId: request.user!.kurvenfunkUserId,
+    });
   }
 
   @Patch(':appealId/decision')
