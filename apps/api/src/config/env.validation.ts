@@ -31,6 +31,8 @@ const apiEnvSchema = z
     // Opt-in only. Never auto-block shared IPs on basic rate-limit bursts.
     IP_TEMP_BLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
     IP_TEMP_AUTO_BLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
+    // Task 190: explicit opt-in; no existing appeal decisions are delayed by default.
+    APPEAL_FOUR_EYES_ENABLED: z.enum(['true', 'false']).default('false'),
     IP_HASH_PREVIOUS_KEYS_JSON: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.string().optional(),
