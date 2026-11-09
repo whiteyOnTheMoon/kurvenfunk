@@ -214,9 +214,13 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
     expect(first.active).toBe(true);
     expect(first.status).toBe('ACTIVE');
 
-    const current = await request(app.getHttpServer()).get(baseUrl + '/current').expect(200);
+    const current = await request(app.getHttpServer())
+      .get(baseUrl + '/current')
+      .expect(200);
     expect((responseData(current) as { id: string }).id).toBe(first.id);
-    const bySlug = await request(app.getHttpServer()).get(baseUrl + '/2026-27').expect(200);
+    const bySlug = await request(app.getHttpServer())
+      .get(baseUrl + '/2026-27')
+      .expect(200);
     expect((responseData(bySlug) as { id: string }).id).toBe(first.id);
 
     await request(app.getHttpServer())
@@ -296,8 +300,12 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
       .expect(200);
     expect((responseData(closeResponse) as { active: boolean }).active).toBe(false);
 
-    await request(app.getHttpServer()).get(baseUrl + '/current').expect(404);
-    await request(app.getHttpServer()).get(baseUrl + '/2026-27').expect(200);
+    await request(app.getHttpServer())
+      .get(baseUrl + '/current')
+      .expect(404);
+    await request(app.getHttpServer())
+      .get(baseUrl + '/2026-27')
+      .expect(200);
 
     const activateResponse = await request(app.getHttpServer())
       .patch('/api/v1/seasons/' + next)
@@ -320,6 +328,8 @@ describe('Task 193 Season Management isolated HTTP and PostgreSQL E2E', () => {
     expect(audit).toHaveLength(4);
     expect(audit.every((item) => item.actorUserId !== null)).toBe(true);
 
-    await request(app.getHttpServer()).delete('/api/v1/seasons/' + next).expect(404);
+    await request(app.getHttpServer())
+      .delete('/api/v1/seasons/' + next)
+      .expect(404);
   });
 });
