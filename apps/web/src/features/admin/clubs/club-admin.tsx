@@ -293,11 +293,7 @@ export function ClubAdmin({ apiUrl }: { apiUrl: string }) {
     setClubs(await parseResponse<Club[]>(response));
   }
 
-  async function save(
-    method: 'POST' | 'PATCH',
-    path: string,
-    input: unknown,
-  ): Promise<void> {
+  async function save(method: 'POST' | 'PATCH', path: string, input: unknown): Promise<void> {
     if (!token) return;
     setBusy(true);
     setError(null);
@@ -362,9 +358,7 @@ export function ClubAdmin({ apiUrl }: { apiUrl: string }) {
           onChange={setNewClub}
           busy={busy}
           creating
-          onSubmit={() =>
-            void save('POST', '', { ...buildPayload(newClub), slug: newClub.slug })
-          }
+          onSubmit={() => void save('POST', '', { ...buildPayload(newClub), slug: newClub.slug })}
         />
       </section>
 
@@ -396,16 +390,18 @@ export function ClubAdmin({ apiUrl }: { apiUrl: string }) {
                       ['Sekundär', club.color2Hex],
                       ['Dritte', club.color3Hex],
                       ['Akzent', club.accentColorHex],
-                    ].filter((pair) => pair[1] !== null).map(([label, color]) => (
-                      <span className={styles.colorChip} key={label}>
-                        <span
-                          className={styles.swatch}
-                          style={{ backgroundColor: color ?? 'transparent' }}
-                          aria-hidden="true"
-                        />
-                        {label}: {color}
-                      </span>
-                    ))}
+                    ]
+                      .filter((pair) => pair[1] !== null)
+                      .map(([label, color]) => (
+                        <span className={styles.colorChip} key={label}>
+                          <span
+                            className={styles.swatch}
+                            style={{ backgroundColor: color ?? 'transparent' }}
+                            aria-hidden="true"
+                          />
+                          {label}: {color}
+                        </span>
+                      ))}
                   </div>
                 </div>
                 <span className={club.active ? styles.active : styles.inactive}>

@@ -115,8 +115,7 @@ function colorData(input: {
     ...(input.accentColorHex !== undefined
       ? {
           accentColorHex: input.accentColorHex,
-          accentColorRgba:
-            input.accentColorHex === null ? null : hexToRgba(input.accentColorHex),
+          accentColorRgba: input.accentColorHex === null ? null : hexToRgba(input.accentColorHex),
         }
       : {}),
   };

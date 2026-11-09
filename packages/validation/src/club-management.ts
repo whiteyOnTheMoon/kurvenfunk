@@ -20,8 +20,9 @@ const officialWebsiteSchema = z
   .url()
   .refine((value) => {
     const url = new URL(value);
-    return (url.protocol === 'https:' || url.protocol === 'http:') &&
-      !url.username && !url.password;
+    return (
+      (url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password
+    );
   }, 'Expected an absolute HTTP(S) website without credentials')
   .nullable();
 

@@ -241,7 +241,9 @@ describe('Task 194 Club Management isolated HTTP and PostgreSQL E2E', () => {
     expect(club.logoMediaId).toBe(logoId);
 
     const publicList = await request(app.getHttpServer()).get('/api/v1/clubs').expect(200);
-    expect((responseData(publicList) as { id: string }[]).some((item) => item.id === club.id)).toBe(true);
+    expect((responseData(publicList) as { id: string }[]).some((item) => item.id === club.id)).toBe(
+      true,
+    );
     const publicDetail = await request(app.getHttpServer())
       .get('/api/v1/clubs/' + slug)
       .expect(200);
@@ -303,7 +305,9 @@ describe('Task 194 Club Management isolated HTTP and PostgreSQL E2E', () => {
 
     const list = await request(app.getHttpServer()).get('/api/v1/clubs').expect(200);
     expect((responseData(list) as { id: string }[]).some((item) => item.id === clubId)).toBe(false);
-    await request(app.getHttpServer()).get('/api/v1/clubs/' + slug).expect(404);
+    await request(app.getHttpServer())
+      .get('/api/v1/clubs/' + slug)
+      .expect(404);
 
     const admin = await request(app.getHttpServer())
       .get('/api/v1/clubs/admin/all')
@@ -319,6 +323,8 @@ describe('Task 194 Club Management isolated HTTP and PostgreSQL E2E', () => {
     expect(audit).toHaveLength(2);
     expect(audit.every((item) => item.actorUserId !== null)).toBe(true);
 
-    await request(app.getHttpServer()).delete('/api/v1/clubs/' + clubId).expect(404);
+    await request(app.getHttpServer())
+      .delete('/api/v1/clubs/' + clubId)
+      .expect(404);
   });
 });
