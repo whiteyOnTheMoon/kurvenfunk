@@ -27,9 +27,16 @@ describe('Task 197 standing row validation', () => {
     });
     assert.equal(
       updateStandingSchema.safeParse({
-        ...base,
-        clubId: undefined,
-        stageId: undefined,
+        position: base.position,
+        played: base.played,
+        won: base.won,
+        drawn: base.drawn,
+        lost: base.lost,
+        goalsFor: base.goalsFor,
+        goalsAgainst: base.goalsAgainst,
+        points: base.points,
+        deductionPoints: base.deductionPoints,
+        sortOrder: base.sortOrder,
         expectedUpdatedAt: '2026-11-09T18:00:00.000Z',
       }).success,
       true,
