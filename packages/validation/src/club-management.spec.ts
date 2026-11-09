@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { clubColorSchema, createClubSchema, updateClubSchema } from './club-management.ts';
+import { clubColorSchema, createClubSchema, updateClubSchema } from '../dist/club-management.js';
 
 const sample = {
   name: 'SK Test Wien',
