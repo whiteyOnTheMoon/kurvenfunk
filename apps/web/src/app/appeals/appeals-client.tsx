@@ -26,7 +26,7 @@ interface MyAppeal {
   moderationCardId: string | null;
   sanctionId: string | null;
   reason: string;
-  status: 'OPEN' | 'ACCEPTED' | 'REJECTED';
+  status: 'OPEN' | 'PENDING_APPROVAL' | 'ACCEPTED' | 'REJECTED';
   createdAt: string;
   resolvedAt: string | null;
 }
@@ -256,6 +256,8 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
               <strong>
                 {appeal.status === 'OPEN'
                   ? 'In Prüfung'
+                  : appeal.status === 'PENDING_APPROVAL'
+                    ? 'Wartet auf zweite Prüfung'
                   : appeal.status === 'ACCEPTED'
                     ? 'Angenommen'
                     : 'Abgelehnt'}
