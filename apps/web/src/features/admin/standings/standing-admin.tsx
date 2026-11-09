@@ -66,6 +66,39 @@ interface Draft {
   deductionPoints: number;
   sortOrder: string;
 }
+interface CalculationRow {
+  clubId: string;
+  position: number;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  deductionPoints: number;
+  existingId: string | null;
+  changed: boolean;
+}
+interface CalculationPreview {
+  seasonId: string;
+  stageId: string | null;
+  profile: string;
+  finishedMatches: number;
+  excludedMatches: number;
+  existingCount: number;
+  previewHash: string;
+  canApply: boolean;
+  unresolvedTies: string[][];
+  rows: CalculationRow[];
+}
+interface CalculationApplyResult {
+  created: number;
+  updated: number;
+  unchanged: number;
+}
+
 interface ApiPayload<T> {
   data?: T;
   error?: { message?: string | string[] };
@@ -212,8 +245,8 @@ function StandingEditor({
       </label>
       <p className={styles.hint}>
         Spiele und Tordifferenz werden aus den eingegebenen Werten abgeleitet. Die Punkte bleiben
-        unabhängig, z. B. bei Punktabzügen oder Ligaregeln. Eine automatische Berechnung aus
-        Ergebnissen folgt mit Task 198.
+        unabhängig, z. B. bei Punktabzügen oder Ligaregeln. Die automatische Berechnung aus
+        Endergebnissen ist über die Vorschau auf dieser Seite verfügbar.
       </p>
       <div className={styles.actions}>
         <button type="submit" disabled={busy || !draft.clubId}>
@@ -242,6 +275,9 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
   const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Draft>({ ...emptyDraft });
+  const [calculation, setCalculation] = useState<CalculationPreview | null>(null);
+  const [overwriteConfirmed, setOverwriteConfirmed] = useState(false);
+  const [calculationBusy, setCalculationBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -369,6 +405,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       }
       await parseResponse<Row>(response);
       await reload();
+      setCalculation(null);
       setEditingId(null);
       setDraft({ ...emptyDraft });
       setMessage('Tabellenzeile gespeichert und protokolliert.');
@@ -376,6 +413,76 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
       setError(cause instanceof Error ? cause.message : 'Speichern fehlgeschlagen.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function calculatePreview() {
+    if (!token || !seasonId) return;
+    setCalculationBusy(true);
+    setCalculation(null);
+    setOverwriteConfirmed(false);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/standings/admin/season/${seasonId}/calculate/preview`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ stageId: stageId || null }),
+        },
+      );
+      setCalculation(await parseResponse<CalculationPreview>(response));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Berechnung nicht verfügbar.');
+    } finally {
+      setCalculationBusy(false);
+    }
+  }
+
+  async function applyCalculation() {
+    if (!token || !seasonId || !calculation || !calculation.canApply) return;
+    if (calculation.seasonId !== seasonId || calculation.stageId !== (stageId || null)) return;
+    if (calculation.existingCount > 0 && !overwriteConfirmed) return;
+    setCalculationBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/v1/standings/admin/season/${seasonId}/calculate/apply`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            stageId: stageId || null,
+            expectedPreviewHash: calculation.previewHash,
+            overwriteExisting: overwriteConfirmed,
+          }),
+        },
+      );
+      if (response.status === 409) {
+        setCalculation(null);
+        setOverwriteConfirmed(false);
+        await reload();
+        throw new Error('Daten oder Rangfolge haben sich geändert. Neue Vorschau erstellen.');
+      }
+      const saved = await parseResponse<CalculationApplyResult>(response);
+      await reload();
+      setCalculation(null);
+      setOverwriteConfirmed(false);
+      setMessage(
+        `Berechnung angewendet: ${saved.created} neu, ${saved.updated} aktualisiert, ${saved.unchanged} unverändert.`,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Tabellenberechnung fehlgeschlagen.');
+    } finally {
+      setCalculationBusy(false);
     }
   }
 
@@ -414,6 +521,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
               setStageId('');
               setAvailableStages([]);
               setTable(null);
+              setCalculation(null);
             }}
           >
             {competitions.map((competition) => (
@@ -432,6 +540,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
               setStageId('');
               setAvailableStages([]);
               setTable(null);
+              setCalculation(null);
             }}
           >
             {seasons.map((season) => (
@@ -449,6 +558,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
               setStageId(event.target.value);
               setEditingId(null);
               setTable(null);
+              setCalculation(null);
             }}
           >
             <option value="">Saisontabelle (ohne Phase)</option>
@@ -463,6 +573,79 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
 
       {table ? (
         <>
+          <section className={styles.panel} aria-labelledby="standing-calc-title">
+            <h3 id="standing-calc-title">Tabelle aus Ergebnissen berechnen</h3>
+            <p className={styles.hint}>
+              Nur abgeschlossene Spiele werden gezählt. Zuerst Vorschau prüfen, danach ausdrücklich
+              übernehmen. Vorhandene Tabellenwerte bleiben bis zur Bestätigung unverändert.
+            </p>
+            <button
+              type="button"
+              disabled={busy || calculationBusy}
+              onClick={() => void calculatePreview()}
+            >
+              {calculationBusy ? 'Berechnung läuft …' : 'Berechnungsvorschau erstellen'}
+            </button>
+            {calculation &&
+            calculation.seasonId === seasonId &&
+            calculation.stageId === (stageId || null) ? (
+              <div className={styles.list} aria-live="polite">
+                <p>
+                  Regelprofil: <strong>{calculation.profile}</strong> · abgeschlossene Spiele:{' '}
+                  {calculation.finishedMatches} · noch nicht abgeschlossene Spiele:{' '}
+                  {calculation.excludedMatches}
+                </p>
+                {calculation.rows.map((row) => (
+                  <div key={row.clubId} className={styles.heading}>
+                    <span>
+                      {row.position}.{' '}
+                      {clubs.find((club) => club.id === row.clubId)?.name ?? row.clubId}
+                      {' · '}Sp {row.played} · S {row.won} · U {row.drawn} · N {row.lost}
+                    </span>
+                    <span>
+                      {row.goalsFor}:{row.goalsAgainst} · Diff {row.goalDifference}
+                      {' · '} {row.points} Punkte
+                      {row.changed ? ' · Änderung' : ' · unverändert'}
+                    </span>
+                  </div>
+                ))}
+                {calculation.unresolvedTies.length > 0 ? (
+                  <p className={styles.error} role="alert">
+                    Einige Tabellenplätze sind nach den verfügbaren direkten Duellen und weiteren
+                    Kriterien noch nicht eindeutig. Automatisches Übernehmen ist dafür gesperrt.
+                  </p>
+                ) : null}
+                {calculation.finishedMatches === 0 ? (
+                  <p role="status">Noch keine endgültigen Spielergebnisse vorhanden.</p>
+                ) : null}
+                {calculation.existingCount > 0 ? (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={overwriteConfirmed}
+                      onChange={(event) => setOverwriteConfirmed(event.target.checked)}
+                    />
+                    Ich bestätige das Ersetzen bestehender Tabellenwerte (
+                    {calculation.existingCount} Zeilen).
+                  </label>
+                ) : null}
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    disabled={
+                      busy ||
+                      calculationBusy ||
+                      !calculation.canApply ||
+                      (calculation.existingCount > 0 && !overwriteConfirmed)
+                    }
+                    onClick={() => void applyCalculation()}
+                  >
+                    Vorschau übernehmen
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
           <section className={styles.panel} aria-labelledby="standing-add-title">
             <h3 id="standing-add-title">Verein in Tabelle eintragen</h3>
             <StandingEditor
