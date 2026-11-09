@@ -215,9 +215,12 @@ async function run() {
           '--runTestsByPath',
           suite,
         ],
-        { cwd: api, env, stdio: 'inherit' },
+        { cwd: api, env, stdio: 'inherit', timeout: 120_000 },
       );
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('[E2E] Suite terminated before completion:', basename(suite));
+        throw result.error;
+      }
       if (result.status !== 0) {
         process.exitCode = result.status ?? 1;
         break;
