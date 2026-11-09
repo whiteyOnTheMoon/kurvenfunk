@@ -104,7 +104,10 @@ export function earnedPointsFor(
   matches: readonly CalculationMatch[],
   clubIds: readonly string[],
 ): Record<string, number> {
-  const calculated = calculateStandings(matches, clubIds, { profile: 'STANDARD' });
+  const calculated = calculateStandings(matches, clubIds, {
+    profile: 'STANDARD',
+    allowExternalOpponents: true,
+  });
   // Do not require ties to be resolved when counting regular-phase points.
   return Object.fromEntries(calculated.rows.map((row) => [row.clubId, row.won * 3 + row.drawn]));
 }
@@ -140,10 +143,10 @@ export function calculateStandings(
     const h = fixture.homeScore;
     const a = fixture.awayScore;
     if (
-      !Number.isSafeInteger(h) ||
-      !Number.isSafeInteger(a) ||
       h === null ||
       a === null ||
+      !Number.isSafeInteger(h) ||
+      !Number.isSafeInteger(a) ||
       h < 0 ||
       a < 0
     ) {
