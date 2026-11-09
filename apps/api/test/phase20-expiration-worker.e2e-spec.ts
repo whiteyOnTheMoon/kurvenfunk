@@ -92,9 +92,7 @@ describe('Task 191 – isolated PostgreSQL sanction expiration, recovery and con
       ['priorRevoked', 'REVOKED'],
     ] as const) {
       // RFC 5737 documentation IP and a disposable HMAC secret; no real IP.
-      const hash = createHmac('sha256', randomBytes(32))
-        .update('192.0.2.191')
-        .digest('hex');
+      const hash = createHmac('sha256', randomBytes(32)).update('192.0.2.191').digest('hex');
       const block = await db.iPBlock.create({
         data: {
           ipHash: hash,
@@ -156,57 +154,83 @@ describe('Task 191 – isolated PostgreSQL sanction expiration, recovery and con
     await recovered.expireDueSanctions();
 
     for (const name of [
-      'restore', 'comment', 'forum', 'overlapExpired',
-      'banExpired', 'redExpired', 'bannedExpired', 'expired',
+      'restore',
+      'comment',
+      'forum',
+      'overlapExpired',
+      'banExpired',
+      'redExpired',
+      'bannedExpired',
+      'expired',
     ]) {
-      expect((await db.sanction.findUniqueOrThrow({ where: { id: sanctionIds[name] } })).status)
-        .toBe('EXPIRED');
-      expect(await db.auditLog.count({
-        where: { sanctionId: sanctionIds[name], action: 'SANCTION_EXPIRED' },
-      })).toBe(1);
+      expect(
+        (await db.sanction.findUniqueOrThrow({ where: { id: sanctionIds[name] } })).status,
+      ).toBe('EXPIRED');
+      expect(
+        await db.auditLog.count({
+          where: { sanctionId: sanctionIds[name], action: 'SANCTION_EXPIRED' },
+        }),
+      ).toBe(1);
     }
     for (const name of ['overlapFuture', 'banActive']) {
-      expect((await db.sanction.findUniqueOrThrow({ where: { id: sanctionIds[name] } })).status)
-        .toBe('ACTIVE');
+      expect(
+        (await db.sanction.findUniqueOrThrow({ where: { id: sanctionIds[name] } })).status,
+      ).toBe('ACTIVE');
     }
-    expect((await db.sanction.findUniqueOrThrow({
-      where: { id: sanctionIds.priorRevoked },
-    })).status).toBe('REVOKED');
-    expect(await db.auditLog.count({
-      where: { sanctionId: sanctionIds.priorRevoked, action: 'SANCTION_EXPIRED' },
-    })).toBe(0);
+    expect(
+      (
+        await db.sanction.findUniqueOrThrow({
+          where: { id: sanctionIds.priorRevoked },
+        })
+      ).status,
+    ).toBe('REVOKED');
+    expect(
+      await db.auditLog.count({
+        where: { sanctionId: sanctionIds.priorRevoked, action: 'SANCTION_EXPIRED' },
+      }),
+    ).toBe(0);
 
     for (const name of ['expired', 'priorRevoked']) {
-      expect((await db.iPBlock.findUniqueOrThrow({ where: { id: blockIds[name] } })).active)
-        .toBe(false);
-      expect(await db.auditLog.count({
-        where: { ipBlockId: blockIds[name], action: 'IP_BLOCK_EXPIRED' },
-      })).toBe(1);
+      expect((await db.iPBlock.findUniqueOrThrow({ where: { id: blockIds[name] } })).active).toBe(
+        false,
+      );
+      expect(
+        await db.auditLog.count({
+          where: { ipBlockId: blockIds[name], action: 'IP_BLOCK_EXPIRED' },
+        }),
+      ).toBe(1);
     }
 
-    expect((await db.user.findUniqueOrThrow({ where: { id: userIds.restore } })).status)
-      .toBe('ACTIVE');
+    expect((await db.user.findUniqueOrThrow({ where: { id: userIds.restore } })).status).toBe(
+      'ACTIVE',
+    );
     for (const name of ['overlap', 'ban', 'red']) {
-      expect((await db.user.findUniqueOrThrow({ where: { id: userIds[name] } })).status)
-        .toBe('LIMITED');
+      expect((await db.user.findUniqueOrThrow({ where: { id: userIds[name] } })).status).toBe(
+        'LIMITED',
+      );
     }
-    expect((await db.user.findUniqueOrThrow({ where: { id: userIds.banned } })).status)
-      .toBe('BANNED');
-    expect(await db.auditLog.count({
-      where: {
-        targetUserId: userIds.restore,
-        action: 'USER_STATUS_CHANGED',
-        reason: 'LIMITED_EXPIRED',
-      },
-    })).toBe(1);
-    for (const name of ['overlap', 'ban', 'red', 'banned']) {
-      expect(await db.auditLog.count({
+    expect((await db.user.findUniqueOrThrow({ where: { id: userIds.banned } })).status).toBe(
+      'BANNED',
+    );
+    expect(
+      await db.auditLog.count({
         where: {
-          targetUserId: userIds[name],
+          targetUserId: userIds.restore,
           action: 'USER_STATUS_CHANGED',
           reason: 'LIMITED_EXPIRED',
         },
-      })).toBe(0);
+      }),
+    ).toBe(1);
+    for (const name of ['overlap', 'ban', 'red', 'banned']) {
+      expect(
+        await db.auditLog.count({
+          where: {
+            targetUserId: userIds[name],
+            action: 'USER_STATUS_CHANGED',
+            reason: 'LIMITED_EXPIRED',
+          },
+        }),
+      ).toBe(0);
     }
   }, 30000);
 });
