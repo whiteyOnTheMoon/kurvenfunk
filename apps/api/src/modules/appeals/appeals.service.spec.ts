@@ -63,19 +63,18 @@ describe('Task 189 appeal security and atomic submission', () => {
     });
     expect(result.status).toBe('OPEN');
     expect(database.$transaction).toHaveBeenCalledTimes(1);
-    expect(database.appeal.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: USER, moderationCardId: CARD, status: 'OPEN' }),
-      }),
-    );
-    expect(database.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ action: 'APPEAL_CREATED' }) }),
-    );
-    expect(database.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ type: 'APPEAL', sourceType: 'APPEAL' }),
-      }),
-    );
+    const appealArgs = (database.appeal.create.mock.calls as unknown[][])[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    const auditArgs = (database.auditLog.create.mock.calls as unknown[][])[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    const notificationArgs = (database.notification.create.mock.calls as unknown[][])[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    expect(appealArgs.data).toMatchObject({ userId: USER, moderationCardId: CARD, status: 'OPEN' });
+    expect(auditArgs.data).toMatchObject({ action: 'APPEAL_CREATED' });
+    expect(notificationArgs.data).toMatchObject({ type: 'APPEAL', sourceType: 'APPEAL' });
   });
 
   it('never exposes whether another user owns a card or IP sanction', async () => {
