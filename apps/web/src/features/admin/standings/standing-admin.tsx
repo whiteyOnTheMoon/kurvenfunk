@@ -245,8 +245,8 @@ function StandingEditor({
       </label>
       <p className={styles.hint}>
         Spiele und Tordifferenz werden aus den eingegebenen Werten abgeleitet. Die Punkte bleiben
-        unabhängig, z. B. bei Punktabzügen oder Ligaregeln. Eine automatische Berechnung aus
-        Ergebnissen folgt mit Task 198.
+        unabhängig, z. B. bei Punktabzügen oder Ligaregeln. Die automatische Berechnung aus Endergebnissen ist über die
+        Vorschau auf dieser Seite verfügbar.
       </p>
       <div className={styles.actions}>
         <button type="submit" disabled={busy || !draft.clubId}>
