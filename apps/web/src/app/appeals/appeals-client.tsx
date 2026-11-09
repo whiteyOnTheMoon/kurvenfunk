@@ -41,9 +41,12 @@ async function apiData<T>(url: string, bearer: string, options?: RequestInit): P
     },
   });
   if (!response.ok) {
-    if (response.status === 409) throw new Error('Für diese Maßnahme wurde bereits ein Einspruch eingereicht.');
-    if (response.status === 401) throw new Error('Die Sitzung ist abgelaufen. Bitte melde dich erneut an.');
-    if (response.status === 404) throw new Error('Diese Maßnahme ist für dein Konto nicht verfügbar.');
+    if (response.status === 409)
+      throw new Error('Für diese Maßnahme wurde bereits ein Einspruch eingereicht.');
+    if (response.status === 401)
+      throw new Error('Die Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+    if (response.status === 404)
+      throw new Error('Diese Maßnahme ist für dein Konto nicht verfügbar.');
     throw new Error('Die Anfrage konnte nicht abgeschlossen werden.');
   }
   const payload = (await response.json()) as { data?: T };
@@ -56,8 +59,14 @@ async function apiData<T>(url: string, bearer: string, options?: RequestInit): P
  * sets regular authenticated=true or passes appealToken to other endpoints.
  */
 export function AppealsClient({ apiUrl }: { apiUrl: string }) {
-  const { initialized, authenticated, token, appealToken, error: authError, loginForAppeals } =
-    useAuth();
+  const {
+    initialized,
+    authenticated,
+    token,
+    appealToken,
+    error: authError,
+    loginForAppeals,
+  } = useAuth();
   const bearer = authenticated ? token : authError === 'ACCOUNT_BANNED' ? appealToken : undefined;
   const [cards, setCards] = useState<EligibleCard[]>([]);
   const [sanctions, setSanctions] = useState<EligibleSanction[]>([]);
@@ -84,7 +93,9 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
       try {
         const [eligible, mine] = await Promise.all([
           apiData<{ cards: EligibleCard[]; sanctions: EligibleSanction[] }>(
-            `${apiUrl}/api/v1/appeals/eligible`, bearer, { signal: controller.signal },
+            `${apiUrl}/api/v1/appeals/eligible`,
+            bearer,
+            { signal: controller.signal },
           ),
           apiData<MyAppeal[]>(`${apiUrl}/api/v1/appeals/mine`, bearer, {
             signal: controller.signal,
@@ -130,7 +141,9 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
       setReload((x) => x + 1);
       setNotice('Dein Einspruch wurde eingereicht.');
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : 'Der Einspruch konnte nicht eingereicht werden.');
+      setNotice(
+        cause instanceof Error ? cause.message : 'Der Einspruch konnte nicht eingereicht werden.',
+      );
     } finally {
       setBusy(false);
     }
@@ -147,7 +160,9 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
         <button className={styles.button} type="button" onClick={() => void loginForAppeals()}>
           Für Einsprüche anmelden
         </button>
-        <p><Link href="/">Zur Startseite</Link></p>
+        <p>
+          <Link href="/">Zur Startseite</Link>
+        </p>
       </main>
     );
   }
@@ -157,11 +172,14 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
       <header>
         <p className={styles.eyebrow}>Persönlicher, geschützter Bereich</p>
         <h1>Meine Einsprüche</h1>
-        <p>Hier kannst du Karten oder Sanktionen deines eigenen Kontos anfechten und den Bearbeitungsstand prüfen.</p>
+        <p>
+          Hier kannst du Karten oder Sanktionen deines eigenen Kontos anfechten und den
+          Bearbeitungsstand prüfen.
+        </p>
         {authError === 'ACCOUNT_BANNED' ? (
           <p className={styles.notice}>
-            Dein Konto ist gesperrt. Diese Anmeldung erlaubt ausschließlich Einsprüche,
-            keinen Zugang zu Community- oder Moderationsfunktionen.
+            Dein Konto ist gesperrt. Diese Anmeldung erlaubt ausschließlich Einsprüche, keinen
+            Zugang zu Community- oder Moderationsfunktionen.
           </p>
         ) : null}
       </header>
@@ -207,12 +225,17 @@ export function AppealsClient({ apiUrl }: { apiUrl: string }) {
         >
           {busy ? 'Wird eingereicht …' : 'Einspruch senden'}
         </button>
-        <p className={styles.muted}>Pro Karte oder Sanktion ist ein Einspruch möglich. IP-Netzwerksperren werden gesondert geprüft.</p>
+        <p className={styles.muted}>
+          Pro Karte oder Sanktion ist ein Einspruch möglich. IP-Netzwerksperren werden gesondert
+          geprüft.
+        </p>
       </section>
 
       <section className={styles.panel} aria-labelledby="my-appeals">
         <h2 id="my-appeals">Bisherige Einsprüche</h2>
-        {appeals.length === 0 && !loading ? <p>Du hast noch keine Einsprüche eingereicht.</p> : null}
+        {appeals.length === 0 && !loading ? (
+          <p>Du hast noch keine Einsprüche eingereicht.</p>
+        ) : null}
         <ul className={styles.list}>
           {appeals.map((appeal) => (
             <li key={appeal.id}>
