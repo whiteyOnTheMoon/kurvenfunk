@@ -228,6 +228,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
   const [seasonId, setSeasonId] = useState('');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [stageId, setStageId] = useState('');
+  const [availableStages, setAvailableStages] = useState<Stage[]>([]);
   const [table, setTable] = useState<TableData | null>(null);
   const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -300,7 +301,10 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
           { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' },
         );
         const result = await parseResponse<TableData>(response);
-        if (!cancelled) setTable(result);
+        if (!cancelled) {
+          setAvailableStages(result.season.stages);
+          setTable(result);
+        }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : 'Tabelle fehlt.');
       }
@@ -378,6 +382,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
             setSeasonId('');
             setSeasons([]);
             setStageId('');
+            setAvailableStages([]);
             setTable(null);
           }}>
             {competitions.map((competition) => (
@@ -390,6 +395,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
           <select value={seasonId} onChange={(event) => {
             setSeasonId(event.target.value);
             setStageId('');
+            setAvailableStages([]);
             setTable(null);
           }}>
             {seasons.map((season) => (
@@ -405,7 +411,7 @@ export function StandingAdmin({ apiUrl }: { apiUrl: string }) {
             setTable(null);
           }}>
             <option value="">Saisontabelle (ohne Phase)</option>
-            {table?.season.stages.map((stage) => (
+            {availableStages.map((stage) => (
               <option key={stage.id} value={stage.id}>{stage.name}</option>
             ))}
           </select>
