@@ -103,7 +103,10 @@ function ListHeading({
 }) {
   return (
     <>
-      <h2>{title} ({count}{hasMore ? '+' : ''})</h2>
+      <h2>
+        {title} ({count}
+        {hasMore ? '+' : ''})
+      </h2>
       {hasMore ? (
         <p className={styles.hint}>Angezeigt werden die 50 neuesten Einträge dieser Kategorie.</p>
       ) : null}
@@ -178,85 +181,161 @@ export function UserModerationHistory({ apiUrl, userId }: { apiUrl: string; user
     <main className={styles.page}>
       <div className={styles.top}>
         <Link href="/admin/moderation">← Zur Moderationsübersicht</Link>
-        <button type="button" onClick={() => { setLoading(true); setReload((x) => x + 1); }}>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            setReload((x) => x + 1);
+          }}
+        >
           Neu laden
         </button>
       </div>
       <header className={styles.heading}>
         <p className={styles.eyebrow}>Vertraulich · nur Moderation</p>
         <h1>Nutzer-Moderationshistorie</h1>
-        <p>Interne Fallnotizen und frühere Maßnahmen. Nicht öffentlich oder für Betroffene freigegeben.</p>
+        <p>
+          Interne Fallnotizen und frühere Maßnahmen. Nicht öffentlich oder für Betroffene
+          freigegeben.
+        </p>
       </header>
       {loading ? <p role="status">Historie wird geladen …</p> : null}
-      {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+      {error ? (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      ) : null}
       {canShow && history ? (
         <>
           <section className={styles.summary}>
             <h2>{history.user.nickname || 'Konto ohne Anzeigenamen'}</h2>
-            <p>Status: <strong>{history.user.status}</strong></p>
-            <p>Konto-ID: <code>{history.user.id}</code></p>
+            <p>
+              Status: <strong>{history.user.status}</strong>
+            </p>
+            <p>
+              Konto-ID: <code>{history.user.id}</code>
+            </p>
             <p>Erstellt: {timestamp(history.user.createdAt)}</p>
           </section>
 
           <section className={styles.section}>
-            <ListHeading title="Meldungen über dieses Konto" count={history.reports.items.length} hasMore={history.reports.hasMore} />
-            {history.reports.items.length === 0 ? <p>Keine Meldungen.</p> : (
-              <ul className={styles.list}>{history.reports.items.map((report) => (
-                <li key={report.id} className={styles.card}>
-                  <strong>{report.reason.replaceAll('_', ' ')} · {report.status}</strong>
-                  <span>{report.targetType} · {timestamp(report.createdAt)}</span>
-                  {report.resolution ? <span>Entscheidung: {report.resolution}</span> : null}
-                  <ConfidentialNote label="Meldungsdetails" value={report.details} />
-                  <ConfidentialNote label="Interne Moderationsnotiz" value={report.moderatorNote} />
-                </li>
-              ))}</ul>
+            <ListHeading
+              title="Meldungen über dieses Konto"
+              count={history.reports.items.length}
+              hasMore={history.reports.hasMore}
+            />
+            {history.reports.items.length === 0 ? (
+              <p>Keine Meldungen.</p>
+            ) : (
+              <ul className={styles.list}>
+                {history.reports.items.map((report) => (
+                  <li key={report.id} className={styles.card}>
+                    <strong>
+                      {report.reason.replaceAll('_', ' ')} · {report.status}
+                    </strong>
+                    <span>
+                      {report.targetType} · {timestamp(report.createdAt)}
+                    </span>
+                    {report.resolution ? <span>Entscheidung: {report.resolution}</span> : null}
+                    <ConfidentialNote label="Meldungsdetails" value={report.details} />
+                    <ConfidentialNote
+                      label="Interne Moderationsnotiz"
+                      value={report.moderatorNote}
+                    />
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
           <section className={styles.section}>
-            <ListHeading title="Karten" count={history.cards.items.length} hasMore={history.cards.hasMore} />
-            {history.cards.items.length === 0 ? <p>Keine Karten.</p> : (
-              <ul className={styles.list}>{history.cards.items.map((card) => (
-                <li key={card.id} className={styles.card}>
-                  <strong>{card.type} · {card.status}</strong>
-                  <span>{card.reasonCode.replaceAll('_', ' ')} · {timestamp(card.issuedAt)}</span>
-                  <span>Ablauf: {timestamp(card.expiresAt)} · Eskalation: {card.escalationSource}</span>
-                  {card.revokedAt ? <span>Widerrufen: {timestamp(card.revokedAt)}</span> : null}
-                  <ConfidentialNote label="Interne Moderationsnotiz" value={card.moderatorNote} />
-                  <ConfidentialNote label="Nutzer-Nachricht" value={card.userMessage} />
-                  <ConfidentialNote label="Widerrufsgrund" value={card.revocationReason} />
-                </li>
-              ))}</ul>
+            <ListHeading
+              title="Karten"
+              count={history.cards.items.length}
+              hasMore={history.cards.hasMore}
+            />
+            {history.cards.items.length === 0 ? (
+              <p>Keine Karten.</p>
+            ) : (
+              <ul className={styles.list}>
+                {history.cards.items.map((card) => (
+                  <li key={card.id} className={styles.card}>
+                    <strong>
+                      {card.type} · {card.status}
+                    </strong>
+                    <span>
+                      {card.reasonCode.replaceAll('_', ' ')} · {timestamp(card.issuedAt)}
+                    </span>
+                    <span>
+                      Ablauf: {timestamp(card.expiresAt)} · Eskalation: {card.escalationSource}
+                    </span>
+                    {card.revokedAt ? <span>Widerrufen: {timestamp(card.revokedAt)}</span> : null}
+                    <ConfidentialNote label="Interne Moderationsnotiz" value={card.moderatorNote} />
+                    <ConfidentialNote label="Nutzer-Nachricht" value={card.userMessage} />
+                    <ConfidentialNote label="Widerrufsgrund" value={card.revocationReason} />
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
           <section className={styles.section}>
-            <ListHeading title="Sanktionen und frühere Kontosperren" count={history.sanctions.items.length} hasMore={history.sanctions.hasMore} />
-            {history.sanctions.items.length === 0 ? <p>Keine Sanktionen.</p> : (
-              <ul className={styles.list}>{history.sanctions.items.map((sanction) => (
-                <li key={sanction.id} className={styles.card}>
-                  <strong>{sanction.type} · {sanction.status}</strong>
-                  <span>{sanction.reasonCode.replaceAll('_', ' ')} · Beginn: {timestamp(sanction.startsAt)}</span>
-                  <span>Ablauf: {timestamp(sanction.expiresAt)}</span>
-                  {sanction.revokedAt ? <span>Widerrufen: {timestamp(sanction.revokedAt)}</span> : null}
-                  <ConfidentialNote label="Interne Moderationsnotiz" value={sanction.internalNote} />
-                  <ConfidentialNote label="Nutzer-Nachricht" value={sanction.userMessage} />
-                  <ConfidentialNote label="Widerrufsgrund" value={sanction.revocationReason} />
-                </li>
-              ))}</ul>
+            <ListHeading
+              title="Sanktionen und frühere Kontosperren"
+              count={history.sanctions.items.length}
+              hasMore={history.sanctions.hasMore}
+            />
+            {history.sanctions.items.length === 0 ? (
+              <p>Keine Sanktionen.</p>
+            ) : (
+              <ul className={styles.list}>
+                {history.sanctions.items.map((sanction) => (
+                  <li key={sanction.id} className={styles.card}>
+                    <strong>
+                      {sanction.type} · {sanction.status}
+                    </strong>
+                    <span>
+                      {sanction.reasonCode.replaceAll('_', ' ')} · Beginn:{' '}
+                      {timestamp(sanction.startsAt)}
+                    </span>
+                    <span>Ablauf: {timestamp(sanction.expiresAt)}</span>
+                    {sanction.revokedAt ? (
+                      <span>Widerrufen: {timestamp(sanction.revokedAt)}</span>
+                    ) : null}
+                    <ConfidentialNote
+                      label="Interne Moderationsnotiz"
+                      value={sanction.internalNote}
+                    />
+                    <ConfidentialNote label="Nutzer-Nachricht" value={sanction.userMessage} />
+                    <ConfidentialNote label="Widerrufsgrund" value={sanction.revocationReason} />
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
           <section className={styles.section}>
-            <ListHeading title="Historische Kontostatusänderungen" count={history.statusEvents.items.length} hasMore={history.statusEvents.hasMore} />
-            <p className={styles.hint}>Audit-Metadaten und Netzwerkdetails werden nicht angezeigt.</p>
-            {history.statusEvents.items.length === 0 ? <p>Keine Statusänderungen protokolliert.</p> : (
-              <ul className={styles.list}>{history.statusEvents.items.map((event) => (
-                <li key={event.id} className={styles.card}>
-                  <strong>Kontostatus geändert</strong>
-                  <span>{timestamp(event.occurredAt)} · {event.actorType}</span>
-                </li>
-              ))}</ul>
+            <ListHeading
+              title="Historische Kontostatusänderungen"
+              count={history.statusEvents.items.length}
+              hasMore={history.statusEvents.hasMore}
+            />
+            <p className={styles.hint}>
+              Audit-Metadaten und Netzwerkdetails werden nicht angezeigt.
+            </p>
+            {history.statusEvents.items.length === 0 ? (
+              <p>Keine Statusänderungen protokolliert.</p>
+            ) : (
+              <ul className={styles.list}>
+                {history.statusEvents.items.map((event) => (
+                  <li key={event.id} className={styles.card}>
+                    <strong>Kontostatus geändert</strong>
+                    <span>
+                      {timestamp(event.occurredAt)} · {event.actorType}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         </>
