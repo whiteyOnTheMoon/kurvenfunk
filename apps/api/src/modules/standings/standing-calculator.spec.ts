@@ -77,7 +77,6 @@ describe('Phase 21.198 deterministic standings', () => {
     expect(old.rows.find((r) => r.clubId === b)?.deductionPoints).toBe(2);
   });
 
-
   it('carries full 2026 points and all pre-split goals versus other-group clubs', () => {
     const regular = [match(a, c, 2, 0), match(b, c, 1, 0)];
     const group = [match(a, b, 1, 1)];
@@ -87,8 +86,12 @@ describe('Phase 21.198 deterministic standings', () => {
       profile: 'AUSTRIAN_BUNDESLIGA_2026',
       allowExternalOpponents: true,
     });
-    expect(fresh.rows.map((row) => [row.clubId, row.played, row.points, row.goalDifference]))
-      .toEqual([[a, 2, 4, 2], [b, 2, 4, 1]]);
+    expect(
+      fresh.rows.map((row) => [row.clubId, row.played, row.points, row.goalDifference]),
+    ).toEqual([
+      [a, 2, 4, 2],
+      [b, 2, 4, 1],
+    ]);
 
     const historic = calculateStandings([...regular, ...group], [a, b], {
       profile: 'AUSTRIAN_BUNDESLIGA_LEGACY',
