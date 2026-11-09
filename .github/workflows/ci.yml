@@ -58,6 +58,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY: Capture the one new Prettier-formatted test file as JSON.
+      - name: Task 191 temporary formatting diagnostic
+        run: |
+          pnpm exec prettier --write apps/api/test/phase20-expiration-worker.e2e-spec.ts
+          node -e 'const fs=require("node:fs"); const path="apps/api/test/phase20-expiration-worker.e2e-spec.ts"; console.log("FORMAT191_JSON="+JSON.stringify({path,content:fs.readFileSync(path,"utf8")}))'
+          exit 1
+
       - name: Check formatting
         run: pnpm format:check
 
