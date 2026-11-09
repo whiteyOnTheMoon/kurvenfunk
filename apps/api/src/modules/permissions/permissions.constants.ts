@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   CLUB_MANAGE: 'club.manage',
   MATCH_MANAGE: 'match.manage',
   RESULT_MANAGE: 'result.manage',
+  STANDING_MANAGE: 'standing.manage',
 
   USER_WARN: 'user.warn',
   USER_LIMIT: 'user.limit',

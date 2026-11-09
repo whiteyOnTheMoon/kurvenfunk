@@ -1,4 +1,4 @@
-import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
+import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import type { CreateStandingInput, UpdateStandingInput } from '@kurvenfunk/validation';
 import {
   BadRequestException,
@@ -111,7 +111,7 @@ export class StandingManagementService implements OnModuleDestroy {
   }
 
   private async assertStage(
-    tx: Parameters<Parameters<DatabaseClient['$transaction']>[0]>[0],
+    tx: Prisma.TransactionClient,
     seasonId: string,
     stageId: string | null,
   ) {
