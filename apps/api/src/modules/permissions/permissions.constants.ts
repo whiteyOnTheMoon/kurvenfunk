@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   ARTICLE_CREATE: 'article.create',
   ARTICLE_PUBLISH: 'article.publish',
   IMPORT_REPLAY: 'import.replay',
+  COMPETITION_MANAGE: 'competition.manage',
 
   USER_WARN: 'user.warn',
   USER_LIMIT: 'user.limit',
