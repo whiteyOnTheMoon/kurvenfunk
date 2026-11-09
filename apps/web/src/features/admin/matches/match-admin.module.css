@@ -1,0 +1,111 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.filters label,
+.form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  flex: 1 1 210px;
+}
+
+.filters input,
+.filters select,
+.form input,
+.form select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.panel {
+  border: 1px solid #cbd5e1;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.form button,
+.match button {
+  border: 1px solid #64748b;
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+}
+
+.form button:disabled,
+.match button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  gap: 0.7rem;
+  flex: 1 1 100%;
+}
+
+.list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.match {
+  padding: 1rem 0;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.heading h4 {
+  margin: 0;
+}
+
+.heading p {
+  margin-top: 0.4rem;
+  color: #475569;
+}
+
+.locked {
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.error,
+.success {
+  border-radius: 0.5rem;
+  padding: 0.8rem 1rem;
+}
+
+.error {
+  border: 1px solid #b91c1c;
+}
+
+.success {
+  border: 1px solid #15803d;
+}
