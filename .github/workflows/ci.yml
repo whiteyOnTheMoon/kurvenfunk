@@ -93,6 +93,7 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase20-185-smoke.sh
           bash -n infrastructure/scripts/verify/dev-phase20-187-dashboard.sh
           bash -n infrastructure/scripts/verify/dev-phase20-188-history.sh
+          bash -n infrastructure/scripts/verify/dev-phase20-189-appeals.sh
           bash -n infrastructure/scripts/verify/phase20-182-isolated.sh
           node --check infrastructure/tests/phase20-182-mock-keycloak.mjs
           node --check infrastructure/scripts/verify/phase20-182-isolated-http.mjs
@@ -598,6 +599,43 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-ip-hashing.sh"
+
+  phase20-189-dev-appeals:
+    name: Task 189 DEV read-only appeals identity and privacy
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase20-189-dev-appeals]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: phase20-189-dev-appeals
+      cancel-in-progress: false
+    steps:
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Verify compiled appeals identity, role gates and anonymous 401 (read-only)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase20-189-appeals.sh"
+
 
   phase20-188-dev-history:
     name: Task 188 DEV read-only account history RBAC/privacy
