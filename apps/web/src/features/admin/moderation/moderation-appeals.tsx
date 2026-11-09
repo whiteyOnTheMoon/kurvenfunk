@@ -41,7 +41,8 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
           cache: 'no-store',
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error('Moderationsberechtigung fehlt oder Dienst nicht verfügbar.');
+        if (!response.ok)
+          throw new Error('Moderationsberechtigung fehlt oder Dienst nicht verfügbar.');
         const data = (await response.json()) as { data?: AppealForStaff[] };
         if (!Array.isArray(data.data)) throw new Error('Ungültige Antwort des Einspruchsdienstes.');
         if (active) {
@@ -98,15 +99,15 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       <ul className={styles.list}>
         {items.map((appeal) => (
           <li key={appeal.id} className={styles.item}>
-            <strong>
-              {appeal.moderationCardId ? 'Karten-Einspruch' : 'Sanktions-Einspruch'}
-            </strong>
+            <strong>{appeal.moderationCardId ? 'Karten-Einspruch' : 'Sanktions-Einspruch'}</strong>
             <span>Konto: {appeal.userId}</span>
             <span>Eingereicht: {new Date(appeal.createdAt).toLocaleString('de-AT')}</span>
             <p className={styles.reason}>{appeal.reason}</p>
             {canDecide ? (
               <div className={styles.actions}>
-                <label htmlFor={`appeal-note-${appeal.id}`}>Interne Entscheidungsbegründung (10–2.000 Zeichen)</label>
+                <label htmlFor={`appeal-note-${appeal.id}`}>
+                  Interne Entscheidungsbegründung (10–2.000 Zeichen)
+                </label>
                 <textarea
                   id={`appeal-note-${appeal.id}`}
                   rows={3}
