@@ -71,7 +71,8 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
 
   async function decide(appealId: string, decision: 'ACCEPTED' | 'REJECTED') {
     const decisionNote = (notes[appealId] ?? '').trim();
-    if (!authenticated || !token || !visible || !canDecide || busyId || decisionNote.length < 10) return;
+    if (!authenticated || !token || !visible || !canDecide || busyId || decisionNote.length < 10)
+      return;
     setBusyId(appealId);
     setMessage(undefined);
     try {
@@ -103,7 +104,9 @@ export function ModerationAppeals({ apiUrl }: { apiUrl: string }) {
       </p>
       {loading ? <p role="status">Einsprüche werden geladen …</p> : null}
       {message ? <p role="status">{message}</p> : null}
-      {!loading && visible && shownItems.length === 0 && !message ? <p>Keine offenen Einsprüche.</p> : null}
+      {!loading && visible && shownItems.length === 0 && !message ? (
+        <p>Keine offenen Einsprüche.</p>
+      ) : null}
       <ul className={styles.list}>
         {shownItems.map((appeal) => (
           <li key={appeal.id} className={styles.item}>
