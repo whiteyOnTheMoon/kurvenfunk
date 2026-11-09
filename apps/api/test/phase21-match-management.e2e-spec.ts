@@ -25,7 +25,6 @@ describe('Task 195 Match Management isolated HTTP and PostgreSQL E2E', () => {
   const stageIds: string[] = [];
   const userIds: string[] = [];
   const marker = randomUUID().slice(0, 8);
-  const competitionSlug = 'p195-league-' + marker;
   const subjects = {
     admin: 'p195-admin-' + marker,
     superadmin: 'p195-superadmin-' + marker,
