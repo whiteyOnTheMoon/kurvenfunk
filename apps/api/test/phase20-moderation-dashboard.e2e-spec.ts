@@ -258,9 +258,10 @@ describe('Task 187 moderation overview authorization and privacy HTTP E2E', () =
       expect(data.counts.limitedUsers).toBeGreaterThanOrEqual(1);
       expect(data.counts.bannedUsers).toBeGreaterThanOrEqual(1);
       expect(data.counts.activeLimitedSanctions).toBeGreaterThanOrEqual(1);
-      expect(data.appeals).toMatchObject({ available: false });
+      expect(data.appeals).toMatchObject({ available: true });
+      expect(data.counts.pendingAppeals).toBeGreaterThanOrEqual(0);
       expect(data.counts).not.toHaveProperty('activeIPBlocks');
-      expect(data.counts).not.toHaveProperty('openAppeals');
+      expect(data.counts).toHaveProperty('pendingAppeals');
       const serialized = JSON.stringify(result.body);
       expect(serialized).not.toContain(secretNote);
       expect(serialized).not.toContain(hash);
