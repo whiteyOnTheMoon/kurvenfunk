@@ -33,6 +33,8 @@ const apiEnvSchema = z
     IP_TEMP_AUTO_BLOCK_ENABLED: z.enum(['true', 'false']).default('false'),
     // Task 190: explicit opt-in; no existing appeal decisions are delayed by default.
     APPEAL_FOUR_EYES_ENABLED: z.enum(['true', 'false']).default('false'),
+    // Phase 21.200: synthetic sports provider is off by default, NEVER allowed in production.
+    SPORTS_FAKE_PROVIDER_ENABLED: z.enum(['true', 'false']).default('false'),
     IP_HASH_PREVIOUS_KEYS_JSON: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.string().optional(),
