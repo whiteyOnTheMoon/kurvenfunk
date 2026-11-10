@@ -1,5 +1,3 @@
-import { getArticleLeadMediaSrc } from '../articles/article-media';
-
 /** The shipped assets are explicit; a newly created club may not have one. */
 const LOCAL_LOGO_SLUGS = new Set([
   'admira-wacker',
@@ -42,7 +40,11 @@ export function getClubLogoSrc(
   apiUrl: string,
   club: { slug: string; logo: ClubLogoMedia | null },
 ): string | null {
-  const media = getArticleLeadMediaSrc(apiUrl, club.logo);
-  if (media) return media;
+  if (club.logo?.storageKey && club.logo.id) {
+    return `${apiUrl.replace(/\/$/, '')}/api/v1/media/${encodeURIComponent(club.logo.id)}/content`;
+  }
+  if (club.logo?.externalUrl && /^https?:\/\//i.test(club.logo.externalUrl)) {
+    return club.logo.externalUrl;
+  }
   return LOCAL_LOGO_SLUGS.has(club.slug) ? `/clubs/${club.slug}.svg` : null;
 }
