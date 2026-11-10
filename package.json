@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/worker/src/config/env.validation.spec.ts apps/worker/src/jobs/sports-import-scheduler.service.spec.ts apps/worker/src/jobs/sports-import-scheduler.service.ts && git diff -- apps/worker/src/config/env.validation.spec.ts apps/worker/src/jobs/sports-import-scheduler.service.spec.ts apps/worker/src/jobs/sports-import-scheduler.service.ts && prettier --check ."
+    "format:check": "prettier --check ."
   }
 }
