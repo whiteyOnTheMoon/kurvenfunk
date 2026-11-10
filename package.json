@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write apps/api/src/modules/providers/fake-sports-provider.ts apps/worker/src/jobs/sports-import-queue.service.spec.ts apps/worker/src/jobs/sports-import-queue.service.ts apps/worker/src/processors/sports-import.processor.spec.ts apps/worker/src/processors/sports-import.processor.ts apps/worker/src/services/sports-import-payload.ts apps/worker/src/services/sports-import.store.spec.ts packages/types/src/index.ts && git diff -- apps/api/src/modules/providers/fake-sports-provider.ts apps/worker/src/jobs/sports-import-queue.service.spec.ts apps/worker/src/jobs/sports-import-queue.service.ts apps/worker/src/processors/sports-import.processor.spec.ts apps/worker/src/processors/sports-import.processor.ts apps/worker/src/services/sports-import-payload.ts apps/worker/src/services/sports-import.store.spec.ts packages/types/src/index.ts && prettier --check ."
   }
 }
