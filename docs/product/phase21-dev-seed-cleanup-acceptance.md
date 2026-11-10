@@ -41,3 +41,14 @@ archived and deleted entity. Any unexpected concurrent change fails closed.
 No fixtures from the offline fake provider are published to shared DEV. Real
 21.201 Redis/PostgreSQL/worker acceptance runs only against disposable CI
 containers; do **not** remove those regression fixtures.
+
+## First execution guard and retry (2026-11-10)
+
+The first explicit DEV cleanup action in GitHub Actions run
+[42876564393](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/42876564393)
+**correctly stopped before opening a backup or executing a database write**:
+`develop` advanced from `b2f104f` to `391bad0` because unrelated PR #126
+removed additional homepage fake numbers. The exact-head interlock refused a
+stale cleanup. This retry uses the latest checked-out `develop` with the same
+fingerprint guards and requires its own green PR CI and DEV deployment. Do not
+force or bypass the SHA comparison.
