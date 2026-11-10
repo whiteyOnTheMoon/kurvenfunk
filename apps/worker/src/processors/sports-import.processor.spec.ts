@@ -163,9 +163,7 @@ describe('SportsImportProcessor', () => {
 
   it('propagates a matching persistence failure to BullMQ retry', async () => {
     matchFixture.mockRejectedValueOnce(new Error('SPORTS_MATCH_DATABASE_UNAVAILABLE'));
-    await expect(processor().process(job())).rejects.toThrow(
-      'SPORTS_MATCH_DATABASE_UNAVAILABLE',
-    );
+    await expect(processor().process(job())).rejects.toThrow('SPORTS_MATCH_DATABASE_UNAVAILABLE');
     expect(fail).toHaveBeenCalledWith(session, expect.any(Error));
     expect(complete).not.toHaveBeenCalled();
   });
