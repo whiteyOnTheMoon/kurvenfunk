@@ -18,6 +18,7 @@ export function normalizeSportsClubName(name: string): string {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('de')
+    .replace(/ß/g, 'ss')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
