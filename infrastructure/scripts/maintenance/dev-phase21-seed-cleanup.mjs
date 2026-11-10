@@ -57,8 +57,8 @@ export function isOriginalSeedArticle(article) {
     seedArticleSlugs.has(article.slug) &&
     article.importRecordId === null &&
     article.author?.keycloakSubject === 'seed-editor-user' &&
-      content?.type === 'doc' &&
-      content?.content?.length === 1 &&
+    content?.type === 'doc' &&
+    content?.content?.length === 1 &&
     content.content[0]?.type === 'paragraph' &&
     content.content[0]?.content?.length === 1 &&
     content.content[0].content[0]?.type === 'text' &&
@@ -149,9 +149,9 @@ async function cleanup(tx) {
   const ownedArticles = articles.filter(isOriginalSeedArticle);
   const removableArticles = ownedArticles.filter(
     (article) =>
-    article._count.comments === 0 &&
-    article._count.revisions === 0 &&
-    article._count.entityMatches === 0,
+      article._count.comments === 0 &&
+      article._count.revisions === 0 &&
+      article._count.entityMatches === 0,
   );
   const retainedArticles = ownedArticles.filter(
     (article) => !removableArticles.some((candidate) => candidate.id === article.id),
