@@ -12,6 +12,7 @@ import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullm
 import { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import { parseSportsImportPayload } from '../services/sports-import-payload';
+import { SportsClubMatchingService } from '../services/sports-club-matching.service';
 import {
   SportsImportStore,
   sportsImportFailureCode,
@@ -36,6 +37,7 @@ export class SportsImportProcessor extends WorkerHost {
     private readonly config: ConfigService,
     @InjectQueue(QUEUE_NAMES.SPORTS_IMPORT_DEAD_LETTER)
     private readonly deadLetters: Queue<SportsImportDeadLetterPayload>,
+    private readonly clubMatcher: SportsClubMatchingService,
   ) {
     super();
   }
@@ -86,6 +88,11 @@ export class SportsImportProcessor extends WorkerHost {
             throw new Error('SPORTS_IMPORT_RECORD_KIND_MISMATCH');
           }
           await this.store.store(session, input.resource, record);
+          if (input.resource === 'clubs' && record.kind === 'club') {
+            // A retry re-evaluates the already-staged record, safely reusing
+            // the provider-scoped mapping and preserving manual decisions.
+            await this.clubMatcher.matchStaged(session, record);
+          }
         }
 
         // Checkpoint only after the entire page has been stored; retry restarts
