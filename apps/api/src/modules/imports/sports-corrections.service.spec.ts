@@ -45,8 +45,8 @@ describe('SportsCorrectionsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    db.$transaction.mockImplementation(
-      (callback: (transaction: typeof db) => Promise<unknown>) => callback(db),
+    db.$transaction.mockImplementation((callback: (transaction: typeof db) => Promise<unknown>) =>
+      callback(db),
     );
     db.entityMatch.findUnique.mockResolvedValue(clubMapping);
     db.entityMatch.findUniqueOrThrow.mockResolvedValue(clubMapping);
@@ -117,10 +117,9 @@ describe('SportsCorrectionsService', () => {
       }),
     ).resolves.toMatchObject({ status: 'MATCHED', clubId });
 
-    expect(db.$transaction).toHaveBeenCalledWith(
-      expect.any(Function),
-      { isolationLevel: 'Serializable' },
-    );
+    expect(db.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
     expect(db.$executeRaw).toHaveBeenCalledTimes(2);
     expect(db.club.findUnique).toHaveBeenCalledWith({
       where: { id: clubId },
@@ -323,9 +322,11 @@ describe('SportsCorrectionsService', () => {
   });
 
   it('retries serializable transaction conflicts, then commits once', async () => {
-    db.$transaction.mockRejectedValueOnce({ code: 'P2034' }).mockImplementationOnce(
-      (callback: (transaction: typeof db) => Promise<unknown>) => callback(db),
-    );
+    db.$transaction
+      .mockRejectedValueOnce({ code: 'P2034' })
+      .mockImplementationOnce((callback: (transaction: typeof db) => Promise<unknown>) =>
+        callback(db),
+      );
     await service.correct(mappingId, actorId, {
       decision: 'REJECT',
       expectedUpdatedAt: revision.toISOString(),
