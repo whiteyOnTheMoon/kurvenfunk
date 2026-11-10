@@ -101,13 +101,7 @@ function TeamLogo({ team }: { team: MatchDetailData['homeClub'] }) {
     );
   }
   return (
-    <Image
-      src={src}
-      alt={`${team.name} Logo`}
-      width={128}
-      height={128}
-      className={styles.logo}
-    />
+    <Image src={src} alt={`${team.name} Logo`} width={128} height={128} className={styles.logo} />
   );
 }
 

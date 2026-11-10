@@ -237,12 +237,9 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
   const selectedMatchdayIndex =
     selectedMatchday === null ? -1 : matchdays.indexOf(selectedMatchday);
 
-  const visibleMatches =
-    (data?.matches ?? []).filter((match) =>
-      selectedMatchday === null
-        ? match.matchday === null
-        : match.matchday === selectedMatchday,
-    );
+  const visibleMatches = (data?.matches ?? []).filter((match) =>
+    selectedMatchday === null ? match.matchday === null : match.matchday === selectedMatchday,
+  );
 
   const selectedLabel =
     selectedMatchday === null
@@ -277,7 +274,9 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
           ))}
         </nav>
         <EmptyState
-          title={requestError ? 'Spielplan derzeit nicht verfügbar' : 'Noch kein Spielplan vorhanden'}
+          title={
+            requestError ? 'Spielplan derzeit nicht verfügbar' : 'Noch kein Spielplan vorhanden'
+          }
         >
           <p>
             {requestError
@@ -333,7 +332,6 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
             <span className={styles.eyebrow}>Spiele</span>
             <h2>{data.competition.name}</h2>
           </div>
-
         </div>
 
         {visibleMatches.length > 0 ? (

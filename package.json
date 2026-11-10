@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/web/src/features/matches/match-detail.tsx apps/web/src/features/matches/match-schedule-page.tsx && git diff -- apps/web/src/features/matches/match-detail.tsx apps/web/src/features/matches/match-schedule-page.tsx && exit 1"
+    "format:check": "prettier --check ."
   }
 }
