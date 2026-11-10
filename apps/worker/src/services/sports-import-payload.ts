@@ -1,7 +1,4 @@
-import {
-  SPORTS_PROVIDER_RESOURCES,
-  type SportsImportJobPayload,
-} from '@kurvenfunk/types';
+import { SPORTS_PROVIDER_RESOURCES, type SportsImportJobPayload } from '@kurvenfunk/types';
 import { z } from 'zod';
 
 const utcTimestamp = z
