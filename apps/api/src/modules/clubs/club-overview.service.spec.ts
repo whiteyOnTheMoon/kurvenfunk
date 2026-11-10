@@ -51,10 +51,7 @@ describe('ClubOverviewService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clubFind.mockResolvedValue(club);
-    matchFind
-      .mockResolvedValueOnce([match])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    matchFind.mockResolvedValueOnce([match]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     articleFind.mockResolvedValue([]);
     forumFind.mockResolvedValue([]);
     standingFindFirst.mockResolvedValue(null);
