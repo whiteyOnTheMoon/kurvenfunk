@@ -58,12 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Format diagnostic for phase0-21 audit (temporary)
-        run: |
-          echo BEGIN_FORMATTED_AUDIT_SOURCE
-          pnpm exec prettier infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
-          echo END_FORMATTED_AUDIT_SOURCE
-
       - name: Check formatting
         run: pnpm format:check
 
