@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import { parseSportsImportPayload } from '../services/sports-import-payload';
 import { SportsClubMatchingService } from '../services/sports-club-matching.service';
+import { SportsMatchMatchingService } from '../services/sports-match-matching.service';
 import {
   SportsImportStore,
   sportsImportFailureCode,
@@ -38,6 +39,7 @@ export class SportsImportProcessor extends WorkerHost {
     @InjectQueue(QUEUE_NAMES.SPORTS_IMPORT_DEAD_LETTER)
     private readonly deadLetters: Queue<SportsImportDeadLetterPayload>,
     private readonly clubMatcher: SportsClubMatchingService,
+    private readonly matchMatcher: SportsMatchMatchingService,
   ) {
     super();
   }
@@ -92,6 +94,11 @@ export class SportsImportProcessor extends WorkerHost {
             // A retry re-evaluates the already-staged record, safely reusing
             // the provider-scoped mapping and preserving manual decisions.
             await this.clubMatcher.matchStaged(session, record);
+          } else if (record.kind === 'match' && input.resource !== 'clubs') {
+            await this.matchMatcher.matchStaged(session, input.resource, record, {
+              competitionExternalId: input.competitionExternalId,
+              seasonExternalId: input.seasonExternalId,
+            });
           }
         }
 
