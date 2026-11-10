@@ -33,9 +33,7 @@ export class SportsImportQueueService {
 
     // The same request has one queue key, preventing simultaneous duplicate
     // fetches. A later scheduler can choose a new explicit window to rerun.
-    const fingerprint = createHash('sha256')
-      .update(JSON.stringify(payload))
-      .digest('hex');
+    const fingerprint = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
     const queueJobId = 'sports_' + fingerprint;
     const job = await this.queue.add(SPORTS_IMPORT_JOB_NAME, payload, {
       jobId: queueJobId,
