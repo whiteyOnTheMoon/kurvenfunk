@@ -3,8 +3,14 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 const root = new URL('../../../', import.meta.url);
-const shell = readFileSync(new URL('infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.sh', root), 'utf8');
-const code = readFileSync(new URL('infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.mjs', root), 'utf8');
+const shell = readFileSync(
+  new URL('infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.sh', root),
+  'utf8',
+);
+const code = readFileSync(
+  new URL('infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.mjs', root),
+  'utf8',
+);
 const ci = readFileSync(new URL('.github/workflows/ci.yml', root), 'utf8');
 
 describe('Phase21 DEV seed cleanup safety', () => {
@@ -20,7 +26,10 @@ describe('Phase21 DEV seed cleanup safety', () => {
   });
 
   it('never deletes real comments, standings, providers or user identities', () => {
-    assert.doesNotMatch(code, /tx\.(comment|standing|provider|user)\.(delete|deleteMany|updateMany)\(/);
+    assert.doesNotMatch(
+      code,
+      /tx\.(comment|standing|provider|user)\.(delete|deleteMany|updateMany)\(/,
+    );
     assert.match(code, /comments: \{ none: \{\} \}/);
     assert.match(code, /isOriginalSeedMatch\(/);
     assert.match(code, /isOriginalSeedArticle\(/);
