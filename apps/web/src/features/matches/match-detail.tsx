@@ -3,6 +3,8 @@ import Link from 'next/link';
 
 import { EmptyState } from '@kurvenfunk/ui';
 
+import { getClubLogoSrc } from '../clubs/club-media';
+
 import styles from './match-detail.module.css';
 
 export interface MatchDetailData {
@@ -88,15 +90,50 @@ function formatPublishedAt(value: string | null) {
   }).format(new Date(value));
 }
 
+function TeamLogo({ team }: { team: MatchDetailData['homeClub'] }) {
+  // Only serve shipped assets that really exist; unknown clubs use initials.
+  const src = getClubLogoSrc('', { slug: team.slug, logo: null });
+  if (!src) {
+    return (
+      <span className={styles.logoFallback} aria-label={`Kein Logo für ${team.name} vorhanden`}>
+        {team.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+      </span>
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt={`${team.name} Logo`}
+      width={128}
+      height={128}
+      className={styles.logo}
+    />
+  );
+}
+
 export function MatchDetail({ match }: { match: MatchDetailData }) {
   const kickoff = formatKickoff(match.kickoff);
   const hasScore = match.homeScore !== null && match.awayScore !== null;
   const competitionName = match.competition.shortName ?? match.competition.name;
+  const showKickoff = match.status === 'SCHEDULED' && !hasScore;
+  const resultLabel = hasScore
+    ? match.status === 'FINISHED'
+      ? 'Endstand'
+      : match.status === 'LIVE'
+        ? 'Spielstand'
+        : 'Ergebnis'
+    : showKickoff
+      ? 'Anstoß'
+      : match.status === 'POSTPONED'
+        ? 'Verschoben'
+        : match.status === 'CANCELLED'
+          ? 'Abgesagt'
+          : 'Kein Spielstand';
 
   return (
     <main className={styles.page}>
       <div className={styles.breadcrumbs}>
-        <span>Spiele</span>
+        <Link href="/spiele">Spiele</Link>
         <span aria-hidden="true">/</span>
         <span>{competitionName}</span>
       </div>
@@ -114,14 +151,7 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
 
         <div className={styles.teams}>
           <Link href={`/vereine/${match.homeClub.slug}`} className={styles.team}>
-            <Image
-              src={`/clubs/${match.homeClub.slug}.svg`}
-              alt={`${match.homeClub.name} Logo`}
-              width={128}
-              height={128}
-              className={styles.logo}
-              priority
-            />
+            <TeamLogo team={match.homeClub} />
             <strong>{match.homeClub.shortName ?? match.homeClub.name}</strong>
           </Link>
 
@@ -135,21 +165,14 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
                 {match.homeScore}:{match.awayScore}
               </strong>
             ) : (
-              <strong className={styles.kickoffTime}>{kickoff.time}</strong>
+              <strong className={styles.kickoffTime}>{showKickoff ? kickoff.time : '–'}</strong>
             )}
 
-            <span className={styles.separator}>{hasScore ? 'Endstand' : 'Anstoß'}</span>
+            <span className={styles.separator}>{resultLabel}</span>
           </div>
 
           <Link href={`/vereine/${match.awayClub.slug}`} className={styles.team}>
-            <Image
-              src={`/clubs/${match.awayClub.slug}.svg`}
-              alt={`${match.awayClub.name} Logo`}
-              width={128}
-              height={128}
-              className={styles.logo}
-              priority
-            />
+            <TeamLogo team={match.awayClub} />
             <strong>{match.awayClub.shortName ?? match.awayClub.name}</strong>
           </Link>
         </div>

@@ -230,9 +230,16 @@ describe('MatchesService', () => {
 
     expect(findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          id: 'match-1',
-        },
+        where: { id: 'match-1' },
+        select: expect.objectContaining({
+          articles: expect.objectContaining({
+            where: {
+              status: 'PUBLISHED',
+              deletedAt: null,
+              publishedAt: { lte: expect.any(Date) },
+            },
+          }),
+        }),
       }),
     );
   });
