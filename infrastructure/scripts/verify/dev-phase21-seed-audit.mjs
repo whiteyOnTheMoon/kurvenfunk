@@ -62,6 +62,9 @@ try {
         select: {
           id: true,
           slug: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
           _count: {
             select: {
               aliases: true,
@@ -85,6 +88,9 @@ try {
           status: true,
           homeScore: true,
           awayScore: true,
+          createdAt: true,
+          updatedAt: true,
+          stage: { select: { slug: true } },
           competition: { select: { slug: true } },
           homeClub: { select: { slug: true } },
           awayClub: { select: { slug: true } },
@@ -101,6 +107,10 @@ try {
           id: true,
           slug: true,
           status: true,
+          matchId: true,
+          importRecordId: true,
+          createdAt: true,
+          updatedAt: true,
           _count: { select: { comments: true, revisions: true, entityMatches: true } },
         },
       }),
@@ -131,6 +141,19 @@ try {
       }),
     ]);
   const fixtureMatches = matches.filter((row) => seedFixtureKeys.has(fixtureKey(row)));
+  const linkedArticles = await db.article.findMany({
+    where: { matchId: { in: fixtureMatches.map((row) => row.id) } },
+    select: {
+      matchId: true,
+      slug: true,
+      status: true,
+      _count: { select: { comments: true, revisions: true, entityMatches: true } },
+    },
+  });
+  const linkedEntityMatches = await db.entityMatch.findMany({
+    where: { matchId: { in: fixtureMatches.map((row) => row.id) } },
+    select: { matchId: true, status: true, provider: { select: { key: true } } },
+  });
   const otherMatches = matches.filter((row) => !seedFixtureKeys.has(fixtureKey(row)));
   const modifiedFixtureCandidates = fixtureMatches.filter(
     (row) => row._count.articles !== 0 || row._count.entityMatches !== 0,
@@ -166,6 +189,53 @@ try {
     syntheticEntityMatches: sportsProviders.reduce((n, p) => n + p._count.entityMatches, 0),
   };
   console.log(JSON.stringify(summary, null, 2));
+  // IDs and personal details are intentionally omitted from these diagnostics.
+  console.log(
+    'DEV seed provenance details (no personal identifiers):',
+    JSON.stringify(
+      {
+        fixtureCandidates: fixtureMatches.map((row) => ({
+          fingerprint: fixtureKey(row),
+          matchday: row.matchday,
+          stage: row.stage?.slug ?? null,
+          status: row.status,
+          homeScore: row.homeScore,
+          awayScore: row.awayScore,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+          linkedArticleSlugs: linkedArticles
+            .filter((article) => article.matchId === row.id)
+            .map((article) => ({
+              slug: article.slug,
+              status: article.status,
+              comments: article._count.comments,
+              revisions: article._count.revisions,
+              entityMatches: article._count.entityMatches,
+            })),
+          linkedProviderMatches: linkedEntityMatches
+            .filter((match) => match.matchId === row.id)
+            .map((match) => ({ providerKey: match.provider.key, status: match.status })),
+        })),
+        seedArticles: seededArticles.map((article) => ({
+          slug: article.slug,
+          status: article.status,
+          linkedMatch: article.matchId !== null,
+          imported: article.importRecordId !== null,
+          modifiedAfterCreation: article.updatedAt > article.createdAt,
+          comments: article._count.comments,
+          revisions: article._count.revisions,
+          entityMatches: article._count.entityMatches,
+        })),
+        clubDependencies: clubs.map((club) => ({
+          slug: club.slug,
+          modifiedAfterCreation: club.updatedAt > club.createdAt,
+          ...club._count,
+        })),
+      },
+      null,
+      2,
+    ),
+  );
   console.log('DEV read-only provenance audit: PASS');
   console.log(
     'Nothing deleted. Original clubs/standings cannot be considered synthetic without further provenance.',
