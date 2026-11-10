@@ -1,4 +1,10 @@
-import { FAKE_SPORTS_SCOPE, QUEUE_NAMES, SPORTS_IMPORT_JOB_NAME } from '@kurvenfunk/types';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  FAKE_SPORTS_SCOPE,
+  QUEUE_NAMES,
+  SPORTS_IMPORT_JOB_NAME,
+  type SportsImportDeadLetterPayload,
+} from '@kurvenfunk/types';
 import type { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import type { SportsImportStore } from '../services/sports-import.store';
@@ -27,15 +33,15 @@ describe('SportsImportProcessor', () => {
     alreadyCompleted: false,
   };
 
-  const payload = { providerKey: 'fake-sports', resource: 'fixtures' as const, ...FAKE_SPORTS_SCOPE };
+  const payload = {
+    providerKey: 'fake-sports',
+    resource: 'fixtures' as const,
+    ...FAKE_SPORTS_SCOPE,
+  };
 
   const devConfig = {
     get: (key: string, fallback: unknown) =>
-      key === 'SPORTS_FAKE_PROVIDER_ENABLED'
-        ? true
-        : key === 'NODE_ENV'
-          ? 'development'
-          : fallback,
+      key === 'SPORTS_FAKE_PROVIDER_ENABLED' ? true : key === 'NODE_ENV' ? 'development' : fallback,
   } as unknown as ConfigService;
 
   const store = {
@@ -48,7 +54,7 @@ describe('SportsImportProcessor', () => {
   } as unknown as SportsImportStore;
 
   function processor(config = devConfig): SportsImportProcessor {
-    return new SportsImportProcessor(store, config, { add } as unknown as Queue);
+    return new SportsImportProcessor(store, config, { add } as unknown as Queue<SportsImportDeadLetterPayload>);
   }
 
   function job(data: unknown = payload, attemptsMade = 1): Job<unknown> {
@@ -80,7 +86,9 @@ describe('SportsImportProcessor', () => {
       'fake-job-123',
     );
     expect(storeRecord).toHaveBeenCalledTimes(8);
-    const ids = storeRecord.mock.calls.map((args: unknown[]) => (args[2] as { externalId: string }).externalId);
+    const ids = storeRecord.mock.calls.map(
+      (args: unknown[]) => (args[2] as { externalId: string }).externalId,
+    );
     expect(new Set(ids).size).toBe(8);
     expect(checkpoint).toHaveBeenCalledTimes(4);
     expect(complete).toHaveBeenCalledWith(session);
@@ -117,9 +125,9 @@ describe('SportsImportProcessor', () => {
     await expect(processor(disabledConfig).process(job())).rejects.toThrow(
       'SPORTS_IMPORT_DISABLED',
     );
-    await expect(processor().process(job({ ...payload, providerKey: 'real-vendor' }))).rejects.toThrow(
-      'SPORTS_IMPORT_INVALID_PAYLOAD',
-    );
+    await expect(
+      processor().process(job({ ...payload, providerKey: 'real-vendor' })),
+    ).rejects.toThrow('SPORTS_IMPORT_INVALID_PAYLOAD');
     await expect(processor().process(job({ ...payload, unexpected: 'secret' }))).rejects.toThrow(
       'SPORTS_IMPORT_INVALID_PAYLOAD',
     );
