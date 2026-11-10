@@ -34,6 +34,8 @@ services:
       - '127.0.0.1:3100:3000'
 
   api:
+    environment:
+      SPORTS_FAKE_PROVIDER_ENABLED: ${SPORTS_FAKE_PROVIDER_ENABLED:-false}
     ports:
       - '127.0.0.1:3101:3000'
 
