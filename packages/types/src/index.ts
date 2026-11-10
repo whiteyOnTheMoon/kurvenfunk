@@ -25,4 +25,8 @@ export * from './news-normalization.js';
 
 export * from './sports-provider.js';
 
-export { FAKE_SPORTS_SCOPE, FakeSportsProvider, type FakeSportsScenario } from './fake-sports-provider.js';
+export {
+  FAKE_SPORTS_SCOPE,
+  FakeSportsProvider,
+  type FakeSportsScenario,
+} from './fake-sports-provider.js';
