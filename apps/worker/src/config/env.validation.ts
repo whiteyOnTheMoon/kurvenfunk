@@ -12,6 +12,12 @@ const workerEnvSchema = z
 
     DATABASE_URL: z.string().trim().min(1),
 
+    // Defaults OFF; fake sport data may never run in production.
+    SPORTS_FAKE_PROVIDER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
     NEWS_IMPORT_PROVIDER: z.enum(['fake', 'ots']).default('fake'),
 
     NEWS_IMPORT_SCHEDULER_ENABLED: z
@@ -48,6 +54,10 @@ export function validateEnvironment(config: Record<string, unknown>): WorkerEnvi
       .join('\n');
 
     throw new Error(`Worker environment validation failed:\n${errors}`);
+  }
+
+  if (result.data.SPORTS_FAKE_PROVIDER_ENABLED && result.data.NODE_ENV === 'production') {
+    throw new Error('FAKE_SPORTS_FORBIDDEN_ENVIRONMENT');
   }
 
   return result.data;
