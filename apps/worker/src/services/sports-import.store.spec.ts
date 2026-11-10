@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { FAKE_SPORTS_SCOPE, FakeSportsProvider } from '@kurvenfunk/types';
 import type { DatabaseClient } from '@kurvenfunk/database';
 import type { DatabaseService } from '../database/database.service';
@@ -43,12 +42,10 @@ describe('SportsImportStore', () => {
     });
     const jobUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
     const recordFind = jest.fn().mockImplementation(() => Promise.resolve(lastRecord));
-    const recordCreate = jest
-      .fn()
-      .mockImplementation((args: { data: { contentHash: string } }) => {
-        lastRecord = { id: 'record-1', contentHash: args.data.contentHash };
-        return Promise.resolve(lastRecord);
-      });
+    const recordCreate = jest.fn().mockImplementation((args: { data: { contentHash: string } }) => {
+      lastRecord = { id: 'record-1', contentHash: args.data.contentHash };
+      return Promise.resolve(lastRecord);
+    });
     const rawCreate = jest.fn().mockResolvedValue({ id: 'raw-1' });
     const executeRaw = jest.fn().mockResolvedValue(0);
 
