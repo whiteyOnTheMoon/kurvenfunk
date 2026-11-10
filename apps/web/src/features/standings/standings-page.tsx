@@ -4,9 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { EmptyState } from '@kurvenfunk/ui';
+
 import { useAuth } from '../auth/auth-provider';
+import { getClubLogoSrc } from '../clubs/club-media';
 import { ListPageLoadingState } from '../loading/loading-states';
-import { clubs } from '../personalization/startpage-mock-data';
 import styles from './standings-page.module.css';
 
 interface StandingRow {
@@ -66,253 +68,42 @@ interface ClubsResponse {
   data?: ClubListItem[];
 }
 
-const standingsMockClubs = {
-  gak: {
-    name: 'Grazer AK 1902',
-    shortName: 'GAK',
-    slug: 'grazer-ak-1902',
-  },
-  ried: {
-    name: 'SV Ried',
-    shortName: 'Ried',
-    slug: 'sv-ried',
-  },
-  wsg: {
-    name: 'WSG Tirol',
-    shortName: 'WSG Tirol',
-    slug: 'wsg-tirol',
-  },
-  lustenau: {
-    name: 'SC Austria Lustenau',
-    shortName: 'Lustenau',
-    slug: 'sc-austria-lustenau',
-  },
-};
-
-const mockRows: StandingRow[] = [
-  {
-    id: 'mock-sturm',
-    position: 1,
-    played: 3,
-    won: 3,
-    drawn: 0,
-    lost: 0,
-    goalsFor: 8,
-    goalsAgainst: 2,
-    goalDifference: 6,
-    points: 9,
-    deductionPoints: 0,
-    club: { id: 'mock-sturm', ...clubs.sturm },
-  },
-  {
-    id: 'mock-rapid',
-    position: 2,
-    played: 3,
-    won: 2,
-    drawn: 1,
-    lost: 0,
-    goalsFor: 7,
-    goalsAgainst: 3,
-    goalDifference: 4,
-    points: 7,
-    deductionPoints: 0,
-    club: { id: 'mock-rapid', ...clubs.rapid },
-  },
-  {
-    id: 'mock-salzburg',
-    position: 3,
-    played: 3,
-    won: 2,
-    drawn: 0,
-    lost: 1,
-    goalsFor: 7,
-    goalsAgainst: 4,
-    goalDifference: 3,
-    points: 6,
-    deductionPoints: 0,
-    club: { id: 'mock-salzburg', ...clubs.salzburg },
-  },
-  {
-    id: 'mock-austria',
-    position: 4,
-    played: 3,
-    won: 2,
-    drawn: 0,
-    lost: 1,
-    goalsFor: 5,
-    goalsAgainst: 3,
-    goalDifference: 2,
-    points: 6,
-    deductionPoints: 0,
-    club: { id: 'mock-austria', ...clubs.austria },
-  },
-  {
-    id: 'mock-lask',
-    position: 5,
-    played: 3,
-    won: 1,
-    drawn: 2,
-    lost: 0,
-    goalsFor: 5,
-    goalsAgainst: 4,
-    goalDifference: 1,
-    points: 5,
-    deductionPoints: 0,
-    club: { id: 'mock-lask', ...clubs.lask },
-  },
-  {
-    id: 'mock-wac',
-    position: 6,
-    played: 3,
-    won: 1,
-    drawn: 1,
-    lost: 1,
-    goalsFor: 4,
-    goalsAgainst: 4,
-    goalDifference: 0,
-    points: 4,
-    deductionPoints: 0,
-    club: { id: 'mock-wac', ...clubs.wac },
-  },
-  {
-    id: 'mock-hartberg',
-    position: 7,
-    played: 3,
-    won: 1,
-    drawn: 1,
-    lost: 1,
-    goalsFor: 4,
-    goalsAgainst: 5,
-    goalDifference: -1,
-    points: 4,
-    deductionPoints: 0,
-    club: { id: 'mock-hartberg', ...clubs.hartberg },
-  },
-  {
-    id: 'mock-ried',
-    position: 8,
-    played: 3,
-    won: 1,
-    drawn: 0,
-    lost: 2,
-    goalsFor: 3,
-    goalsAgainst: 5,
-    goalDifference: -2,
-    points: 3,
-    deductionPoints: 0,
-    club: { id: 'mock-ried', ...standingsMockClubs.ried },
-  },
-  {
-    id: 'mock-altach',
-    position: 9,
-    played: 3,
-    won: 1,
-    drawn: 0,
-    lost: 2,
-    goalsFor: 3,
-    goalsAgainst: 6,
-    goalDifference: -3,
-    points: 3,
-    deductionPoints: 0,
-    club: { id: 'mock-altach', ...clubs.altach },
-  },
-  {
-    id: 'mock-gak',
-    position: 10,
-    played: 3,
-    won: 0,
-    drawn: 2,
-    lost: 1,
-    goalsFor: 2,
-    goalsAgainst: 4,
-    goalDifference: -2,
-    points: 2,
-    deductionPoints: 0,
-    club: { id: 'mock-gak', ...standingsMockClubs.gak },
-  },
-  {
-    id: 'mock-wsg',
-    position: 11,
-    played: 3,
-    won: 0,
-    drawn: 1,
-    lost: 2,
-    goalsFor: 2,
-    goalsAgainst: 6,
-    goalDifference: -4,
-    points: 1,
-    deductionPoints: 0,
-    club: { id: 'mock-wsg', ...standingsMockClubs.wsg },
-  },
-  {
-    id: 'mock-lustenau',
-    position: 12,
-    played: 3,
-    won: 0,
-    drawn: 0,
-    lost: 3,
-    goalsFor: 2,
-    goalsAgainst: 8,
-    goalDifference: -6,
-    points: 0,
-    deductionPoints: 0,
-    club: { id: 'mock-lustenau', ...standingsMockClubs.lustenau },
-  },
-];
-
-const mockData: StandingsData = {
-  competition: {
-    id: 'mock-bundesliga',
-    name: 'Österreichische Bundesliga',
-    shortName: 'Bundesliga',
-    slug: 'bundesliga',
-  },
-  season: {
-    id: 'mock-season',
-    name: '2026/27',
-    slug: '2026-27',
-  },
-  stage: {
-    id: 'mock-stage',
-    name: 'Grunddurchgang',
-    slug: 'grunddurchgang',
-  },
-  standings: mockRows,
-};
-
 function formatGoalDifference(value: number) {
   return value > 0 ? `+${value}` : String(value);
 }
 
 export function StandingsPage({ apiUrl }: StandingsPageProps) {
   const { initialized, user } = useAuth();
-  const [data, setData] = useState<StandingsData>(mockData);
+  const [data, setData] = useState<StandingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [usingMockData, setUsingMockData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [favoriteClubSlug, setFavoriteClubSlug] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function loadStandings() {
+      setLoading(true);
+      setInitialLoading(true);
+      setLoadFailed(false);
+      setData(null);
+
       try {
-        const response = await fetch(`${apiUrl}/api/v1/standings/bundesliga`, {
+        // The public competition slug is shared with the canonical match schedule.
+        const response = await fetch(`${apiUrl}/api/v1/standings/austrian-bundesliga`, {
           cache: 'no-store',
         });
 
-        if (!response.ok) {
-          return;
-        }
+        if (!response.ok) throw new Error('Standings request failed');
 
         const payload = (await response.json()) as ApiResponse;
-
-        if (active && payload.data && payload.data.standings.length > 0) {
-          setData(payload.data);
-          setUsingMockData(false);
+        if (active) {
+          // A missing season or zero rows must never resurrect a demo table.
+          setData(payload.data ?? null);
         }
       } catch {
-        // Task 123 remains previewable until the sports-data pipeline is available.
+        if (active) setLoadFailed(true);
       } finally {
         if (active) {
           setLoading(false);
@@ -377,17 +168,17 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
       <header className={styles.header}>
         <div>
           <span className={styles.eyebrow}>
-            {data.competition.shortName ?? data.competition.name}
+            {data?.competition.shortName ?? data?.competition.name ?? 'Bundesliga'}
           </span>
           <h1>Tabelle</h1>
           <p>
-            {data.season.name}
-            {data.stage ? ` · ${data.stage.name}` : ''}
+            {data ? data.season.name : 'Aktuelle Saison'}
+            {data?.stage ? ` · ${data.stage.name}` : ''}
           </p>
         </div>
 
         <div className={styles.headerMeta}>
-          <span>{data.standings.length} Vereine</span>
+          {data ? <span>{data.standings.length} Vereine</span> : null}
           {loading ? <span>Aktualisiere …</span> : null}
         </div>
       </header>
@@ -396,13 +187,13 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.eyebrow}>Aktueller Stand</span>
-            <h2 id="standings-heading">{data.competition.name}</h2>
+            <h2 id="standings-heading">{data?.competition.name ?? 'Österreichische Bundesliga'}</h2>
           </div>
 
-          {usingMockData ? <span className={styles.previewBadge}>Vorschau</span> : null}
         </div>
 
-        <div className={styles.tableCard}>
+        {data && data.standings.length > 0 ? (
+          <div className={styles.tableCard}>
           <div className={`${styles.tableGrid} ${styles.tableHeader}`} aria-hidden="true">
             <span>#</span>
             <span>Verein</span>
@@ -417,6 +208,7 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
 
           <div className={styles.rows}>
             {data.standings.map((row) => {
+              const logoSrc = getClubLogoSrc(apiUrl, { slug: row.club.slug, logo: null });
               const isFavorite =
                 favoriteClubId === row.club.id ||
                 (favoriteClubSlug !== null && favoriteClubSlug === row.club.slug);
@@ -433,13 +225,19 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
                   <span className={styles.position}>{row.position}</span>
 
                   <span className={styles.club}>
-                    <Image
-                      src={`/clubs/${row.club.slug}.svg`}
-                      alt=""
-                      width={34}
-                      height={34}
-                      className={styles.clubLogo}
-                    />
+                    {logoSrc ? (
+                      <Image
+                        src={logoSrc}
+                        alt=""
+                        width={34}
+                        height={34}
+                        className={styles.clubLogo}
+                      />
+                    ) : (
+                      <span className={styles.clubLogoFallback} aria-hidden="true">
+                        {row.club.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+                      </span>
+                    )}
 
                     <span className={styles.clubNames}>
                       <strong>{row.club.shortName ?? row.club.name}</strong>
@@ -464,6 +262,18 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
           </div>
         </div>
 
+        ) : (
+          <EmptyState
+            title={loadFailed ? 'Tabelle derzeit nicht verfügbar' : 'Noch keine aktuelle Tabelle'}
+          >
+            <p>
+              {loadFailed
+                ? 'Die aktuellen Tabellenstände konnten nicht geladen werden. Bitte später erneut versuchen.'
+                : 'Für die aktuelle Bundesliga-Saison sind noch keine bestätigten Tabellenstände hinterlegt.'}
+            </p>
+          </EmptyState>
+        )}
+        {data && data.standings.length > 0 ? (
         <div className={styles.legend}>
           <span>
             <strong>Sp.</strong> Spiele
@@ -478,6 +288,7 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
             <strong>N</strong> Niederlagen
           </span>
         </div>
+        ) : null}
       </section>
     </main>
   );
