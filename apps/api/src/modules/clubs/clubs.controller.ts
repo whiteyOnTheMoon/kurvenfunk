@@ -11,10 +11,14 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PERMISSIONS } from '../permissions/permissions.constants';
 import { RequirePermissions } from '../permissions/require-permissions.decorator';
 import { ClubsService } from './clubs.service';
+import { ClubOverviewService } from './club-overview.service';
 
 @Controller('clubs')
 export class ClubsController {
-  constructor(private readonly clubsService: ClubsService) {}
+  constructor(
+    private readonly clubsService: ClubsService,
+    private readonly clubOverview: ClubOverviewService,
+  ) {}
 
   @Get()
   findActive() {
@@ -25,6 +29,11 @@ export class ClubsController {
   @RequirePermissions(PERMISSIONS.CLUB_MANAGE)
   findAllForAdmin() {
     return this.clubsService.findAllForAdmin();
+  }
+
+  @Get(':slug/overview')
+  findOverview(@Param('slug') slug: string) {
+    return this.clubOverview.findBySlug(slug);
   }
 
   @Get(':slug')
