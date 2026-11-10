@@ -523,7 +523,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
           <div>
             <span className={styles.badge}>Kurvenfunk</span>
             <h1>Österreichischer Fußball.</h1>
-            <p>News, Spiele und Diskussionen aus der {competitionName} auf einen Blick.</p>
+            <p>News, Spiele und Tabellen aus der {competitionName} auf einen Blick.</p>
           </div>
         </section>
 
