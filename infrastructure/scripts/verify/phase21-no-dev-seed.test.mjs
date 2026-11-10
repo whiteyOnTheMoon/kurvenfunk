@@ -16,7 +16,11 @@ describe('Phase 21 DEV sport data provenance', () => {
 
   it('never enables synthetic sports producers in DEV Compose even if .env.dev opted in', () => {
     const dev = source('compose.dev.yml');
-    const switches = ['SPORTS_FAKE_PROVIDER_ENABLED', 'SPORTS_IMPORT_SCHEDULER_ENABLED', 'SPORTS_IMPORT_LIVE_ENABLED'];
+    const switches = [
+      'SPORTS_FAKE_PROVIDER_ENABLED',
+      'SPORTS_IMPORT_SCHEDULER_ENABLED',
+      'SPORTS_IMPORT_LIVE_ENABLED',
+    ];
     for (const key of switches) {
       assert.match(dev, new RegExp(key + ": 'false'"));
       assert.doesNotMatch(dev, new RegExp(key + ': \\$\\{'));
@@ -28,6 +32,9 @@ describe('Phase 21 DEV sport data provenance', () => {
     assert.match(ci, /\[phase21-dev-seed-audit\]/);
     assert.match(ci, /dev-phase21-seed-audit\.sh/);
     const script = source('infrastructure/scripts/verify/dev-phase21-seed-audit.mjs');
-    assert.doesNotMatch(script, /\.(delete|deleteMany|update|updateMany|create|createMany|upsert)\(/);
+    assert.doesNotMatch(
+      script,
+      /\.(delete|deleteMany|update|updateMany|create|createMany|upsert)\(/,
+    );
   });
 });

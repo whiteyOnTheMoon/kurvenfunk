@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write infrastructure/scripts/verify/dev-phase21-seed-audit.mjs infrastructure/scripts/verify/phase21-no-dev-seed.test.mjs && git diff -- infrastructure/scripts/verify/dev-phase21-seed-audit.mjs infrastructure/scripts/verify/phase21-no-dev-seed.test.mjs && exit 1"
+    "format:check": "prettier --check ."
   }
 }
