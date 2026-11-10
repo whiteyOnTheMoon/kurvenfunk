@@ -243,7 +243,9 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
                         <span>{row.club.name}</span>
                       </span>
 
-                      {isFavorite ? <span className={styles.favoriteBadge}>Mein Verein</span> : null}
+                      {isFavorite ? (
+                        <span className={styles.favoriteBadge}>Mein Verein</span>
+                      ) : null}
                     </span>
 
                     <span className={styles.desktopColumn}>{row.played}</span>
