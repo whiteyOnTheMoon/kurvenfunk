@@ -3,15 +3,19 @@ import { createLogger } from '@kurvenfunk/logger';
 import {
   FakeSportsProvider,
   QUEUE_NAMES,
+  type SportsProvider,
   SPORTS_IMPORT_JOB_NAME,
   type SportsImportDeadLetterPayload,
-  type SportsImportJobPayload,
 } from '@kurvenfunk/types';
 import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import { parseSportsImportPayload } from '../services/sports-import-payload';
-import { SportsImportStore, type SportsImportSession } from '../services/sports-import.store';
+import {
+  SportsImportStore,
+  sportsImportFailureCode,
+  type SportsImportSession,
+} from '../services/sports-import.store';
 
 const logger = createLogger({ service: 'worker' });
 const MAX_PAGES = 50;
@@ -24,7 +28,7 @@ const MAX_PAGE_SIZE = 500;
  */
 @Processor(QUEUE_NAMES.SPORTS_IMPORT, { concurrency: 1 })
 export class SportsImportProcessor extends WorkerHost {
-  private readonly fake = new FakeSportsProvider();
+  private readonly fake: SportsProvider = new FakeSportsProvider();
 
   constructor(
     private readonly store: SportsImportStore,
@@ -120,7 +124,7 @@ export class SportsImportProcessor extends WorkerHost {
           jobId: String(job.id ?? ''),
           queue: QUEUE_NAMES.SPORTS_IMPORT,
           // Never log raw record data, provider responses or secrets.
-          errorCode: error instanceof Error ? error.message.replace(/[^A-Z_]/g, '').slice(0, 80) : '',
+          errorCode: sportsImportFailureCode(error),
         },
       });
       throw error;
