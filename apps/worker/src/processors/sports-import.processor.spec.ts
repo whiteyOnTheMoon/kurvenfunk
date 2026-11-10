@@ -54,7 +54,9 @@ describe('SportsImportProcessor', () => {
   } as unknown as SportsImportStore;
 
   function processor(config = devConfig): SportsImportProcessor {
-    return new SportsImportProcessor(store, config, { add } as unknown as Queue<SportsImportDeadLetterPayload>);
+    return new SportsImportProcessor(store, config, {
+      add,
+    } as unknown as Queue<SportsImportDeadLetterPayload>);
   }
 
   function job(data: unknown = payload, attemptsMade = 1): Job<unknown> {
