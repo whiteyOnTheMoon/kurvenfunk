@@ -1,4 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+jest.mock('@kurvenfunk/database', () => ({
+  createPrismaClient: jest.fn(),
+  Prisma: {},
+}));
+
 import { FAKE_SPORTS_SCOPE, FakeSportsProvider } from '@kurvenfunk/types';
 import type { DatabaseClient } from '@kurvenfunk/database';
 import type { DatabaseService } from '../database/database.service';
