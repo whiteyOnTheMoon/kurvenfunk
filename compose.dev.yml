@@ -39,6 +39,10 @@ services:
     ports:
       - '127.0.0.1:3101:3000'
 
+  worker:
+    environment:
+      SPORTS_FAKE_PROVIDER_ENABLED: ${SPORTS_FAKE_PROVIDER_ENABLED:-false}
+
   keycloak:
     environment:
       KC_HOSTNAME: https://auth-dev.kurvenfunk.at

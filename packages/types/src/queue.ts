@@ -3,6 +3,7 @@ export const QUEUE_NAMES = {
   NEWS_IMPORT: 'news-import',
   NEWS_IMPORT_DEAD_LETTER: 'news-import-dead-letter',
   SPORTS_IMPORT: 'sports-import',
+  SPORTS_IMPORT_DEAD_LETTER: 'sports-import-dead-letter',
   SEARCH_INDEX: 'search-index',
   NOTIFICATIONS: 'notifications',
   SCHEDULED_PUBLISHING: 'scheduled-publishing',
@@ -12,6 +13,30 @@ export const QUEUE_NAMES = {
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
+
+import type { SportsProviderResource } from './sports-provider.js';
+
+export const SPORTS_IMPORT_JOB_NAME = 'fetch-provider' as const;
+
+export interface SportsImportJobPayload {
+  /** Provider IDs are intentionally external, never Kurvenfunk UUIDs. */
+  providerKey: string;
+  resource: SportsProviderResource;
+  competitionExternalId: string;
+  seasonExternalId: string;
+  windowStart?: string;
+  windowEnd?: string;
+}
+
+export interface SportsImportDeadLetterPayload {
+  originalQueue: typeof QUEUE_NAMES.SPORTS_IMPORT;
+  originalJobId: string;
+  originalJobName: typeof SPORTS_IMPORT_JOB_NAME;
+  originalData: SportsImportJobPayload;
+  errorCode: string;
+  attemptsMade: number;
+  failedAt: string;
+}
 
 export interface NewsImportJobPayload {
   providerKey: string;
@@ -50,6 +75,11 @@ export const NEWS_IMPORT_RETRY_OPTIONS = {
     type: 'exponential',
     delay: 2_000,
   },
+} as const;
+
+export const SPORTS_IMPORT_RETRY_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 2_000 },
 } as const;
 
 export const DEFAULT_JOB_OPTIONS = {

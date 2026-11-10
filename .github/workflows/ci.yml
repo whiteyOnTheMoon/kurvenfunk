@@ -952,6 +952,31 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
         run: node infrastructure/scripts/maintenance/prune-merged-branches.mjs
 
+  phase21-branch-cleanup:
+    name: Prune verified merged branches after authorized Phase 21 merge
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase21-branch-cleanup]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v7
+      - name: Delete only unchanged and merged PR source branches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+        run: node infrastructure/scripts/maintenance/prune-merged-branches.mjs
+
   phase20-182-cloudflare:
     name: Task 182 Cloudflare DEV auth WAF apply and readback
     needs:
