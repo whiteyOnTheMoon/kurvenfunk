@@ -331,6 +331,66 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk-staging && EXPECTED_COMMIT='$EXPECTED_COMMIT' ./infrastructure/scripts/deploy/staging.sh"
 
+  phase21-201-real-queue:
+    name: Phase 21.201 real worker + Redis + PostgreSQL queue acceptance
+    if: github.event_name == 'pull_request'
+    needs:
+      - ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      # Isolated CI containers, never DEV or production credentials.
+      DATABASE_URL: postgresql://sports_ci:sports_ci@127.0.0.1:55432/sports_ci
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '56379'
+      REDIS_PASSWORD: sports_ci_only
+      NODE_ENV: test
+      SPORTS_FAKE_PROVIDER_ENABLED: 'true'
+      SPORTS_IMPORT_SCHEDULER_ENABLED: 'false'
+      SPORTS_IMPORT_LIVE_ENABLED: 'false'
+      NEWS_IMPORT_SCHEDULER_ENABLED: 'false'
+      WORKER_RUN_STARTUP_TEST: 'false'
+    steps:
+      - name: Checkout exact PR commit
+        uses: actions/checkout@v7
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run true queue acceptance with ephemeral databases
+        run: |
+          set -Eeuo pipefail
+          docker run -d --rm --name kf-sports-ci-postgres \
+            -e POSTGRES_DB=sports_ci -e POSTGRES_USER=sports_ci -e POSTGRES_PASSWORD=sports_ci \
+            -p 127.0.0.1:55432:5432 postgres:17-alpine >/dev/null
+          docker run -d --rm --name kf-sports-ci-redis \
+            -p 127.0.0.1:56379:6379 redis:7.4-alpine \
+            redis-server --requirepass sports_ci_only --save "" >/dev/null
+          cleanup() {
+            docker rm -f kf-sports-ci-postgres kf-sports-ci-redis >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          for i in $(seq 1 40); do
+            if docker exec kf-sports-ci-postgres pg_isready -h 127.0.0.1 -U sports_ci -d sports_ci >/dev/null 2>&1 &&
+               docker exec kf-sports-ci-redis redis-cli -a sports_ci_only ping 2>/dev/null | grep -q PONG; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec kf-sports-ci-postgres pg_isready -h 127.0.0.1 -U sports_ci -d sports_ci
+          docker exec kf-sports-ci-redis redis-cli -a sports_ci_only ping 2>/dev/null | grep -q PONG
+          pnpm --filter=@kurvenfunk/database generate
+          pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
+          pnpm --filter @kurvenfunk/database exec prisma migrate deploy
+          pnpm --filter worker build
+          pnpm --filter worker exec node test/phase21-201-real-queue.e2e.cjs
+
   docker-worker-build:
     name: Worker Docker build (Prisma schema)
     if: github.event_name == 'pull_request'
