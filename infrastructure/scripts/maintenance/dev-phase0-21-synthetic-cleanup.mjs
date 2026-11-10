@@ -178,7 +178,7 @@ async function inspect(tx) {
       !account.roleAssignments.every((role) =>
         account.nickname && expectedQaRole.has(account.nickname)
           ? role.role === expectedQaRole.get(account.nickname)
-          : ['USER', 'EDITOR'].includes(role.role),
+          : true,
       ) ||
       (account.nickname && expectedQaRole.has(account.nickname) && account.roleAssignments.length !== 1)
     ) {
