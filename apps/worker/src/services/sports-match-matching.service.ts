@@ -250,8 +250,22 @@ export class SportsMatchMatchingService {
               kickoff,
               ...(record.matchday === undefined ? {} : { matchday: record.matchday }),
             });
-            if (resolved.kind === 'MATCHED') selectedMatchId = resolved.matchId;
-            else reason = resolved.kind;
+            if (resolved.kind === 'MATCHED') {
+              // One provider must not silently assign two different external
+              // match IDs to the same canonical fixture.
+              const conflictingExternalId = await tx.entityMatch.findFirst({
+                where: {
+                  providerId: session.providerId,
+                  entityType: 'MATCH',
+                  status: 'MATCHED',
+                  matchId: resolved.matchId,
+                  externalId: { not: record.externalId },
+                },
+                select: { id: true },
+              });
+              if (conflictingExternalId) reason = 'INCONSISTENT_MAPPING';
+              else selectedMatchId = resolved.matchId;
+            } else reason = resolved.kind;
           }
         }
       }
