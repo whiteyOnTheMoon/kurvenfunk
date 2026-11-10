@@ -61,12 +61,16 @@ describe('SportsMatchMatchingService', () => {
       'SEASON:external-season': { status: 'MATCHED', seasonId },
       'MATCH:external-match-001': null,
     };
-    const mappingFind = jest.fn().mockImplementation((args: {
-      where: { providerId_entityType_externalId: { entityType: string; externalId: string } };
-    }) => {
-      const key = args.where.providerId_entityType_externalId;
-      return Promise.resolve(mappings[key.entityType + ':' + key.externalId] ?? null);
-    });
+    const mappingFind = jest
+      .fn()
+      .mockImplementation(
+        (args: {
+          where: { providerId_entityType_externalId: { entityType: string; externalId: string } };
+        }) => {
+          const key = args.where.providerId_entityType_externalId;
+          return Promise.resolve(mappings[key.entityType + ':' + key.externalId] ?? null);
+        },
+      );
     const mappingUpsert = jest.fn().mockResolvedValue({});
     const mappingConflict = jest.fn().mockResolvedValue(null);
     const matchFind = jest.fn().mockResolvedValue(canonical);
