@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { FAKE_SPORTS_SCOPE, FakeSportsProvider } from '@kurvenfunk/types';
 import type { DatabaseClient } from '@kurvenfunk/database';
 import type { DatabaseService } from '../database/database.service';
@@ -8,7 +7,11 @@ import { SportsImportStore } from './sports-import.store';
 
 describe('SportsImportStore', () => {
   const provider = new FakeSportsProvider();
-  const payload = { providerKey: 'fake-sports', resource: 'fixtures' as const, ...FAKE_SPORTS_SCOPE };
+  const payload = {
+    providerKey: 'fake-sports',
+    resource: 'fixtures' as const,
+    ...FAKE_SPORTS_SCOPE,
+  };
   const record = {
     kind: 'match' as const,
     externalId: 'fake-match-001',
@@ -29,21 +32,23 @@ describe('SportsImportStore', () => {
       status: 'ACTIVE',
     });
     const providerUpdate = jest.fn().mockResolvedValue({});
-    const jobCreate = jest.fn().mockImplementation(async () => {
+    const jobCreate = jest.fn().mockImplementation(() => {
       lastJob = { id: '22222222-2222-4222-8222-222222222222', status: 'RUNNING' };
-      return { id: lastJob.id };
+      return Promise.resolve({ id: lastJob.id });
     });
-    const jobFind = jest.fn().mockImplementation(async () => lastJob);
-    const jobUpdate = jest.fn().mockImplementation(async (args: { data: { status?: string } }) => {
+    const jobFind = jest.fn().mockImplementation(() => Promise.resolve(lastJob));
+    const jobUpdate = jest.fn().mockImplementation((args: { data: { status?: string } }) => {
       if (args.data.status && lastJob) lastJob.status = args.data.status;
-      return {};
+      return Promise.resolve({});
     });
     const jobUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-    const recordFind = jest.fn().mockImplementation(async () => lastRecord);
-    const recordCreate = jest.fn().mockImplementation(async (args: { data: { contentHash: string } }) => {
-      lastRecord = { id: 'record-1', contentHash: args.data.contentHash };
-      return lastRecord;
-    });
+    const recordFind = jest.fn().mockImplementation(() => Promise.resolve(lastRecord));
+    const recordCreate = jest
+      .fn()
+      .mockImplementation((args: { data: { contentHash: string } }) => {
+        lastRecord = { id: 'record-1', contentHash: args.data.contentHash };
+        return Promise.resolve(lastRecord);
+      });
     const rawCreate = jest.fn().mockResolvedValue({ id: 'raw-1' });
     const executeRaw = jest.fn().mockResolvedValue(0);
 
@@ -59,14 +64,27 @@ describe('SportsImportStore', () => {
         update: jobUpdate,
         updateMany: jobUpdateMany,
       },
-      $transaction: jest.fn(async (value: unknown) =>
-        typeof value === 'function' ? value(tx) : Promise.all(value as Promise<unknown>[]),
-      ),
+      $transaction: jest.fn((value: unknown) => {
+        if (typeof value === 'function') {
+          const handler = value as (transaction: typeof tx) => Promise<unknown>;
+          return handler(tx);
+        }
+        return Promise.all(value as Promise<unknown>[]);
+      }),
     } as unknown as DatabaseClient;
     const store = new SportsImportStore({ client } as DatabaseService);
     return {
-      store, providerUpsert, providerUpdate, jobCreate, jobFind, jobUpdate,
-      jobUpdateMany, recordFind, recordCreate, rawCreate, executeRaw,
+      store,
+      providerUpsert,
+      providerUpdate,
+      jobCreate,
+      jobFind,
+      jobUpdate,
+      jobUpdateMany,
+      recordFind,
+      recordCreate,
+      rawCreate,
+      executeRaw,
     };
   }
 
@@ -130,7 +148,6 @@ describe('SportsImportStore', () => {
         status: 'REVIEW_REQUIRED',
         recordType: 'SPORTS_MATCH',
         normalizedPayload: record,
-        canonicalEntityId: undefined,
       }),
     });
   });
