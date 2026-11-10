@@ -16,7 +16,10 @@ describe('SportsImportQueueService', () => {
       key === 'SPORTS_FAKE_PROVIDER_ENABLED' ? true : key === 'NODE_ENV' ? 'development' : fallback,
     ),
   } as unknown as ConfigService;
-  const service = new SportsImportQueueService({ add } as unknown as Queue<SportsImportJobPayload>, config);
+  const service = new SportsImportQueueService(
+    { add } as unknown as Queue<SportsImportJobPayload>,
+    config,
+  );
   const input = {
     providerKey: 'fake-sports',
     resource: 'fixtures' as const,
