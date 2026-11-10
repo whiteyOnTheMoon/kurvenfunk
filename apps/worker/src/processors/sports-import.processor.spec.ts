@@ -14,6 +14,7 @@ import type { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import type { SportsImportStore } from '../services/sports-import.store';
 import type { SportsClubMatchingService } from '../services/sports-club-matching.service';
+import type { SportsMatchMatchingService } from '../services/sports-match-matching.service';
 import { SportsImportProcessor } from './sports-import.processor';
 
 jest.mock('@kurvenfunk/logger', () => ({
@@ -33,6 +34,7 @@ describe('SportsImportProcessor', () => {
   const fail = jest.fn();
   const deadLetter = jest.fn();
   const matchStaged = jest.fn();
+  const matchFixture = jest.fn();
   const add = jest.fn();
   const session = {
     importJobId: '22222222-2222-4222-8222-222222222222',
@@ -66,6 +68,7 @@ describe('SportsImportProcessor', () => {
       config,
       { add } as unknown as Queue<SportsImportDeadLetterPayload>,
       { matchStaged } as unknown as SportsClubMatchingService,
+      { matchStaged: matchFixture } as unknown as SportsMatchMatchingService,
     );
   }
 
@@ -88,6 +91,7 @@ describe('SportsImportProcessor', () => {
     fail.mockResolvedValue(undefined);
     deadLetter.mockResolvedValue(undefined);
     matchStaged.mockResolvedValue({ status: 'REVIEW_REQUIRED', reason: 'UNMATCHED' });
+    matchFixture.mockResolvedValue({ status: 'REVIEW_REQUIRED', reason: 'UNRESOLVED_SCOPE' });
     add.mockResolvedValue({ id: 'dead-letter-id' });
   });
 
@@ -100,6 +104,13 @@ describe('SportsImportProcessor', () => {
     );
     expect(storeRecord).toHaveBeenCalledTimes(8);
     expect(matchStaged).not.toHaveBeenCalled();
+    expect(matchFixture).toHaveBeenCalledTimes(8);
+    expect(matchFixture).toHaveBeenCalledWith(
+      session,
+      'fixtures',
+      expect.objectContaining({ kind: 'match', externalId: 'fake-match-001' }),
+      FAKE_SPORTS_SCOPE,
+    );
     const ids = storeRecord.mock.calls.map(
       (args: unknown[]) => (args[2] as { externalId: string }).externalId,
     );
@@ -121,6 +132,7 @@ describe('SportsImportProcessor', () => {
       await processor().process(job({ ...payload, resource }));
       expect(storeRecord).toHaveBeenCalledTimes(size);
       expect(matchStaged).toHaveBeenCalledTimes(resource === 'clubs' ? size : 0);
+      expect(matchFixture).toHaveBeenCalledTimes(resource === 'clubs' ? 0 : size);
       expect(complete).toHaveBeenCalledTimes(1);
     }
   });
@@ -142,11 +154,28 @@ describe('SportsImportProcessor', () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
+  it('rechecks already-staged match data without duplicate raw writes', async () => {
+    storeRecord.mockResolvedValue(false);
+    await processor().process(job());
+    expect(matchFixture).toHaveBeenCalledTimes(8);
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates a matching persistence failure to BullMQ retry', async () => {
+    matchFixture.mockRejectedValueOnce(new Error('SPORTS_MATCH_DATABASE_UNAVAILABLE'));
+    await expect(processor().process(job())).rejects.toThrow(
+      'SPORTS_MATCH_DATABASE_UNAVAILABLE',
+    );
+    expect(fail).toHaveBeenCalledWith(session, expect.any(Error));
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it('skips an already completed BullMQ job without fetching duplicate records', async () => {
     start.mockResolvedValue({ ...session, alreadyCompleted: true });
     await processor().process(job());
     expect(storeRecord).not.toHaveBeenCalled();
     expect(matchStaged).not.toHaveBeenCalled();
+    expect(matchFixture).not.toHaveBeenCalled();
     expect(complete).not.toHaveBeenCalled();
   });
 
