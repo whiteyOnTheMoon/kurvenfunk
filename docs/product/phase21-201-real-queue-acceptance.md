@@ -30,3 +30,7 @@ acceptance; a separate read-only DEV runtime/flag audit confirms that synthetic
 imports remain disabled on shared DEV.
 
 The CI run must pass before Phase 21.201 can be marked technically complete.
+
+## Acceptance record / release gate
+
+The PR CI job must report `success` (not `skipped`) on the **current** commit before 21.201 is closed. The latest merged push job alone cannot prove this because the real queue test intentionally runs only on pull requests. Verify the exact run ID, the four resource feeds, retry/dead-letter, deduplication, and zero canonical writes from the job log. The fake provider and its fixtures must remain isolated to test-only containers and must never be enabled in shared DEV.
