@@ -279,9 +279,9 @@ describe('SportsClubMatchingService', () => {
 
   it('rejects missing external ID and name before hitting the database', async () => {
     const mocks = setup();
-    await expect(mocks.matcher.matchStaged(session, { ...record, externalId: ' ' })).rejects.toThrow(
-      'SPORTS_CLUB_INVALID_RECORD',
-    );
+    await expect(
+      mocks.matcher.matchStaged(session, { ...record, externalId: ' ' }),
+    ).rejects.toThrow('SPORTS_CLUB_INVALID_RECORD');
     await expect(mocks.matcher.matchStaged(session, { ...record, name: ' ' })).rejects.toThrow(
       'SPORTS_CLUB_INVALID_RECORD',
     );
