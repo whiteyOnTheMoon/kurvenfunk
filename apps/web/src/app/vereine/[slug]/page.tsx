@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { ClubDetail, type ClubOverviewData } from '../../../features/clubs/club-detail';
@@ -33,6 +34,19 @@ async function getClubOverview(slug: string): Promise<ClubOverviewData | null> {
 
   const payload = (await response.json()) as ClubResponse;
   return payload.data;
+}
+
+export async function generateMetadata({ params }: ClubPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const overview = await getClubOverview(slug);
+  if (!overview) {
+    return { title: 'Verein nicht gefunden | Kurvenfunk', robots: { index: false } };
+  }
+
+  return {
+    title: `${overview.club.name} | Kurvenfunk`,
+    description: `Aktuelle Vereinsnews, Spiele, Ergebnisse und Tabellenstände für ${overview.club.name}.`,
+  };
 }
 
 export default async function ClubPage({ params }: ClubPageProps) {
