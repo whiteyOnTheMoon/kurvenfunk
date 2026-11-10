@@ -181,13 +181,7 @@ function ClubLogo({ team, size }: { team: PublicClub; size: number }) {
   return <Image src={src} alt="" width={size} height={size} className={styles.clubLogo} />;
 }
 
-function TeamRow({
-  team,
-  score,
-}: {
-  team: PublicClub;
-  score: number | null;
-}) {
+function TeamRow({ team, score }: { team: PublicClub; score: number | null }) {
   return (
     <div className={styles.teamRow}>
       <div className={styles.teamIdentity}>
@@ -402,10 +396,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     : [];
   const nextMatch =
     clubMatches
-      .filter(
-        (match) =>
-          match.status === 'SCHEDULED' && Date.parse(match.kickoff) >= now,
-      )
+      .filter((match) => match.status === 'SCHEDULED' && Date.parse(match.kickoff) >= now)
       .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))[0] ?? null;
   const lastMatch =
     clubMatches
@@ -543,9 +534,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
           <SectionHeading title="Aktuelle Spiele" meta={competitionName} />
           <div className={styles.matchesGrid}>
             {visibleMatches.length > 0 ? (
-              visibleMatches.map((match) => (
-                <MatchCard key={match.id} match={match} compact />
-              ))
+              visibleMatches.map((match) => <MatchCard key={match.id} match={match} compact />)
             ) : (
               <p className={styles.status}>Zurzeit keine bestätigten Spielansetzungen verfügbar.</p>
             )}

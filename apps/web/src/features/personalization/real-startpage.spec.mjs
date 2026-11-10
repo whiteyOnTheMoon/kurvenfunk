@@ -7,7 +7,10 @@ const source = readFileSync(new URL('./personalized-startpage.tsx', import.meta.
 describe('Real startpage sport data', () => {
   it('does not ship the fake sports and community dataset', () => {
     assert.equal(existsSync(new URL('./startpage-mock-data.ts', import.meta.url)), false);
-    assert.doesNotMatch(source, /startpage-mock-data|clubNextMatch|clubLastMatch|currentMatches|mockMatches|MockMatch/);
+    assert.doesNotMatch(
+      source,
+      /startpage-mock-data|clubNextMatch|clubLastMatch|currentMatches|mockMatches|MockMatch/,
+    );
     assert.doesNotMatch(source, /9 Punkte|3 Spielen|4\. Spieltag|Diskussionen|replies: 84/);
   });
 

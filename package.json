@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/web/src/features/personalization/personalized-startpage.tsx apps/web/src/features/personalization/real-startpage.spec.mjs && git diff -- apps/web/src/features/personalization/personalized-startpage.tsx apps/web/src/features/personalization/real-startpage.spec.mjs && exit 1"
+    "format:check": "prettier --check ."
   }
 }
