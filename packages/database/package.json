@@ -15,7 +15,6 @@
     "validate": "prisma validate",
     "format": "prisma format",
     "typecheck": "tsc --noEmit",
-    "seed": "prisma db seed",
     "build": "tsc"
   },
   "dependencies": {
