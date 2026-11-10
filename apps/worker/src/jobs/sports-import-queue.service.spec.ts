@@ -1,4 +1,10 @@
-import { FAKE_SPORTS_SCOPE, SPORTS_IMPORT_JOB_NAME, SPORTS_IMPORT_RETRY_OPTIONS } from '@kurvenfunk/types';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  FAKE_SPORTS_SCOPE,
+  SPORTS_IMPORT_JOB_NAME,
+  SPORTS_IMPORT_RETRY_OPTIONS,
+  type SportsImportJobPayload,
+} from '@kurvenfunk/types';
 import type { ConfigService } from '@nestjs/config';
 import type { Queue } from 'bullmq';
 import { SportsImportQueueService } from './sports-import-queue.service';
@@ -7,14 +13,10 @@ describe('SportsImportQueueService', () => {
   const add = jest.fn();
   const config = {
     get: jest.fn((key: string, fallback: unknown) =>
-      key === 'SPORTS_FAKE_PROVIDER_ENABLED'
-        ? true
-        : key === 'NODE_ENV'
-          ? 'development'
-          : fallback,
+      key === 'SPORTS_FAKE_PROVIDER_ENABLED' ? true : key === 'NODE_ENV' ? 'development' : fallback,
     ),
   } as unknown as ConfigService;
-  const service = new SportsImportQueueService({ add } as unknown as Queue, config);
+  const service = new SportsImportQueueService({ add } as unknown as Queue<SportsImportJobPayload>, config);
   const input = {
     providerKey: 'fake-sports',
     resource: 'fixtures' as const,
@@ -51,18 +53,22 @@ describe('SportsImportQueueService', () => {
   });
 
   it('rejects production and non-opted-in executions', async () => {
-    const get = jest.fn((_key: string, _fallback: unknown) => false);
+    const get = jest.fn().mockReturnValue(false);
     const disabled = new SportsImportQueueService(
-      { add } as unknown as Queue,
+      { add } as unknown as Queue<SportsImportJobPayload>,
       { get } as unknown as ConfigService,
     );
     await expect(disabled.enqueue(input)).rejects.toThrow('SPORTS_IMPORT_DISABLED');
 
     const production = new SportsImportQueueService(
-      { add } as unknown as Queue,
+      { add } as unknown as Queue<SportsImportJobPayload>,
       {
         get: (key: string, fallback: unknown) =>
-          key === 'NODE_ENV' ? 'production' : key === 'SPORTS_FAKE_PROVIDER_ENABLED' ? true : fallback,
+          key === 'NODE_ENV'
+            ? 'production'
+            : key === 'SPORTS_FAKE_PROVIDER_ENABLED'
+              ? true
+              : fallback,
       } as unknown as ConfigService,
     );
     await expect(production.enqueue(input)).rejects.toThrow('SPORTS_IMPORT_DISABLED');
