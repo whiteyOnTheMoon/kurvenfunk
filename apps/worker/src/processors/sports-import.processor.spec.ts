@@ -125,6 +125,23 @@ describe('SportsImportProcessor', () => {
     }
   });
 
+  it('rechecks a previously staged club without writing raw duplicates', async () => {
+    storeRecord.mockResolvedValue(false);
+    await processor().process(job({ ...payload, resource: 'clubs' }));
+    expect(storeRecord).toHaveBeenCalledTimes(4);
+    expect(matchStaged).toHaveBeenCalledTimes(4);
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails the queue attempt if club matching cannot be persisted', async () => {
+    matchStaged.mockRejectedValueOnce(new Error('SPORTS_CLUB_MATCHING_UNAVAILABLE'));
+    await expect(processor().process(job({ ...payload, resource: 'clubs' }))).rejects.toThrow(
+      'SPORTS_CLUB_MATCHING_UNAVAILABLE',
+    );
+    expect(fail).toHaveBeenCalledWith(session, expect.any(Error));
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it('skips an already completed BullMQ job without fetching duplicate records', async () => {
     start.mockResolvedValue({ ...session, alreadyCompleted: true });
     await processor().process(job());
