@@ -136,11 +136,7 @@ export class SportsImportSchedulerService implements OnModuleInit {
   private getInterval(resource: ScheduledResource): number {
     const setting = INTERVALS[resource];
     const value = this.configService.get<number>(setting.configKey, setting.defaultMs);
-    if (
-      !Number.isSafeInteger(value) ||
-      value < setting.minimumMs ||
-      value > MAX_INTERVAL_MS
-    ) {
+    if (!Number.isSafeInteger(value) || value < setting.minimumMs || value > MAX_INTERVAL_MS) {
       throw new Error('SPORTS_SCHEDULER_INVALID_INTERVAL');
     }
     return value;
