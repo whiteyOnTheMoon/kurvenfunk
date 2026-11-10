@@ -73,7 +73,7 @@ const rowModels = [
   'moderationCard',
   'sanction',
   'appeal',
-  'ipBlock',
+  'iPBlock',
   'auditLog',
   'notification',
   'notificationPreference',
