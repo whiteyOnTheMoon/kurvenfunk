@@ -3,10 +3,7 @@ import type { SportsProviderMatch } from '@kurvenfunk/types';
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import type { SportsImportSession } from './sports-import.store';
-import {
-  resolveSportsMatch,
-  SPORTS_MATCH_KICKOFF_TOLERANCE_MS,
-} from './sports-match-matching';
+import { resolveSportsMatch, SPORTS_MATCH_KICKOFF_TOLERANCE_MS } from './sports-match-matching';
 
 export type SportsMatchResource = 'fixtures' | 'results' | 'live';
 export type SportsMatchOutcome =
@@ -152,8 +149,16 @@ export class SportsMatchMatchingService {
 
       const missingScope = !mappedCompetitionId || !mappedSeasonId;
       const missingClubs = !mappedHomeId || !mappedAwayId || mappedHomeId === mappedAwayId;
-      let reason: 'UNRESOLVED_SCOPE' | 'UNRESOLVED_CLUB' | 'INCONSISTENT_MAPPING' | 'UNMATCHED' | 'AMBIGUOUS' =
-        missingScope ? 'UNRESOLVED_SCOPE' : missingClubs ? 'UNRESOLVED_CLUB' : 'UNMATCHED';
+      let reason:
+        | 'UNRESOLVED_SCOPE'
+        | 'UNRESOLVED_CLUB'
+        | 'INCONSISTENT_MAPPING'
+        | 'UNMATCHED'
+        | 'AMBIGUOUS' = missingScope
+        ? 'UNRESOLVED_SCOPE'
+        : missingClubs
+          ? 'UNRESOLVED_CLUB'
+          : 'UNMATCHED';
       let selectedMatchId: string | null = null;
 
       if (
