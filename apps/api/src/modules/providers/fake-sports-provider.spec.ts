@@ -67,7 +67,9 @@ describe('FakeSportsProvider – Phase 21.200', () => {
     const fixtures = await allPages(registry, baseInput);
     expect(fixtures).toHaveLength(8);
     expect(new Set(fixtures.map((fixture) => fixture.externalId)).size).toBe(8);
-    const statuses = fixtures.map((fixture) => (fixture.kind === 'match' ? fixture.status : 'club'));
+    const statuses = fixtures.map((fixture) =>
+      fixture.kind === 'match' ? fixture.status : 'club',
+    );
     expect(new Set(statuses)).toEqual(
       new Set(['FINISHED', 'LIVE', 'SCHEDULED', 'POSTPONED', 'CANCELLED', 'ABANDONED']),
     );
@@ -111,9 +113,9 @@ describe('FakeSportsProvider – Phase 21.200', () => {
     const first = await registry.fetch(fake.key, baseInput);
     const cursor = first.nextCursor;
     expect(cursor).toBeDefined();
-    await expect(
-      registry.fetch(fake.key, { ...baseInput, cursor: 'untrusted' }),
-    ).rejects.toThrow('FAKE_SPORTS_INVALID_CURSOR');
+    await expect(registry.fetch(fake.key, { ...baseInput, cursor: 'untrusted' })).rejects.toThrow(
+      'FAKE_SPORTS_INVALID_CURSOR',
+    );
     await expect(
       registry.fetch(fake.key, { ...baseInput, cursor: cursor?.replace(/:2$/, ':999999') }),
     ).rejects.toThrow('FAKE_SPORTS_INVALID_CURSOR');
@@ -189,9 +191,9 @@ describe('FakeSportsProvider application registration', () => {
   it('fails closed in production even when accidentally opted in', async () => {
     process.env.SPORTS_FAKE_PROVIDER_ENABLED = 'true';
     process.env.NODE_ENV = 'production';
-    await expect(Test.createTestingModule({ imports: [ProvidersModule] }).compile()).rejects.toThrow(
-      'FAKE_SPORTS_FORBIDDEN_ENVIRONMENT',
-    );
+    await expect(
+      Test.createTestingModule({ imports: [ProvidersModule] }).compile(),
+    ).rejects.toThrow('FAKE_SPORTS_FORBIDDEN_ENVIRONMENT');
   });
 
   it('never registers in production without an opt-in', async () => {
