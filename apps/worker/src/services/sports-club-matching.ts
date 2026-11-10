@@ -47,7 +47,8 @@ export function resolveSportsClubName(
   if (candidates.size === 0) return { kind: 'UNMATCHED', candidateCount: 0 };
   if (candidates.size > 1) return { kind: 'AMBIGUOUS', candidateCount: candidates.size };
 
-  const entry = candidates.entries().next().value;
-  if (!entry) return { kind: 'UNMATCHED', candidateCount: 0 };
-  return { kind: 'MATCHED', clubId: entry[0], method: entry[1] };
+  for (const [clubId, method] of candidates) {
+    return { kind: 'MATCHED', clubId, method };
+  }
+  return { kind: 'UNMATCHED', candidateCount: 0 };
 }
