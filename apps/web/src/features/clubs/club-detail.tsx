@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { EmptyState } from '@kurvenfunk/ui';
 
-import { getClubPageMockData } from './club-detail-mock-data';
+import { getClubLogoSrc, type ClubLogoMedia } from './club-media';
 import styles from './club-detail.module.css';
 
 export interface ClubDetailData {
@@ -11,57 +11,145 @@ export interface ClubDetailData {
   name: string;
   shortName: string | null;
   slug: string;
-  color1Hex: string;
-  color1Rgba: string;
-  color2Hex: string | null;
-  color2Rgba: string | null;
-  color3Hex: string | null;
-  color3Rgba: string | null;
-  accentColorHex: string | null;
-  accentColorRgba: string | null;
   website: string | null;
-  logo: {
-    externalUrl: string | null;
-    storageKey: string | null;
-    altText: string | null;
-    mimeType: string;
-    source: string | null;
-    sourceUrl: string | null;
-    copyright: string | null;
-  } | null;
+  color1Hex: string;
+  logo: (ClubLogoMedia & { altText: string | null }) | null;
 }
 
-interface ClubDetailProps {
+interface ClubMatch {
+  id: string;
+  kickoff: string;
+  matchday: number | null;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'ABANDONED';
+  homeScore: number | null;
+  awayScore: number | null;
+  competition: { name: string; slug: string };
+  season: { name: string };
+  homeClub: { name: string; shortName: string | null; slug: string };
+  awayClub: { name: string; shortName: string | null; slug: string };
+}
+
+export interface ClubOverviewData {
   club: ClubDetailData;
+  nextMatch: ClubMatch | null;
+  lastMatch: ClubMatch | null;
+  matches: ClubMatch[];
+  news: {
+    id: string;
+    slug: string;
+    title: string;
+    lead: string | null;
+    publishedAt: string | null;
+    competition: { name: string; shortName: string | null } | null;
+  }[];
+  standingContext: {
+    competition: { name: string; slug: string };
+    season: { name: string };
+    position: number;
+    played: number;
+    points: number;
+  } | null;
+  standings: {
+    id: string;
+    position: number;
+    played: number;
+    goalDifference: number;
+    points: number;
+    club: { id: string; name: string; shortName: string | null; slug: string };
+  }[];
+  forums: {
+    id: string;
+    name: string;
+    slug: string;
+    threads: {
+      id: string;
+      title: string;
+      slug: string;
+      postCount: number;
+      lastPostAt: string | null;
+    }[];
+  }[];
 }
 
-export function ClubDetail({ club }: ClubDetailProps) {
+const matchStatusLabels: Record<ClubMatch['status'], string> = {
+  SCHEDULED: 'Geplant',
+  LIVE: 'Live',
+  FINISHED: 'Beendet',
+  POSTPONED: 'Verschoben',
+  CANCELLED: 'Abgesagt',
+  ABANDONED: 'Abgebrochen',
+};
+
+function formatDate(value: string, includeTime = false): string {
+  return new Intl.DateTimeFormat('de-AT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+    timeZone: 'Europe/Vienna',
+  }).format(new Date(value));
+}
+
+function teamName(team: ClubMatch['homeClub']): string {
+  return team.shortName ?? team.name;
+}
+
+function formatScore(match: ClubMatch): string | null {
+  return match.homeScore !== null && match.awayScore !== null
+    ? `${match.homeScore}:${match.awayScore}`
+    : null;
+}
+
+function ClubLogo({ src, name }: { src: string | null; name: string }) {
+  if (!src) {
+    return (
+      <span className={styles.logoFallback} aria-label={`Kein Logo für ${name} vorhanden`}>
+        {name.slice(0, 2).toLocaleUpperCase('de-AT')}
+      </span>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={`${name} Logo`}
+      width={120}
+      height={120}
+      className={styles.logo}
+      unoptimized={src.startsWith('http')}
+      priority
+    />
+  );
+}
+
+export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; apiUrl: string }) {
+  const { club, nextMatch, lastMatch, matches, news, standingContext, standings, forums } =
+    overview;
   const clubName = club.shortName ?? club.name;
-  const { news, nextMatch, lastMatch, standings, discussions } = getClubPageMockData(club);
-  const highlightedStanding = standings.find((row) => row.club.slug === club.slug);
+  const logoSrc = getClubLogoSrc(apiUrl, club);
+  const website = club.website && /^https?:\/\//i.test(club.website) ? club.website : null;
+  const threads = forums.flatMap((forum) =>
+    forum.threads.map((thread) => ({ ...thread, forumName: forum.name })),
+  );
 
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.heroIdentity}>
-          <Image
-            src={`/clubs/${club.slug}.svg`}
-            alt={`${club.name} Logo`}
-            width={120}
-            height={120}
-            className={styles.logo}
-            priority
-          />
-
+          <ClubLogo src={logoSrc} name={club.name} />
           <div>
             <span className={styles.eyebrow}>Verein</span>
             <h1>{club.name}</h1>
-            <p>News, Spiele, Tabelle und Community rund um {clubName}.</p>
+            <p>Aktuelle Meldungen, Spiele und Tabellenstände für {clubName}.</p>
           </div>
         </div>
-
-        {club.website ? (
-          <a href={club.website} target="_blank" rel="noreferrer" className={styles.websiteLink}>
+        {website ? (
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.websiteLink}
+          >
             Offizielle Website ↗
           </a>
         ) : null}
@@ -82,51 +170,42 @@ export function ClubDetail({ club }: ClubDetailProps) {
             <h2>{clubName} auf einen Blick</h2>
           </div>
         </div>
-
         <div className={styles.overviewGrid}>
           <article className={styles.overviewCard}>
             <span>Nächstes Spiel</span>
             {nextMatch ? (
               <>
-                <strong>{nextMatch.date}</strong>
+                <strong>{formatDate(nextMatch.kickoff, true)}</strong>
                 <p>
-                  {nextMatch.home.shortName} – {nextMatch.away.shortName}
+                  {teamName(nextMatch.homeClub)} – {teamName(nextMatch.awayClub)}
                 </p>
+                <Link href={`/spiele/${nextMatch.id}`}>Zum Spiel →</Link>
               </>
             ) : (
-              <>
-                <strong>–</strong>
-                <p>Noch keine Spieldaten verfügbar</p>
-              </>
+              <p>Noch kein kommendes Spiel angesetzt.</p>
             )}
           </article>
-
           <article className={styles.overviewCard}>
             <span>Letztes Ergebnis</span>
             {lastMatch ? (
               <>
-                <strong>
-                  {lastMatch.homeScore}:{lastMatch.awayScore}
-                </strong>
+                <strong>{formatScore(lastMatch) ?? '–'}</strong>
                 <p>
-                  {lastMatch.home.shortName} – {lastMatch.away.shortName}
+                  {teamName(lastMatch.homeClub)} – {teamName(lastMatch.awayClub)}
                 </p>
+                <Link href={`/spiele/${lastMatch.id}`}>Zum Spiel →</Link>
               </>
             ) : (
-              <>
-                <strong>–</strong>
-                <p>Noch keine Spieldaten verfügbar</p>
-              </>
+              <p>Noch kein abgeschlossenes Spiel vorhanden.</p>
             )}
           </article>
-
           <article className={styles.overviewCard}>
-            <span>Tabellenposition</span>
-            <strong>{highlightedStanding ? `${highlightedStanding.position}.` : '–'}</strong>
+            <span>Aktuelle Tabellenposition</span>
+            <strong>{standingContext ? `${standingContext.position}.` : '–'}</strong>
             <p>
-              {highlightedStanding
-                ? `${highlightedStanding.points} Punkte nach ${highlightedStanding.played} Spielen`
-                : 'Noch keine Tabellendaten verfügbar'}
+              {standingContext
+                ? `${standingContext.points} Punkte nach ${standingContext.played} Spielen · ${standingContext.competition.name}`
+                : 'Noch keine aktuellen Tabellendaten vorhanden.'}
             </p>
           </article>
         </div>
@@ -136,29 +215,31 @@ export function ClubDetail({ club }: ClubDetailProps) {
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.eyebrow}>Aktuell</span>
-            <h2>News</h2>
+            <h2>Vereinsnews</h2>
           </div>
-
-          <Link href={`/news?club=${club.slug}`}>Alle News →</Link>
+          <Link href={`/news?club=${encodeURIComponent(club.slug)}`}>Alle News →</Link>
         </div>
-
-        {news.length > 0 ? (
+        {news.length ? (
           <div className={styles.newsGrid}>
             {news.map((article) => (
-              <article className={styles.newsCard} key={article.id}>
+              <Link href={`/artikel/${article.slug}`} className={styles.newsCard} key={article.id}>
                 <div className={styles.newsMeta}>
-                  <span>{article.category}</span>
-                  <span>{article.time}</span>
+                  <span>
+                    {article.competition?.shortName ?? article.competition?.name ?? clubName}
+                  </span>
+                  {article.publishedAt ? (
+                    <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+                  ) : null}
                 </div>
                 <h3>{article.title}</h3>
-                <p>{article.lead}</p>
+                {article.lead ? <p>{article.lead}</p> : null}
                 <span className={styles.readMore}>Weiterlesen →</span>
-              </article>
+              </Link>
             ))}
           </div>
         ) : (
           <EmptyState title="Keine Vereinsnews">
-            <p>Für {clubName} sind derzeit keine News vorhanden.</p>
+            <p>Für {clubName} sind derzeit keine veröffentlichten Meldungen verknüpft.</p>
           </EmptyState>
         )}
       </section>
@@ -166,41 +247,42 @@ export function ClubDetail({ club }: ClubDetailProps) {
       <section className={styles.section} id="spiele">
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.eyebrow}>Bundesliga</span>
-            <h2>Spiele</h2>
+            <span className={styles.eyebrow}>Spielübersicht</span>
+            <h2>Spiele & Ergebnisse</h2>
           </div>
+          <Link href="/spiele">Alle Spiele →</Link>
         </div>
-
-        {nextMatch || lastMatch ? (
+        {matches.length ? (
           <div className={styles.matchesGrid}>
-            {[nextMatch, lastMatch]
-              .filter((match) => match !== null)
-              .map((match) => (
-                <article className={styles.matchCard} key={match.id}>
-                  <div className={styles.matchMeta}>
-                    <span>{match.competition}</span>
-                    <span>{match.matchday}</span>
-                  </div>
-
-                  <strong className={styles.matchDate}>{match.date}</strong>
-
-                  <div className={styles.team}>
-                    <Image src={match.home.logo} alt="" width={32} height={32} />
-                    <span>{match.home.shortName}</span>
-                    {match.homeScore !== undefined ? <strong>{match.homeScore}</strong> : null}
-                  </div>
-
-                  <div className={styles.team}>
-                    <Image src={match.away.logo} alt="" width={32} height={32} />
-                    <span>{match.away.shortName}</span>
-                    {match.awayScore !== undefined ? <strong>{match.awayScore}</strong> : null}
-                  </div>
-                </article>
-              ))}
+            {matches.map((match) => (
+              <Link href={`/spiele/${match.id}`} className={styles.matchCard} key={match.id}>
+                <div className={styles.matchMeta}>
+                  <span>
+                    {match.competition.name} · {match.season.name}
+                  </span>
+                  <span>
+                    {match.matchday === null
+                      ? matchStatusLabels[match.status]
+                      : `${match.matchday}. Spieltag`}
+                  </span>
+                </div>
+                <strong className={styles.matchDate}>
+                  {formatDate(match.kickoff, true)} · {matchStatusLabels[match.status]}
+                </strong>
+                <div className={styles.team}>
+                  <span>{teamName(match.homeClub)}</span>
+                  <strong>{match.homeScore ?? '–'}</strong>
+                </div>
+                <div className={styles.team}>
+                  <span>{teamName(match.awayClub)}</span>
+                  <strong>{match.awayScore ?? '–'}</strong>
+                </div>
+              </Link>
+            ))}
           </div>
         ) : (
           <EmptyState title="Keine Spiele vorhanden">
-            <p>Für {clubName} sind derzeit keine Spieldaten vorhanden.</p>
+            <p>Für {clubName} gibt es derzeit keine aktuellen Spielansetzungen oder Ergebnisse.</p>
           </EmptyState>
         )}
       </section>
@@ -208,12 +290,13 @@ export function ClubDetail({ club }: ClubDetailProps) {
       <section className={styles.section} id="tabelle">
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.eyebrow}>Bundesliga</span>
-            <h2>Tabelle</h2>
+            <span className={styles.eyebrow}>
+              {standingContext?.season.name ?? 'Aktuelle Saison'}
+            </span>
+            <h2>{standingContext?.competition.name ?? 'Tabelle'}</h2>
           </div>
         </div>
-
-        {standings.length > 0 ? (
+        {standings.length ? (
           <div className={styles.table}>
             <div className={styles.tableHeader}>
               <span>#</span>
@@ -222,21 +305,15 @@ export function ClubDetail({ club }: ClubDetailProps) {
               <span>Diff.</span>
               <span>Pkt.</span>
             </div>
-
             {standings.map((row) => (
               <div
-                key={row.club.slug}
-                className={`${styles.tableRow} ${
-                  row.club.slug === club.slug ? styles.tableRowHighlighted : ''
-                }`}
+                key={row.id}
+                className={`${styles.tableRow} ${row.club.id === club.id ? styles.tableRowHighlighted : ''}`}
               >
                 <span>{row.position}</span>
-
-                <div className={styles.tableClub}>
-                  <Image src={row.club.logo} alt="" width={26} height={26} />
-                  <span>{row.club.shortName}</span>
-                </div>
-
+                <Link href={`/vereine/${row.club.slug}`} className={styles.tableClub}>
+                  {row.club.shortName ?? row.club.name}
+                </Link>
                 <span>{row.played}</span>
                 <span>
                   {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
@@ -247,7 +324,7 @@ export function ClubDetail({ club }: ClubDetailProps) {
           </div>
         ) : (
           <EmptyState title="Keine Tabellendaten">
-            <p>Für diesen Verein sind derzeit keine Tabellendaten verfügbar.</p>
+            <p>Für {clubName} sind derzeit keine aktiven Tabellenwerte hinterlegt.</p>
           </EmptyState>
         )}
       </section>
@@ -256,26 +333,29 @@ export function ClubDetail({ club }: ClubDetailProps) {
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.eyebrow}>Community</span>
-            <h2>Forum</h2>
+            <h2>Vereinsforum</h2>
           </div>
         </div>
-
-        {discussions.length > 0 ? (
+        {threads.length ? (
           <div className={styles.forumList}>
-            {discussions.map((discussion) => (
-              <article className={styles.forumCard} key={discussion.id}>
-                <span>{discussion.context}</span>
-                <h3>{discussion.title}</h3>
+            {threads.map((thread) => (
+              <article className={styles.forumCard} key={thread.id}>
+                <span>{thread.forumName}</span>
+                <h3>{thread.title}</h3>
                 <div>
-                  <span>{discussion.replies} Antworten</span>
-                  <span>{discussion.lastActivity}</span>
+                  <span>{thread.postCount} Beiträge</span>
+                  {thread.lastPostAt ? (
+                    <time dateTime={thread.lastPostAt}>
+                      Letzter Beitrag: {formatDate(thread.lastPostAt, true)}
+                    </time>
+                  ) : null}
                 </div>
               </article>
             ))}
           </div>
         ) : (
-          <EmptyState title="Noch keine Diskussionen">
-            <p>Für {clubName} gibt es derzeit noch keine Diskussionen.</p>
+          <EmptyState title="Keine Diskussionen">
+            <p>Für {clubName} sind derzeit keine öffentlichen Vereinsthemen vorhanden.</p>
           </EmptyState>
         )}
       </section>

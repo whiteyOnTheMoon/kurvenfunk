@@ -22,6 +22,7 @@ export interface ClubListItem {
   accentColorHex: string | null;
   accentColorRgba: string | null;
   logo: {
+    id: string;
     externalUrl: string | null;
     storageKey: string | null;
     altText: string | null;
@@ -51,6 +52,7 @@ const clubListSelect = {
   accentColorRgba: true,
   logoMedia: {
     select: {
+      id: true,
       externalUrl: true,
       storageKey: true,
       altText: true,

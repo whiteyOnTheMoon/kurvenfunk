@@ -1,6 +1,7 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { ClubDetail, type ClubDetailData } from '../../../features/clubs/club-detail';
+import { ClubDetail, type ClubOverviewData } from '../../../features/clubs/club-detail';
 
 interface ClubPageProps {
   params: Promise<{
@@ -9,17 +10,17 @@ interface ClubPageProps {
 }
 
 interface ClubResponse {
-  data: ClubDetailData;
+  data: ClubOverviewData;
 }
 
-async function getClub(slug: string): Promise<ClubDetailData | null> {
+async function getClubOverview(slug: string): Promise<ClubOverviewData | null> {
   const apiUrl = process.env.API_URL;
 
   if (!apiUrl) {
     throw new Error('API_URL is not configured');
   }
 
-  const response = await fetch(`${apiUrl}/api/v1/clubs/${encodeURIComponent(slug)}`, {
+  const response = await fetch(`${apiUrl}/api/v1/clubs/${encodeURIComponent(slug)}/overview`, {
     cache: 'no-store',
   });
 
@@ -28,21 +29,33 @@ async function getClub(slug: string): Promise<ClubDetailData | null> {
   }
 
   if (!response.ok) {
-    throw new Error('Club could not be loaded');
+    throw new Error('Club overview could not be loaded');
   }
 
   const payload = (await response.json()) as ClubResponse;
-
   return payload.data;
+}
+
+export async function generateMetadata({ params }: ClubPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const overview = await getClubOverview(slug);
+  if (!overview) {
+    return { title: 'Verein nicht gefunden | Kurvenfunk', robots: { index: false } };
+  }
+
+  return {
+    title: `${overview.club.name} | Kurvenfunk`,
+    description: `Aktuelle Vereinsnews, Spiele, Ergebnisse und Tabellenstände für ${overview.club.name}.`,
+  };
 }
 
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params;
-  const club = await getClub(slug);
+  const overview = await getClubOverview(slug);
 
-  if (!club) {
+  if (!overview) {
     notFound();
   }
 
-  return <ClubDetail club={club} />;
+  return <ClubDetail overview={overview} apiUrl={process.env.API_URL!} />;
 }
