@@ -21,6 +21,11 @@ const devFinalSeedUpdate = new Date('2026-08-18T00:00:00.000Z');
 const editorialMismatchSlug = 'sturm-dreht-verrucktes-topspiel-gegen-rapid';
 const mismatchedFixtureKey =
   'austrian-bundesliga|sk-sturm-graz|fc-red-bull-salzburg|2026-09-12T15:00:00.000Z';
+// Residual legacy seed article has been edited, so never delete its contents.
+// Archive reversibly only if its original seed author and sole fixture link
+// are verified and it has no comments, revisions, imports or entity matches.
+const editedSeedArticleSlug = 'seed-cup-blau-weiss-rapid';
+const editedSeedFixtureKey = 'oefb-cup|ksv-1919|lask|2026-09-05T16:00:00.000Z';
 
 export function fixtureKey(row) {
   return [
@@ -158,11 +163,35 @@ async function cleanup(tx) {
   );
   const ownedIds = new Set(ownedArticles.map((article) => article.id));
   const originalFixtures = fixtures.filter(isOriginalSeedMatch);
+  const residualFixture = originalFixtures.find(
+    (match) => fixtureKey(match) === editedSeedFixtureKey,
+  );
+  const residualArticle = articles.find((article) => article.slug === editedSeedArticleSlug);
+  const archivableEditedSeedArticle =
+    residualFixture &&
+    residualArticle &&
+    residualFixture.articles.length === 1 &&
+    residualFixture.articles[0].id === residualArticle.id &&
+    residualFixture.entityMatches.length === 0 &&
+    residualArticle.status === 'PUBLISHED' &&
+    residualArticle.importRecordId === null &&
+    residualArticle.author?.keycloakSubject === 'seed-editor-user' &&
+    residualArticle._count.comments === 0 &&
+    residualArticle._count.revisions === 0 &&
+    residualArticle._count.entityMatches === 0
+      ? residualArticle
+      : null;
+  const archivedArticleIds = [
+    ...retainedArticles,
+    ...(archivableEditedSeedArticle ? [archivableEditedSeedArticle] : []),
+  ].map((article) => article.id);
   const matchPlan = originalFixtures.map((match) => {
     const linked = match.articles;
     const authorizedLinks = linked.every(
       (article) =>
         ownedIds.has(article.id) ||
+        (archivableEditedSeedArticle?.id === article.id &&
+          fixtureKey(match) === editedSeedFixtureKey) ||
         (fixtureKey(match) === mismatchedFixtureKey && article.slug === editorialMismatchSlug),
     );
     return {
@@ -177,12 +206,14 @@ async function cleanup(tx) {
     confirmedGeneratedSeedArticles: ownedArticles.length,
     safeArticleDeletes: removableArticles.length,
     protectedSeedArticlesToArchive: retainedArticles.length,
+    reversibleEditedSeedArticleArchives: archivableEditedSeedArticle ? 1 : 0,
     originalSeedFixtureCandidates: originalFixtures.length,
     safeFixtureDeletes: matchPlan.filter((row) => row.safe).length,
     blockedFixtures: matchPlan.filter((row) => !row.safe).map((row) => fixtureKey(row.match)),
     unrecognizedSeedArticles: articles.filter((a) => !ownedIds.has(a.id)).map((a) => a.slug),
     deletedArticles: 0,
     archivedArticles: 0,
+    archivedEditedSeedArticles: 0,
     detachedMismatchedArticleLinks: 0,
     deletedFixtures: 0,
     deletedUnreferencedSeedClubs: 0,
@@ -204,13 +235,30 @@ async function cleanup(tx) {
       if (removed.count !== 1) throw new Error('SEED_ARTICLE_CONCURRENT_CHANGE');
       result.deletedArticles += removed.count;
     }
-    for (const article of retainedArticles) {
+    for (const article of [
+      ...retainedArticles,
+      ...(archivableEditedSeedArticle ? [archivableEditedSeedArticle] : []),
+    ]) {
+      const edited = article.id === archivableEditedSeedArticle?.id;
       const archived = await tx.article.updateMany({
-        where: { id: article.id, slug: article.slug, importRecordId: null },
+        where: {
+          id: article.id,
+          slug: article.slug,
+          importRecordId: null,
+          ...(edited
+            ? {
+                status: 'PUBLISHED',
+                comments: { none: {} },
+                revisions: { none: {} },
+                entityMatches: { none: {} },
+              }
+            : {}),
+        },
         data: { status: 'ARCHIVED', archivedAt: new Date(), isTopNews: false },
       });
       if (archived.count !== 1) throw new Error('SEED_ARTICLE_ARCHIVE_CONFLICT');
       result.archivedArticles += archived.count;
+      if (edited) result.archivedEditedSeedArticles += archived.count;
     }
     for (const { match, safe } of matchPlan) {
       if (!safe) continue;
@@ -223,11 +271,8 @@ async function cleanup(tx) {
         });
         result.detachedMismatchedArticleLinks += unlinked.count;
       }
-      const survivingSeedArticleIds = ownedArticles
-        .filter((article) => !removableArticles.some((removed) => removed.id === article.id))
-        .map((article) => article.id);
       await tx.article.updateMany({
-        where: { matchId: match.id, id: { in: survivingSeedArticleIds }, status: 'ARCHIVED' },
+        where: { matchId: match.id, id: { in: archivedArticleIds }, status: 'ARCHIVED' },
         data: { matchId: null },
       });
       const deleted = await tx.match.deleteMany({
