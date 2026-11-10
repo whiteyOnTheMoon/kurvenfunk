@@ -21,7 +21,7 @@ import { SportsCorrectionsService } from './sports-corrections.service';
       { name: QUEUE_NAMES.NEWS_IMPORT_DEAD_LETTER },
     ),
   ],
-  controllers: [ImportsController, ImportReplayController],
-  providers: [ImportsService, ImportReplayService, ArticleEditorialGuard],
+  controllers: [ImportsController, ImportReplayController, SportsCorrectionsController],
+  providers: [ImportsService, ImportReplayService, SportsCorrectionsService, ArticleEditorialGuard],
 })
 export class ImportsModule {}
