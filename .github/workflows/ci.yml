@@ -374,13 +374,13 @@ jobs:
           }
           trap cleanup EXIT
           for i in $(seq 1 40); do
-            if docker exec kf-sports-ci-postgres pg_isready -U sports_ci -d sports_ci >/dev/null 2>&1 &&
+            if docker exec kf-sports-ci-postgres pg_isready -h 127.0.0.1 -U sports_ci -d sports_ci >/dev/null 2>&1 &&
                docker exec kf-sports-ci-redis redis-cli -a sports_ci_only ping 2>/dev/null | grep -q PONG; then
               break
             fi
             sleep 1
           done
-          docker exec kf-sports-ci-postgres pg_isready -U sports_ci -d sports_ci
+          docker exec kf-sports-ci-postgres pg_isready -h 127.0.0.1 -U sports_ci -d sports_ci
           docker exec kf-sports-ci-redis redis-cli -a sports_ci_only ping 2>/dev/null | grep -q PONG
           pnpm --filter=@kurvenfunk/database generate
           pnpm turbo build --filter=@kurvenfunk/logger --filter=@kurvenfunk/types --filter=@kurvenfunk/database
