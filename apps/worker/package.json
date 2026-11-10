@@ -61,6 +61,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@kurvenfunk/types$": "<rootDir>/../../../packages/types/src/index.ts",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   }
 }
