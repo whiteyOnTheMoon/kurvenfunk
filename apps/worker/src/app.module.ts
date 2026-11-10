@@ -6,6 +6,7 @@ import { validateEnvironment } from './config/env.validation';
 import { DatabaseService } from './database/database.service';
 import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
 import { SportsImportQueueService } from './jobs/sports-import-queue.service';
+import { SportsImportSchedulerService } from './jobs/sports-import-scheduler.service';
 import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
 import { TestJobService } from './jobs/test-job.service';
 import { NewsImportProcessor } from './processors/news-import.processor';
@@ -82,6 +83,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     OtsNewsNormalizer,
     NewsImportSchedulerService,
     SportsImportQueueService,
+    SportsImportSchedulerService,
     SportsImportStore,
     SportsClubMatchingService,
     SportsMatchMatchingService,

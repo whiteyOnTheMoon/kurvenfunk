@@ -17,6 +17,33 @@ const workerEnvSchema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((value) => value === 'true'),
+    // Phase 21.204: separate and bounded fake sports schedules; OFF by default.
+    SPORTS_IMPORT_SCHEDULER_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    SPORTS_IMPORT_LIVE_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    SPORTS_IMPORT_FIXTURES_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(60_000)
+      .max(604_800_000)
+      .default(43_200_000),
+    SPORTS_IMPORT_RESULTS_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(60_000)
+      .max(604_800_000)
+      .default(900_000),
+    SPORTS_IMPORT_LIVE_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(60_000)
+      .max(604_800_000)
+      .default(60_000),
 
     NEWS_IMPORT_PROVIDER: z.enum(['fake', 'ots']).default('fake'),
 
@@ -58,6 +85,13 @@ export function validateEnvironment(config: Record<string, unknown>): WorkerEnvi
 
   if (result.data.SPORTS_FAKE_PROVIDER_ENABLED && result.data.NODE_ENV === 'production') {
     throw new Error('FAKE_SPORTS_FORBIDDEN_ENVIRONMENT');
+  }
+  if (
+    result.data.SPORTS_IMPORT_SCHEDULER_ENABLED &&
+    (!result.data.SPORTS_FAKE_PROVIDER_ENABLED ||
+      (result.data.NODE_ENV !== 'development' && result.data.NODE_ENV !== 'test'))
+  ) {
+    throw new Error('SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER');
   }
 
   return result.data;
