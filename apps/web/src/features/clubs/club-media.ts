@@ -1,0 +1,48 @@
+import { getArticleLeadMediaSrc } from '../articles/article-media';
+
+/** The shipped assets are explicit; a newly created club may not have one. */
+const LOCAL_LOGO_SLUGS = new Set([
+  'admira-wacker',
+  'ask-voitsberg',
+  'fac-wien',
+  'fc-blau-weiss-linz',
+  'fc-hertha-wels',
+  'fc-liefering',
+  'fc-red-bull-salzburg',
+  'fc-wacker-innsbruck',
+  'first-vienna-fc-1894',
+  'fk-austria-wien',
+  'grazer-ak-1902',
+  'ksv-1919',
+  'lask',
+  'sc-austria-lustenau',
+  'schwarz-weiss-bregenz',
+  'scr-altach',
+  'sk-rapid-ii',
+  'sk-rapid-wien',
+  'sk-sturm-graz-ii',
+  'sk-sturm-graz',
+  'skn-st-poelten',
+  'sku-amstetten',
+  'sv-austria-salzburg',
+  'sv-ried',
+  'tsv-hartberg',
+  'wolfsberger-ac',
+  'wsg-tirol',
+  'young-violets-austria-wien',
+]);
+
+export interface ClubLogoMedia {
+  id: string;
+  storageKey: string | null;
+  externalUrl: string | null;
+}
+
+export function getClubLogoSrc(
+  apiUrl: string,
+  club: { slug: string; logo: ClubLogoMedia | null },
+): string | null {
+  const media = getArticleLeadMediaSrc(apiUrl, club.logo);
+  if (media) return media;
+  return LOCAL_LOGO_SLUGS.has(club.slug) ? `/clubs/${club.slug}.svg` : null;
+}
