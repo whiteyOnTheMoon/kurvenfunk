@@ -25,10 +25,9 @@ describe('ClubsController', () => {
     findActiveBySlug,
   } as unknown as ClubsService;
 
-  const controller = new ClubsController(
-    service,
-    { findBySlug: findOverview } as unknown as ClubOverviewService,
-  );
+  const controller = new ClubsController(service, {
+    findBySlug: findOverview,
+  } as unknown as ClubOverviewService);
 
   beforeEach(() => {
     findActive.mockReset();
