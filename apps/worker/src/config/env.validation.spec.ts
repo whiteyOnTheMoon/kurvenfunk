@@ -43,9 +43,9 @@ describe('Phase 21.204 worker environment validation', () => {
       }),
     ).toThrow('SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER');
 
-    expect(() =>
-      validateEnvironment({ ...base, SPORTS_IMPORT_SCHEDULER_ENABLED: 'true' }),
-    ).toThrow('SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER');
+    expect(() => validateEnvironment({ ...base, SPORTS_IMPORT_SCHEDULER_ENABLED: 'true' })).toThrow(
+      'SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER',
+    );
 
     expect(() =>
       validateEnvironment({
