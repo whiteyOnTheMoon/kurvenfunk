@@ -62,12 +62,27 @@ try {
   const rows = Object.fromEntries(
     await Promise.all(rowModels.map(async (model) => [model, await db[model].count()])),
   );
-  const [seedUsers, seedArticles, candidates] = await Promise.all([
+  const [seedUsers, qaUsers, seedArticles, candidates] = await Promise.all([
     db.user.findMany({
       where: { keycloakSubject: { in: knownSeedSubjects } },
       select: {
         id: true,
         keycloakSubject: true,
+        profile: { select: { id: true } },
+        _count: { select: userCounts },
+      },
+    }),
+    db.user.findMany({
+      where: {
+        OR: [
+          { nickname: { startsWith: 'Phase17 Test ' } },
+          { nickname: { startsWith: 'Phase19 Test ' } },
+          { nickname: { startsWith: 'Phase20 ' } },
+        ],
+      },
+      select: {
+        id: true,
+        nickname: true,
         profile: { select: { id: true } },
         _count: { select: userCounts },
       },
@@ -105,11 +120,30 @@ try {
         },
       }),
       db.comment.count({ where: { article: seedArticleWhere } }),
+      db.article.count({
+        where: {
+          OR: [
+            { slug: { startsWith: 'phase20-' } },
+            { slug: { startsWith: 'phase17-' } },
+            { slug: { startsWith: 'phase19-' } },
+          ],
+        },
+      }),
+      db.user.count({ where: { nickname: { startsWith: 'Phase17 Test ' } } }),
+      db.user.count({ where: { nickname: { startsWith: 'Phase19 Test ' } } }),
+      db.comment.count({ where: { body: { contains: 'Synthetic', mode: 'insensitive' } } }),
     ]),
   ]);
 
   // The extra comment attribution is calculated after seed account lookup.
   const seedIds = seedUsers.map((user) => user.id);
+  const qaAccountDependencies = qaUsers.map(({ id: _id, nickname, profile, _count }) => ({
+    category: nickname?.startsWith('Phase17 Test ') ? 'PHASE17' :
+      nickname?.startsWith('Phase19 Test ') ? 'PHASE19' : 'PHASE20',
+    hasProfile: profile !== null,
+    relations: _count,
+    totalRelations: Object.values(_count).reduce((sum, n) => sum + n, 0),
+  }));
   const [commentsBySeedOnSeedArticles, allCommentsBySeedAccounts, seedAuthoredPublished] =
     await Promise.all([
       db.comment.count({
@@ -136,7 +170,12 @@ try {
     seedOrTestSubjectUsers: candidates[3],
     fakeOrTestProviders: candidates[4],
     seedArticleCommentCount: candidates[5],
+    phase17Or19Or20ArticleSlugs: candidates[6],
+    phase17QaAccounts: candidates[7],
+    phase19QaAccounts: candidates[8],
+    commentsContainingSyntheticMarker: candidates[9],
     knownSeedAccounts: seedUsers.length,
+    qaAccountDependencies,
     knownSeedArticles: seedArticles.map((article) => ({
       slug: article.slug,
       status: article.status,
@@ -151,7 +190,8 @@ try {
   }));
   console.log('PHASE021_DEV_AUDIT_EXECUTION=PASS_READ_ONLY');
   console.log('PHASE021_DEV_CLEANLINESS=' +
-    (seedUsers.length || seedArticles.length || candidates[1] || candidates[2] || candidates[4]
+    (seedUsers.length || qaUsers.length || seedArticles.length || candidates[1] ||
+      candidates[2] || candidates[4] || candidates[6]
       ? 'UNRESOLVED_REVIEW_REQUIRED'
       : 'NO_KNOWN_MARKERS_FOUND_NOT_A_COMPLETE_PROVENANCE_PROOF'));
 } catch (error) {
