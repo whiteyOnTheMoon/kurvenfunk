@@ -373,7 +373,6 @@ describe('ImportsService', () => {
       expect(importRecordUpdateMany).not.toHaveBeenCalled();
     });
 
-
     it('returns newest unresolved import records first', async () => {
       const records = [
         {
@@ -477,6 +476,7 @@ describe('ImportsService', () => {
     it('returns the existing draft on repeated approval without another write', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'CREATED',
         reviewDecision: 'APPROVED',
         canonicalEntityId: 'draft-1',
@@ -518,6 +518,7 @@ describe('ImportsService', () => {
     it('rejects an unresolved review as skipped', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'REVIEW_REQUIRED',
         reviewDecision: null,
         reviewedAt: null,
@@ -573,6 +574,7 @@ describe('ImportsService', () => {
     it('rejects an already decided review', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'MATCHED',
         reviewDecision: 'APPROVED',
         reviewedAt: new Date(),
