@@ -9,6 +9,8 @@ import { ImportReplayController } from './import-replay.controller';
 import { ImportReplayService } from './import-replay.service';
 import { ImportsController } from './imports.controller';
 import { ImportsService } from './imports.service';
+import { SportsCorrectionsController } from './sports-corrections.controller';
+import { SportsCorrectionsService } from './sports-corrections.service';
 
 @Module({
   imports: [
