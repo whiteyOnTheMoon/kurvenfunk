@@ -110,18 +110,17 @@ try {
 
   // The extra comment attribution is calculated after seed account lookup.
   const seedIds = seedUsers.map((user) => user.id);
-  const [commentsBySeedOnSeedArticles, commentsBySeedElsewhere, seedAuthoredPublished] =
+  const [commentsBySeedOnSeedArticles, allCommentsBySeedAccounts, seedAuthoredPublished] =
     await Promise.all([
       db.comment.count({
         where: { article: seedArticleWhere, authorId: { in: seedIds } },
       }),
-      db.comment.count({
-        where: { article: { NOT: seedArticleWhere }, authorId: { in: seedIds } },
-      }),
+      db.comment.count({ where: { authorId: { in: seedIds } } }),
       db.article.count({
         where: { authorId: { in: seedIds }, status: 'PUBLISHED' },
       }),
     ]);
+  const commentsBySeedElsewhere = allCommentsBySeedAccounts - commentsBySeedOnSeedArticles;
 
   const seedAccountDependencies = seedUsers.map(({ id: _id, keycloakSubject, profile, _count }) => ({
     seedSubject: keycloakSubject,
