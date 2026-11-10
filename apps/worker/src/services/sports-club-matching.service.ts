@@ -86,7 +86,10 @@ export class SportsClubMatchingService {
 
       // Editorial decisions and explicitly rejected mappings must never be
       // silently reinterpreted by a fresh import.
-      if (importRecord.reviewedAt || prior?.status === 'REJECTED') {
+      if (importRecord.reviewedAt) {
+        return { status: 'REVIEW_REQUIRED', reason: 'MANUAL_REVIEW' };
+      }
+      if (prior?.status === 'REJECTED') {
         return { status: 'REVIEW_REQUIRED', reason: 'REJECTED' };
       }
       if (prior?.reviewedAt && prior.status !== 'MATCHED') {
