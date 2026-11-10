@@ -11,6 +11,10 @@ jest.mock('./clubs.service', () => ({
   ClubsService: class ClubsService {},
 }));
 
+jest.mock('./club-overview.service', () => ({
+  ClubOverviewService: class ClubOverviewService {},
+}));
+
 import { ClubsController } from './clubs.controller';
 import type { ClubsService } from './clubs.service';
 import type { ClubOverviewService } from './club-overview.service';
