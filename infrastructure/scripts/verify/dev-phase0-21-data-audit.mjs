@@ -49,13 +49,39 @@ const userCounts = {
   importRecordsReviewed: true,
 };
 const rowModels = [
-  'user', 'profile', 'userRoleAssignment', 'club', 'clubAlias',
-  'competition', 'season', 'stage', 'match', 'standing',
-  'article', 'articleRevision', 'comment', 'commentRevision',
-  'reaction', 'media', 'forumCategory', 'forum', 'thread', 'post',
-  'moderationReport', 'moderationCard', 'sanction', 'appeal',
-  'ipBlock', 'auditLog', 'notification', 'notificationPreference',
-  'provider', 'importJob', 'importRecord', 'rawPayload', 'entityMatch',
+  'user',
+  'profile',
+  'userRoleAssignment',
+  'club',
+  'clubAlias',
+  'competition',
+  'season',
+  'stage',
+  'match',
+  'standing',
+  'article',
+  'articleRevision',
+  'comment',
+  'commentRevision',
+  'reaction',
+  'media',
+  'forumCategory',
+  'forum',
+  'thread',
+  'post',
+  'moderationReport',
+  'moderationCard',
+  'sanction',
+  'appeal',
+  'ipBlock',
+  'auditLog',
+  'notification',
+  'notificationPreference',
+  'provider',
+  'importJob',
+  'importRecord',
+  'rawPayload',
+  'entityMatch',
 ];
 
 try {
@@ -138,8 +164,11 @@ try {
   // The extra comment attribution is calculated after seed account lookup.
   const seedIds = seedUsers.map((user) => user.id);
   const qaAccountDependencies = qaUsers.map(({ id: _id, nickname, profile, _count }) => ({
-    category: nickname?.startsWith('Phase17 Test ') ? 'PHASE17' :
-      nickname?.startsWith('Phase19 Test ') ? 'PHASE19' : 'PHASE20',
+    category: nickname?.startsWith('Phase17 Test ')
+      ? 'PHASE17'
+      : nickname?.startsWith('Phase19 Test ')
+        ? 'PHASE19'
+        : 'PHASE20',
     hasProfile: profile !== null,
     relations: _count,
     totalRelations: Object.values(_count).reduce((sum, n) => sum + n, 0),
@@ -156,46 +185,61 @@ try {
     ]);
   const commentsBySeedElsewhere = allCommentsBySeedAccounts - commentsBySeedOnSeedArticles;
 
-  const seedAccountDependencies = seedUsers.map(({ id: _id, keycloakSubject, profile, _count }) => ({
-    seedSubject: keycloakSubject,
-    hasProfile: profile !== null,
-    relations: _count,
-    totalRelations: Object.values(_count).reduce((sum, n) => sum + n, 0),
-  }));
+  const seedAccountDependencies = seedUsers.map(
+    ({ id: _id, keycloakSubject, profile, _count }) => ({
+      seedSubject: keycloakSubject,
+      hasProfile: profile !== null,
+      relations: _count,
+      totalRelations: Object.values(_count).reduce((sum, n) => sum + n, 0),
+    }),
+  );
   console.log('PHASE021_DEV_ROW_COUNTS=' + JSON.stringify(rows));
-  console.log('PHASE021_DEV_SYNTHETIC_CANDIDATES=' + JSON.stringify({
-    syntheticPrefixArticleCount: candidates[0],
-    syntheticPrefixPublishedArticles: candidates[1],
-    syntheticPrefixClubs: candidates[2],
-    seedOrTestSubjectUsers: candidates[3],
-    fakeOrTestProviders: candidates[4],
-    seedArticleCommentCount: candidates[5],
-    phase17Or19Or20ArticleSlugs: candidates[6],
-    phase17QaAccounts: candidates[7],
-    phase19QaAccounts: candidates[8],
-    commentsContainingSyntheticMarker: candidates[9],
-    knownSeedAccounts: seedUsers.length,
-    qaAccountDependencies,
-    knownSeedArticles: seedArticles.map((article) => ({
-      slug: article.slug,
-      status: article.status,
-      authoredByKnownSeed: knownSeedSubjects.includes(article.author?.keycloakSubject),
-      importLinked: article.importRecordId !== null,
-      relations: article._count,
-    })),
-    knownSeedAccountDependencies: seedAccountDependencies,
-    commentsBySeedOnSeedArticles,
-    commentsBySeedElsewhere,
-    seedAuthoredPublished,
-  }));
+  console.log(
+    'PHASE021_DEV_SYNTHETIC_CANDIDATES=' +
+      JSON.stringify({
+        syntheticPrefixArticleCount: candidates[0],
+        syntheticPrefixPublishedArticles: candidates[1],
+        syntheticPrefixClubs: candidates[2],
+        seedOrTestSubjectUsers: candidates[3],
+        fakeOrTestProviders: candidates[4],
+        seedArticleCommentCount: candidates[5],
+        phase17Or19Or20ArticleSlugs: candidates[6],
+        phase17QaAccounts: candidates[7],
+        phase19QaAccounts: candidates[8],
+        commentsContainingSyntheticMarker: candidates[9],
+        knownSeedAccounts: seedUsers.length,
+        qaAccountDependencies,
+        knownSeedArticles: seedArticles.map((article) => ({
+          slug: article.slug,
+          status: article.status,
+          authoredByKnownSeed: knownSeedSubjects.includes(article.author?.keycloakSubject),
+          importLinked: article.importRecordId !== null,
+          relations: article._count,
+        })),
+        knownSeedAccountDependencies: seedAccountDependencies,
+        commentsBySeedOnSeedArticles,
+        commentsBySeedElsewhere,
+        seedAuthoredPublished,
+      }),
+  );
   console.log('PHASE021_DEV_AUDIT_EXECUTION=PASS_READ_ONLY');
-  console.log('PHASE021_DEV_CLEANLINESS=' +
-    (seedUsers.length || qaUsers.length || seedArticles.length || candidates[1] ||
-      candidates[2] || candidates[4] || candidates[6]
-      ? 'UNRESOLVED_REVIEW_REQUIRED'
-      : 'NO_KNOWN_MARKERS_FOUND_NOT_A_COMPLETE_PROVENANCE_PROOF'));
+  console.log(
+    'PHASE021_DEV_CLEANLINESS=' +
+      (seedUsers.length ||
+      qaUsers.length ||
+      seedArticles.length ||
+      candidates[1] ||
+      candidates[2] ||
+      candidates[4] ||
+      candidates[6]
+        ? 'UNRESOLVED_REVIEW_REQUIRED'
+        : 'NO_KNOWN_MARKERS_FOUND_NOT_A_COMPLETE_PROVENANCE_PROOF'),
+  );
 } catch (error) {
-  console.error('PHASE021_DEV_AUDIT_EXECUTION=FAILED', error instanceof Error ? error.name : 'Unknown');
+  console.error(
+    'PHASE021_DEV_AUDIT_EXECUTION=FAILED',
+    error instanceof Error ? error.name : 'Unknown',
+  );
   process.exitCode = 1;
 } finally {
   await db.$disconnect();
