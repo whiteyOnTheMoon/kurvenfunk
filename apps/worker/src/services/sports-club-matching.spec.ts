@@ -25,7 +25,7 @@ describe('resolveSportsClubName', () => {
 
   it('normalizes case, whitespace, punctuation and accents conservatively', () => {
     expect(normalizeSportsClubName('  BLAU   WEISS – Linz  ')).toBe('blau weiss linz');
-    expect(normalizeSportsClubName('Blau-Weiß Linz')).toBe('blau wei linz');
+    expect(normalizeSportsClubName('Blau-Weiß Linz')).toBe('blau weiss linz');
     expect(normalizeSportsClubName('SK RAPID WIEN')).toBe('sk rapid wien');
     expect(normalizeSportsClubName('')).toBe('');
   });
