@@ -5,7 +5,7 @@
 - Ein Wettbewerb ohne aktive Saison (HTTP 404) erhält einen neutralen Leerzustand. Bei API-/Netzwerkfehlern werden keine Spiele, Resultate oder Tabellenstände erfunden.
 - `/spiele/[id]` lädt weiterhin ausschließlich den tatsächlichen Matchdatensatz von `GET /api/v1/matches/:id`, mit serverseitigem 404 und unverändertem `no-store`. Titel/Beschreibung verwenden tatsächliche Heim-/Auswärtsvereine.
 - Spielstatus werden korrekt unterschieden: LIVE ist **Spielstand**, FINISHED **Endstand**, Verschiebung/Absage ohne Ergebnis keine scheinbare Anstoßzeit. Uhrzeiten sind in `Europe/Vienna`.
-- Bekannte mitgelieferte Vereinslogos werden verwendet; bei unbekannten Slugs erscheinen Initialen statt nicht vorhandener SVG-Dateien.
+- Spielplan und Spiel-Detailansicht nutzen nur bekannte mitgelieferte Vereinslogos; bei unbekannten Slugs erscheinen Initialen statt nicht vorhandener SVG-Dateien.
 - Nachrichten auf Spielseiten sind bereits veröffentlicht, nicht gelöscht und **tatsächlich publiziert** (`publishedAt <= now`); geplante zukünftige Meldungen sind nicht sichtbar.
 - Community ist weiterhin nur als offen gekennzeichneter Platzhalter vorhanden; es werden keine Diskussionen simuliert.
 

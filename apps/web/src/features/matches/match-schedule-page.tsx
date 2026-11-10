@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { EmptyState } from '@kurvenfunk/ui';
 
 import { useAuth } from '../auth/auth-provider';
+import { getClubLogoSrc } from '../clubs/club-media';
 import { ListPageLoadingState } from '../loading/loading-states';
 import styles from './match-schedule-page.module.css';
 
@@ -106,6 +107,19 @@ function formatTime(value: string) {
     minute: '2-digit',
     timeZone: 'Europe/Vienna',
   }).format(new Date(value));
+}
+
+function MatchTeamLogo({ team }: { team: MatchClub }) {
+  const src = getClubLogoSrc('', { slug: team.slug, logo: null });
+  if (!src) {
+    return (
+      <span className={styles.logoFallback} aria-label={`Kein Logo für ${team.name} vorhanden`}>
+        {team.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+      </span>
+    );
+  }
+
+  return <Image src={src} alt="" width={32} height={32} className={styles.logo} />;
 }
 
 function getDefaultMatchday(data: MatchScheduleData) {
@@ -431,13 +445,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
                           >
                             <span>{match.homeClub.shortName ?? match.homeClub.name}</span>
 
-                            <Image
-                              src={`/clubs/${match.homeClub.slug}.svg`}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className={styles.logo}
-                            />
+                            <MatchTeamLogo team={match.homeClub} />
                           </div>
 
                           <div
@@ -445,13 +453,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
                           >
                             <span>{match.awayClub.shortName ?? match.awayClub.name}</span>
 
-                            <Image
-                              src={`/clubs/${match.awayClub.slug}.svg`}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className={styles.logo}
-                            />
+                            <MatchTeamLogo team={match.awayClub} />
                           </div>
                         </div>
 

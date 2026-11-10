@@ -17,6 +17,8 @@ describe('Phase 21.207 real match pages', () => {
   it('uses canonical match IDs, truthful status and no guessed logo URLs', () => {
     assert.match(schedule, /href=\{\`\/spiele\/\$\{match\.id\}\`\}/);
     assert.match(detail, /getClubLogoSrc/);
+    assert.match(schedule, /getClubLogoSrc/);
+    assert.match(schedule, /logoFallback/);
     assert.match(detail, /match\.status === 'LIVE'/);
     assert.match(detail, /Spielstand/);
     assert.match(detail, /Kein Spielstand/);
