@@ -332,8 +332,8 @@ export function SportsCorrections({ apiUrl }: { apiUrl: string }) {
                         value={candidate.id}
                         checked={targetId === candidate.id}
                         onChange={() => setTargetId(candidate.id)}
-                      />
-                      {' '}{targetLabel(candidate)}
+                      />{' '}
+                      {targetLabel(candidate)}
                     </label>
                     <p className={styles.meta}>ID: {candidate.id}</p>
                   </li>
