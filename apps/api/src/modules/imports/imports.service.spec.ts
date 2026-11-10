@@ -355,6 +355,24 @@ describe('ImportsService', () => {
   });
 
   describe('review workflow', () => {
+    it('does not allow editorial rejection of sports matching records', async () => {
+      importRecordFindUnique.mockResolvedValue({
+        id: 'record-1',
+        recordType: 'SPORTS_CLUB',
+        status: 'REVIEW_REQUIRED',
+        reviewDecision: null,
+      });
+
+      const service = new ImportsService();
+      await expect(service.rejectReview('record-1', 'reviewer-1')).rejects.toEqual(
+        new BadRequestException({
+          code: 'IMPORT_REVIEW_NOT_ARTICLE',
+          message: 'Sportdaten erfordern die separate Admin-Korrekturschnittstelle.',
+        }),
+      );
+      expect(importRecordUpdateMany).not.toHaveBeenCalled();
+    });
+
     it('returns newest unresolved import records first', async () => {
       const records = [
         {
@@ -373,6 +391,7 @@ describe('ImportsService', () => {
       expect(importRecordFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
+            recordType: 'NEWS_ARTICLE',
             status: 'REVIEW_REQUIRED',
             reviewDecision: null,
           },
@@ -457,6 +476,7 @@ describe('ImportsService', () => {
     it('returns the existing draft on repeated approval without another write', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'CREATED',
         reviewDecision: 'APPROVED',
         canonicalEntityId: 'draft-1',
@@ -498,6 +518,7 @@ describe('ImportsService', () => {
     it('rejects an unresolved review as skipped', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'REVIEW_REQUIRED',
         reviewDecision: null,
         reviewedAt: null,
@@ -553,6 +574,7 @@ describe('ImportsService', () => {
     it('rejects an already decided review', async () => {
       importRecordFindUnique.mockResolvedValue({
         id: 'record-1',
+        recordType: 'NEWS_ARTICLE',
         status: 'MATCHED',
         reviewDecision: 'APPROVED',
         reviewedAt: new Date(),

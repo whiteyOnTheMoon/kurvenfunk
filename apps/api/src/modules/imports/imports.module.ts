@@ -9,6 +9,8 @@ import { ImportReplayController } from './import-replay.controller';
 import { ImportReplayService } from './import-replay.service';
 import { ImportsController } from './imports.controller';
 import { ImportsService } from './imports.service';
+import { SportsCorrectionsController } from './sports-corrections.controller';
+import { SportsCorrectionsService } from './sports-corrections.service';
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { ImportsService } from './imports.service';
       { name: QUEUE_NAMES.NEWS_IMPORT_DEAD_LETTER },
     ),
   ],
-  controllers: [ImportsController, ImportReplayController],
-  providers: [ImportsService, ImportReplayService, ArticleEditorialGuard],
+  controllers: [ImportsController, ImportReplayController, SportsCorrectionsController],
+  providers: [ImportsService, ImportReplayService, SportsCorrectionsService, ArticleEditorialGuard],
 })
 export class ImportsModule {}

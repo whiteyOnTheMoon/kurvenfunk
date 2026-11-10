@@ -4,6 +4,7 @@ import { MatchAdmin } from '../../../features/admin/matches/match-admin';
 import { ResultAdmin } from '../../../features/admin/results/result-admin';
 import { StandingAdmin } from '../../../features/admin/standings/standing-admin';
 import { SeasonAdmin } from '../../../features/admin/seasons/season-admin';
+import { SportsCorrections } from '../../../features/admin/sports-corrections/sports-corrections';
 import { env } from '../../../lib/env';
 
 export default function AdminSportsDataPage() {
@@ -15,6 +16,7 @@ export default function AdminSportsDataPage() {
       <MatchAdmin apiUrl={env.API_URL} />
       <ResultAdmin apiUrl={env.API_URL} />
       <StandingAdmin apiUrl={env.API_URL} />
+      <SportsCorrections apiUrl={env.API_URL} />
     </>
   );
 }
