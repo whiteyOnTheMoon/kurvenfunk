@@ -224,9 +224,7 @@ export class FakeSportsProvider implements SportsProvider {
       return {
         // Clone both array and records so callers cannot mutate future pages.
         records: page.map((record) => ({ ...record })),
-        ...(nextOffset < records.length
-          ? { nextCursor: `f1:${fingerprint}:${nextOffset}` }
-          : {}),
+        ...(nextOffset < records.length ? { nextCursor: `f1:${fingerprint}:${nextOffset}` } : {}),
       };
     });
   }
