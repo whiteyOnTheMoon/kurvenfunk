@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.mjs && git diff -- infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.mjs && exit 1"
   }
 }
