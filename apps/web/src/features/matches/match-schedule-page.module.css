@@ -218,6 +218,18 @@
   object-fit: contain;
 }
 
+.logoFallback {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: var(--kf-radius-full);
+  background: var(--kf-color-surface-subtle);
+  color: var(--kf-color-text-muted);
+  font-size: var(--kf-font-size-xs);
+  font-weight: var(--kf-font-weight-bold);
+}
+
 .result {
   display: grid;
   justify-items: center;
@@ -301,7 +313,8 @@
     gap: var(--kf-space-2);
   }
 
-  .logo {
+  .logo,
+  .logoFallback {
     width: 26px;
     height: 26px;
   }
@@ -321,7 +334,8 @@
     font-size: var(--kf-font-size-sm);
   }
 
-  .logo {
+  .logo,
+  .logoFallback {
     width: 24px;
     height: 24px;
   }

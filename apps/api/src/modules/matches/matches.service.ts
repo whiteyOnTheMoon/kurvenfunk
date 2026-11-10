@@ -231,6 +231,7 @@ export class MatchesService implements OnModuleDestroy {
           where: {
             status: 'PUBLISHED',
             deletedAt: null,
+            publishedAt: { lte: new Date() },
           },
           orderBy: {
             publishedAt: 'desc',

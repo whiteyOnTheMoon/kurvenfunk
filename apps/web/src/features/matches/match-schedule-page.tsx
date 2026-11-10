@@ -2,11 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { EmptyState } from '@kurvenfunk/ui';
 
 import { useAuth } from '../auth/auth-provider';
+import { getClubLogoSrc } from '../clubs/club-media';
 import { ListPageLoadingState } from '../loading/loading-states';
 import styles from './match-schedule-page.module.css';
 
@@ -82,96 +83,6 @@ const competitions = [
   },
 ] as const;
 
-const mockClubs = {
-  rapid: {
-    id: 'mock-rapid',
-    name: 'SK Rapid Wien',
-    shortName: 'Rapid Wien',
-    slug: 'sk-rapid-wien',
-  },
-  austria: {
-    id: 'mock-austria',
-    name: 'FK Austria Wien',
-    shortName: 'Austria Wien',
-    slug: 'fk-austria-wien',
-  },
-  sturm: {
-    id: 'mock-sturm',
-    name: 'SK Sturm Graz',
-    shortName: 'Sturm Graz',
-    slug: 'sk-sturm-graz',
-  },
-  salzburg: {
-    id: 'mock-salzburg',
-    name: 'FC Red Bull Salzburg',
-    shortName: 'Salzburg',
-    slug: 'fc-red-bull-salzburg',
-  },
-  lask: {
-    id: 'mock-lask',
-    name: 'LASK',
-    shortName: 'LASK',
-    slug: 'lask',
-  },
-  gak: {
-    id: 'mock-gak',
-    name: 'Grazer AK 1902',
-    shortName: 'GAK',
-    slug: 'grazer-ak-1902',
-  },
-};
-
-const mockData: MatchScheduleData = {
-  competition: {
-    id: 'mock-bundesliga',
-    name: 'Österreichische Bundesliga',
-    shortName: 'Bundesliga',
-    slug: 'austrian-bundesliga',
-  },
-  season: {
-    id: 'mock-season',
-    name: '2026/27',
-    slug: '2026-27',
-  },
-  stage: {
-    id: 'mock-stage',
-    name: 'Grunddurchgang',
-    slug: 'grunddurchgang',
-  },
-  matches: [
-    {
-      id: 'mock-match-1',
-      kickoff: '2026-07-31T17:30:00.000Z',
-      matchday: 1,
-      status: 'FINISHED',
-      homeScore: 2,
-      awayScore: 0,
-      homeClub: mockClubs.lask,
-      awayClub: mockClubs.gak,
-    },
-    {
-      id: 'mock-match-2',
-      kickoff: '2026-08-23T15:00:00.000Z',
-      matchday: 4,
-      status: 'SCHEDULED',
-      homeScore: null,
-      awayScore: null,
-      homeClub: mockClubs.rapid,
-      awayClub: mockClubs.austria,
-    },
-    {
-      id: 'mock-match-3',
-      kickoff: '2026-09-12T15:00:00.000Z',
-      matchday: 6,
-      status: 'SCHEDULED',
-      homeScore: null,
-      awayScore: null,
-      homeClub: mockClubs.sturm,
-      awayClub: mockClubs.salzburg,
-    },
-  ],
-};
-
 const statusLabels: Record<MatchStatus, string> = {
   SCHEDULED: 'Geplant',
   LIVE: 'Live',
@@ -196,6 +107,19 @@ function formatTime(value: string) {
     minute: '2-digit',
     timeZone: 'Europe/Vienna',
   }).format(new Date(value));
+}
+
+function MatchTeamLogo({ team }: { team: MatchClub }) {
+  const src = getClubLogoSrc('', { slug: team.slug, logo: null });
+  if (!src) {
+    return (
+      <span className={styles.logoFallback} aria-label={`Kein Logo für ${team.name} vorhanden`}>
+        {team.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+      </span>
+    );
+  }
+
+  return <Image src={src} alt="" width={32} height={32} className={styles.logo} />;
 }
 
 function getDefaultMatchday(data: MatchScheduleData) {
@@ -224,10 +148,10 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
   const [selectedCompetition, setSelectedCompetition] =
     useState<(typeof competitions)[number]['slug']>('austrian-bundesliga');
 
-  const [data, setData] = useState<MatchScheduleData>(mockData);
+  const [data, setData] = useState<MatchScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [usingMockData, setUsingMockData] = useState(true);
+  const [requestError, setRequestError] = useState(false);
   const [favoriteClubSlug, setFavoriteClubSlug] = useState<string | null>(null);
   const [selectedMatchday, setSelectedMatchday] = useState<number | null>(null);
 
@@ -236,53 +160,29 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
 
     async function loadSchedule() {
       setLoading(true);
+      setInitialLoading(true);
+      setRequestError(false);
+      setData(null);
+      setSelectedMatchday(null);
 
       try {
         const response = await fetch(
           `${apiUrl}/api/v1/matches?competition=${encodeURIComponent(selectedCompetition)}`,
-          {
-            cache: 'no-store',
-          },
+          { cache: 'no-store' },
         );
 
-        if (!response.ok) {
-          throw new Error('Schedule request failed');
-        }
+        // An unconfigured competition has no fixtures; it is not a preview.
+        if (response.status === 404) return;
+        if (!response.ok) throw new Error('Schedule request failed');
 
         const payload = (await response.json()) as ApiResponse;
-
         if (active && payload.data) {
           setData(payload.data);
           setSelectedMatchday(getDefaultMatchday(payload.data));
-          setUsingMockData(false);
         }
       } catch {
         if (active) {
-          setUsingMockData(true);
-
-          if (selectedCompetition === 'austrian-bundesliga') {
-            setData(mockData);
-            setSelectedMatchday(getDefaultMatchday(mockData));
-          } else {
-            const selected = competitions.find(
-              (competition) => competition.slug === selectedCompetition,
-            );
-
-            const fallbackData: MatchScheduleData = {
-              competition: {
-                id: `mock-${selectedCompetition}`,
-                name: selected?.label ?? selectedCompetition,
-                shortName: selected?.label ?? null,
-                slug: selectedCompetition,
-              },
-              season: mockData.season,
-              stage: null,
-              matches: [],
-            };
-
-            setData(fallbackData);
-            setSelectedMatchday(getDefaultMatchday(fallbackData));
-          }
+          setRequestError(true);
         }
       } finally {
         if (active) {
@@ -339,29 +239,20 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
     };
   }, [apiUrl, favoriteClubId]);
 
-  const isCup = data.competition.slug === 'oefb-cup';
-
-  const matchdays = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          data.matches
-            .map((match) => match.matchday)
-            .filter((matchday): matchday is number => matchday !== null),
-        ),
-      ).sort((a, b) => a - b),
-    [data.matches],
-  );
+  const isCup = data?.competition.slug === 'oefb-cup';
+  const matchdays = Array.from(
+    new Set(
+      (data?.matches ?? [])
+        .map((match) => match.matchday)
+        .filter((matchday): matchday is number => matchday !== null),
+    ),
+  ).sort((a, b) => a - b);
 
   const selectedMatchdayIndex =
     selectedMatchday === null ? -1 : matchdays.indexOf(selectedMatchday);
 
-  const visibleMatches = useMemo(
-    () =>
-      selectedMatchday === null
-        ? data.matches.filter((match) => match.matchday === null)
-        : data.matches.filter((match) => match.matchday === selectedMatchday),
-    [data.matches, selectedMatchday],
+  const visibleMatches = (data?.matches ?? []).filter((match) =>
+    selectedMatchday === null ? match.matchday === null : match.matchday === selectedMatchday,
   );
 
   const selectedLabel =
@@ -373,6 +264,42 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
 
   if (initialLoading) {
     return <ListPageLoadingState rows={6} />;
+  }
+
+  if (!data) {
+    return (
+      <main className={styles.page}>
+        <header className={styles.header}>
+          <div>
+            <span className={styles.eyebrow}>Sportdaten</span>
+            <h1>Spielplan</h1>
+          </div>
+        </header>
+        <nav className={styles.competitionTabs} aria-label="Wettbewerb auswählen">
+          {competitions.map((competition) => (
+            <button
+              type="button"
+              key={competition.slug}
+              className={selectedCompetition === competition.slug ? styles.activeTab : ''}
+              onClick={() => setSelectedCompetition(competition.slug)}
+            >
+              {competition.label}
+            </button>
+          ))}
+        </nav>
+        <EmptyState
+          title={
+            requestError ? 'Spielplan derzeit nicht verfügbar' : 'Noch kein Spielplan vorhanden'
+          }
+        >
+          <p>
+            {requestError
+              ? 'Die aktuellen Spieldaten konnten nicht geladen werden. Bitte später erneut versuchen.'
+              : 'Für diesen Wettbewerb sind noch keine aktuellen Spiele hinterlegt.'}
+          </p>
+        </EmptyState>
+      </main>
+    );
   }
 
   return (
@@ -419,8 +346,6 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
             <span className={styles.eyebrow}>Spiele</span>
             <h2>{data.competition.name}</h2>
           </div>
-
-          {usingMockData ? <span className={styles.previewBadge}>Vorschau</span> : null}
         </div>
 
         {visibleMatches.length > 0 ? (
@@ -520,13 +445,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
                           >
                             <span>{match.homeClub.shortName ?? match.homeClub.name}</span>
 
-                            <Image
-                              src={`/clubs/${match.homeClub.slug}.svg`}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className={styles.logo}
-                            />
+                            <MatchTeamLogo team={match.homeClub} />
                           </div>
 
                           <div
@@ -534,13 +453,7 @@ export function MatchSchedulePage({ apiUrl }: MatchSchedulePageProps) {
                           >
                             <span>{match.awayClub.shortName ?? match.awayClub.name}</span>
 
-                            <Image
-                              src={`/clubs/${match.awayClub.slug}.svg`}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className={styles.logo}
-                            />
+                            <MatchTeamLogo team={match.awayClub} />
                           </div>
                         </div>
 

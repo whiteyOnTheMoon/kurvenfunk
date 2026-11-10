@@ -228,13 +228,23 @@ describe('MatchesService', () => {
       news: match.articles,
     });
 
-    expect(findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: 'match-1',
-        },
-      }),
-    );
+    type MatchQuery = {
+      where: { id: string };
+      select: {
+        articles: {
+          where: {
+            status: string;
+            deletedAt: null;
+            publishedAt: { lte: Date };
+          };
+        };
+      };
+    };
+    const query = (findUnique.mock.calls as unknown as MatchQuery[][])[0]?.[0];
+    expect(query?.where.id).toBe('match-1');
+    expect(query?.select.articles.where.status).toBe('PUBLISHED');
+    expect(query?.select.articles.where.deletedAt).toBeNull();
+    expect(query?.select.articles.where.publishedAt.lte).toBeInstanceOf(Date);
   });
 
   it('throws when the match cannot be found', async () => {

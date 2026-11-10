@@ -78,6 +78,18 @@
   object-fit: contain;
 }
 
+.logoFallback {
+  display: grid;
+  width: 128px;
+  height: 128px;
+  place-items: center;
+  border-radius: var(--kf-radius-full);
+  background: var(--kf-surface-muted);
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-3xl);
+  font-weight: var(--kf-font-weight-bold);
+}
+
 .team strong {
   font-size: clamp(1.15rem, 2.5vw, 1.65rem);
   line-height: 1.15;
@@ -251,7 +263,8 @@
     padding: var(--kf-space-7) var(--kf-space-4) var(--kf-space-6);
   }
 
-  .logo {
+  .logo,
+  .logoFallback {
     width: 82px;
     height: 82px;
   }
@@ -286,7 +299,8 @@
     padding-left: var(--kf-space-3);
   }
 
-  .logo {
+  .logo,
+  .logoFallback {
     width: 68px;
     height: 68px;
   }
