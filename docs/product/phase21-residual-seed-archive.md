@@ -1,0 +1,11 @@
+# Phase 21 – Letzter DEV-Sport-Seed-Restfall (reversibel)
+
+Nach erfolgreichem Backup und transaktionaler DEV-Bereinigung in [Run 42878255312](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/42878255312) wurden **16** unveränderte Seed-Artikel und **8** exakt zugeordnete Seed-Spiele gelöscht, **18** unbenutzte Seed-Vereinsdatensätze entfernt, ein Seed-Artikel mit **29** Kommentaren archiviert und eine irrtümliche redaktionelle Spielverknüpfung gelöst. Die zehn weiterhin referenzierten Vereinsdatensätze bleiben unangetastet.
+
+Das Nachinventar zeigte als **einzigen** verbliebenen ursprünglich synthetischen Spiel-Fingerprint den ÖFB-Cup-Kandidaten `oefb-cup|ksv-1919|lask|2026-09-05T16:00:00.000Z`. Der weiterhin veröffentlichte Seed-Artikel `seed-cup-blau-weiss-rapid` wurde nach der Anlage verändert und durfte vom strikten Erstbereiniger nicht als unveränderte Seed-Vorlage gelöscht werden.
+
+Die Erweiterung archiviert **nur diesen** nachbearbeiteten Artikel, ohne Text oder Historie zu löschen, und löst seine Spielverknüpfung, bevor sie **nur das exakt gefingerprintete** Spiel entfernt. Voraussetzung sind gleichzeitig originaler Seed-Editor, ausschließlich diese eine Artikelverknüpfung, PUBLISHED-Status, kein Importbezug, keine Kommentare oder Revisionen, keine Entity-Matches und keine weiteren Provider- oder Artikelbeziehungen. Wenn auch nur eine Bedingung nicht stimmt, bleibt der Inhalt unverändert und der Lauf weist den Restfall zur Einzelprüfung aus.
+
+**Schutzkonzept:** DEV-only; unveränderter SHA-Guard auf `develop`, verifizierter privater `pg_dump`/`pg_restore`-Backup, exklusives Deployment-/Cleanup-Lock und serialisierbare Transaktion. Keine Änderungen an STAGING, PROD, Kommentaren, echten redaktionellen Artikeln oder Benutzeridentitäten. Die bereits archivierte Meldung mit 29 Kommentaren, zehn geschützten Vereinsidentitäten und drei separat zu prüfenden Seed-Nutzern bleiben erhalten.
+
+**Abnahme:** Erst nach grüner PR-CI und dem darauf folgenden DEV-Push mit `[phase21-dev-seed-cleanup]` gilt der Fall als gelöst, wenn im Post-Cleanup-Audit `originalFixtureFingerprintMatches: 0`, keine veröffentlichten Seed-Artikel und ein erfolgreiches Backup-/Transaktionsprotokoll nachgewiesen sind. Bei verbleibenden Restdaten keine vollständige Bereinigung behaupten.
