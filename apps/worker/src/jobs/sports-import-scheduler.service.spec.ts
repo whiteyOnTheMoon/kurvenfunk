@@ -28,9 +28,7 @@ describe('SportsImportSchedulerService', () => {
 
   function config(values: Record<string, unknown>): ConfigService {
     return {
-      get: jest.fn((key: string, fallback: unknown) =>
-        key in values ? values[key] : fallback,
-      ),
+      get: jest.fn((key: string, fallback: unknown) => (key in values ? values[key] : fallback)),
     } as unknown as ConfigService;
   }
 
@@ -153,15 +151,19 @@ describe('SportsImportSchedulerService', () => {
   });
 
   it('fails closed and clears schedules when enabled in production', async () => {
-    await expect(
-      service({ ...devEnabled, NODE_ENV: 'production' }).onModuleInit(),
-    ).rejects.toThrow('SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER');
+    await expect(service({ ...devEnabled, NODE_ENV: 'production' }).onModuleInit()).rejects.toThrow(
+      'SPORTS_SCHEDULER_REQUIRES_DEV_FAKE_PROVIDER',
+    );
     expect(removeJobScheduler).toHaveBeenCalledTimes(3);
     expect(upsertJobScheduler).not.toHaveBeenCalled();
   });
 
   it('does not enqueue live data if the global scheduler is disabled', async () => {
-    await service({ ...devEnabled, SPORTS_IMPORT_SCHEDULER_ENABLED: false, SPORTS_IMPORT_LIVE_ENABLED: true }).onModuleInit();
+    await service({
+      ...devEnabled,
+      SPORTS_IMPORT_SCHEDULER_ENABLED: false,
+      SPORTS_IMPORT_LIVE_ENABLED: true,
+    }).onModuleInit();
     expect(removeJobScheduler).toHaveBeenCalledTimes(3);
     expect(upsertJobScheduler).not.toHaveBeenCalled();
   });
@@ -176,7 +178,11 @@ describe('SportsImportSchedulerService', () => {
     jest.clearAllMocks();
     removeJobScheduler.mockResolvedValue(false);
     await expect(
-      service({ ...devEnabled, SPORTS_IMPORT_LIVE_ENABLED: true, SPORTS_IMPORT_LIVE_INTERVAL_MS: 604_800_001 }).onModuleInit(),
+      service({
+        ...devEnabled,
+        SPORTS_IMPORT_LIVE_ENABLED: true,
+        SPORTS_IMPORT_LIVE_INTERVAL_MS: 604_800_001,
+      }).onModuleInit(),
     ).rejects.toThrow('SPORTS_SCHEDULER_INVALID_INTERVAL');
     expect(removeJobScheduler).toHaveBeenCalledTimes(3);
     expect(upsertJobScheduler).not.toHaveBeenCalled();
