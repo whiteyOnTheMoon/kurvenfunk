@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { Prisma } from '@kurvenfunk/database';
 import type {
   SportsImportJobPayload,
   SportsProvider,
@@ -23,7 +22,7 @@ export interface SportsImportSession {
   alreadyCompleted: boolean;
 }
 
-function knownFailureCode(error: unknown): string {
+export function sportsImportFailureCode(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
   return /^FAKE_SPORTS_[A-Z_]+$/.test(message) || /^SPORTS_IMPORT_[A-Z_]+$/.test(message)
     ? message
@@ -134,7 +133,7 @@ export class SportsImportStore {
           importJobId: session.importJobId,
           type: 'RECORD',
           externalId: record.externalId,
-          payload: record as unknown as Prisma.InputJsonValue,
+          payload: record,
           payloadHash: contentHash,
           sizeBytes: BigInt(Buffer.byteLength(payloadText, 'utf8')),
           metadata: {
@@ -155,7 +154,7 @@ export class SportsImportStore {
           status: 'REVIEW_REQUIRED',
           externalId: record.externalId,
           contentHash,
-          normalizedPayload: record as unknown as Prisma.InputJsonValue,
+          normalizedPayload: record,
           normalizedAt: new Date(),
         },
       });
@@ -196,7 +195,7 @@ export class SportsImportStore {
       where: { id: session.importJobId },
       data: {
         status: 'FAILED',
-        errorCode: knownFailureCode(error),
+        errorCode: sportsImportFailureCode(error),
         errorMessage: null,
         finishedAt: new Date(),
       },
