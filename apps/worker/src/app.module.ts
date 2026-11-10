@@ -29,6 +29,7 @@ import { NewsValidationService } from './services/news-validation.service';
 import { RawPayloadService } from './services/raw-payload.service';
 import { SanctionExpirationService } from './services/sanction-expiration.service';
 import { SportsImportStore } from './services/sports-import.store';
+import { SportsClubMatchingService } from './services/sports-club-matching.service';
 import { ScheduledPublishingService } from './services/scheduled-publishing.service';
 
 @Module({
@@ -81,6 +82,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     NewsImportSchedulerService,
     SportsImportQueueService,
     SportsImportStore,
+    SportsClubMatchingService,
     SportsImportProcessor,
     NewsAutoPublishingService,
     NewsClubMatchingService,
