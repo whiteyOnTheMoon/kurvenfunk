@@ -38,6 +38,20 @@ describe('Phase21 DEV seed cleanup safety', () => {
     assert.match(code, /editorialMismatchSlug/);
   });
 
+  it('archives edited residual seed material reversibly only after strict provenance checks', () => {
+    assert.match(code, /editedSeedArticleSlug = 'seed-cup-blau-weiss-rapid'/);
+    assert.match(code, /editedSeedFixtureKey = 'oefb-cup\\|ksv-1919\\|lask/);
+    assert.match(code, /residualFixture\\.articles\\.length === 1/);
+    assert.match(code, /residualArticle\\.author\\?\\.keycloakSubject === 'seed-editor-user'/);
+    assert.match(code, /residualArticle\\.status === 'PUBLISHED'/);
+    assert.match(code, /residualArticle\\.importRecordId === null/);
+    assert.match(code, /residualArticle\\._count\\.comments === 0/);
+    assert.match(code, /residualArticle\\._count\\.revisions === 0/);
+    assert.match(code, /residualArticle\\._count\\.entityMatches === 0/);
+    assert.match(code, /archivedEditedSeedArticles/);
+    assert.match(code, /data: \\{ status: 'ARCHIVED', archivedAt: new Date\\(\\)/);
+  });
+
   it('has a separate explicit marker, successful DEV deploy and no automatic production cleanup', () => {
     assert.match(ci, /\[phase21-dev-seed-cleanup\]/);
     assert.match(ci, /needs\.deploy-dev\.result == 'success'/);
