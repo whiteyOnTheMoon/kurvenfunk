@@ -37,7 +37,10 @@ describe('real club logos', () => {
   });
 
   it('falls back to shipped logos without guessing paths for unknown clubs', () => {
-    assert.equal(getClubLogoSrc(apiUrl, { slug: 'sk-sturm-graz', logo: null }), '/clubs/sk-sturm-graz.svg');
+    assert.equal(
+      getClubLogoSrc(apiUrl, { slug: 'sk-sturm-graz', logo: null }),
+      '/clubs/sk-sturm-graz.svg',
+    );
     assert.equal(getClubLogoSrc(apiUrl, { slug: 'new-club', logo: null }), null);
     assert.equal(
       getClubLogoSrc(apiUrl, {
