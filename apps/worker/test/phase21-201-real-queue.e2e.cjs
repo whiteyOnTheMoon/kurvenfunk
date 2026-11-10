@@ -78,11 +78,15 @@ async function main() {
     await events.waitUntilReady();
     const baseline = await counts();
     assert.deepEqual(baseline, { clubs: 0, matches: 0, standings: 0 });
-    await until(async () => {
-      if (child.exitCode !== null) throw new Error('SPORTS_WORKER_EXITED_EARLY');
-      const clients = await queue.client;
-      return clients.status === 'ready';
-    }, 'REDIS_READY', 15_000);
+    await until(
+      async () => {
+        if (child.exitCode !== null) throw new Error('SPORTS_WORKER_EXITED_EARLY');
+        const clients = await queue.client;
+        return clients.status === 'ready';
+      },
+      'REDIS_READY',
+      15_000,
+    );
 
     const expected = { clubs: 4, fixtures: 8, results: 3, live: 1 };
     const jobIds = {};
@@ -96,7 +100,10 @@ async function main() {
       const imported = await db.importJob.findFirst({
         where: { queueJobId: id },
         select: {
-          status: true, receivedCount: true, processedCount: true, cursor: true,
+          status: true,
+          receivedCount: true,
+          processedCount: true,
+          cursor: true,
           records: { select: { status: true, externalId: true } },
           rawPayloads: { select: { id: true } },
         },
@@ -134,10 +141,11 @@ async function main() {
     assert.ok(badJob);
     await assert.rejects(badJob.waitUntilFinished(events, 90_000), /FAKE_SPORTS_UNKNOWN_SCOPE/);
     await until(
-      () => db.importJob.findFirst({
-        where: { queueJobId: badId, status: 'DEAD_LETTER' },
-        select: { id: true, errorCode: true, status: true },
-      }),
+      () =>
+        db.importJob.findFirst({
+          where: { queueJobId: badId, status: 'DEAD_LETTER' },
+          select: { id: true, errorCode: true, status: true },
+        }),
       'DLQ_DATABASE',
     );
     const letters = await deadLetters.getJobs(['waiting', 'completed', 'failed', 'delayed']);
@@ -148,18 +156,28 @@ async function main() {
     assert.equal((await queue.getJob(badId)).attemptsMade, 3);
     assert.deepEqual(await counts(), baseline);
     console.log('PHASE 21.201 REAL QUEUE E2E: PASS');
-    console.log('PostgreSQL: 4 successful staged feeds (16 records); real Redis deduplication: PASS');
+    console.log(
+      'PostgreSQL: 4 successful staged feeds (16 records); real Redis deduplication: PASS',
+    );
     console.log('Worker retries: 3; final dead-letter and redacted error: PASS');
     console.log('Canonical Club/Match/Standing changed: NONE');
   } catch (error) {
-    console.error('PHASE 21.201 REAL QUEUE E2E: FAILED', error instanceof Error ? error.message : 'UNKNOWN');
+    console.error(
+      'PHASE 21.201 REAL QUEUE E2E: FAILED',
+      error instanceof Error ? error.message : 'UNKNOWN',
+    );
     console.error('Worker last output:', output.replace(/sports_ci_only/g, '[REDACTED]'));
     process.exitCode = 1;
   } finally {
     child.kill('SIGTERM');
     await Promise.race([new Promise((resolve) => child.once('exit', resolve)), sleep(8_000)]);
     if (child.exitCode === null) child.kill('SIGKILL');
-    await Promise.allSettled([events.close(), queue.close(), deadLetters.close(), db.$disconnect()]);
+    await Promise.allSettled([
+      events.close(),
+      queue.close(),
+      deadLetters.close(),
+      db.$disconnect(),
+    ]);
   }
 }
 

@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/worker/test/phase21-201-real-queue.e2e.cjs && git diff -- apps/worker/test/phase21-201-real-queue.e2e.cjs && exit 1"
+    "format:check": "prettier --check ."
   }
 }
