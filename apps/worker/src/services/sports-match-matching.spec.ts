@@ -36,10 +36,7 @@ describe('resolveSportsMatch', () => {
     expect(resolveSportsMatch([{ ...fixture, kickoff: start }], identity).kind).toBe('MATCHED');
     expect(resolveSportsMatch([{ ...fixture, kickoff: end }], identity).kind).toBe('MATCHED');
     expect(
-      resolveSportsMatch(
-        [{ ...fixture, kickoff: new Date(end.getTime() + 1) }],
-        identity,
-      ).kind,
+      resolveSportsMatch([{ ...fixture, kickoff: new Date(end.getTime() + 1) }], identity).kind,
     ).toBe('UNMATCHED');
   });
 
@@ -57,7 +54,13 @@ describe('resolveSportsMatch', () => {
 
   it('does not ignore matchday when provided, but accepts it when omitted', () => {
     expect(resolveSportsMatch([{ ...fixture, matchday: 2 }], identity).kind).toBe('UNMATCHED');
-    const { matchday: _matchday, ...withoutMatchday } = identity;
+    const withoutMatchday = {
+      competitionId: identity.competitionId,
+      seasonId: identity.seasonId,
+      homeClubId: identity.homeClubId,
+      awayClubId: identity.awayClubId,
+      kickoff: identity.kickoff,
+    };
     expect(resolveSportsMatch([{ ...fixture, matchday: 2 }], withoutMatchday).kind).toBe('MATCHED');
   });
 
