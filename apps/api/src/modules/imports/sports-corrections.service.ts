@@ -250,9 +250,7 @@ export class SportsCorrectionsService implements OnModuleDestroy {
                 providerId: mapping.providerId,
                 externalId: mapping.externalId,
                 recordType:
-                  entityType === 'CLUB'
-                    ? 'SPORTS_CLUB'
-                    : { in: ['SPORTS_MATCH', 'SPORTS_RESULT'] },
+                  entityType === 'CLUB' ? 'SPORTS_CLUB' : { in: ['SPORTS_MATCH', 'SPORTS_RESULT'] },
                 reviewDecision: null,
                 status: { in: ['REVIEW_REQUIRED', 'MATCHED'] },
               },
