@@ -507,3 +507,16 @@
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
+
+.logoPlaceholder {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--kf-radius-full);
+  background: var(--kf-surface-muted);
+  color: var(--kf-text-muted);
+  font-size: var(--kf-font-size-xs);
+  font-weight: var(--kf-font-weight-bold);
+}
