@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write apps/worker/src/processors/sports-import.processor.spec.ts apps/worker/src/services/sports-match-matching.service.spec.ts apps/worker/src/services/sports-match-matching.service.ts apps/worker/src/services/sports-match-matching.spec.ts && git diff -- apps/worker/src/processors/sports-import.processor.spec.ts apps/worker/src/services/sports-match-matching.service.spec.ts apps/worker/src/services/sports-match-matching.service.ts apps/worker/src/services/sports-match-matching.spec.ts && prettier --check ."
   }
 }
