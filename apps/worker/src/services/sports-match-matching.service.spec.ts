@@ -68,6 +68,7 @@ describe('SportsMatchMatchingService', () => {
       return Promise.resolve(mappings[key.entityType + ':' + key.externalId] ?? null);
     });
     const mappingUpsert = jest.fn().mockResolvedValue({});
+    const mappingConflict = jest.fn().mockResolvedValue(null);
     const matchFind = jest.fn().mockResolvedValue(canonical);
     const matchFindMany = jest.fn().mockResolvedValue([canonical]);
     const competitionFind = jest.fn().mockResolvedValue({ id: competitionId });
@@ -77,7 +78,7 @@ describe('SportsMatchMatchingService', () => {
     const tx = {
       $executeRaw: lock,
       importRecord: { findFirst: recordFind, update: recordUpdate },
-      entityMatch: { findUnique: mappingFind, upsert: mappingUpsert },
+      entityMatch: { findUnique: mappingFind, findFirst: mappingConflict, upsert: mappingUpsert },
       match: { findUnique: matchFind, findMany: matchFindMany },
       competition: { findUnique: competitionFind },
       season: { findUnique: seasonFind },
@@ -92,6 +93,7 @@ describe('SportsMatchMatchingService', () => {
       recordUpdate,
       mappingFind,
       mappingUpsert,
+      mappingConflict,
       matchFind,
       matchFindMany,
       seasonFind,
@@ -136,6 +138,16 @@ describe('SportsMatchMatchingService', () => {
         matchday: 1,
       }),
       select: expect.any(Object),
+    });
+    expect(m.mappingConflict).toHaveBeenCalledWith({
+      where: {
+        providerId: session.providerId,
+        entityType: 'MATCH',
+        status: 'MATCHED',
+        matchId,
+        externalId: { not: incoming.externalId },
+      },
+      select: { id: true },
     });
     expect(m.mappingUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -228,6 +240,20 @@ describe('SportsMatchMatchingService', () => {
     expect(m.mappingUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ status: 'AMBIGUOUS', matchId: null }),
+      }),
+    );
+  });
+
+  it('refuses to bind two provider match IDs to one canonical match', async () => {
+    const m = setup();
+    m.mappingConflict.mockResolvedValue({ id: 'existing-provider-binding' });
+    await expect(m.matcher.matchStaged(session, 'fixtures', incoming, scope)).resolves.toEqual({
+      status: 'REVIEW_REQUIRED',
+      reason: 'INCONSISTENT_MAPPING',
+    });
+    expect(m.mappingUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ status: 'REVIEW_REQUIRED', matchId: null }),
       }),
     );
   });
