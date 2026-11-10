@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/api/src/modules/clubs/club-overview.service.spec.ts apps/api/src/modules/clubs/clubs.controller.spec.ts apps/web/src/features/clubs/club-detail.tsx apps/web/src/features/clubs/club-media.spec.mjs && git diff -- apps/api/src/modules/clubs/club-overview.service.spec.ts apps/api/src/modules/clubs/clubs.controller.spec.ts apps/web/src/features/clubs/club-detail.tsx apps/web/src/features/clubs/club-media.spec.mjs && prettier --check ."
+    "format:check": "prettier --check ."
   }
 }
