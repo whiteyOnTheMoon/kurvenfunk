@@ -6,10 +6,18 @@ export {
   APPLICATION_QUEUE_NAMES,
   DEFAULT_JOB_OPTIONS,
   NEWS_IMPORT_RETRY_OPTIONS,
+  SPORTS_IMPORT_JOB_NAME,
+  SPORTS_IMPORT_RETRY_OPTIONS,
   QUEUE_NAMES,
 } from './queue.js';
 
-export type { NewsImportDeadLetterPayload, NewsImportJobPayload, QueueName } from './queue.js';
+export type {
+  NewsImportDeadLetterPayload,
+  NewsImportJobPayload,
+  SportsImportDeadLetterPayload,
+  SportsImportJobPayload,
+  QueueName,
+} from './queue.js';
 
 export * from './news-provider.js';
 
