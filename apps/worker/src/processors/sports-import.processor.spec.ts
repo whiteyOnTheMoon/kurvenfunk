@@ -13,6 +13,7 @@ import {
 import type { ConfigService } from '@nestjs/config';
 import type { Job, Queue } from 'bullmq';
 import type { SportsImportStore } from '../services/sports-import.store';
+import type { SportsClubMatchingService } from '../services/sports-club-matching.service';
 import { SportsImportProcessor } from './sports-import.processor';
 
 jest.mock('@kurvenfunk/logger', () => ({
@@ -31,6 +32,7 @@ describe('SportsImportProcessor', () => {
   const complete = jest.fn();
   const fail = jest.fn();
   const deadLetter = jest.fn();
+  const matchStaged = jest.fn();
   const add = jest.fn();
   const session = {
     importJobId: '22222222-2222-4222-8222-222222222222',
@@ -59,9 +61,12 @@ describe('SportsImportProcessor', () => {
   } as unknown as SportsImportStore;
 
   function processor(config = devConfig): SportsImportProcessor {
-    return new SportsImportProcessor(store, config, {
-      add,
-    } as unknown as Queue<SportsImportDeadLetterPayload>);
+    return new SportsImportProcessor(
+      store,
+      config,
+      { add } as unknown as Queue<SportsImportDeadLetterPayload>,
+      { matchStaged } as unknown as SportsClubMatchingService,
+    );
   }
 
   function job(data: unknown = payload, attemptsMade = 1): Job<unknown> {
@@ -82,6 +87,7 @@ describe('SportsImportProcessor', () => {
     complete.mockResolvedValue(undefined);
     fail.mockResolvedValue(undefined);
     deadLetter.mockResolvedValue(undefined);
+    matchStaged.mockResolvedValue({ status: 'REVIEW_REQUIRED', reason: 'UNMATCHED' });
     add.mockResolvedValue({ id: 'dead-letter-id' });
   });
 
@@ -93,6 +99,7 @@ describe('SportsImportProcessor', () => {
       'fake-job-123',
     );
     expect(storeRecord).toHaveBeenCalledTimes(8);
+    expect(matchStaged).not.toHaveBeenCalled();
     const ids = storeRecord.mock.calls.map(
       (args: unknown[]) => (args[2] as { externalId: string }).externalId,
     );
@@ -113,6 +120,7 @@ describe('SportsImportProcessor', () => {
       storeRecord.mockResolvedValue(true);
       await processor().process(job({ ...payload, resource }));
       expect(storeRecord).toHaveBeenCalledTimes(size);
+      expect(matchStaged).toHaveBeenCalledTimes(resource === 'clubs' ? size : 0);
       expect(complete).toHaveBeenCalledTimes(1);
     }
   });
@@ -121,6 +129,7 @@ describe('SportsImportProcessor', () => {
     start.mockResolvedValue({ ...session, alreadyCompleted: true });
     await processor().process(job());
     expect(storeRecord).not.toHaveBeenCalled();
+    expect(matchStaged).not.toHaveBeenCalled();
     expect(complete).not.toHaveBeenCalled();
   });
 
