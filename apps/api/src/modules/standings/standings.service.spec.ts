@@ -142,6 +142,83 @@ describe('StandingsService', () => {
     );
   });
 
+  it('uses the last populated phase instead of displaying an empty future phase', async () => {
+    competitionFindUnique.mockResolvedValue({
+      id: 'competition-1',
+      name: 'Bundesliga',
+      shortName: null,
+      slug: 'austrian-bundesliga',
+      seasons: [
+        {
+          id: 'season-1',
+          name: '2026/27',
+          slug: '2026-27',
+          stages: [
+            { id: 'stage-new', name: 'Meistergruppe', slug: 'meistergruppe' },
+            { id: 'stage-old', name: 'Grunddurchgang', slug: 'grunddurchgang' },
+          ],
+        },
+      ],
+    });
+    standingFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'real-standing',
+        position: 1,
+        club: { id: 'club-1', name: 'SK Sturm Graz', shortName: null, slug: 'sk-sturm-graz' },
+      },
+    ]);
+
+    const result = await service.findCurrent('austrian-bundesliga');
+    expect(result?.stage?.id).toBe('stage-old');
+    expect(result?.standings[0]?.id).toBe('real-standing');
+    expect(standingFindMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { competitionId: 'competition-1', seasonId: 'season-1', stageId: 'stage-new' },
+      }),
+    );
+    expect(standingFindMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { competitionId: 'competition-1', seasonId: 'season-1', stageId: 'stage-old' },
+      }),
+    );
+  });
+
+  it('falls back to genuine season-wide rows when phases are empty', async () => {
+    competitionFindUnique.mockResolvedValue({
+      id: 'competition-1',
+      name: 'Bundesliga',
+      shortName: null,
+      slug: 'austrian-bundesliga',
+      seasons: [
+        {
+          id: 'season-1',
+          name: '2026/27',
+          slug: '2026-27',
+          stages: [{ id: 'stage-1', name: 'Grunddurchgang', slug: 'grunddurchgang' }],
+        },
+      ],
+    });
+    standingFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'season-row',
+        position: 1,
+        club: { id: 'club-1', name: 'SK Sturm Graz', shortName: null, slug: 'sk-sturm-graz' },
+      },
+    ]);
+
+    const result = await service.findCurrent('austrian-bundesliga');
+    expect(result?.stage).toBeNull();
+    expect(result?.standings[0]?.id).toBe('season-row');
+    expect(standingFindMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { competitionId: 'competition-1', seasonId: 'season-1', stageId: null },
+      }),
+    );
+  });
+
   it('returns null when the competition cannot be found', async () => {
     competitionFindUnique.mockResolvedValue(null);
 

@@ -71,7 +71,7 @@ export class StandingsService implements OnModuleDestroy {
               orderBy: {
                 sequence: 'desc',
               },
-              take: 1,
+              take: 20,
               select: {
                 id: true,
                 name: true,
@@ -89,37 +89,48 @@ export class StandingsService implements OnModuleDestroy {
       return null;
     }
 
-    const stage = season.stages[0] ?? null;
-
-    const standings = await this.database.standing.findMany({
-      where: {
-        competitionId: competition.id,
-        seasonId: season.id,
-        ...(stage ? { stageId: stage.id } : { stageId: null }),
-      },
-      orderBy: [{ position: 'asc' }, { sortOrder: 'asc' }],
-      select: {
-        id: true,
-        position: true,
-        played: true,
-        won: true,
-        drawn: true,
-        lost: true,
-        goalsFor: true,
-        goalsAgainst: true,
-        goalDifference: true,
-        points: true,
-        deductionPoints: true,
-        club: {
-          select: {
-            id: true,
-            name: true,
-            shortName: true,
-            slug: true,
+    // Prefer the latest phase containing actual persisted rows. A new, still
+    // empty phase must not hide an existing real table; never blend phases.
+    // Season-wide rows are the last fallback, never mixed with phase rows.
+    let stage: (typeof season.stages)[number] | null = season.stages[0] ?? null;
+    let standings: StandingListItem[] = [];
+    for (const candidate of [...season.stages, null]) {
+      const rows = await this.database.standing.findMany({
+        where: {
+          competitionId: competition.id,
+          seasonId: season.id,
+          stageId: candidate?.id ?? null,
+        },
+        orderBy: [{ position: 'asc' }, { sortOrder: 'asc' }],
+        take: 30,
+        select: {
+          id: true,
+          position: true,
+          played: true,
+          won: true,
+          drawn: true,
+          lost: true,
+          goalsFor: true,
+          goalsAgainst: true,
+          goalDifference: true,
+          points: true,
+          deductionPoints: true,
+          club: {
+            select: {
+              id: true,
+              name: true,
+              shortName: true,
+              slug: true,
+            },
           },
         },
-      },
-    });
+      });
+      if (rows.length > 0) {
+        stage = candidate;
+        standings = rows;
+        break;
+      }
+    }
 
     return {
       competition: {

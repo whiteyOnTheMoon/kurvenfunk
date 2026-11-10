@@ -56,18 +56,10 @@
   font-size: var(--kf-font-size-2xl);
 }
 
-.previewBadge,
 .favoriteBadge {
   border-radius: var(--kf-radius-full);
   font-size: var(--kf-font-size-xs);
   font-weight: var(--kf-font-weight-bold);
-}
-
-.previewBadge {
-  padding: var(--kf-space-1) var(--kf-space-3);
-  background: var(--kf-color-surface-subtle);
-  color: var(--kf-color-text-muted);
-  border: 1px solid var(--kf-color-border);
 }
 
 .tableCard {
@@ -152,6 +144,19 @@
   height: 34px;
   object-fit: contain;
   flex: 0 0 auto;
+}
+
+.clubLogoFallback {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--kf-radius-full);
+  background: var(--kf-color-surface-subtle);
+  color: var(--kf-color-text-muted);
+  font-size: var(--kf-font-size-xs);
+  font-weight: var(--kf-font-weight-bold);
 }
 
 .clubNames {
@@ -240,7 +245,8 @@
     gap: var(--kf-space-2);
   }
 
-  .clubLogo {
+  .clubLogo,
+  .clubLogoFallback {
     width: 28px;
     height: 28px;
   }
@@ -264,7 +270,8 @@
     padding: 0 var(--kf-space-2);
   }
 
-  .clubLogo {
+  .clubLogo,
+  .clubLogoFallback {
     width: 24px;
     height: 24px;
   }
