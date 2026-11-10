@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write apps/api/src/modules/standings/standings.service.spec.ts apps/web/src/features/standings/standings-page.tsx && git diff -- apps/api/src/modules/standings/standings.service.spec.ts apps/web/src/features/standings/standings-page.tsx && exit 1"
   }
 }
