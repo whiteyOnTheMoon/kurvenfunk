@@ -269,6 +269,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [matches, setMatches] = useState<PublicMatch[]>([]);
+  const [currentTime, setCurrentTime] = useState(0);
   const [tableRows, setTableRows] = useState<PublicStanding[]>([]);
 
   useEffect(() => {
@@ -350,6 +351,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
       ]);
 
       if (controller.signal.aborted) return;
+      setCurrentTime(Date.now());
       setMatches(schedule.status === 'fulfilled' ? schedule.value : []);
       setTableRows(table.status === 'fulfilled' ? table.value : []);
     }
@@ -387,7 +389,7 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     ['GENERAL', 'TOP_NEWS', 'RECENT'].includes(article.priority),
   );
 
-  const now = Date.now();
+  const now = currentTime;
   const clubSlug = startpage.favoriteClub?.slug;
   const clubMatches = clubSlug
     ? matches.filter(
