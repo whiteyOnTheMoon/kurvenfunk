@@ -100,13 +100,7 @@ function formatScore(match: ClubMatch): string | null {
     : null;
 }
 
-function ClubLogo({
-  src,
-  name,
-}: {
-  src: string | null;
-  name: string;
-}) {
+function ClubLogo({ src, name }: { src: string | null; name: string }) {
   if (!src) {
     return (
       <span className={styles.logoFallback} aria-label={`Kein Logo für ${name} vorhanden`}>
@@ -129,7 +123,8 @@ function ClubLogo({
 }
 
 export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; apiUrl: string }) {
-  const { club, nextMatch, lastMatch, matches, news, standingContext, standings, forums } = overview;
+  const { club, nextMatch, lastMatch, matches, news, standingContext, standings, forums } =
+    overview;
   const clubName = club.shortName ?? club.name;
   const logoSrc = getClubLogoSrc(apiUrl, club);
   const website = club.website && /^https?:\/\//i.test(club.website) ? club.website : null;
@@ -149,7 +144,12 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
           </div>
         </div>
         {website ? (
-          <a href={website} target="_blank" rel="noopener noreferrer" className={styles.websiteLink}>
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.websiteLink}
+          >
             Offizielle Website ↗
           </a>
         ) : null}
@@ -176,7 +176,9 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
             {nextMatch ? (
               <>
                 <strong>{formatDate(nextMatch.kickoff, true)}</strong>
-                <p>{teamName(nextMatch.homeClub)} – {teamName(nextMatch.awayClub)}</p>
+                <p>
+                  {teamName(nextMatch.homeClub)} – {teamName(nextMatch.awayClub)}
+                </p>
                 <Link href={`/spiele/${nextMatch.id}`}>Zum Spiel →</Link>
               </>
             ) : (
@@ -188,7 +190,9 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
             {lastMatch ? (
               <>
                 <strong>{formatScore(lastMatch) ?? '–'}</strong>
-                <p>{teamName(lastMatch.homeClub)} – {teamName(lastMatch.awayClub)}</p>
+                <p>
+                  {teamName(lastMatch.homeClub)} – {teamName(lastMatch.awayClub)}
+                </p>
                 <Link href={`/spiele/${lastMatch.id}`}>Zum Spiel →</Link>
               </>
             ) : (
@@ -220,8 +224,12 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
             {news.map((article) => (
               <Link href={`/artikel/${article.slug}`} className={styles.newsCard} key={article.id}>
                 <div className={styles.newsMeta}>
-                  <span>{article.competition?.shortName ?? article.competition?.name ?? clubName}</span>
-                  {article.publishedAt ? <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time> : null}
+                  <span>
+                    {article.competition?.shortName ?? article.competition?.name ?? clubName}
+                  </span>
+                  {article.publishedAt ? (
+                    <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+                  ) : null}
                 </div>
                 <h3>{article.title}</h3>
                 {article.lead ? <p>{article.lead}</p> : null}
@@ -249,8 +257,14 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
             {matches.map((match) => (
               <Link href={`/spiele/${match.id}`} className={styles.matchCard} key={match.id}>
                 <div className={styles.matchMeta}>
-                  <span>{match.competition.name} · {match.season.name}</span>
-                  <span>{match.matchday === null ? matchStatusLabels[match.status] : `${match.matchday}. Spieltag`}</span>
+                  <span>
+                    {match.competition.name} · {match.season.name}
+                  </span>
+                  <span>
+                    {match.matchday === null
+                      ? matchStatusLabels[match.status]
+                      : `${match.matchday}. Spieltag`}
+                  </span>
                 </div>
                 <strong className={styles.matchDate}>
                   {formatDate(match.kickoff, true)} · {matchStatusLabels[match.status]}
@@ -276,23 +290,34 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
       <section className={styles.section} id="tabelle">
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.eyebrow}>{standingContext?.season.name ?? 'Aktuelle Saison'}</span>
+            <span className={styles.eyebrow}>
+              {standingContext?.season.name ?? 'Aktuelle Saison'}
+            </span>
             <h2>{standingContext?.competition.name ?? 'Tabelle'}</h2>
           </div>
         </div>
         {standings.length ? (
           <div className={styles.table}>
             <div className={styles.tableHeader}>
-              <span>#</span><span>Verein</span><span>Sp.</span><span>Diff.</span><span>Pkt.</span>
+              <span>#</span>
+              <span>Verein</span>
+              <span>Sp.</span>
+              <span>Diff.</span>
+              <span>Pkt.</span>
             </div>
             {standings.map((row) => (
-              <div key={row.id} className={`${styles.tableRow} ${row.club.id === club.id ? styles.tableRowHighlighted : ''}`}>
+              <div
+                key={row.id}
+                className={`${styles.tableRow} ${row.club.id === club.id ? styles.tableRowHighlighted : ''}`}
+              >
                 <span>{row.position}</span>
                 <Link href={`/vereine/${row.club.slug}`} className={styles.tableClub}>
                   {row.club.shortName ?? row.club.name}
                 </Link>
                 <span>{row.played}</span>
-                <span>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</span>
+                <span>
+                  {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                </span>
                 <strong>{row.points}</strong>
               </div>
             ))}
@@ -319,7 +344,11 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
                 <h3>{thread.title}</h3>
                 <div>
                   <span>{thread.postCount} Beiträge</span>
-                  {thread.lastPostAt ? <time dateTime={thread.lastPostAt}>Letzter Beitrag: {formatDate(thread.lastPostAt, true)}</time> : null}
+                  {thread.lastPostAt ? (
+                    <time dateTime={thread.lastPostAt}>
+                      Letzter Beitrag: {formatDate(thread.lastPostAt, true)}
+                    </time>
+                  ) : null}
                 </div>
               </article>
             ))}
