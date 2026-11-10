@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   ARTICLE_CREATE: 'article.create',
   ARTICLE_PUBLISH: 'article.publish',
   IMPORT_REPLAY: 'import.replay',
+  SPORTS_CORRECTION_MANAGE: 'sports.correction.manage',
   COMPETITION_MANAGE: 'competition.manage',
   SEASON_MANAGE: 'season.manage',
   CLUB_MANAGE: 'club.manage',
