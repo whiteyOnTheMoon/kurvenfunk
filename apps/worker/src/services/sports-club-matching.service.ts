@@ -5,8 +5,15 @@ import type { SportsImportSession } from './sports-import.store';
 import { normalizeSportsClubName, resolveSportsClubName } from './sports-club-matching';
 
 export type SportsClubMatchOutcome =
-  | { status: 'MATCHED'; clubId: string; method: 'CANONICAL_NAME' | 'ALIAS' | 'EXTERNAL_ID' | 'MANUAL' }
-  | { status: 'REVIEW_REQUIRED'; reason: 'UNMATCHED' | 'AMBIGUOUS' | 'REJECTED' | 'INACTIVE_MAPPING' | 'MANUAL_REVIEW' };
+  | {
+      status: 'MATCHED';
+      clubId: string;
+      method: 'CANONICAL_NAME' | 'ALIAS' | 'EXTERNAL_ID' | 'MANUAL';
+    }
+  | {
+      status: 'REVIEW_REQUIRED';
+      reason: 'UNMATCHED' | 'AMBIGUOUS' | 'REJECTED' | 'INACTIVE_MAPPING' | 'MANUAL_REVIEW';
+    };
 
 /**
  * Maps provider-specific club IDs to existing canonical clubs, never creating,
@@ -73,7 +80,8 @@ export class SportsClubMatchingService {
         if (
           importRecord.status === (clubId ? 'MATCHED' : 'REVIEW_REQUIRED') &&
           importRecord.canonicalEntityId === clubId
-        ) return;
+        )
+          return;
         await tx.importRecord.update({
           where: { id: importRecord.id },
           data: {
