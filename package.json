@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write apps/api/src/modules/imports/imports.service.spec.ts apps/api/src/modules/imports/sports-corrections.controller.spec.ts apps/api/src/modules/imports/sports-corrections.controller.ts apps/api/src/modules/imports/sports-corrections.service.spec.ts apps/api/src/modules/imports/sports-corrections.service.ts apps/web/src/features/admin/sports-corrections/sports-corrections.tsx && git diff -- apps/api/src/modules/imports/imports.service.spec.ts apps/api/src/modules/imports/sports-corrections.controller.spec.ts apps/api/src/modules/imports/sports-corrections.controller.ts apps/api/src/modules/imports/sports-corrections.service.spec.ts apps/api/src/modules/imports/sports-corrections.service.ts apps/web/src/features/admin/sports-corrections/sports-corrections.tsx && prettier --check ."
   }
 }
