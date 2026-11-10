@@ -189,79 +189,77 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
             <span className={styles.eyebrow}>Aktueller Stand</span>
             <h2 id="standings-heading">{data?.competition.name ?? 'Österreichische Bundesliga'}</h2>
           </div>
-
         </div>
 
         {data && data.standings.length > 0 ? (
           <div className={styles.tableCard}>
-          <div className={`${styles.tableGrid} ${styles.tableHeader}`} aria-hidden="true">
-            <span>#</span>
-            <span>Verein</span>
-            <span className={styles.desktopColumn}>Sp.</span>
-            <span className={styles.desktopColumn}>S</span>
-            <span className={styles.desktopColumn}>U</span>
-            <span className={styles.desktopColumn}>N</span>
-            <span className={styles.desktopColumn}>Tore</span>
-            <span>Diff.</span>
-            <span>Pkt.</span>
-          </div>
+            <div className={`${styles.tableGrid} ${styles.tableHeader}`} aria-hidden="true">
+              <span>#</span>
+              <span>Verein</span>
+              <span className={styles.desktopColumn}>Sp.</span>
+              <span className={styles.desktopColumn}>S</span>
+              <span className={styles.desktopColumn}>U</span>
+              <span className={styles.desktopColumn}>N</span>
+              <span className={styles.desktopColumn}>Tore</span>
+              <span>Diff.</span>
+              <span>Pkt.</span>
+            </div>
 
-          <div className={styles.rows}>
-            {data.standings.map((row) => {
-              const logoSrc = getClubLogoSrc(apiUrl, { slug: row.club.slug, logo: null });
-              const isFavorite =
-                favoriteClubId === row.club.id ||
-                (favoriteClubSlug !== null && favoriteClubSlug === row.club.slug);
+            <div className={styles.rows}>
+              {data.standings.map((row) => {
+                const logoSrc = getClubLogoSrc(apiUrl, { slug: row.club.slug, logo: null });
+                const isFavorite =
+                  favoriteClubId === row.club.id ||
+                  (favoriteClubSlug !== null && favoriteClubSlug === row.club.slug);
 
-              return (
-                <Link
-                  href={`/vereine/${row.club.slug}`}
-                  className={`${styles.tableGrid} ${styles.tableRow} ${
-                    isFavorite ? styles.favoriteRow : ''
-                  }`}
-                  key={row.id}
-                  aria-label={`${row.position}. ${row.club.name}, ${row.points} Punkte`}
-                >
-                  <span className={styles.position}>{row.position}</span>
+                return (
+                  <Link
+                    href={`/vereine/${row.club.slug}`}
+                    className={`${styles.tableGrid} ${styles.tableRow} ${
+                      isFavorite ? styles.favoriteRow : ''
+                    }`}
+                    key={row.id}
+                    aria-label={`${row.position}. ${row.club.name}, ${row.points} Punkte`}
+                  >
+                    <span className={styles.position}>{row.position}</span>
 
-                  <span className={styles.club}>
-                    {logoSrc ? (
-                      <Image
-                        src={logoSrc}
-                        alt=""
-                        width={34}
-                        height={34}
-                        className={styles.clubLogo}
-                      />
-                    ) : (
-                      <span className={styles.clubLogoFallback} aria-hidden="true">
-                        {row.club.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+                    <span className={styles.club}>
+                      {logoSrc ? (
+                        <Image
+                          src={logoSrc}
+                          alt=""
+                          width={34}
+                          height={34}
+                          className={styles.clubLogo}
+                        />
+                      ) : (
+                        <span className={styles.clubLogoFallback} aria-hidden="true">
+                          {row.club.name.trim().slice(0, 2).toLocaleUpperCase('de-AT')}
+                        </span>
+                      )}
+
+                      <span className={styles.clubNames}>
+                        <strong>{row.club.shortName ?? row.club.name}</strong>
+                        <span>{row.club.name}</span>
                       </span>
-                    )}
 
-                    <span className={styles.clubNames}>
-                      <strong>{row.club.shortName ?? row.club.name}</strong>
-                      <span>{row.club.name}</span>
+                      {isFavorite ? <span className={styles.favoriteBadge}>Mein Verein</span> : null}
                     </span>
 
-                    {isFavorite ? <span className={styles.favoriteBadge}>Mein Verein</span> : null}
-                  </span>
-
-                  <span className={styles.desktopColumn}>{row.played}</span>
-                  <span className={styles.desktopColumn}>{row.won}</span>
-                  <span className={styles.desktopColumn}>{row.drawn}</span>
-                  <span className={styles.desktopColumn}>{row.lost}</span>
-                  <span className={styles.desktopColumn}>
-                    {row.goalsFor}:{row.goalsAgainst}
-                  </span>
-                  <span>{formatGoalDifference(row.goalDifference)}</span>
-                  <strong className={styles.points}>{row.points}</strong>
-                </Link>
-              );
-            })}
+                    <span className={styles.desktopColumn}>{row.played}</span>
+                    <span className={styles.desktopColumn}>{row.won}</span>
+                    <span className={styles.desktopColumn}>{row.drawn}</span>
+                    <span className={styles.desktopColumn}>{row.lost}</span>
+                    <span className={styles.desktopColumn}>
+                      {row.goalsFor}:{row.goalsAgainst}
+                    </span>
+                    <span>{formatGoalDifference(row.goalDifference)}</span>
+                    <strong className={styles.points}>{row.points}</strong>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-
         ) : (
           <EmptyState
             title={loadFailed ? 'Tabelle derzeit nicht verfügbar' : 'Noch keine aktuelle Tabelle'}
@@ -274,20 +272,20 @@ export function StandingsPage({ apiUrl }: StandingsPageProps) {
           </EmptyState>
         )}
         {data && data.standings.length > 0 ? (
-        <div className={styles.legend}>
-          <span>
-            <strong>Sp.</strong> Spiele
-          </span>
-          <span>
-            <strong>S</strong> Siege
-          </span>
-          <span>
-            <strong>U</strong> Unentschieden
-          </span>
-          <span>
-            <strong>N</strong> Niederlagen
-          </span>
-        </div>
+          <div className={styles.legend}>
+            <span>
+              <strong>Sp.</strong> Spiele
+            </span>
+            <span>
+              <strong>S</strong> Siege
+            </span>
+            <span>
+              <strong>U</strong> Unentschieden
+            </span>
+            <span>
+              <strong>N</strong> Niederlagen
+            </span>
+          </div>
         ) : null}
       </section>
     </main>
