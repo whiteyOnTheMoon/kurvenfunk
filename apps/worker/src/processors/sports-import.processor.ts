@@ -4,6 +4,7 @@ import {
   FakeSportsProvider,
   QUEUE_NAMES,
   type SportsProvider,
+  type SportsProviderRecord,
   SPORTS_IMPORT_JOB_NAME,
   type SportsImportDeadLetterPayload,
 } from '@kurvenfunk/types';
@@ -80,7 +81,7 @@ export class SportsImportProcessor extends WorkerHost {
           throw new Error('SPORTS_IMPORT_CURSOR_LOOP');
         }
 
-        for (const record of result.records) {
+        for (const record of result.records as readonly SportsProviderRecord[]) {
           if (input.resource === 'clubs' ? record.kind !== 'club' : record.kind !== 'match') {
             throw new Error('SPORTS_IMPORT_RECORD_KIND_MISMATCH');
           }
