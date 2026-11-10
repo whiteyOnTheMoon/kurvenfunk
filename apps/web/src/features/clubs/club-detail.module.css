@@ -50,6 +50,7 @@
 
 .websiteLink,
 .sectionHeading a,
+.overviewCard a,
 .readMore {
   color: var(--kf-color-link);
   font-weight: var(--kf-font-weight-semibold);
@@ -144,7 +145,7 @@
 
 .team {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--kf-space-3);
   min-height: 44px;
@@ -246,4 +247,50 @@
   border-radius: var(--kf-radius-md);
   color: var(--kf-color-text-muted);
   background: var(--kf-color-surface);
+}
+
+/* Real club data: safe image fallback and fully linked editorial cards. */
+.logoFallback {
+  display: grid;
+  width: 120px;
+  height: 120px;
+  place-items: center;
+  border-radius: var(--kf-radius-md);
+  background: var(--kf-color-surface-emphasis);
+  color: var(--kf-color-text);
+  font-weight: var(--kf-font-weight-bold);
+  font-size: var(--kf-font-size-3xl);
+}
+
+.newsCard,
+.matchCard {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.newsCard:hover,
+.matchCard:hover {
+  border-color: var(--kf-color-link);
+}
+
+.overviewCard strong {
+  overflow-wrap: anywhere;
+}
+
+.tableClub {
+  color: var(--kf-color-link);
+  text-decoration: none;
+  font-weight: var(--kf-font-weight-semibold);
+}
+
+.team {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 800px) {
+  .logoFallback {
+    width: 88px;
+    height: 88px;
+  }
 }
