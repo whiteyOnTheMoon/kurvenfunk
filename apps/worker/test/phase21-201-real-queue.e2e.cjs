@@ -78,15 +78,8 @@ async function main() {
     await events.waitUntilReady();
     const baseline = await counts();
     assert.deepEqual(baseline, { clubs: 0, matches: 0, standings: 0 });
-    await until(
-      async () => {
-        if (child.exitCode !== null) throw new Error('SPORTS_WORKER_EXITED_EARLY');
-        const clients = await queue.client;
-        return clients.status === 'ready';
-      },
-      'REDIS_READY',
-      15_000,
-    );
+    await queue.waitUntilReady();
+    assert.equal(child.exitCode, null, 'Worker must be running');
 
     const expected = { clubs: 4, fixtures: 8, results: 3, live: 1 };
     const jobIds = {};
