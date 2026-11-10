@@ -103,6 +103,9 @@ jobs:
           node --check infrastructure/scripts/verify/phase20-182-public-edge.mjs
           node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
           bash -n infrastructure/scripts/verify/dev-phase21-seed-audit.sh
+          bash -n infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.sh
+          node --check infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.mjs
+          node --test infrastructure/scripts/maintenance/phase21-seed-cleanup.test.mjs
           node --check infrastructure/scripts/verify/dev-phase21-seed-audit.mjs
           node --test infrastructure/scripts/verify/phase21-no-dev-seed.test.mjs
           node --check infrastructure/scripts/cloudflare/phase20-182-keycloak-ratelimit.mjs
@@ -1050,6 +1053,44 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase21-seed-audit.sh"
+
+  phase21-dev-seed-cleanup:
+    name: Phase 21 DEV guarded seed cleanup (private backup, exact fingerprints)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase21-dev-seed-cleanup]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: phase21-dev-seed-cleanup
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Back up and remove only verified DEV seed records
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' PHASE21_CLEANUP_MODE=apply bash ./infrastructure/scripts/maintenance/dev-phase21-seed-cleanup.sh"
 
   phase21-branch-cleanup:
     name: Prune verified merged branches after authorized Phase 21 merge
