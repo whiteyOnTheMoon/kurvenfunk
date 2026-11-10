@@ -14,3 +14,5 @@ export type { NewsImportDeadLetterPayload, NewsImportJobPayload, QueueName } fro
 export * from './news-provider.js';
 
 export * from './news-normalization.js';
+
+export * from './sports-provider.js';
