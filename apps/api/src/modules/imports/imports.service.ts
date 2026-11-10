@@ -315,6 +315,7 @@ export class ImportsService implements OnModuleDestroy {
   async getReviewQueue() {
     return this.database.importRecord.findMany({
       where: {
+        recordType: 'NEWS_ARTICLE',
         status: 'REVIEW_REQUIRED',
         reviewDecision: null,
       },
@@ -390,6 +391,15 @@ export class ImportsService implements OnModuleDestroy {
               throw new NotFoundException({
                 code: 'IMPORT_RECORD_NOT_FOUND',
                 message: 'Import record not found',
+              });
+            }
+
+            // This endpoint belongs to editorial news review; only the dedicated
+            // admin-only correction API may decide synthetic sports records.
+            if (record.recordType !== 'NEWS_ARTICLE') {
+              throw new BadRequestException({
+                code: 'IMPORT_REVIEW_NOT_ARTICLE',
+                message: 'Sportdaten erfordern die separate Admin-Korrekturschnittstelle.',
               });
             }
 
