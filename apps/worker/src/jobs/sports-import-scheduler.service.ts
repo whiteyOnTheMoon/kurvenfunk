@@ -83,40 +83,53 @@ export class SportsImportSchedulerService implements OnModuleInit {
 
     // Fail before registering ANY schedule when a config is invalid. The
     // environment validator also checks these bounds at application startup.
-    const intervals = resources.map((resource) => ({
-      resource,
-      intervalMs: this.getInterval(resource),
-    }));
+    let intervals: { resource: ScheduledResource; intervalMs: number }[];
+    try {
+      intervals = resources.map((resource) => ({
+        resource,
+        intervalMs: this.getInterval(resource),
+      }));
+    } catch (error) {
+      await this.removeAll();
+      throw error;
+    }
 
     if (!liveEnabled) {
       await this.sportsImportQueue.removeJobScheduler(SCHEDULER_IDS.live);
     }
 
-    for (const { resource, intervalMs } of intervals) {
-      const data: SportsImportJobPayload = {
-        providerKey: 'fake-sports',
-        resource,
-        ...FAKE_SPORTS_SCOPE,
-      };
-      const scheduled = await this.sportsImportQueue.upsertJobScheduler(
-        SCHEDULER_IDS[resource],
-        { every: intervalMs },
-        {
-          name: SPORTS_IMPORT_JOB_NAME,
-          data,
-          opts: SPORTS_IMPORT_RETRY_OPTIONS,
-        },
-      );
-      logger.info('Sports import schedule registered', {
-        event: 'sports-import.scheduler.registered',
-        metadata: {
-          queue: QUEUE_NAMES.SPORTS_IMPORT,
-          schedulerId: SCHEDULER_IDS[resource],
+    try {
+      for (const { resource, intervalMs } of intervals) {
+        const data: SportsImportJobPayload = {
+          providerKey: 'fake-sports',
           resource,
-          intervalMs,
-          jobId: scheduled?.id ?? null,
-        },
-      });
+          ...FAKE_SPORTS_SCOPE,
+        };
+        const scheduled = await this.sportsImportQueue.upsertJobScheduler(
+          SCHEDULER_IDS[resource],
+          { every: intervalMs },
+          {
+            name: SPORTS_IMPORT_JOB_NAME,
+            data,
+            opts: SPORTS_IMPORT_RETRY_OPTIONS,
+          },
+        );
+        logger.info('Sports import schedule registered', {
+          event: 'sports-import.scheduler.registered',
+          metadata: {
+            queue: QUEUE_NAMES.SPORTS_IMPORT,
+            schedulerId: SCHEDULER_IDS[resource],
+            resource,
+            intervalMs,
+            jobId: scheduled?.id ?? null,
+          },
+        });
+      }
+    } catch (error) {
+      // An incomplete configuration must never leave a live or fixture
+      // scheduler running with a partially updated configuration.
+      await this.removeAll();
+      throw error;
     }
   }
 
