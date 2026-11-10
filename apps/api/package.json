@@ -79,7 +79,9 @@
           "tsconfig": {
             "module": "CommonJS",
             "moduleResolution": "Node",
-            "esModuleInterop": true
+            "esModuleInterop": true,
+            "resolvePackageJsonExports": false,
+            "resolvePackageJsonImports": false
           }
         }
       ]
