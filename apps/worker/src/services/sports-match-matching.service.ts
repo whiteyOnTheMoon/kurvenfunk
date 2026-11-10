@@ -152,11 +152,17 @@ export class SportsMatchMatchingService {
 
       const missingScope = !mappedCompetitionId || !mappedSeasonId;
       const missingClubs = !mappedHomeId || !mappedAwayId || mappedHomeId === mappedAwayId;
-      let reason: SportsMatchOutcome extends infer _T ? 'UNRESOLVED_SCOPE' | 'UNRESOLVED_CLUB' | 'INCONSISTENT_MAPPING' | 'UNMATCHED' | 'AMBIGUOUS' : never =
+      let reason: 'UNRESOLVED_SCOPE' | 'UNRESOLVED_CLUB' | 'INCONSISTENT_MAPPING' | 'UNMATCHED' | 'AMBIGUOUS' =
         missingScope ? 'UNRESOLVED_SCOPE' : missingClubs ? 'UNRESOLVED_CLUB' : 'UNMATCHED';
       let selectedMatchId: string | null = null;
 
-      if (!missingScope && !missingClubs) {
+      if (
+        mappedCompetitionId &&
+        mappedSeasonId &&
+        mappedHomeId &&
+        mappedAwayId &&
+        mappedHomeId !== mappedAwayId
+      ) {
         const [competitionRecord, seasonRecord, activeClubs] = await Promise.all([
           tx.competition.findUnique({
             where: { id: mappedCompetitionId },
