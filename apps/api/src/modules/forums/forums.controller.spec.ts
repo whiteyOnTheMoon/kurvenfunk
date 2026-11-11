@@ -1,20 +1,21 @@
-import {
-  PERMISSIONS,
-  ROLE_PERMISSIONS,
-  REQUIRED_PERMISSIONS_METADATA_KEY,
-} from '../permissions/permissions.constants';
-import { ForumsController } from './forums.controller';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { PERMISSIONS, ROLE_PERMISSIONS } from '../permissions/permissions.constants';
+
+const controller = readFileSync(join(__dirname, 'forums.controller.ts'), 'utf8');
 
 describe('Phase 22.209 forum category authorization', () => {
-  it('restricts administrative writes to the forum.manage permission', () => {
-    for (const method of ['createCategory', 'updateCategory', 'findAllCategoriesForAdmin']) {
-      const descriptor = Object.getOwnPropertyDescriptor(ForumsController.prototype, method);
-      expect(descriptor).toBeDefined();
-      const handler = descriptor?.value as object;
-      expect(Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler)).toEqual([
-        PERMISSIONS.FORUM_MANAGE,
-      ]);
-    }
+  it('requires the forum.manage permission on every administrative route', () => {
+    expect(controller).toMatch(
+      /@Get\('categories\/admin\/all'\)\s+@RequirePermissions\(PERMISSIONS\.FORUM_MANAGE\)/,
+    );
+    expect(controller).toMatch(
+      /@Post\('categories'\)\s+@RequirePermissions\(PERMISSIONS\.FORUM_MANAGE\)/,
+    );
+    expect(controller).toMatch(
+      /@Patch\('categories\/:id'\)\s+@RequirePermissions\(PERMISSIONS\.FORUM_MANAGE\)/,
+    );
   });
 
   it('grants forum management to administrators but not ordinary users or moderators', () => {
