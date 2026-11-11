@@ -393,6 +393,84 @@ try {
       }),
   );
 
+  // Follow-up: metadata only, with no identifiers or private text in logs.
+  const identities = await db.user.findMany({
+    select: {
+      id: true,
+      nickname: true,
+      keycloakSubject: true,
+      status: true,
+      _count: {
+        select: {
+          roleAssignments: true,
+          articles: true,
+          moderationCardsReceived: true,
+          notificationsReceived: true,
+        },
+      },
+    },
+  });
+  const markedUsers = identities.filter(
+    (u) => marker.test(u.nickname ?? '') || marker.test(u.keycloakSubject ?? ''),
+  );
+  const markedUserIds = markedUsers.map((u) => u.id);
+  const notices = await db.notification.findMany({
+    select: {
+      type: true,
+      sourceType: true,
+      userId: true,
+      title: true,
+      body: true,
+    },
+  });
+  const markedNotices = notices.filter(
+    (n) => marker.test(n.title ?? '') || marker.test(n.body ?? ''),
+  );
+  const articles = await db.article.findMany({
+    select: {
+      status: true,
+      deletedAt: true,
+      importRecordId: true,
+      originalUrl: true,
+      authorId: true,
+      _count: { select: { revisions: true, comments: true } },
+    },
+  });
+  const count = (items, predicate) => items.filter(predicate).length;
+  console.log(
+    'PHASE021_DEV_FOCUSED_PROVENANCE=' +
+      JSON.stringify({
+        accounts: {
+          marked: markedUsers.length,
+          withRoles: count(markedUsers, (u) => u._count.roleAssignments > 0),
+          withArticles: count(markedUsers, (u) => u._count.articles > 0),
+          withCards: count(markedUsers, (u) => u._count.moderationCardsReceived > 0),
+          withNotices: count(markedUsers, (u) => u._count.notificationsReceived > 0),
+        },
+        notices: {
+          marked: markedNotices.length,
+          sentToMarkedUsers: count(markedNotices, (n) => markedUserIds.includes(n.userId)),
+          withSource: count(markedNotices, (n) => n.sourceType !== null),
+        },
+        articles: {
+          total: articles.length,
+          deleted: count(articles, (a) => a.deletedAt !== null),
+          deletedPublished: count(
+            articles,
+            (a) => a.deletedAt !== null && a.status === 'PUBLISHED',
+          ),
+          deletedImported: count(
+            articles,
+            (a) => a.deletedAt !== null && a.importRecordId !== null,
+          ),
+          withOriginalUrl: count(articles, (a) => a.originalUrl !== null),
+          authoredByMarkedUsers: count(articles, (a) => markedUserIds.includes(a.authorId)),
+          withRevisions: count(articles, (a) => a._count.revisions > 0),
+          withComments: count(articles, (a) => a._count.comments > 0),
+        },
+      }),
+  );
+
   console.log('PHASE021_DEV_AUDIT_EXECUTION=PASS_READ_ONLY');
   console.log(
     'PHASE021_DEV_CLEANLINESS=' +
