@@ -51,7 +51,10 @@ describe('Phase 0-21 DEV-only synthetic data cleanup', () => {
     assert.match(script, /QA_IDENTITY_PROVENANCE_MISMATCH/);
     assert.match(script, /UNRECOGNIZED_QA_KEYCLOAK_ACCOUNT/);
     assert.match(script, /comments\.some/);
-    assert.doesNotMatch(script, /\btx\.(?:club|provider|importJob|importRecord|rawPayload)\.delete/);
+    assert.doesNotMatch(
+      script,
+      /\btx\.(?:club|provider|importJob|importRecord|rawPayload)\.delete/,
+    );
   });
 
   it('preserves unrelated moderation records and removes comment dependencies before comments', () => {
