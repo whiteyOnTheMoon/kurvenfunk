@@ -2,10 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const shell = readFileSync(
-  new URL('./dev-keycloak-admin-readonly.sh', import.meta.url),
-  'utf8',
-);
+const shell = readFileSync(new URL('./dev-keycloak-admin-readonly.sh', import.meta.url), 'utf8');
 const inventory = readFileSync(
   new URL('./dev-residual-services-readonly.sh', import.meta.url),
   'utf8',
