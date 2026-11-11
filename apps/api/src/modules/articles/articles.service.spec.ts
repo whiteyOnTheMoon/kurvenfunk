@@ -614,7 +614,6 @@ describe('ArticlesService', () => {
     );
   });
 
-
   it('returns a valid empty neutral startpage when the competition table is empty', async () => {
     findUniqueCompetition.mockResolvedValue(null);
     findMany.mockResolvedValue([]);
