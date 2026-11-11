@@ -11,6 +11,39 @@ if [[ -n "${EXPECTED_COMMIT:-}" ]]; then
   }
 fi
 
+# Following the authorized DEV reset, scheduled imports deliberately remain off.
+# In that state, verify the absence of old repeat schedules instead of requiring
+# a provider row, successful feed jobs or new application data.
+scheduler_enabled="$(docker compose -p kurvenfunk-dev --env-file .env.dev \
+  -f compose.yml -f compose.dev.yml exec -T worker printenv NEWS_IMPORT_SCHEDULER_ENABLED | tr -d '\r')"
+if [[ "$scheduler_enabled" == false ]]; then
+  docker compose -p kurvenfunk-dev --env-file .env.dev \
+    -f compose.yml -f compose.dev.yml exec -T worker node --input-type=module - <<'JS'
+import { Queue } from 'bullmq';
+const queue = new Queue('news-import', {
+  connection: {
+    host: process.env.REDIS_HOST || 'redis',
+    port: Number(process.env.REDIS_PORT || 6379),
+    password: process.env.REDIS_PASSWORD,
+    maxRetriesPerRequest: null,
+  },
+});
+try {
+  const schedulers = await queue.getJobSchedulers(0, 100);
+  if (schedulers.some(s => s.key === 'news-import-ots' || s.key === 'news-import-fake')) {
+    throw new Error('STALE_NEWS_REPEAT_SCHEDULER');
+  }
+  console.log('DEV_OTS_MODE=DISABLED_AS_CONFIGURED');
+  console.log('DEV_OTS_REPEAT_SCHEDULERS=NONE');
+  console.log('DEV_OTS_ACCEPTANCE=PASS_DISABLED_MODE');
+} finally {
+  await queue.close();
+}
+JS
+  exit 0
+fi
+[[ "$scheduler_enabled" == true ]] || { echo "ERROR: INVALID_NEWS_SCHEDULER_MODE"; exit 1; }
+
 docker compose -p kurvenfunk-dev --env-file .env.dev \
   -f compose.yml -f compose.dev.yml config --format json | python3 -c '
 import json
