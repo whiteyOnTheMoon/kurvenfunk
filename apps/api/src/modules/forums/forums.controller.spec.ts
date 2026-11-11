@@ -7,24 +7,14 @@ import { ForumsController } from './forums.controller';
 
 describe('Phase 22.209 forum category authorization', () => {
   it('restricts administrative writes to the forum.manage permission', () => {
-    expect(
-      Reflect.getMetadata(
-        REQUIRED_PERMISSIONS_METADATA_KEY,
-        ForumsController.prototype.createCategory,
-      ),
-    ).toEqual([PERMISSIONS.FORUM_MANAGE]);
-    expect(
-      Reflect.getMetadata(
-        REQUIRED_PERMISSIONS_METADATA_KEY,
-        ForumsController.prototype.updateCategory,
-      ),
-    ).toEqual([PERMISSIONS.FORUM_MANAGE]);
-    expect(
-      Reflect.getMetadata(
-        REQUIRED_PERMISSIONS_METADATA_KEY,
-        ForumsController.prototype.findAllCategoriesForAdmin,
-      ),
-    ).toEqual([PERMISSIONS.FORUM_MANAGE]);
+    for (const method of ['createCategory', 'updateCategory', 'findAllCategoriesForAdmin']) {
+      const descriptor = Object.getOwnPropertyDescriptor(ForumsController.prototype, method);
+      expect(descriptor).toBeDefined();
+      const handler = descriptor?.value as object;
+      expect(Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, handler)).toEqual([
+        PERMISSIONS.FORUM_MANAGE,
+      ]);
+    }
   });
 
   it('grants forum management to administrators but not ordinary users or moderators', () => {
