@@ -1,13 +1,23 @@
-import { PERMISSIONS, ROLE_PERMISSIONS, REQUIRED_PERMISSIONS_METADATA_KEY } from '../permissions/permissions.constants';
+import {
+  PERMISSIONS,
+  ROLE_PERMISSIONS,
+  REQUIRED_PERMISSIONS_METADATA_KEY,
+} from '../permissions/permissions.constants';
 import { ForumsController } from './forums.controller';
 
 describe('Phase 22.209 forum category authorization', () => {
   it('restricts administrative writes to the forum.manage permission', () => {
     expect(
-      Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, ForumsController.prototype.createCategory),
+      Reflect.getMetadata(
+        REQUIRED_PERMISSIONS_METADATA_KEY,
+        ForumsController.prototype.createCategory,
+      ),
     ).toEqual([PERMISSIONS.FORUM_MANAGE]);
     expect(
-      Reflect.getMetadata(REQUIRED_PERMISSIONS_METADATA_KEY, ForumsController.prototype.updateCategory),
+      Reflect.getMetadata(
+        REQUIRED_PERMISSIONS_METADATA_KEY,
+        ForumsController.prototype.updateCategory,
+      ),
     ).toEqual([PERMISSIONS.FORUM_MANAGE]);
     expect(
       Reflect.getMetadata(
