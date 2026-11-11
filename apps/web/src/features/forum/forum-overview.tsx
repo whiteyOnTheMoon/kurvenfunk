@@ -85,10 +85,16 @@ function CategorySection({
         <ul className={styles.forumList}>
           {category.forums.map((forum) => (
             <li key={forum.id} className={styles.forumItem}>
-              <strong>{forum.name}</strong>
+              <strong>
+                {forum.club ? (
+                  <Link href={`/forum/verein/${forum.club.slug}`}>{forum.club.name}</Link>
+                ) : (
+                  forum.name
+                )}
+              </strong>
               {forum.description ? <span>{forum.description}</span> : null}
               {forum.club ? (
-                <Link href={`/vereine/${forum.club.slug}`}>Zum Verein: {forum.club.name}</Link>
+                <Link href={`/vereine/${forum.club.slug}`}>Zur Vereinsseite</Link>
               ) : null}
               {!forum.threadCreationEnabled ? <small>Aktuell nur lesbar</small> : null}
             </li>

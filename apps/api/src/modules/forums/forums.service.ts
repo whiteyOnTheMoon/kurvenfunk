@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import type { CreateForumCategoryInput, UpdateForumCategoryInput } from '@kurvenfunk/validation';
 
+import { clubForumSelect, provisionClubForum } from './club-forum-provisioning';
+
 const publicCategorySelect = {
   id: true,
   name: true,
@@ -14,7 +16,10 @@ const publicCategorySelect = {
   description: true,
   sortOrder: true,
   forums: {
-    where: { active: true },
+    where: {
+      active: true,
+      OR: [{ clubId: null }, { club: { is: { active: true } } }],
+    },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: {
       id: true,
@@ -170,6 +175,69 @@ export class ForumsService implements OnModuleDestroy {
       });
       return after;
     });
+  }
+
+  /** Public club forum navigation never reveals inactive clubs or categories. */
+  async findPublicClubForum(clubSlug: string) {
+    const forum = await this.database.forum.findFirst({
+      where: {
+        active: true,
+        club: { slug: clubSlug, active: true },
+        category: { active: true },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        threadCreationEnabled: true,
+        club: { select: { id: true, name: true, slug: true } },
+        category: { select: { name: true, slug: true } },
+      },
+    });
+    if (!forum) {
+      throw new NotFoundException({
+        code: 'CLUB_FORUM_NOT_FOUND',
+        message: 'Für diesen Verein ist noch kein öffentliches Forum vorhanden.',
+      });
+    }
+    return forum;
+  }
+
+  /** Explicit admin reconciliation for real clubs that existed before "vereine". */
+  async ensureClubForum(clubId: string, actorUserId: string) {
+    try {
+      return await this.database.$transaction(async (tx) => {
+        const club = await tx.club.findUnique({
+          where: { id: clubId },
+          select: { id: true, slug: true, name: true, active: true },
+        });
+        if (!club) {
+          throw new NotFoundException({
+            code: 'CLUB_NOT_FOUND',
+            message: 'Verein wurde nicht gefunden.',
+          });
+        }
+        return provisionClubForum(tx, club, actorUserId, true);
+      });
+    } catch (error) {
+      // Concurrent ensure requests race on the globally UNIQUE canonical slug.
+      // Return the same club forum after the winner committed; never create two.
+      if (isDatabaseError(error, 'P2002')) {
+        const existing = await this.database.forum.findFirst({
+          where: { clubId, category: { slug: 'vereine' } },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          select: clubForumSelect,
+        });
+        if (existing) return existing;
+        throw new ConflictException({
+          code: 'CLUB_FORUM_SLUG_CONFLICT',
+          message: 'Die Vereinsforum-Kennung ist bereits belegt.',
+        });
+      }
+      throw error;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

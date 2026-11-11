@@ -8,6 +8,8 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 
+import { provisionClubForum } from '../forums/club-forum-provisioning';
+
 export interface ClubListItem {
   id: string;
   name: string;
@@ -211,6 +213,9 @@ export class ClubsService implements OnModuleDestroy {
           },
           select: clubAdminSelect,
         });
+        // Task 22.210: link genuine clubs to a forum if the editor has configured
+        // the "vereine" category. An empty DEV database must remain unseeded.
+        await provisionClubForum(tx, created, actorUserId, false);
         await tx.auditLog.create({
           data: {
             actorType: 'USER',

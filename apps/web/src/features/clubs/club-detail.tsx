@@ -336,6 +336,11 @@ export function ClubDetail({ overview, apiUrl }: { overview: ClubOverviewData; a
             <h2>Vereinsforum</h2>
           </div>
         </div>
+        {forums.length ? (
+          <p>
+            <Link href={`/forum/verein/${club.slug}`}>Zum Vereinsforum →</Link>
+          </p>
+        ) : null}
         {threads.length ? (
           <div className={styles.forumList}>
             {threads.map((thread) => (

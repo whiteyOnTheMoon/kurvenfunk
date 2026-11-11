@@ -32,6 +32,20 @@ export class ForumsController {
     return this.forumsService.findPublicCategoryBySlug(slug);
   }
 
+  @Get('clubs/:clubSlug')
+  findPublicClubForum(@Param('clubSlug') clubSlug: string) {
+    return this.forumsService.findPublicClubForum(clubSlug);
+  }
+
+  @Post('clubs/:clubId/ensure')
+  @RequirePermissions(PERMISSIONS.FORUM_MANAGE)
+  ensureClubForum(
+    @Req() request: AuthenticatedRequest,
+    @Param('clubId', new ParseUUIDPipe({ version: '4' })) clubId: string,
+  ) {
+    return this.forumsService.ensureClubForum(clubId, request.user!.kurvenfunkUserId);
+  }
+
   @Post('categories')
   @RequirePermissions(PERMISSIONS.FORUM_MANAGE)
   createCategory(
