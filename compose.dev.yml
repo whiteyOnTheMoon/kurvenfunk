@@ -42,6 +42,8 @@ services:
 
   worker:
     environment:
+      # Keep DEV empty after the authorized reset; no automatic re-import.
+      NEWS_IMPORT_SCHEDULER_ENABLED: 'false'
       SPORTS_FAKE_PROVIDER_ENABLED: 'false'
       SPORTS_IMPORT_SCHEDULER_ENABLED: 'false'
       SPORTS_IMPORT_LIVE_ENABLED: 'false'
