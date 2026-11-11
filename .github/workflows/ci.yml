@@ -58,12 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary canonical metadata audit formatter
-        run: |
-          echo BEGIN_CANONICAL_METADATA_AUDIT
-          pnpm exec prettier infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
-          echo END_CANONICAL_METADATA_AUDIT
-
       - name: Check formatting
         run: pnpm format:check
 
