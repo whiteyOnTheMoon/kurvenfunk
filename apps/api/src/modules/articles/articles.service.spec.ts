@@ -657,12 +657,8 @@ describe('ArticlesService', () => {
     expect(result.competition).toBeNull();
     expect(result.articles.map((item) => item.id)).toEqual(['top-1', 'recent-1']);
     expect(findMany).toHaveBeenCalledTimes(2);
-    expect(findMany).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        where: expect.not.objectContaining({ OR: expect.anything() }),
-      }),
-    );
+    const secondQuery = findMany.mock.calls[1]?.[0] as { where: Record<string, unknown> };
+    expect(secondQuery.where).not.toHaveProperty('OR');
     expect(findClub).not.toHaveBeenCalled();
   });
   describe('article CRUD', () => {
