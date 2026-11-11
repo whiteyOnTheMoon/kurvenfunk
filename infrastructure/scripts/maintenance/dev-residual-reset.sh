@@ -38,7 +38,7 @@ flock -n 6 || { echo 'ERROR: DEV_RESIDUAL_RESET_LOCKED'; exit 1; }
 
 compose=(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml)
 "${compose[@]}" config --quiet
-for service in postgres keycloak api worker redis minio meilisearch mailpit; do
+for service in postgres keycloak api worker redis minio meilisearch mailpit cloudflared; do
   [[ -n "$("${compose[@]}" ps -q "$service")" ]] || {
     echo "ERROR: DEV_SERVICE_NOT_RUNNING=$service"; exit 1;
   }
@@ -122,7 +122,7 @@ on_exit() {
   result=$?
   trap - EXIT
   if [[ "$services_stopped" == YES ]]; then
-    "${compose[@]}" start redis keycloak minio meilisearch mailpit api worker >/dev/null || {
+    "${compose[@]}" start redis keycloak minio meilisearch mailpit api worker cloudflared >/dev/null || {
       echo 'ERROR: DEV_SERVICES_RESTART_NEEDS_ATTENTION'
     }
   fi
@@ -134,7 +134,7 @@ on_exit() {
 trap on_exit EXIT
 
 services_stopped=YES
-"${compose[@]}" stop api worker keycloak redis minio meilisearch mailpit
+"${compose[@]}" stop cloudflared api worker keycloak redis minio meilisearch mailpit
 for db_role in application keycloak; do
   db="$app_db"
   [[ "$db_role" == keycloak ]] && db="$kc_db"
@@ -207,6 +207,7 @@ echo 'DEV_REDIS_POST_PURGE_KEYS=0'
 "${compose[@]}" start api worker >/dev/null
 wait_health api
 wait_health worker
+"${compose[@]}" start cloudflared >/dev/null
 services_stopped=NO
 echo 'DEV_RESIDUAL_APPLY_RESULT=PASS_BACKED_UP_AND_CLEARED'
 echo 'DEV_RESIDUAL_BACKUPS=PRIVATE_RETAINED'
