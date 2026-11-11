@@ -24,5 +24,13 @@ Quellcode: PR #144 auf `develop`; Workflowmarker `[dev-residual-plan]` ausschlie
 4. Nur DEV-Anwendungsdaten und historische DEV-Restdaten entfernen; Keycloak-Admin-/Servicebenutzer über privilegierte Rollenerkennung schützen, Realm-Konfiguration erhalten; Medien inklusive Versionen und Multipart-Uploads im aktiven Anwendungsbucket entfernen; Meilisearch-Dokumente bei Erhalt der Settings und Mailpit-Nachrichten entfernen; ausschließlich DEV-Redis DB flushen.
 5. Alle Dienste starten; erneute read-only Inventur, Gesundheitsprüfungen, Migrations-/Realm-Schutz bestätigen. Bei Fehlern nicht als erfolgreich markieren. Ein Teilfehler nach der ersten Löschung erfordert manuelle Wiederaufnahme oder Wiederherstellung aus den gesicherten privaten Backups.
 
-## Aktueller Status
-**NOCH NICHT AUSGEFÜHRT** – dieses Dokument ist die genehmigte operative Grundlage, kein Erfolgsnachweis. Nach der tatsächlichen Ausführung ausschließlich anhand der zugehörigen GitHub-Actions-Logs ergänzen. Ein leeres DEV belegt weder STAGING-/PROD-Abnahme noch den Anschluss echter Sport-Provider.
+## Erfolgreicher Apply-Lauf (11.11.2026)
+- [GitHub Actions #42958281430](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/42958281430), Merge-Commit `b17973ec97729053a1de0a89b88eb08a0194a2dd`: abgeschlossener erfolgreicher DEV-only Workflow, `DEV_RESIDUAL_APPLY_RESULT=PASS_BACKED_UP_AND_CLEARED`.
+- Vor Löschungen erfolgreich geprüft: 41 Anwendungstabellen, 1 Keycloak-Masterbenutzer, Import-Scheduler OFF, isolierte DEV-Volumes.
+- Private, lesbar verifizierte Datenbank-Backups: Anwendung und Keycloak. Private, integritätsgeprüfte Archive: Redis, MinIO, Meilisearch, Mailpit. Alle sechs Backups bleiben serverseitig privat erhalten.
+- MinIO-Anwendungsbucket: 2 Versionen gelöscht, keine verbleibenden Objekte/Versionen/Uploads. Mailpit: 10 Nachrichten gelöscht; Meilisearch: keine Restdokumente. DEV-Redis direkt nach FLUSHDB: 0 Schlüssel.
+- Keycloak-Bereinigung: 1 Realm-Benutzer gelöscht, 0 privilegierte Identitäten innerhalb der von der Admin-API gelieferten Liste geschützt. Die frühere SQL-Inventur zeigte 10 Realm-Benutzer einschließlich 1 Servicebenutzer. Die Abweichung ist **nicht geklärt** und muss durch neue Live-Inventur ausgewertet werden.
+- Anwendungstabellen erneut geleert; Master-Realm-Identität unverändert; API/Worker/Tunnel wieder gestartet.
+
+## Verifikation nach dem Reset – offen
+Ein erfolgreicher Apply-Lauf ist nicht gleichbedeutend mit einer abgeschlossenen Bestands- und fachlichen Abnahme. Nach Neustart schreibgeschützt erfassen: Keycloak-Realmbenutzer und Dienstkonten, MinIO-Anwendungsbucket, Meilisearch-Dokumente, Redis-Keys und Mailpit-Nachrichten; anschließend den separaten Phase-0–21-Datennachweis und die Gesundheit des DEV-Systems prüfen. **Keine** Produktiv-/STAGING-Mutation; keine echten Provider-Importe ohne geprüfte Herkunft und Nutzungsrechte.
