@@ -258,7 +258,12 @@ try {
         status: true,
         storageType: true,
         _count: {
-          select: { profileAvatars: true, clubLogos: true, articleLeads: true, articleOgImages: true },
+          select: {
+            profileAvatars: true,
+            clubLogos: true,
+            articleLeads: true,
+            articleOgImages: true,
+          },
         },
       },
     }),
@@ -271,7 +276,9 @@ try {
       },
     }),
     db.notification.findMany({ select: { type: true, sourceType: true, title: true, body: true } }),
-    db.auditLog.findMany({ select: { reason: true, action: true, category: true, metadata: true } }),
+    db.auditLog.findMany({
+      select: { reason: true, action: true, category: true, metadata: true },
+    }),
     db.provider.findMany({
       select: {
         id: true,
@@ -296,8 +303,9 @@ try {
       return acc;
     }, {});
   const countMarked = (rows, values) =>
-    rows.filter((row) => values(row).some((value) => typeof value === 'string' && marker.test(value)))
-      .length;
+    rows.filter((row) =>
+      values(row).some((value) => typeof value === 'string' && marker.test(value)),
+    ).length;
   const providerClass = (key) =>
     /(?:fake|mock|test|demo|seed)/i.test(key)
       ? 'SYNTHETIC'
@@ -342,17 +350,16 @@ try {
             row.altText,
             row.source,
           ]),
-          attached: mediaMetadata.filter(
-            (row) => Object.values(row._count).some((number) => number > 0),
+          attached: mediaMetadata.filter((row) =>
+            Object.values(row._count).some((number) => number > 0),
           ).length,
         },
         moderationCards: {
           total: moderationMetadata.length,
           markedReason: countMarked(moderationMetadata, (row) => [row.reasonCode]),
           byStatus: countStatuses(moderationMetadata),
-          linkedToCommentSource: moderationMetadata.filter(
-            (row) => row.sourceType === 'COMMENT',
-          ).length,
+          linkedToCommentSource: moderationMetadata.filter((row) => row.sourceType === 'COMMENT')
+            .length,
         },
         notifications: {
           total: notificationMetadata.length,
