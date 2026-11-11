@@ -31,17 +31,39 @@ const expectedQaRole = new Map([
   ['Phase19 Test MODERATOR', 'MODERATOR'],
 ]);
 const userRelations = {
-  articles: true, comments: true, reactions: true, forumThreads: true,
-  forumPosts: true, postsDeleted: true, threadsPinned: true, threadsLocked: true,
-  subscriptions: true, threadReadStates: true, reportsCreated: true,
-  reportsReceived: true, reportsAssigned: true, moderationCardsReceived: true,
-  moderationCardsIssued: true, moderationCardsRevoked: true, appealsFiled: true,
-  appealsReviewed: true, appealsProposed: true, sanctionsReceived: true,
-  sanctionsCreated: true, sanctionsRevoked: true, ipBlocksCreated: true,
-  ipBlocksDeactivated: true, auditEventsAsActor: true, auditEventsAsTarget: true,
-  notificationsReceived: true, notificationActions: true,
-  notificationPreferences: true, roleAssignments: true, rolesGranted: true,
-  entityMatchesReviewed: true, importRecordsReviewed: true,
+  articles: true,
+  comments: true,
+  reactions: true,
+  forumThreads: true,
+  forumPosts: true,
+  postsDeleted: true,
+  threadsPinned: true,
+  threadsLocked: true,
+  subscriptions: true,
+  threadReadStates: true,
+  reportsCreated: true,
+  reportsReceived: true,
+  reportsAssigned: true,
+  moderationCardsReceived: true,
+  moderationCardsIssued: true,
+  moderationCardsRevoked: true,
+  appealsFiled: true,
+  appealsReviewed: true,
+  appealsProposed: true,
+  sanctionsReceived: true,
+  sanctionsCreated: true,
+  sanctionsRevoked: true,
+  ipBlocksCreated: true,
+  ipBlocksDeactivated: true,
+  auditEventsAsActor: true,
+  auditEventsAsTarget: true,
+  notificationsReceived: true,
+  notificationActions: true,
+  notificationPreferences: true,
+  roleAssignments: true,
+  rolesGranted: true,
+  entityMatchesReviewed: true,
+  importRecordsReviewed: true,
 };
 
 const db = createPrismaClient();
@@ -104,13 +126,12 @@ async function inspect(tx) {
   const [accounts, articles, comments, commentRevisions, commentVotes] = await Promise.all([
     tx.user.findMany({
       where: {
-        OR: [
-          { keycloakSubject: { in: seedSubjects } },
-          { nickname: { in: qaNicknames } },
-        ],
+        OR: [{ keycloakSubject: { in: seedSubjects } }, { nickname: { in: qaNicknames } }],
       },
       select: {
-        id: true, keycloakSubject: true, nickname: true,
+        id: true,
+        keycloakSubject: true,
+        nickname: true,
         roleAssignments: { select: { role: true } },
         profile: { select: { id: true } },
         _count: { select: userRelations },
@@ -119,7 +140,11 @@ async function inspect(tx) {
     tx.article.findMany({
       where: { slug: { startsWith: 'seed-' } },
       select: {
-        id: true, slug: true, status: true, authorId: true, importRecordId: true,
+        id: true,
+        slug: true,
+        status: true,
+        authorId: true,
+        importRecordId: true,
         _count: { select: { revisions: true, entityMatches: true, comments: true } },
       },
     }),
@@ -174,31 +199,38 @@ async function inspect(tx) {
   const allowed = new Set(['articles', 'roleAssignments', 'reportsAssigned', 'auditEventsAsActor']);
   for (const account of accounts) {
     if (
-      Object.entries(account._count).some(([relation, count]) => count > 0 && !allowed.has(relation)) ||
+      Object.entries(account._count).some(
+        ([relation, count]) => count > 0 && !allowed.has(relation),
+      ) ||
       !account.roleAssignments.every((role) =>
         account.nickname && expectedQaRole.has(account.nickname)
           ? role.role === expectedQaRole.get(account.nickname)
           : true,
       ) ||
-      (account.nickname && expectedQaRole.has(account.nickname) && account.roleAssignments.length !== 1)
+      (account.nickname &&
+        expectedQaRole.has(account.nickname) &&
+        account.roleAssignments.length !== 1)
     ) {
       throw new Error('ACCOUNT_HAS_UNEXPECTED_REAL_DEPENDENCIES');
     }
   }
   const editor = knownSeed.find((u) => u.keycloakSubject === 'seed-editor-user');
   if (!editor || editor._count.articles !== 2) throw new Error('SEED_AUTHOR_MISMATCH');
-  console.log('PHASE021_CLEANUP_PLAN=' + JSON.stringify({
-    confirmedSyntheticUsers: accounts.length,
-    qaKeycloakAccounts: knownQa.length,
-    archivedSeedArticles: articles.length,
-    allComments: comments.length,
-    commentRevisions,
-    commentVotes,
-    linkedCommentReports: reports.length,
-    linkedModerationCards: linkedCards,
-    preservedClubIdentities: await tx.club.count(),
-    preservedImportJobs: await tx.importJob.count(),
-  }));
+  console.log(
+    'PHASE021_CLEANUP_PLAN=' +
+      JSON.stringify({
+        confirmedSyntheticUsers: accounts.length,
+        qaKeycloakAccounts: knownQa.length,
+        archivedSeedArticles: articles.length,
+        allComments: comments.length,
+        commentRevisions,
+        commentVotes,
+        linkedCommentReports: reports.length,
+        linkedModerationCards: linkedCards,
+        preservedClubIdentities: await tx.club.count(),
+        preservedImportJobs: await tx.importJob.count(),
+      }),
+  );
   return { accounts, knownQa, articleIds, commentIds, reportIds: reports.map((row) => row.id) };
 }
 async function applyDb(tx, state) {
@@ -237,11 +269,17 @@ async function applyDb(tx, state) {
   if (comments.count !== 29 || articles.count !== 2 || users.count !== 6) {
     throw new Error('CONCURRENT_CLEANUP_COUNT_MISMATCH');
   }
-  console.log('PHASE021_DEV_DB_REMOVED=' + JSON.stringify({
-    comments: comments.count, seedArticles: articles.count, qaAndSeedAccounts: users.count,
-    linkedReports: reports.count, relatedNotifications: notifications.count,
-    relatedAuditEvents: logs.count,
-  }));
+  console.log(
+    'PHASE021_DEV_DB_REMOVED=' +
+      JSON.stringify({
+        comments: comments.count,
+        seedArticles: articles.count,
+        qaAndSeedAccounts: users.count,
+        linkedReports: reports.count,
+        relatedNotifications: notifications.count,
+        relatedAuditEvents: logs.count,
+      }),
+  );
 }
 async function verify() {
   const qa = await db.user.count({ where: { nickname: { in: qaNicknames } } });
@@ -255,7 +293,14 @@ async function verify() {
     const found = await kc('GET', '/users?search=' + prefix + '&max=1000');
     inKeycloak += found.filter((row) => row.username?.startsWith(prefix)).length;
   }
-  const result = { knownSeedAndQaUsers: qa + seeded, seedArticles, comments, revisions, votes, qaKeycloakUsers: inKeycloak };
+  const result = {
+    knownSeedAndQaUsers: qa + seeded,
+    seedArticles,
+    comments,
+    revisions,
+    votes,
+    qaKeycloakUsers: inKeycloak,
+  };
   console.log('PHASE021_CLEANUP_VERIFICATION=' + JSON.stringify(result));
   if (Object.values(result).some((v) => v !== 0)) throw new Error('CLEANUP_NOT_COMPLETE');
 }
