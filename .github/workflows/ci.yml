@@ -59,7 +59,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm format:check
+        run: |
+          echo 'FORMAT_DIFF_START'
+          pnpm exec prettier apps/api/src/modules/articles/articles.service.ts | diff -u apps/api/src/modules/articles/articles.service.ts - || true
+          pnpm exec prettier apps/api/src/modules/articles/articles.service.spec.ts | diff -u apps/api/src/modules/articles/articles.service.spec.ts - || true
+          echo 'FORMAT_DIFF_END'
+          pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |
