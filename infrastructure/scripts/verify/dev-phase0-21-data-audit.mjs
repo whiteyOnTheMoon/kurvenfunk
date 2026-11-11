@@ -222,6 +222,170 @@ try {
         seedAuthoredPublished,
       }),
   );
+  // Extra metadata-only provenance review. No titles, slugs, content, user IDs or
+  // personal details leave the worker: only aggregates and synthetic-marker counts.
+  const marker = /(?:test|demo|mock|sample|fixture|synthetic|seed|phase[ -]?(?:17|19|20))/i;
+  const [
+    articleMetadata,
+    userMetadata,
+    mediaMetadata,
+    moderationMetadata,
+    notificationMetadata,
+    auditMetadata,
+    providers,
+    jobGroups,
+    competitionMetadata,
+    seasonMetadata,
+  ] = await Promise.all([
+    db.article.findMany({
+      select: {
+        status: true,
+        deletedAt: true,
+        importRecordId: true,
+        sourceId: true,
+        slug: true,
+        title: true,
+        author: { select: { nickname: true, keycloakSubject: true } },
+        _count: { select: { clubs: true, revisions: true } },
+      },
+    }),
+    db.user.findMany({ select: { nickname: true, keycloakSubject: true, status: true } }),
+    db.media.findMany({
+      select: {
+        originalFileName: true,
+        altText: true,
+        source: true,
+        status: true,
+        storageType: true,
+        _count: {
+          select: { profileAvatars: true, clubLogos: true, articleLeads: true, articleOgImages: true },
+        },
+      },
+    }),
+    db.moderationCard.findMany({
+      select: {
+        reasonCode: true,
+        sourceType: true,
+        status: true,
+        _count: { select: { sanctions: true, appeals: true, auditLogs: true } },
+      },
+    }),
+    db.notification.findMany({ select: { type: true, sourceType: true, title: true, body: true } }),
+    db.auditLog.findMany({ select: { reason: true, action: true, category: true, metadata: true } }),
+    db.provider.findMany({
+      select: {
+        id: true,
+        key: true,
+        type: true,
+        _count: { select: { importJobs: true, importRecords: true, rawPayloads: true } },
+      },
+    }),
+    db.importJob.groupBy({ by: ['providerId', 'kind', 'status'], _count: { _all: true } }),
+    db.competition.findMany({
+      select: {
+        _count: { select: { seasons: true, matches: true, standings: true, articles: true } },
+      },
+    }),
+    db.season.findMany({
+      select: { _count: { select: { stages: true, matches: true, standings: true } } },
+    }),
+  ]);
+  const countStatuses = (rows) =>
+    rows.reduce((acc, row) => {
+      acc[row.status] = (acc[row.status] ?? 0) + 1;
+      return acc;
+    }, {});
+  const countMarked = (rows, values) =>
+    rows.filter((row) => values(row).some((value) => typeof value === 'string' && marker.test(value)))
+      .length;
+  const providerClass = (key) =>
+    /(?:fake|mock|test|demo|seed)/i.test(key)
+      ? 'SYNTHETIC'
+      : /(?:ots|apa)/i.test(key)
+        ? 'OTS_APA'
+        : 'OTHER_OR_UNKNOWN';
+  const providerLookup = new Map(providers.map((p) => [p.id, providerClass(p.key)]));
+  const jobsByClass = jobGroups.reduce((acc, job) => {
+    const kind = providerLookup.get(job.providerId) ?? 'MISSING_PROVIDER';
+    acc[kind] = (acc[kind] ?? 0) + job._count._all;
+    return acc;
+  }, {});
+  console.log(
+    'PHASE021_DEV_RESIDUAL_METADATA=' +
+      JSON.stringify({
+        articles: {
+          total: articleMetadata.length,
+          byStatus: countStatuses(articleMetadata),
+          softDeleted: articleMetadata.filter((row) => row.deletedAt !== null).length,
+          imported: articleMetadata.filter((row) => row.importRecordId !== null).length,
+          withSource: articleMetadata.filter((row) => row.sourceId !== null).length,
+          linkedToClub: articleMetadata.filter((row) => row._count.clubs > 0).length,
+          withRevisions: articleMetadata.filter((row) => row._count.revisions > 0).length,
+          markedTitleOrSlug: countMarked(articleMetadata, (row) => [row.slug, row.title]),
+          authoredByMarkedAccount: countMarked(articleMetadata, (row) => [
+            row.author?.nickname,
+            row.author?.keycloakSubject,
+          ]),
+        },
+        users: {
+          total: userMetadata.length,
+          markedNicknameOrSubject: countMarked(userMetadata, (row) => [
+            row.nickname,
+            row.keycloakSubject,
+          ]),
+        },
+        media: {
+          total: mediaMetadata.length,
+          byStatus: countStatuses(mediaMetadata),
+          markedMetadata: countMarked(mediaMetadata, (row) => [
+            row.originalFileName,
+            row.altText,
+            row.source,
+          ]),
+          attached: mediaMetadata.filter(
+            (row) => Object.values(row._count).some((number) => number > 0),
+          ).length,
+        },
+        moderationCards: {
+          total: moderationMetadata.length,
+          markedReason: countMarked(moderationMetadata, (row) => [row.reasonCode]),
+          byStatus: countStatuses(moderationMetadata),
+          linkedToCommentSource: moderationMetadata.filter(
+            (row) => row.sourceType === 'COMMENT',
+          ).length,
+        },
+        notifications: {
+          total: notificationMetadata.length,
+          markedBodyOrTitle: countMarked(notificationMetadata, (row) => [row.title, row.body]),
+        },
+        auditLogs: {
+          total: auditMetadata.length,
+          markedReasonOrMetadata: countMarked(auditMetadata, (row) => [
+            row.reason,
+            JSON.stringify(row.metadata ?? {}),
+          ]),
+        },
+        import: {
+          providerClasses: providers.reduce((acc, provider) => {
+            const kind = providerClass(provider.key);
+            acc[kind] = (acc[kind] ?? 0) + 1;
+            return acc;
+          }, {}),
+          jobsByProviderClass: jobsByClass,
+          records: providers.reduce((sum, provider) => sum + provider._count.importRecords, 0),
+          payloads: providers.reduce((sum, provider) => sum + provider._count.rawPayloads, 0),
+        },
+        competition: {
+          total: competitionMetadata.length,
+          referencedByArticles: competitionMetadata.filter((row) => row._count.articles > 0).length,
+          seasons: seasonMetadata.length,
+          seasonsWithFixturesOrStandings: seasonMetadata.filter(
+            (row) => row._count.matches + row._count.standings > 0,
+          ).length,
+        },
+      }),
+  );
+
   console.log('PHASE021_DEV_AUDIT_EXECUTION=PASS_READ_ONLY');
   console.log(
     'PHASE021_DEV_CLEANLINESS=' +
