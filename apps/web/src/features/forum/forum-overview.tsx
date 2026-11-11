@@ -61,7 +61,13 @@ function isForumCategory(value: unknown): value is ForumCategory {
   );
 }
 
-function CategorySection({ category, detail = false }: { category: ForumCategory; detail?: boolean }) {
+function CategorySection({
+  category,
+  detail = false,
+}: {
+  category: ForumCategory;
+  detail?: boolean;
+}) {
   return (
     <section className={styles.category} aria-label={category.name}>
       <div className={styles.categoryHeader}>
