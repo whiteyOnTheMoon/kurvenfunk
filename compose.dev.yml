@@ -43,6 +43,8 @@ services:
   worker:
     environment:
       # Keep DEV empty after the authorized reset; no automatic re-import.
+      # Never fall back to the shared Compose fake-news provider in DEV.
+      NEWS_IMPORT_PROVIDER: 'ots'
       NEWS_IMPORT_SCHEDULER_ENABLED: 'false'
       SPORTS_FAKE_PROVIDER_ENABLED: 'false'
       SPORTS_IMPORT_SCHEDULER_ENABLED: 'false'
