@@ -1,10 +1,7 @@
 import type { Prisma } from '@kurvenfunk/database';
 import { ConflictException } from '@nestjs/common';
 
-import {
-  canonicalClubForumSlug,
-  provisionClubForum,
-} from './club-forum-provisioning';
+import { canonicalClubForumSlug, provisionClubForum } from './club-forum-provisioning';
 
 const findCategory = jest.fn();
 const findForums = jest.fn();
