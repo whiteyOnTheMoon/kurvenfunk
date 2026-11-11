@@ -106,6 +106,11 @@ jobs:
           node --check infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
           node --test infrastructure/scripts/verify/phase0-21-data-audit.test.mjs
           bash -n infrastructure/scripts/verify/dev-residual-services-readonly.sh
+          bash -n infrastructure/scripts/maintenance/dev-residual-reset.sh
+          bash -n infrastructure/scripts/maintenance/dev-residual-clear-keycloak.sh
+          node --check infrastructure/scripts/maintenance/dev-residual-clear-media.mjs
+          node --test infrastructure/scripts/maintenance/dev-residual-reset.test.mjs
+          python3 -c 'import ast,pathlib;ast.parse(pathlib.Path("infrastructure/scripts/maintenance/dev-residual-clear-http.py").read_text())'
           bash -n infrastructure/scripts/maintenance/dev-full-app-reset.sh
           node --test infrastructure/scripts/maintenance/dev-full-app-reset.test.mjs
           bash -n infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.sh
@@ -1176,6 +1181,82 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' PHASE021_CLEANUP_MODE=apply bash ./infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.sh"
+
+  dev-residual-reset-preflight:
+    name: DEV-only external data reset preflight (strictly read-only)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[dev-residual-plan]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: dev-complete-residual-reset
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure isolated DEV SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Validate exact DEV identity, mounts and disabled schedulers without modifying data
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' DEV_RESIDUAL_RESET_TARGET=DEV DEV_RESIDUAL_RESET_MODE=plan bash ./infrastructure/scripts/maintenance/dev-residual-reset.sh"
+
+  dev-residual-reset-apply:
+    name: DEV-only complete residual data reset (private backups, explicit approval)
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[dev-residual-reset]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: dev-complete-residual-reset
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure isolated DEV SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Back up and clear only isolated DEV application and sidecar data
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' DEV_RESIDUAL_RESET_TARGET=DEV DEV_RESIDUAL_RESET_MODE=apply DEV_RESIDUAL_RESET_CONFIRM=CLEAR_DEV_ONLY_RESIDUAL_DATA bash ./infrastructure/scripts/maintenance/dev-residual-reset.sh"
 
   dev-full-app-db-reset:
     name: Reset DEV application database with verified private backups
