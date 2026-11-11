@@ -1184,6 +1184,44 @@ jobs:
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' PHASE021_CLEANUP_MODE=apply bash ./infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.sh"
 
+  dev-keycloak-delete-plan:
+    name: Read-only DEV Keycloak candidate enumeration with SQL/API parity
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[dev-keycloak-cleanup-plan]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: dev-complete-residual-reset
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure DEV SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Compare and assess all DEV realm identities without deletion
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' DEV_KEYCLOAK_CLEAR_MODE=plan bash ./infrastructure/scripts/maintenance/dev-residual-clear-keycloak.sh"
+
   dev-residual-reset-preflight:
     name: DEV-only external data reset preflight (strictly read-only)
     needs:
