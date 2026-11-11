@@ -68,3 +68,12 @@ test('Meilisearch and Mailpit deletion preserve service configuration', () => {
   assert.match(http, /"IDs": \[\]/);
   assert.doesNotMatch(http, /delete index|DROP TABLE/i);
 });
+
+// Keep the quoted Bash argument simple: escaped SQL quote characters once made
+// to_regclass() look for a non-existent table and blocked a valid DEV preflight.
+test('DEV Prisma migration history preflight uses an unescaped literal relation name', () => {
+  assert.ok(shell.includes("to_regclass('public._prisma_migrations') IS NOT NULL"));
+  const checkLine = shell.split('\n').find((line) => line.includes('to_regclass('));
+  assert.ok(checkLine);
+  assert.doesNotMatch(checkLine, /\\\\/);
+});
