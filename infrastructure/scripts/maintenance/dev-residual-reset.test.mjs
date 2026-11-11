@@ -95,3 +95,14 @@ test('Keycloak supports a no-delete plan with SHA and DEV locks', () => {
   assert.match(keycloak, /origin\/develop/);
   assert.match(keycloak, /DEV_RESIDUAL_DELETE_CONFIRM/);
 });
+
+test('Keycloak role and deletion loops protect their private row cursors from docker stdin', () => {
+  assert.match(keycloak, /while read -r id state <&3; do/);
+  assert.match(keycloak, /done 3< "\$tmp\/list"/);
+  assert.match(keycloak, /while IFS= read -r id <&4; do/);
+  assert.match(keycloak, /done 4< "\$tmp\/delete"/);
+  assert.match(keycloak, /get-roles[^\n]*<\/dev\/null/);
+  assert.match(keycloak, /delete "users\/\$id" -r kurvenfunk <\/dev\/null/);
+  assert.match(keycloak, /KEYCLOAK_ROLE_CLASSIFICATION_INCOMPLETE/);
+  assert.match(keycloak, /DEV_KEYCLOAK_CLASSIFICATION_VERIFIED/);
+});

@@ -160,12 +160,12 @@ echo "DEV_KEYCLOAK_ENUMERATION_VERIFIED=$regular_before"
 # Fail closed on malformed role data; preserve any realm management or admin identity.
 : > "$tmp/delete"
 protected=0
-while read -r id state; do
+while read -r id state <&3; do
   if [[ "$state" == protect ]]; then
     protected=$((protected+1))
     continue
   fi
-  "${kc[@]}" get-roles -r kurvenfunk --uid "$id" --effective > "$tmp/roles.json"
+  "${kc[@]}" get-roles -r kurvenfunk --uid "$id" --effective </dev/null > "$tmp/roles.json"
   realm_role="$(python3 - "$tmp/roles.json" <<'PY'
 import json,sys
 with open(sys.argv[1]) as f:
@@ -181,7 +181,7 @@ PY
     protected=$((protected+1))
     continue
   fi
-  "${kc[@]}" get-roles -r kurvenfunk --uid "$id" --cclientid realm-management --effective > "$tmp/clientroles.json"
+  "${kc[@]}" get-roles -r kurvenfunk --uid "$id" --cclientid realm-management --effective </dev/null > "$tmp/clientroles.json"
   client_role="$(python3 - "$tmp/clientroles.json" <<'PY'
 import json,sys
 with open(sys.argv[1]) as f:
@@ -197,10 +197,18 @@ PY
     continue
   fi
   printf '%s\n' "$id" >> "$tmp/delete"
-done < "$tmp/list"
+done 3< "$tmp/list"
 
 planned="$(wc -l < "$tmp/delete" | tr -d '[:space:]')"
 [[ "$planned" =~ ^[0-9]+$ ]] || { echo 'ERROR: INVALID_DELETE_COUNT'; exit 1; }
+# Classification must cover every fully enumerated non-service identity.
+# A docker exec inheriting the loop stdin once caused only the first row to be processed.
+classified=$((protected + planned))
+[[ "$classified" -eq "$regular_before" ]] || {
+  echo "ERROR: KEYCLOAK_ROLE_CLASSIFICATION_INCOMPLETE; enumerated=$regular_before; classified=$classified"
+  exit 1
+}
+echo "DEV_KEYCLOAK_CLASSIFICATION_VERIFIED=$classified"
 echo "DEV_KEYCLOAK_PROTECTED_IDENTITIES=$protected"
 echo "DEV_KEYCLOAK_DELETE_CANDIDATES=$planned"
 if [[ "$MODE" == plan ]]; then
@@ -210,10 +218,10 @@ if [[ "$MODE" == plan ]]; then
   exit 0
 fi
 removed=0
-while IFS= read -r id; do
-  "${kc[@]}" delete "users/$id" -r kurvenfunk >/dev/null
+while IFS= read -r id <&4; do
+  "${kc[@]}" delete "users/$id" -r kurvenfunk </dev/null >/dev/null
   removed=$((removed+1))
-done < "$tmp/delete"
+done 4< "$tmp/delete"
 echo "DEV_KEYCLOAK_USERS_REMOVED=$removed"
 
 expected_remaining="$protected"
