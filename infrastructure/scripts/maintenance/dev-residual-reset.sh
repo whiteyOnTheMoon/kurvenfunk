@@ -78,7 +78,7 @@ app_tables="$(psql_app -At -c "SELECT count(*) FROM pg_tables WHERE schemaname='
 [[ "$app_tables" =~ ^[0-9]+$ && "$app_tables" -ge 20 ]] || {
   echo 'ERROR: DEV_APP_SCHEMA_UNEXPECTED'; exit 1;
 }
-psql_app -At -c "SELECT to_regclass('public.\\\"_prisma_migrations\\\"') IS NOT NULL" | grep -qx t || {
+psql_app -At -c "SELECT to_regclass('public._prisma_migrations') IS NOT NULL" | grep -qx t || {
   echo 'ERROR: PRISMA_HISTORY_MISSING'; exit 1;
 }
 master_users_before="$(psql_kc -At -c "SELECT count(*) FROM user_entity u JOIN realm r ON r.id=u.realm_id WHERE r.name='master'" | tr -d '\r[:space:]')"
