@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   COMMENT_DELETE: 'comment.delete',
   COMMENT_MODERATE: 'comment.moderate',
 
+  FORUM_MANAGE: 'forum.manage',
   THREAD_CREATE: 'thread.create',
   THREAD_REPLY: 'thread.reply',
   THREAD_LOCK: 'thread.lock',
