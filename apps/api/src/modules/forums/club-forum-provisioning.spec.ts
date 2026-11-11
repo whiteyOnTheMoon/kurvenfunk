@@ -121,20 +121,18 @@ describe('Task 22.210 deterministic club forum provisioning', () => {
         },
       }),
     );
-    expect(writeAudit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          actorUserId: actor,
-          targetId: forum.id,
-          metadata: {
-            entity: 'CLUB_FORUM',
-            operation: 'CREATE',
-            clubId: club.id,
-            categoryId: forum.categoryId,
-            slug: forum.slug,
-          },
-        }),
-      }),
-    );
+    expect(writeAudit).toHaveBeenCalledTimes(1);
+    const auditInput = writeAudit.mock.calls[0]?.[0] as {
+      data: { actorUserId: string; targetId: string; metadata: unknown };
+    };
+    expect(auditInput.data.actorUserId).toBe(actor);
+    expect(auditInput.data.targetId).toBe(forum.id);
+    expect(auditInput.data.metadata).toEqual({
+      entity: 'CLUB_FORUM',
+      operation: 'CREATE',
+      clubId: club.id,
+      categoryId: forum.categoryId,
+      slug: forum.slug,
+    });
   });
 });
