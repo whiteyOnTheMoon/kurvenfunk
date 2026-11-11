@@ -42,6 +42,12 @@ export {
   type UpdateCategoryInput,
 } from './category.js';
 export {
+  createForumCategorySchema,
+  updateForumCategorySchema,
+  type CreateForumCategoryInput,
+  type UpdateForumCategoryInput,
+} from './forum-category.js';
+export {
   createTagSchema,
   updateTagSchema,
   type CreateTagInput,
