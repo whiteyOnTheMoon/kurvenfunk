@@ -17,7 +17,8 @@ test('read-only Keycloak diagnostic guards DEV and emits aggregates', () => {
   assert.match(shell, /get users -r kurvenfunk --offset 0 --limit 200/);
   assert.match(shell, /get users -r kurvenfunk -q first=0 -q max=200/);
   assert.match(shell, /KEYCLOAK_ADMIN_COUNT_ENDPOINT/);
-  assert.doesNotMatch(shell, /kcadm\.sh delete|TRUNCATE|DROP DATABASE|FLUSHDB/);
+  assert.doesNotMatch(shell, /kcadm\.sh delete|TRUNCATE|FLUSHDB/);
+  assert.doesNotMatch(shell, /DROP DATABASE/);
   assert.match(inventory, /KEYCLOAK_DEV_NON_SERVICE_NON_ADMINLIKE_USERS/);
   assert.match(inventory, /DEV_KEYCLOAK_DIAG_TARGET=DEV/);
 });
