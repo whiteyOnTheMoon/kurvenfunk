@@ -104,7 +104,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       if (database) {
         // Clean only this suite's records, and only in disposable local E2E PostgreSQL.
         await database.auditLog.deleteMany({
-          where: { targetType: 'SYSTEM', targetId: { in: [...forums, ...clubs, ...(categoryId ? [categoryId] : [])] } },
+          where: {
+            targetType: 'SYSTEM',
+            targetId: { in: [...forums, ...clubs, ...(categoryId ? [categoryId] : [])] },
+          },
         });
         if (forums.length) await database.forum.deleteMany({ where: { id: { in: forums } } });
         if (clubs.length) await database.club.deleteMany({ where: { id: { in: clubs } } });
@@ -149,7 +152,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .post('/api/v1/forums/clubs/' + club.id + '/ensure')
       .set('Authorization', 'Bearer ' + admin)
       .expect(409);
-    await request(app.getHttpServer()).get('/api/v1/forums/clubs/' + firstSlug).expect(404);
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/clubs/' + firstSlug)
+      .expect(404);
   });
 
   it('denies anonymous and non-admin provisioning', async () => {
@@ -198,9 +203,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const publicCategories = await request(app.getHttpServer())
       .get('/api/v1/forums/categories')
       .expect(200);
-    expect(dataOf<{ forums: { club: { id: string } }[] }[]>(publicCategories)[0]?.forums[0]?.club.id).toBe(
-      clubs[0],
-    );
+    expect(
+      dataOf<{ forums: { club: { id: string } }[] }[]>(publicCategories)[0]?.forums[0]?.club.id,
+    ).toBe(clubs[0]);
     const audit = await database.auditLog.count({
       where: {
         targetType: 'SYSTEM',
@@ -244,8 +249,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .get('/api/v1/forums/categories')
       .expect(200);
     const items = dataOf<{ forums: { club: { id: string } }[] }[]>(publicCategories);
-    expect(items.flatMap((category) => category.forums).some((item) => item.club.id === clubs[1])).toBe(
-      false,
-    );
+    expect(
+      items.flatMap((category) => category.forums).some((item) => item.club.id === clubs[1]),
+    ).toBe(false);
   });
 });
