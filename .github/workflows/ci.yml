@@ -58,15 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary inspect canonical formatting of DEV cleanup files
-        run: |
-          echo BEGIN_CANONICAL_CLEANUP
-          pnpm exec prettier infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.mjs
-          echo END_CANONICAL_CLEANUP
-          echo BEGIN_CANONICAL_CLEANUP_TEST
-          pnpm exec prettier infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.test.mjs
-          echo END_CANONICAL_CLEANUP_TEST
-
       - name: Check formatting
         run: pnpm format:check
 
