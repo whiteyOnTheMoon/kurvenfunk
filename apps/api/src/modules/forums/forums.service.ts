@@ -5,10 +5,7 @@ import {
   NotFoundException,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import type {
-  CreateForumCategoryInput,
-  UpdateForumCategoryInput,
-} from '@kurvenfunk/validation';
+import type { CreateForumCategoryInput, UpdateForumCategoryInput } from '@kurvenfunk/validation';
 
 const publicCategorySelect = {
   id: true,
