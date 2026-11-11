@@ -449,9 +449,7 @@ try {
         },
         notices: {
           marked: markedNotices.length,
-          sentToMarkedUsers: count(markedNotices, (n) =>
-            markedUserIds.includes(n.userId),
-          ),
+          sentToMarkedUsers: count(markedNotices, (n) => markedUserIds.includes(n.userId)),
           withSource: count(markedNotices, (n) => n.sourceType !== null),
         },
         articles: {
@@ -466,9 +464,7 @@ try {
             (a) => a.deletedAt !== null && a.importRecordId !== null,
           ),
           withOriginalUrl: count(articles, (a) => a.originalUrl !== null),
-          authoredByMarkedUsers: count(articles, (a) =>
-            markedUserIds.includes(a.authorId),
-          ),
+          authoredByMarkedUsers: count(articles, (a) => markedUserIds.includes(a.authorId)),
           withRevisions: count(articles, (a) => a._count.revisions > 0),
           withComments: count(articles, (a) => a._count.comments > 0),
         },
