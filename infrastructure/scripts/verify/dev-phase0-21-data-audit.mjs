@@ -393,145 +393,84 @@ try {
       }),
   );
 
-  // Follow-up: metadata-only relationship classification of flagged residuals.
-  // Never emit subjects, nicknames, titles, bodies, dates, IDs or other row values.
-  const [identityDetails, noticeDetails, articleDetails] = await Promise.all([
-    db.user.findMany({
-      select: {
-        id: true,
-        nickname: true,
-        keycloakSubject: true,
-        status: true,
-        onboardingCompleted: true,
-        _count: {
-          select: {
-            articles: true,
-            roleAssignments: true,
-            moderationCardsReceived: true,
-            moderationCardsIssued: true,
-            notificationsReceived: true,
-            auditEventsAsActor: true,
-            auditEventsAsTarget: true,
-            comments: true,
-            reactions: true,
-            importRecordsReviewed: true,
-          },
+  // Follow-up: metadata only, with no identifiers or private text in logs.
+  const identities = await db.user.findMany({
+    select: {
+      id: true,
+      nickname: true,
+      keycloakSubject: true,
+      status: true,
+      _count: {
+        select: {
+          roleAssignments: true,
+          articles: true,
+          moderationCardsReceived: true,
+          notificationsReceived: true,
         },
       },
-    }),
-    db.notification.findMany({
-      select: {
-        title: true,
-        body: true,
-        type: true,
-        sourceType: true,
-        sourceId: true,
-        userId: true,
-        actorUserId: true,
-        readAt: true,
-      },
-    }),
-    db.article.findMany({
-      select: {
-        status: true,
-        deletedAt: true,
-        importRecordId: true,
-        importRecord: {
-          select: {
-            provider: { select: { type: true } },
-          },
-        },
-        authorId: true,
-        originalUrl: true,
-        competitionId: true,
-        matchId: true,
-        _count: {
-          select: {
-            revisions: true,
-            comments: true,
-          },
-        },
-      },
-    }),
-  ]);
-  const flaggedIdentities = identityDetails.filter(
-    (user) => marker.test(user.nickname ?? '') || marker.test(user.keycloakSubject ?? ''),
+    },
+  });
+  const markedUsers = identities.filter(
+    (u) => marker.test(u.nickname ?? '') || marker.test(u.keycloakSubject ?? ''),
   );
-  const flaggedIds = new Set(flaggedIdentities.map((user) => user.id));
-  const flaggedNotices = noticeDetails.filter(
-    (note) => marker.test(note.title ?? '') || marker.test(note.body ?? ''),
+  const markedUserIds = markedUsers.map((u) => u.id);
+  const notices = await db.notification.findMany({
+    select: {
+      type: true,
+      sourceType: true,
+      userId: true,
+      title: true,
+      body: true,
+    },
+  });
+  const markedNotices = notices.filter(
+    (n) => marker.test(n.title ?? '') || marker.test(n.body ?? ''),
   );
-  const countOf = (arr, predicate) => arr.filter(predicate).length;
-  const byField = (arr, field) =>
-    arr.reduce((acc, row) => {
-      const key = row[field] ?? 'NULL';
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {});
-  const flaggedIdentityRelationCounts = flaggedIdentities.reduce((acc, user) => {
-    for (const [key, count] of Object.entries(user._count)) {
-      acc[key] = (acc[key] ?? 0) + count;
-    }
-    return acc;
-  }, {});
+  const articles = await db.article.findMany({
+    select: {
+      status: true,
+      deletedAt: true,
+      importRecordId: true,
+      originalUrl: true,
+      authorId: true,
+      _count: { select: { revisions: true, comments: true } },
+    },
+  });
+  const count = (items, predicate) => items.filter(predicate).length;
   console.log(
     'PHASE021_DEV_FOCUSED_PROVENANCE=' +
       JSON.stringify({
-        flaggedAccounts: {
-          total: flaggedIdentities.length,
-          markerInNickname: countOf(flaggedIdentities, (u) => marker.test(u.nickname ?? '')),
-          markerInSubject: countOf(flaggedIdentities, (u) =>
-            marker.test(u.keycloakSubject ?? ''),
-          ),
-          active: countOf(flaggedIdentities, (u) => u.status === 'ACTIVE'),
-          onboarded: countOf(flaggedIdentities, (u) => u.onboardingCompleted),
-          withAnyRelations: countOf(flaggedIdentities, (u) =>
-            Object.values(u._count).some((count) => count > 0),
-          ),
-          relationCounts: flaggedIdentityRelationCounts,
+        accounts: {
+          marked: markedUsers.length,
+          withRoles: count(markedUsers, (u) => u._count.roleAssignments > 0),
+          withArticles: count(markedUsers, (u) => u._count.articles > 0),
+          withCards: count(markedUsers, (u) => u._count.moderationCardsReceived > 0),
+          withNotices: count(markedUsers, (u) => u._count.notificationsReceived > 0),
         },
-        flaggedNotifications: {
-          total: flaggedNotices.length,
-          byType: byField(flaggedNotices, 'type'),
-          bySourceType: byField(flaggedNotices, 'sourceType'),
-          withSourceId: countOf(flaggedNotices, (n) => n.sourceId !== null),
-          addressedToFlaggedAccount: countOf(flaggedNotices, (n) => flaggedIds.has(n.userId)),
-          actorIsFlaggedAccount: countOf(
-            flaggedNotices,
-            (n) => n.actorUserId !== null && flaggedIds.has(n.actorUserId),
+        notices: {
+          marked: markedNotices.length,
+          sentToMarkedUsers: count(markedNotices, (n) =>
+            markedUserIds.includes(n.userId),
           ),
-          read: countOf(flaggedNotices, (n) => n.readAt !== null),
+          withSource: count(markedNotices, (n) => n.sourceType !== null),
         },
-        softDeletedArticles: {
-          total: articleDetails.length,
-          softDeleted: countOf(articleDetails, (a) => a.deletedAt !== null),
-          publishedAndDeleted: countOf(
-            articleDetails,
-            (a) => a.status === 'PUBLISHED' && a.deletedAt !== null,
+        articles: {
+          total: articles.length,
+          deleted: count(articles, (a) => a.deletedAt !== null),
+          deletedPublished: count(
+            articles,
+            (a) => a.deletedAt !== null && a.status === 'PUBLISHED',
           ),
-          importedAndDeleted: countOf(
-            articleDetails,
-            (a) => a.importRecordId !== null && a.deletedAt !== null,
+          deletedImported: count(
+            articles,
+            (a) => a.deletedAt !== null && a.importRecordId !== null,
           ),
-          withOriginalUrl: countOf(articleDetails, (a) => a.originalUrl !== null),
-          withAuthor: countOf(articleDetails, (a) => a.authorId !== null),
-          withFlaggedAuthor: countOf(
-            articleDetails,
-            (a) => a.authorId !== null && flaggedIds.has(a.authorId),
+          withOriginalUrl: count(articles, (a) => a.originalUrl !== null),
+          authoredByMarkedUsers: count(articles, (a) =>
+            markedUserIds.includes(a.authorId),
           ),
-          withRevision: countOf(articleDetails, (a) => a._count.revisions > 0),
-          withComments: countOf(articleDetails, (a) => a._count.comments > 0),
-          linkedToCompetitionOrMatch: countOf(
-            articleDetails,
-            (a) => a.competitionId !== null || a.matchId !== null,
-          ),
-          importedByProviderType: articleDetails.reduce((acc, a) => {
-            if (a.importRecordId === null) return acc;
-            const category = a.importRecord?.provider?.type ?? 'UNKNOWN';
-            acc[category] = (acc[category] ?? 0) + 1;
-            return acc;
-          }, {}),
-          byStatus: byField(articleDetails, 'status'),
+          withRevisions: count(articles, (a) => a._count.revisions > 0),
+          withComments: count(articles, (a) => a._count.comments > 0),
         },
       }),
   );
