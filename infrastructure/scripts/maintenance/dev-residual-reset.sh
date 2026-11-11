@@ -71,7 +71,7 @@ psql_app() {
 }
 psql_kc() {
   "${compose[@]}" exec -T postgres sh -ec \
-    'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" "$@"' \
+    'db="$1"; shift; PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$db" "$@"' \
     sh "$kc_db" "${@}"
 }
 app_tables="$(psql_app -At -c "SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations'" | tr -d '\r[:space:]')"
@@ -185,19 +185,15 @@ DEV_RESIDUAL_DELETE_CONFIRM=CLEAR_DEV_ONLY_RESIDUAL_DATA \
   bash infrastructure/scripts/maintenance/dev-residual-clear-keycloak.sh
 
 # Keep the bucket, API keys and policies; delete all versions/objects/multipart uploads.
-"${compose[@]}" start api >/dev/null
-wait_health api
-"${compose[@]}" exec -T -e DEV_RESIDUAL_DELETE_CONFIRM=CLEAR_DEV_ONLY_RESIDUAL_DATA \
+"${compose[@]}" run --rm --no-deps -T -e DEV_RESIDUAL_DELETE_CONFIRM=CLEAR_DEV_ONLY_RESIDUAL_DATA \
   api node --input-type=module < infrastructure/scripts/maintenance/dev-residual-clear-media.mjs
-"${compose[@]}" stop api >/dev/null
 
 python3 infrastructure/scripts/maintenance/dev-residual-clear-http.py CLEAR_DEV_ONLY_RESIDUAL_DATA
 
 # Re-clear application rows in case any authentication re-created them since PR #141.
 psql_app -q < infrastructure/scripts/maintenance/dev-full-app-reset.sql
-psql_app -At -c 'SELECT count(*) FROM "User" UNION ALL SELECT count(*) FROM "Article" UNION ALL SELECT count(*) FROM "ImportJob"' | grep -Ev '^0$' | {
-  if read -r leftover; then echo 'ERROR: APPLICATION_DATA_REAPPEARED'; exit 1; fi
-}
+app_counts="$(psql_app -At -c 'SELECT count(*) FROM "User" UNION ALL SELECT count(*) FROM "Article" UNION ALL SELECT count(*) FROM "ImportJob"')"
+[[ "$app_counts" == $'0\n0\n0' ]] || { echo 'ERROR: APPLICATION_DATA_REAPPEARED'; exit 1; }
 master_users_after="$(psql_kc -At -c "SELECT count(*) FROM user_entity u JOIN realm r ON r.id=u.realm_id WHERE r.name='master'" | tr -d '\r[:space:]')"
 [[ "$master_users_after" == "$master_users_before" ]] || {
   echo 'ERROR: KEYCLOAK_MASTER_ADMIN_CHANGED'; exit 1;
