@@ -118,6 +118,11 @@ psql_app -q < infrastructure/scripts/maintenance/dev-full-app-reset.sql
 "${compose[@]}" exec -T redis sh -ec \
   'REDISCLI_AUTH="$REDIS_PASSWORD" exec redis-cli DBSIZE' | tr -d '\r' | grep -qx 0
 
+# Re-enable normal DEV reads; the DEV news scheduler stays disabled.
+"${compose[@]}" start api worker
+services_stopped=NO
+EXPECTED_COMMIT="$EXPECTED_COMMIT" bash infrastructure/scripts/verify/dev-phase0-21-data-audit.sh
+
 echo "DEV_APP_RESET_RESULT=APPLICATION_TABLES_EMPTY_AND_REDIS_CLEARED"
 echo "DEV_APP_RESET_SCOPE=DEV_ONLY; keycloak=UNCHANGED; migrations=PRESERVED"
 echo "DEV_APP_RESET_BACKUPS=PRIVATE_AND_RETAINED"
