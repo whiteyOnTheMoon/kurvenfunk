@@ -51,10 +51,10 @@ try {
     const page = await client.send(
       new ListObjectVersionsCommand({ Bucket: bucket, MaxKeys: 1000 }),
     );
-    const entries = [
-      ...(page.Versions ?? []),
-      ...(page.DeleteMarkers ?? []),
-    ].map((v) => ({ Key: v.Key, VersionId: v.VersionId }));
+    const entries = [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])].map((v) => ({
+      Key: v.Key,
+      VersionId: v.VersionId,
+    }));
     if (!entries.length) break;
     await deleteBatch(entries);
     versionsRemoved += entries.length;
@@ -62,9 +62,7 @@ try {
   passes = 0;
   while (true) {
     if (++passes > 100000) throw new Error('MINIO_OBJECT_CLEAR_LIMIT');
-    const page = await client.send(
-      new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1000 }),
-    );
+    const page = await client.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1000 }));
     const entries = (page.Contents ?? []).map((v) => ({ Key: v.Key }));
     if (!entries.length) break;
     await deleteBatch(entries);
@@ -92,9 +90,7 @@ try {
   const finalVersions = await client.send(
     new ListObjectVersionsCommand({ Bucket: bucket, MaxKeys: 1 }),
   );
-  const finalObjects = await client.send(
-    new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }),
-  );
+  const finalObjects = await client.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
   const finalUploads = await client.send(
     new ListMultipartUploadsCommand({ Bucket: bucket, MaxUploads: 1 }),
   );
