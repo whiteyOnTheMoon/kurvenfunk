@@ -105,6 +105,8 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase0-21-data-audit.sh
           node --check infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
           node --test infrastructure/scripts/verify/phase0-21-data-audit.test.mjs
+          bash -n infrastructure/scripts/maintenance/dev-full-app-reset.sh
+          node --test infrastructure/scripts/maintenance/dev-full-app-reset.test.mjs
           bash -n infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.sh
           node --check infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.mjs
           node --test infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.test.mjs
@@ -1135,6 +1137,44 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' PHASE021_CLEANUP_MODE=apply bash ./infrastructure/scripts/maintenance/dev-phase0-21-synthetic-cleanup.sh"
+
+  dev-full-app-db-reset:
+    name: Reset DEV application database with verified private backups
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[dev-full-app-reset]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: dev-full-app-db-reset
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure pinned DEV-only SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kurvenfunk_dev
+          chmod 600 ~/.ssh/kurvenfunk_dev
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Reset only DEV application data after exact SHA, locks and verified backups
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' DEV_FULL_RESET_TARGET=DEV DEV_FULL_RESET_MODE=apply DEV_FULL_RESET_CONFIRM=RESET_ALL_DEV_APPLICATION_DATA bash ./infrastructure/scripts/maintenance/dev-full-app-reset.sh"
 
   phase21-dev-seed-cleanup:
     name: Phase 21 DEV guarded seed cleanup (private backup, exact fingerprints)
