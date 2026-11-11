@@ -26,10 +26,14 @@ echo 'DEV_PHASE22_210_ABSENT_CLUB_HTTP=404'
 # The administrative ensure endpoint must deny anonymous callers.
 ensure_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \
   -X POST http://127.0.0.1:3101/api/v1/forums/clubs/11111111-1111-4111-8111-111111111111/ensure)"
-[[ "$ensure_status" == 401 ]] || {
-  echo 'ERROR: PHASE22_210_ADMIN_ENSURE_EXPOSED'; exit 1;
+# A direct loopback POST intentionally fails *before* the auth guard:
+# IP_RATE_LIMIT_ENABLED requires a verified Cloudflare Tunnel socket peer.
+# Do not spoof CF-Connecting-IP or bypass the fail-closed 503 protection.
+# A valid trusted-peer 401 and role denials are covered by isolated HTTP E2E.
+[[ "$ensure_status" == 503 ]] || {
+  echo "ERROR: PHASE22_210_LOOPBACK_WRITE_GUARD_MISMATCH; observed=$ensure_status"; exit 1;
 }
-echo 'DEV_PHASE22_210_ANON_ENSURE_HTTP=401'
+echo 'DEV_PHASE22_210_UNTRUSTED_WRITE_HTTP=503_FAIL_CLOSED'
 
 # Web route renders a safe, truthful no-club state.
 page_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \
