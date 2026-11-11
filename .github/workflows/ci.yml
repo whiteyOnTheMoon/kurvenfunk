@@ -59,10 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: |
-          # Temporary: print the expected Prettier output for the new diagnostics test.
-          pnpm exec prettier infrastructure/scripts/verify/dev-keycloak-admin-readonly.test.mjs
-          pnpm format:check
+        run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |
