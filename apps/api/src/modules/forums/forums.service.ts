@@ -16,7 +16,10 @@ const publicCategorySelect = {
   description: true,
   sortOrder: true,
   forums: {
-    where: { active: true },
+    where: {
+      active: true,
+      OR: [{ clubId: null }, { club: { is: { active: true } } }],
+    },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: {
       id: true,
