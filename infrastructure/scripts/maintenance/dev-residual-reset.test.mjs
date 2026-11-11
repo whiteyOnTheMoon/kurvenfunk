@@ -77,3 +77,21 @@ test('DEV Prisma migration history preflight uses an unescaped literal relation 
   assert.ok(checkLine);
   assert.doesNotMatch(checkLine, /\\\\/);
 });
+
+test('Keycloak fails closed when SQL, Admin count or both listings disagree', () => {
+  assert.match(keycloak, /DEV_KEYCLOAK_SQL_REGULAR_BEFORE/);
+  assert.match(keycloak, /get users\/count -r kurvenfunk/);
+  assert.match(keycloak, /get users -r kurvenfunk --offset/);
+  assert.match(keycloak, /get users -r kurvenfunk -q first=0 -q max=200/);
+  assert.match(keycloak, /KEYCLOAK_ENUMERATION_NOT_COMPLETE/);
+  assert.match(keycloak, /KEYCLOAK_REGULAR_USERS_REMAIN_AFTER_DELETE/);
+  assert.match(keycloak, /DEV_KEYCLOAK_CLEAR_RESULT=PASS_VERIFIED/);
+});
+
+test('Keycloak supports a no-delete plan with SHA and DEV locks', () => {
+  assert.match(keycloak, /DEV_KEYCLOAK_CLEAR_MODE/);
+  assert.match(keycloak, /DEV_KEYCLOAK_PLAN_RESULT=PASS_READ_ONLY_NO_MUTATION/);
+  assert.match(keycloak, /EXPECTED_COMMIT/);
+  assert.match(keycloak, /origin\/develop/);
+  assert.match(keycloak, /DEV_RESIDUAL_DELETE_CONFIRM/);
+});
