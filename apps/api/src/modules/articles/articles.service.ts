@@ -1165,10 +1165,7 @@ export class ArticlesService implements OnModuleDestroy {
           isTopNews: false,
           ...(options.competitionId
             ? {
-                OR: [
-                  { competitionId: null },
-                  { competitionId: { not: options.competitionId } },
-                ],
+                OR: [{ competitionId: null }, { competitionId: { not: options.competitionId } }],
               }
             : {}),
         },
