@@ -7,7 +7,7 @@ Stand: 11.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | Masterplan | Inhalt | Vorgehen | Nachweisstatus |
 | --- | --- | --- | --- |
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
-| 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Implementierung in Arbeit (PR nach CI)** |
+| 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code in `develop` integriert (PR #158/#159), PR-CI #43076528691 PASS; DEV-Endabnahme offen (Issue #160)** |
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | Ausstehend |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | Ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
@@ -35,7 +35,16 @@ Stand: 11.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Es gibt keine neue Migration: `Forum` besitzt `clubId`, `categoryId` und `slug UNIQUE` bereits. AuditLog, Rollenberechtigungen und DEV-Read-only-Marker werden wiederverwendet.
 - Die isolierte E2E-Suite legt Test-Vereine und eine Testkategorie **nur** in einer temporären, lokalen PostgreSQL/Redis-Umgebung an und löscht diese danach. Dies ist ausdrücklich kein DEV-Seed.
 
-**Abnahme 210 bleibt offen**, bis die CI, ein DEV-only-Live-HTTP-Gate, ein realer Admin-Provisionierungsflow und mobile Browserprüfungen nachweisbar erfolgreich sind.
+### Tatsächlicher Integrations- und Abnahmestand (11.11.2026)
+
+- [PR #158](https://github.com/whiteyOnTheMoon/kurvenfunk/pull/158) **gemergt** auf `develop` (Merge `0d4c729dbccd337be35489cdffe22f0d388b09df`): Vereinsforum-Provisionierung, Admin-Ensure, öffentliche Read-Routen, Vereinslinks, isolierte HTTP-/DB-Tests.
+- [Erster DEV-Push-Lauf #43075157506](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43075157506): nach PR-#159-Befund Deploy und Startseiten-/Kategorienprüfungen erfolgreich, Task-210-HTTP-Smoke **fehlgeschlagen** wegen falscher erwarteter 401 bei nicht vertrauenswürdigem localhost-POST.
+- [PR #159](https://github.com/whiteyOnTheMoon/kurvenfunk/pull/159) **gemergt** (Merge `8495ccc1df00829fce100c7f82d3df0abd00dffe`): rein lesender DEV-Smoke akzeptiert den sicherheitskorrekten **503 fail-closed** statt 401. Keine Schutzumgehung, keine DB-Mutation.
+- [PR-CI #43076528691](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43076528691) für #159: **completed/success**.
+- **Noch kein unabhängig verifizierter Gesamt-PASS des DEV-Push-Laufs nach #159**; keine Aussage über bestandene reale Tunnel-Admin-RBAC- und Mobilbrowser-Abnahme.
+- Alle fehlenden Nachweise werden in [Issue #160](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/160) einzeln geführt.
+
+**Abnahme 210 bleibt offen**, bis die vollständige DEV-Deployment-/HTTP-Prüfung, ein realer Admin-Provisionierungsflow über den vertrauenswürdigen Tunnel und mobile Browserprüfungen nachweisbar erfolgreich sind.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 
