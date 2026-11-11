@@ -17,8 +17,15 @@ git fetch -q origin develop
 [[ "$(git rev-parse origin/develop)" == "$EXPECTED_COMMIT" ]] || {
   echo 'ERROR: DEV_STORAGE_REMOTE_MOVED'; exit 1;
 }
+# Independent read-only audit jobs may run together on one DEV push.
+# Wait a bounded time for a sibling inventory to release its shared lock.
 exec 9>/tmp/kurvenfunk-dev-deploy.lock
-flock -n 9 || { echo 'ERROR: DEV_DEPLOY_BUSY'; exit 1; }
+flock -w 180 9 || { echo 'ERROR: DEV_DEPLOY_LOCK_TIMEOUT'; exit 1; }
+# The DEV checkout may have moved while waiting; fail closed after acquiring the lock.
+[[ -z "$(git status --porcelain)" && "$(git rev-parse HEAD)" == "$EXPECTED_COMMIT" &&
+   "$(git rev-parse origin/develop)" == "$EXPECTED_COMMIT" ]] || {
+  echo 'ERROR: DEV_STORAGE_HEAD_MOVED_DURING_WAIT'; exit 1;
+}
 exec 8>/tmp/kurvenfunk-dev-full-application-reset.lock
 flock -n 8 || { echo 'ERROR: DEV_APP_RESET_BUSY'; exit 1; }
 exec 6>/tmp/kurvenfunk-dev-residual-reset.lock
