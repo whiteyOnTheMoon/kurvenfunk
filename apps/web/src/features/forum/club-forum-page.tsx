@@ -87,7 +87,9 @@ export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: 
           Das Vereinsforum ist derzeit nicht erreichbar.
         </p>
       ) : notFound || !forum ? (
-        <p className={styles.status}>Für diesen Verein ist noch kein öffentliches Forum eingerichtet.</p>
+        <p className={styles.status}>
+          Für diesen Verein ist noch kein öffentliches Forum eingerichtet.
+        </p>
       ) : (
         <section className={styles.category}>
           <div className={styles.categoryHeader}>
