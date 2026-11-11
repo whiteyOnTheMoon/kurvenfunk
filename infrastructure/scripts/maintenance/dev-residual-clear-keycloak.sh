@@ -69,10 +69,11 @@ kc=( "${compose[@]}" exec -T keycloak /opt/keycloak/bin/kcadm.sh )
 # Never delete based on an incomplete cache/pagination result.
 kc_url="$("${compose[@]}" exec -T keycloak printenv KC_DB_URL | tr -d '\r')"
 app_db="$("${compose[@]}" exec -T postgres printenv POSTGRES_DB | tr -d '\r')"
-[[ "$kc_url" =~ ^jdbc:postgresql://postgres:5432/([A-Za-z0-9_]+)$ && "$app_db" =~ ^[A-Za-z0-9_]+$ ]] || {
+[[ "$kc_url" =~ ^jdbc:postgresql://postgres:5432/([A-Za-z0-9_]+)$ ]] || {
   echo 'ERROR: INVALID_KEYCLOAK_DB_TARGET'; exit 1;
 }
 kc_db="${BASH_REMATCH[1]}"
+[[ "$app_db" =~ ^[A-Za-z0-9_]+$ ]] || { echo 'ERROR: INVALID_DEV_APP_DB'; exit 1; }
 [[ "$kc_db" != "$app_db" ]] || { echo 'ERROR: KEYCLOAK_DB_NOT_ISOLATED'; exit 1; }
 count_regular_sql() {
   "${compose[@]}" exec -T postgres sh -ec '
