@@ -84,7 +84,10 @@ describe('ForumsService – 22.209 categories', () => {
         description: true,
         sortOrder: true,
         forums: {
-          where: { active: true },
+          where: {
+            active: true,
+            OR: [{ clubId: null }, { club: { is: { active: true } } }],
+          },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           select: {
             id: true,
@@ -114,7 +117,10 @@ describe('ForumsService – 22.209 categories', () => {
         description: true,
         sortOrder: true,
         forums: {
-          where: { active: true },
+          where: {
+            active: true,
+            OR: [{ clubId: null }, { club: { is: { active: true } } }],
+          },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           select: {
             id: true,
