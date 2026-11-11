@@ -432,7 +432,7 @@ describe('ArticlesService', () => {
   });
 
   it('builds a club startpage for a fan with a valid favorite club', async () => {
-    findCompetition.mockResolvedValue({
+    findUniqueCompetition.mockResolvedValue({
       id: competitionId,
       name: 'Österreichische Bundesliga',
       shortName: 'Bundesliga',
@@ -458,7 +458,7 @@ describe('ArticlesService', () => {
       limit: 3,
     });
 
-    expect(findCompetition).toHaveBeenCalledWith({
+    expect(findUniqueCompetition).toHaveBeenCalledWith({
       where: {
         slug: 'austrian-bundesliga',
       },
@@ -489,7 +489,7 @@ describe('ArticlesService', () => {
       shortName: 'Rapid',
       slug: 'sk-rapid-wien',
     });
-    expect(result.competition.slug).toBe('austrian-bundesliga');
+    expect(result.competition?.slug).toBe('austrian-bundesliga');
     expect(result.articles.map((item) => item.priority)).toEqual([
       'FAVORITE_CLUB',
       'COMPETITION',
@@ -498,7 +498,7 @@ describe('ArticlesService', () => {
   });
 
   it('builds a neutral startpage for a neutral user', async () => {
-    findCompetition.mockResolvedValue({
+    findUniqueCompetition.mockResolvedValue({
       id: competitionId,
       name: 'Österreichische Bundesliga',
       shortName: 'Bundesliga',
@@ -528,7 +528,7 @@ describe('ArticlesService', () => {
   });
 
   it('treats an unset fan preference as neutral', async () => {
-    findCompetition.mockResolvedValue({
+    findUniqueCompetition.mockResolvedValue({
       id: competitionId,
       name: 'Österreichische Bundesliga',
       shortName: 'Bundesliga',
@@ -550,7 +550,7 @@ describe('ArticlesService', () => {
   });
 
   it('falls back to the neutral startpage when the favorite club no longer exists', async () => {
-    findCompetition.mockResolvedValue({
+    findUniqueCompetition.mockResolvedValue({
       id: competitionId,
       name: 'Österreichische Bundesliga',
       shortName: 'Bundesliga',
@@ -578,7 +578,7 @@ describe('ArticlesService', () => {
   });
 
   it('passes the requested startpage limit through to the ranking query', async () => {
-    findCompetition.mockResolvedValue({
+    findUniqueCompetition.mockResolvedValue({
       id: competitionId,
       name: 'Österreichische Bundesliga',
       shortName: 'Bundesliga',
@@ -614,6 +614,58 @@ describe('ArticlesService', () => {
     );
   });
 
+
+  it('returns a valid empty neutral startpage when the competition table is empty', async () => {
+    findUniqueCompetition.mockResolvedValue(null);
+    findMany.mockResolvedValue([]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'NEUTRAL',
+      favoriteClubId: null,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 20,
+    });
+
+    expect(result).toEqual({
+      variant: 'NEUTRAL',
+      favoriteClub: null,
+      competition: null,
+      articles: [],
+    });
+    expect(findUniqueCompetition).toHaveBeenCalledWith({
+      where: { slug: 'austrian-bundesliga' },
+      select: { id: true, name: true, shortName: true, slug: true },
+    });
+    expect(findClub).not.toHaveBeenCalled();
+    expect(findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses only real published news without inventing a missing competition', async () => {
+    findUniqueCompetition.mockResolvedValue(null);
+    findMany
+      .mockResolvedValueOnce([article('top-1', '2026-08-14T15:00:00.000Z')])
+      .mockResolvedValueOnce([article('recent-1', '2026-08-14T14:00:00.000Z')]);
+
+    const result = await service.getStartpageNews({
+      fanPreference: 'CLUB',
+      favoriteClubId,
+      competitionSlug: 'austrian-bundesliga',
+      limit: 5,
+    });
+
+    expect(result.variant).toBe('NEUTRAL');
+    expect(result.favoriteClub).toBeNull();
+    expect(result.competition).toBeNull();
+    expect(result.articles.map((item) => item.id)).toEqual(['top-1', 'recent-1']);
+    expect(findMany).toHaveBeenCalledTimes(2);
+    expect(findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.not.objectContaining({ OR: expect.anything() }),
+      }),
+    );
+    expect(findClub).not.toHaveBeenCalled();
+  });
   describe('article CRUD', () => {
     const articleId = '11111111-1111-4111-8111-111111111111';
     const authorId = '22222222-2222-4222-8222-222222222222';
