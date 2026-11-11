@@ -36,7 +36,7 @@ export interface PrioritizedNewsOptions {
 }
 
 export interface NeutralNewsOptions {
-  competitionId: string;
+  competitionId: string | null;
   limit?: number;
 }
 
@@ -88,7 +88,7 @@ export interface StartpageNews {
     name: string;
     shortName: string | null;
     slug: string;
-  };
+  } | null;
   articles: PrioritizedArticle[];
 }
 
@@ -989,7 +989,7 @@ export class ArticlesService implements OnModuleDestroy {
   }
 
   async getStartpageNews(options: StartpageNewsOptions): Promise<StartpageNews> {
-    const competition = await this.database.competition.findUniqueOrThrow({
+    const competition = await this.database.competition.findUnique({
       where: {
         slug: options.competitionSlug,
       },
@@ -1000,6 +1000,17 @@ export class ArticlesService implements OnModuleDestroy {
         slug: true,
       },
     });
+
+    // A newly reset DEV database has no competition rows. This is an empty feed,
+    // not an application error; do not fabricate competition or sports data.
+    if (!competition) {
+      return {
+        variant: 'NEUTRAL',
+        favoriteClub: null,
+        competition: null,
+        articles: await this.getNeutralNews({ competitionId: null, limit: options.limit }),
+      };
+    }
 
     if (options.fanPreference === 'CLUB' && options.favoriteClubId) {
       const favoriteClub = await this.database.club.findUnique({
@@ -1152,16 +1163,14 @@ export class ArticlesService implements OnModuleDestroy {
         where: {
           ...baseWhere,
           isTopNews: false,
-          OR: [
-            {
-              competitionId: null,
-            },
-            {
-              competitionId: {
-                not: options.competitionId,
-              },
-            },
-          ],
+          ...(options.competitionId
+            ? {
+                OR: [
+                  { competitionId: null },
+                  { competitionId: { not: options.competitionId } },
+                ],
+              }
+            : {}),
         },
         select: articleSelect,
         orderBy: {
@@ -1169,18 +1178,20 @@ export class ArticlesService implements OnModuleDestroy {
         },
         take: limit,
       }),
-      this.database.article.findMany({
-        where: {
-          ...baseWhere,
-          isTopNews: false,
-          competitionId: options.competitionId,
-        },
-        select: articleSelect,
-        orderBy: {
-          publishedAt: 'desc',
-        },
-        take: limit,
-      }),
+      options.competitionId
+        ? this.database.article.findMany({
+            where: {
+              ...baseWhere,
+              isTopNews: false,
+              competitionId: options.competitionId,
+            },
+            select: articleSelect,
+            orderBy: {
+              publishedAt: 'desc',
+            },
+            take: limit,
+          })
+        : Promise.resolve([] as SelectedArticle[]),
     ]);
 
     return this.buildNeutralFeed(topArticles, recentArticles, competitionArticles, limit);
