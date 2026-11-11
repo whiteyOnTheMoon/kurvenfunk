@@ -37,6 +37,12 @@ Stand: 11.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 
 **Abnahme 210 bleibt offen**, bis die CI, ein DEV-only-Live-HTTP-Gate, ein realer Admin-Provisionierungsflow und mobile Browserprüfungen nachweisbar erfolgreich sind.
 
+### DEV-IP-Schutz beim read-only Abnahmetest
+
+Bei aktivierter `IP_RATE_LIMIT_ENABLED`-Konfiguration werden schreibende Forum-Routen schon **vor** der Authentifizierung über den globalen IP-Rate-Limit-Guard geprüft. Ein anonymer, direkt an den lokalen API-Port gerichteter POST besitzt **keinen vertrauenswürdigen Cloudflare-Tunnel-Socket-Peer** und muss deshalb sicher mit **HTTP 503** abgewiesen werden. Der DEV-Live-Test erwartet ausdrücklich diese Sperre und sendet keine gefälschten IP-Header. Dies bestätigt **keine** Admin-RBAC-Abnahme über den echten Tunnel.
+
+Die isolierte API-HTTP-E2E-Abnahme mit deaktiviertem optionalen IP-Guard prüft gesondert, dass anonyme Aufrufe **401**, Nicht-Admins **403** und berechtigte Admins erfolgreiche echte, idempotente PostgreSQL-Transaktionen erhalten. Der spätere reale Admin-/Tunnel-Flow und die mobile Fachabnahme bleiben eigene Gates.
+
 ## Abnahme-Gates (noch offen)
 
 1. PR-CI: Format, Lint, Prisma-Typen, Unit-Tests, Web-Build, API-/Worker-Integration.
