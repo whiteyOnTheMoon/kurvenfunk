@@ -106,6 +106,8 @@ jobs:
           node --check infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
           node --test infrastructure/scripts/verify/phase0-21-data-audit.test.mjs
           bash -n infrastructure/scripts/verify/dev-residual-services-readonly.sh
+          bash -n infrastructure/scripts/verify/dev-keycloak-admin-readonly.sh
+          node --test infrastructure/scripts/verify/dev-keycloak-admin-readonly.test.mjs
           bash -n infrastructure/scripts/maintenance/dev-residual-reset.sh
           bash -n infrastructure/scripts/maintenance/dev-residual-clear-keycloak.sh
           node --check infrastructure/scripts/maintenance/dev-residual-clear-media.mjs
