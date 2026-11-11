@@ -1,6 +1,6 @@
 const findMany = jest.fn<Promise<unknown[]>, [unknown]>();
-const findFirst = jest.fn<Promise<unknown | null>, [unknown]>();
-const findUnique = jest.fn<Promise<unknown | null>, [unknown]>();
+const findFirst = jest.fn<Promise<unknown>, [unknown]>();
+const findUnique = jest.fn<Promise<unknown>, [unknown]>();
 const create = jest.fn<Promise<unknown>, [unknown]>();
 const update = jest.fn<Promise<unknown>, [unknown]>();
 const createAudit = jest.fn<Promise<unknown>, [unknown]>();
