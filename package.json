@@ -9,6 +9,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check . || (prettier infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs | diff -u infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs -; exit 1)"
   }
 }
