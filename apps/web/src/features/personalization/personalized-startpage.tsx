@@ -33,7 +33,7 @@ interface StartpageResponse {
     name: string;
     shortName: string | null;
     slug: string;
-  };
+  } | null;
   articles: StartpageArticle[];
 }
 
@@ -160,6 +160,10 @@ function ArticleCard({
 }
 
 function NewsGrid({ articles }: { articles: StartpageArticle[] }) {
+  if (articles.length === 0) {
+    return <p className={styles.status}>Noch keine bestätigten Nachrichten vorhanden.</p>;
+  }
+
   return (
     <div className={styles.newsGrid}>
       {articles.map((article, index) => (
@@ -375,7 +379,8 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
     );
   }
 
-  const competitionName = startpage.competition.shortName ?? startpage.competition.name;
+  const competitionName =
+    startpage.competition?.shortName ?? startpage.competition?.name ?? 'Österreich';
 
   const favoriteClubArticles = startpage.articles.filter(
     (article) => article.priority === 'FAVORITE_CLUB',
@@ -523,7 +528,11 @@ export function PersonalizedStartpage({ apiUrl }: PersonalizedStartpageProps) {
           <div>
             <span className={styles.badge}>Kurvenfunk</span>
             <h1>Österreichischer Fußball.</h1>
-            <p>News, Spiele und Tabellen aus der {competitionName} auf einen Blick.</p>
+            <p>
+              {startpage.competition
+                ? `News, Spiele und Tabellen aus der ${competitionName} auf einen Blick.`
+                : 'Bestätigte News, Spiele und Tabellen aus dem österreichischen Fußball – sobald verfügbar.'}
+            </p>
           </div>
         </section>
 
