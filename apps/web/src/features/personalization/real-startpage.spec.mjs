@@ -14,6 +14,13 @@ describe('Real startpage sport data', () => {
     assert.doesNotMatch(source, /9 Punkte|3 Spielen|4\. Spieltag|Diskussionen|replies: 84/);
   });
 
+  it('shows a usable homepage without competition or published articles', () => {
+    assert.match(source, /startpage\.competition\?\.shortName/);
+    assert.match(source, /Noch keine bestätigten Nachrichten vorhanden/);
+    assert.match(source, /Bestätigte News, Spiele und Tabellen/);
+    assert.doesNotMatch(source, /mockCompetition|sampleArticle|sampleNews/);
+  });
+
   it('uses genuine match and standings endpoints with truthful empty states', () => {
     assert.match(source, /api\/v1\/matches\?competition=austrian-bundesliga/);
     assert.match(source, /api\/v1\/standings\/austrian-bundesliga/);
