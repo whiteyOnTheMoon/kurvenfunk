@@ -59,19 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: |
-          echo 'PHASE22_FORMAT_DIFF_START'
-          for file in \
-            apps/api/src/modules/forums/forums.controller.spec.ts \
-            apps/api/src/modules/forums/forums.service.spec.ts \
-            apps/api/src/modules/forums/forums.service.ts \
-            'apps/web/src/app/forum/kategorie/[slug]/page.tsx' \
-            apps/web/src/features/forum/forum-overview.tsx; do
-            echo "FILE:$file"
-            pnpm exec prettier "$file" | diff -u "$file" - || true
-          done
-          echo 'PHASE22_FORMAT_DIFF_END'
-          pnpm format:check
+        run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |
