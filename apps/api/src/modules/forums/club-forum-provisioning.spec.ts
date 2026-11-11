@@ -96,7 +96,7 @@ describe('Task 22.210 deterministic club forum provisioning', () => {
   });
 
   it('links a real club and the approved category, auditing exactly one creation', async () => {
-    const result = await provisionClubForum(tx, club, actor, true);
+    const result: unknown = await provisionClubForum(tx, club, actor, true);
     expect(result).toEqual(forum);
     expect(findCategory).toHaveBeenCalledWith({
       where: { slug: 'vereine' },
