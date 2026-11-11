@@ -15,7 +15,10 @@ type ForumTransaction = {
   auditLog: { create: typeof createAudit };
 };
 
-const transaction = jest.fn<Promise<unknown>, [(callback: (tx: ForumTransaction) => Promise<unknown>) => unknown]>();
+const transaction = jest.fn<
+  Promise<unknown>,
+  [(callback: (tx: ForumTransaction) => Promise<unknown>) => unknown]
+>();
 
 jest.mock('@kurvenfunk/database', () => ({
   createPrismaClient: () => ({
@@ -45,7 +48,15 @@ describe('ForumsService – 22.209 categories', () => {
   let service: ForumsService;
 
   beforeEach(() => {
-    for (const mock of [findMany, findFirst, findUnique, create, update, createAudit, transaction]) {
+    for (const mock of [
+      findMany,
+      findFirst,
+      findUnique,
+      create,
+      update,
+      createAudit,
+      transaction,
+    ]) {
       mock.mockReset();
     }
     disconnect.mockReset();
@@ -170,7 +181,9 @@ describe('ForumsService – 22.209 categories', () => {
         updatedAt: true,
       },
     });
-    const logInput = createAudit.mock.calls[0]?.[0] as { data: { actorUserId: string; metadata: unknown } };
+    const logInput = createAudit.mock.calls[0]?.[0] as {
+      data: { actorUserId: string; metadata: unknown };
+    };
     expect(logInput.data.actorUserId).toBe('22222222-2222-4222-8222-222222222222');
     expect(logInput.data.metadata).toEqual({
       entity: 'FORUM_CATEGORY',
