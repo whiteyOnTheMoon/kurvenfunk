@@ -229,7 +229,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       select: { id: true, slug: true, categoryId: true },
     });
     expect(rows).toHaveLength(1);
-    forums.push(rows[0]!.id);
+    forums.push(rows[0].id);
     expect(rows[0]?.slug).toBe('verein-' + secondSlug);
     expect(rows[0]?.categoryId).toBe(categoryId);
   });
