@@ -33,6 +33,15 @@ kc_db="${BASH_REMATCH[1]}"
 sql="SELECT 'KEYCLOAK_DEV_REALM_USERS=' || COUNT(*) FROM user_entity u JOIN realm r ON u.realm_id=r.id WHERE r.name='kurvenfunk'; SELECT 'KEYCLOAK_DEV_SERVICE_USERS=' || COUNT(*) FROM user_entity u JOIN realm r ON u.realm_id=r.id WHERE r.name='kurvenfunk' AND u.username LIKE 'service-account-%'; SELECT 'KEYCLOAK_MASTER_USERS=' || COUNT(*) FROM user_entity u JOIN realm r ON u.realm_id=r.id WHERE r.name='master'; SELECT 'KEYCLOAK_DEV_REALM_COUNT=' || COUNT(*) FROM realm WHERE name='kurvenfunk';"
 "${compose[@]}" exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"' sh "$kc_db" "$sql"
 
+
+# SQL classification only: no usernames, IDs, PII or row content in output.
+profile_sql="SELECT 'KEYCLOAK_DEV_ADMINLIKE_USERS=' || COUNT(*) FROM user_entity u JOIN realm r ON u.realm_id=r.id WHERE r.name='kurvenfunk' AND LOWER(u.username) LIKE '%admin%'; SELECT 'KEYCLOAK_DEV_NON_SERVICE_NON_ADMINLIKE_USERS=' || COUNT(*) FROM user_entity u JOIN realm r ON u.realm_id=r.id WHERE r.name='kurvenfunk' AND u.username NOT LIKE 'service-account-%' AND LOWER(u.username) NOT LIKE '%admin%';"
+"${compose[@]}" exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"' sh "$kc_db" "$profile_sql"
+
+# Compare the exact Admin CLI enumeration used by cleanup against the count endpoint.
+# This is strictly read-only with respect to realm users and roles.
+DEV_KEYCLOAK_DIAG_TARGET=DEV bash infrastructure/scripts/verify/dev-keycloak-admin-readonly.sh
+
 # Redis: count keys only (no names, no credential output).
 size="$("${compose[@]}" exec -T redis sh -ec 'REDISCLI_AUTH="$REDIS_PASSWORD" exec redis-cli --raw DBSIZE' | tr -d '\r')"
 [[ "$size" =~ ^[0-9]+$ ]] || { echo "ERROR: INVALID_REDIS_DBSIZE"; exit 1; }
