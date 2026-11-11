@@ -58,12 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Diagnose exact Prettier correction for DEV reset sources
-        run: |
-          pnpm exec prettier --write infrastructure/scripts/maintenance/dev-residual-clear-media.mjs infrastructure/scripts/maintenance/dev-residual-reset.test.mjs
-          git --no-pager diff -- infrastructure/scripts/maintenance/dev-residual-clear-media.mjs infrastructure/scripts/maintenance/dev-residual-reset.test.mjs
-          git checkout -- infrastructure/scripts/maintenance/dev-residual-clear-media.mjs infrastructure/scripts/maintenance/dev-residual-reset.test.mjs
-
       - name: Check formatting
         run: pnpm format:check
 
