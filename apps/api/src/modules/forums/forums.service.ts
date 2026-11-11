@@ -1,4 +1,4 @@
-import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
+import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import {
   ConflictException,
   Injectable,
@@ -28,7 +28,7 @@ const publicCategorySelect = {
       threadCreationEnabled: true,
     },
   },
-} as const;
+} satisfies Prisma.ForumCategorySelect;
 
 const adminCategorySelect = {
   id: true,
