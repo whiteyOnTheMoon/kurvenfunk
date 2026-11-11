@@ -31,9 +31,9 @@ for raw in Path(sys.argv[1]).read_text().splitlines():
     if name in ('KEYCLOAK_CONFIG_ADMIN_USERNAME', 'KEYCLOAK_CONFIG_ADMIN_PASSWORD'):
         if name in values:
             raise SystemExit('ERROR: DUPLICATE_KEYCLOAK_CONFIG_ADMIN')
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\\\"":
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
             value = value[1:-1]
-        if not value or any(c in value for c in '\\r\\n\\x00'):
+        if not value or any(c in value for c in '\r\n\x00'):
             raise SystemExit('ERROR: INVALID_KEYCLOAK_CONFIG_ADMIN')
         values[name] = value
 for name in ('KEYCLOAK_CONFIG_ADMIN_USERNAME', 'KEYCLOAK_CONFIG_ADMIN_PASSWORD'):
