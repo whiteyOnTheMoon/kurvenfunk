@@ -393,6 +393,104 @@ try {
       }),
   );
 
+  // Follow-up: metadata-only relationship classification of flagged residuals.
+  // Never emit subjects, nicknames, titles, bodies, dates, IDs or other row values.
+  const [identityDetails, noticeDetails, articleDetails] = await Promise.all([
+    db.user.findMany({
+      select: {
+        id: true,
+        nickname: true,
+        keycloakSubject: true,
+        createdAt: true,
+        status: true,
+        onboardingCompleted: true,
+        _count: {
+          select: {
+            articles: true, roleAssignments: true, moderationCardsReceived: true,
+            moderationCardsIssued: true, notificationsReceived: true,
+            auditEventsAsActor: true, auditEventsAsTarget: true,
+            comments: true, reactions: true, importRecordsReviewed: true,
+          },
+        },
+      },
+    }),
+    db.notification.findMany({
+      select: {
+        title: true, body: true, type: true, sourceType: true, sourceId: true,
+        userId: true, actorUserId: true, createdAt: true, readAt: true,
+      },
+    }),
+    db.article.findMany({
+      select: {
+        status: true, deletedAt: true, createdAt: true, updatedAt: true,
+        publishedAt: true, archivedAt: true, importRecordId: true,
+        importRecord: { select: { status: true, reviewDecision: true, provider: { select: { type: true } } } },
+        authorId: true, originalUrl: true, competitionId: true, matchId: true,
+        _count: {
+          select: { revisions: true, comments: true, clubs: true, categories: true, tags: true },
+        },
+      },
+    }),
+  ]);
+  const flaggedIdentities = identityDetails.filter((user) =>
+    marker.test(user.nickname ?? '') || marker.test(user.keycloakSubject ?? ''),
+  );
+  const flaggedIds = new Set(flaggedIdentities.map((user) => user.id));
+  const flaggedNotices = noticeDetails.filter((note) =>
+    marker.test(note.title ?? '') || marker.test(note.body ?? ''),
+  );
+  const countOf = (arr, predicate) => arr.filter(predicate).length;
+  const byField = (arr, field) =>
+    arr.reduce((acc, row) => {
+      const key = row[field] ?? 'NULL';
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+  const flaggedIdentityRelationCounts = flaggedIdentities.reduce((acc, user) => {
+    for (const [key, count] of Object.entries(user._count)) acc[key] = (acc[key] ?? 0) + count;
+    return acc;
+  }, {});
+  console.log('PHASE021_DEV_FOCUSED_PROVENANCE=' + JSON.stringify({
+    flaggedAccounts: {
+      total: flaggedIdentities.length,
+      markerInNickname: countOf(flaggedIdentities, (u) => marker.test(u.nickname ?? '')),
+      markerInSubject: countOf(flaggedIdentities, (u) => marker.test(u.keycloakSubject ?? '')),
+      active: countOf(flaggedIdentities, (u) => u.status === 'ACTIVE'),
+      onboarded: countOf(flaggedIdentities, (u) => u.onboardingCompleted),
+      withAnyRelations: countOf(flaggedIdentities, (u) =>
+        Object.values(u._count).some((count) => count > 0)),
+      relationCounts: flaggedIdentityRelationCounts,
+    },
+    flaggedNotifications: {
+      total: flaggedNotices.length,
+      byType: byField(flaggedNotices, 'type'),
+      bySourceType: byField(flaggedNotices, 'sourceType'),
+      withSourceId: countOf(flaggedNotices, (n) => n.sourceId !== null),
+      addressedToFlaggedAccount: countOf(flaggedNotices, (n) => flaggedIds.has(n.userId)),
+      actorIsFlaggedAccount: countOf(flaggedNotices, (n) => n.actorUserId !== null && flaggedIds.has(n.actorUserId)),
+      read: countOf(flaggedNotices, (n) => n.readAt !== null),
+    },
+    softDeletedArticles: {
+      total: articleDetails.length,
+      softDeleted: countOf(articleDetails, (a) => a.deletedAt !== null),
+      publishedAndDeleted: countOf(articleDetails, (a) => a.status === 'PUBLISHED' && a.deletedAt !== null),
+      importedAndDeleted: countOf(articleDetails, (a) => a.importRecordId !== null && a.deletedAt !== null),
+      withOriginalUrl: countOf(articleDetails, (a) => a.originalUrl !== null),
+      withAuthor: countOf(articleDetails, (a) => a.authorId !== null),
+      withFlaggedAuthor: countOf(articleDetails, (a) => a.authorId !== null && flaggedIds.has(a.authorId)),
+      withRevision: countOf(articleDetails, (a) => a._count.revisions > 0),
+      withComments: countOf(articleDetails, (a) => a._count.comments > 0),
+      linkedToCompetitionOrMatch: countOf(articleDetails, (a) => a.competitionId !== null || a.matchId !== null),
+      importedByProviderType: articleDetails.reduce((acc, a) => {
+        if (a.importRecordId === null) return acc;
+        const category = a.importRecord?.provider?.type ?? 'UNKNOWN';
+        acc[category] = (acc[category] ?? 0) + 1;
+        return acc;
+      }, {}),
+      byStatus: byField(articleDetails, 'status'),
+    },
+  }));
+
   console.log('PHASE021_DEV_AUDIT_EXECUTION=PASS_READ_ONLY');
   console.log(
     'PHASE021_DEV_CLEANLINESS=' +
