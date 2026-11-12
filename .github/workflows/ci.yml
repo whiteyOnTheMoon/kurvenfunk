@@ -58,13 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Print canonical branch-archive script formatting (temporary diagnostic)
-        if: github.event_name == 'pull_request' && github.head_ref == 'chore/phase22-archive-stale-branches-20261112'
-        run: |
-          echo '__CANONICAL_PRETTIER_START__'
-          pnpm exec prettier infrastructure/scripts/maintenance/archive-legacy-branches-20261112.mjs --log-level silent
-          echo '__CANONICAL_PRETTIER_END__'
-
       - name: Check formatting
         run: pnpm format:check
 
