@@ -253,4 +253,62 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       items.flatMap((category) => category.forums).some((item) => item.club.id === clubs[1]),
     ).toBe(false);
   });
+  it('hides the club forum when its category is inactive and restores visibility when reactivated', async () => {
+    const admin = await tokenFor(subjects.admin);
+    expect(categoryId).toBeDefined();
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/forums/categories/' + categoryId)
+      .set('Authorization', 'Bearer ' + admin)
+      .send({ active: false })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/categories/vereine')
+      .expect(404);
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/clubs/' + firstSlug)
+      .expect(404);
+    const hidden = await request(app.getHttpServer())
+      .get('/api/v1/forums/categories')
+      .expect(200);
+    expect(dataOf<{ slug: string }[]>(hidden).some((item) => item.slug === 'vereine')).toBe(false);
+    expect(await database.forum.count({ where: { id: forums[0] } })).toBe(1);
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/forums/categories/' + categoryId)
+      .set('Authorization', 'Bearer ' + admin)
+      .send({ active: true })
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/clubs/' + firstSlug)
+      .expect(200);
+  });
+
+  it('keeps an inactive club forum private without deleting its record', async () => {
+    await database.forum.update({
+      where: { id: forums[0] },
+      data: { active: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .get('/api/v1/forums/clubs/' + firstSlug)
+        .expect(404);
+      const visible = await request(app.getHttpServer())
+        .get('/api/v1/forums/categories')
+        .expect(200);
+      expect(
+        dataOf<{ forums: { id: string }[] }[]>(visible)
+          .flatMap((category) => category.forums)
+          .some((forum) => forum.id === forums[0]),
+      ).toBe(false);
+      expect(await database.forum.count({ where: { id: forums[0] } })).toBe(1);
+    } finally {
+      await database.forum.update({
+        where: { id: forums[0] },
+        data: { active: true },
+      });
+    }
+  });
+
 });
