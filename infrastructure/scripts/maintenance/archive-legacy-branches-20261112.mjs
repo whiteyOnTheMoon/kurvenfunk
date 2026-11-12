@@ -66,9 +66,7 @@ async function assertDevelopPinned() {
 await assertDevelopPinned();
 const openPulls = await allOpenPulls();
 const openRefs = new Set(
-  openPulls
-    .filter((pr) => pr.head.repo?.full_name === repo)
-    .map((pr) => pr.head.ref),
+  openPulls.filter((pr) => pr.head.repo?.full_name === repo).map((pr) => pr.head.ref),
 );
 const archived = [];
 const skipped = [];
@@ -107,8 +105,7 @@ for (const name of candidates) {
     continue;
   }
   const openNow = await api(
-    '/pulls?state=open&per_page=100&head=' +
-      encodeURIComponent(repo.split('/')[0] + ':' + name),
+    '/pulls?state=open&per_page=100&head=' + encodeURIComponent(repo.split('/')[0] + ':' + name),
   );
   if (openNow.length > 0) {
     skipped.push({ name, reason: 'new_open_pr' });
