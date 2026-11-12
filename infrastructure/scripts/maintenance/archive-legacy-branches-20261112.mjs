@@ -103,10 +103,7 @@ for (const name of candidates) {
       await api('/git/refs', 'POST', { ref: tagRef, sha: originalSha });
     } catch (error) {
       // A concurrent run may have just created the exact same archival tag.
-      if (
-        !(error instanceof Error) ||
-        error.message !== 'ARCHIVE_GITHUB_API_HTTP_422'
-      ) {
+      if (!(error instanceof Error) || error.message !== 'ARCHIVE_GITHUB_API_HTTP_422') {
         throw error;
       }
     }
@@ -133,10 +130,7 @@ for (const name of candidates) {
     await api('/git/refs/heads/' + encodePath(name), 'DELETE');
   } catch (error) {
     // Preserve the archived exact SHA and continue with independent branches.
-    if (
-      !(error instanceof Error) ||
-      !error.message.startsWith('ARCHIVE_GITHUB_API_HTTP_')
-    ) {
+    if (!(error instanceof Error) || !error.message.startsWith('ARCHIVE_GITHUB_API_HTTP_')) {
       throw error;
     }
     skipped.push({ name, reason: 'branch_delete_rejected_' + error.message });
