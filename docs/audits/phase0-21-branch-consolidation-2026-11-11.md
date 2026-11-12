@@ -20,3 +20,12 @@ Vorab verifizierte Kandidaten zum Zeitpunkt des Audits: Branches der gemergten P
 
 ## Datenhygiene
 Keine Datenbankänderungen durch den Branch-Pruner. Die gesonderte DEV-Metadateninventur aus PR #137 ist rein lesend; nur ihr tatsächlicher erfolgreicher Workflow-Nachweis darf als aktuelle Restbestandsaussage dienen. STAGING und PROD bleiben unberührt.
+
+## Erneute Bestandsprüfung (12.11.2026, Phase 22)
+
+Der Betreiber hat die Bereinigung nicht mehr benötigter Branches freigegeben. Die GitHub-Branch-Liste umfasst **36 Branches** (Stand der Inventur vor diesem Cleanup-PR, inklusive `develop`/`main`). Nur die unverändert gemergten PR-Quellbranches sind Löschkandidaten; bloß geschlossene, divergierte oder nicht zuordenbare Branches bleiben erhalten.
+
+- Schutz: `develop`/`main` sowie **alle offenen PRs**, insbesondere #1 (`chore/save-masterplan-audit`) und #91 (`feat/email-exchange-online-oauth`).
+- Nachweis: Das vorhandene Cleanup-Skript holt die vollständige GitHub-Branch-/PR-Liste und prüft bei jedem Kandidaten die exakte Head-SHA-Übereinstimmung, den Schutzstatus und das Fehlen offener PRs erneut. Der erfolgreiche Merge ist zwingend.
+- Ablauf: regulärer PR-CI-Check; anschließend **nur** der bestehende markergebundene `phase21-branch-cleanup`-Workflow nach erfolgreichem `develop`-CI- und DEV-Deploy. Der Workflow ist keine Freigabe für Daten-/Medienlöschungen oder STAGING/PROD.
+- Ergebnis gilt erst als bestätigt, wenn der Actions-Log `BRANCH_CLEANUP_RESULT` und eine anschließende Branch-Inventur vorliegen. Bei CI-/Deploy-Fehler: keine Löschung behaupten.
