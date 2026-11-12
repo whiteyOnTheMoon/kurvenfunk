@@ -38,7 +38,7 @@ if (!payload || !Array.isArray(payload.data)) process.exit(1);
 echo 'DEV_PHASE22_210_CATEGORIES_HTTP=200_VALID_ARRAY'
 
 # Unknown categories must remain hidden, even on a clean database.
-unknown_category_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \\
+unknown_category_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \
   http://127.0.0.1:3101/api/v1/forums/categories/phase22-nonexistent-category)"
 [[ "$unknown_category_status" == 404 ]] || {
   echo "ERROR: PHASE22_210_UNKNOWN_CATEGORY_VISIBLE; observed=$unknown_category_status"; exit 1;
@@ -46,7 +46,7 @@ unknown_category_status="$(curl --silent --show-error --max-time 15 -o /dev/null
 echo 'DEV_PHASE22_210_UNKNOWN_CATEGORY_HTTP=404'
 
 # The public forum landing page must render even when there are no categories.
-forum_page_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \\
+forum_page_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \
   http://127.0.0.1:3100/forum)"
 [[ "$forum_page_status" == 200 ]] || {
   echo "ERROR: PHASE22_210_FORUM_LANDING_UNAVAILABLE; observed=$forum_page_status"; exit 1;
