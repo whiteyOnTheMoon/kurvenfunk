@@ -16,6 +16,7 @@ compose=(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f 
 "${compose[@]}" config --quiet
 
 # Verify the public categories contract without assuming seeded content.
+# This read-only contract check is safe to rerun after an interrupted CI queue event.
 # Both an empty [] list and genuine administered categories are valid.
 categories_body="$(mktemp)"
 trap 'rm -f "$categories_body"' EXIT
