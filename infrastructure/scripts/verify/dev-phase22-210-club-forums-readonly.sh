@@ -15,6 +15,28 @@ cd "$PROJECT_DIR"
 compose=(docker compose -p kurvenfunk-dev --env-file .env.dev -f compose.yml -f compose.dev.yml)
 "${compose[@]}" config --quiet
 
+# Verify the public categories contract without assuming seeded content.
+# This read-only contract check is safe to rerun after an interrupted CI queue event.
+# Both an empty [] list and genuine administered categories are valid.
+categories_body="$(mktemp)"
+trap 'rm -f "$categories_body"' EXIT
+categories_status="$(curl --silent --show-error --max-time 15 \
+  -o "$categories_body" -w '%{http_code}' \
+  http://127.0.0.1:3101/api/v1/forums/categories)"
+[[ "$categories_status" == 200 ]] || {
+  echo "ERROR: PHASE22_210_CATEGORIES_HTTP_MISMATCH; observed=$categories_status"; exit 1;
+}
+node -e '
+const fs = require("node:fs");
+let payload;
+try { payload = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); }
+catch { process.exit(1); }
+if (!payload || !Array.isArray(payload.data)) process.exit(1);
+' "$categories_body" || {
+  echo 'ERROR: PHASE22_210_CATEGORIES_INVALID_RESPONSE'; exit 1;
+}
+echo 'DEV_PHASE22_210_CATEGORIES_HTTP=200_VALID_ARRAY'
+
 # 404 for non-existent club, without creating any clubs, categories or forums.
 club_status="$(curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' \
   http://127.0.0.1:3101/api/v1/forums/clubs/phase22-nonexistent-club)"
