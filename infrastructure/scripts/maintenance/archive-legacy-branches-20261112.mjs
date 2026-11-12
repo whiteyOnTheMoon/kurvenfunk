@@ -49,6 +49,14 @@ async function api(path, method = 'GET', body, optional404 = false) {
   }
   return response.status === 204 ? null : response.json();
 }
+async function readTagWithRetry(path) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const tag = await api(path, 'GET', undefined, true);
+    if (tag) return tag;
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+  throw new Error('ARCHIVE_TAG_VISIBILITY_TIMEOUT');
+}
 async function allOpenPulls() {
   const result = [];
   for (let page = 1; page <= 20; page++) {
@@ -91,8 +99,15 @@ for (const name of candidates) {
   const tagPath = '/git/ref/tags/' + encodePath(archiveName);
   let tag = await api(tagPath, 'GET', undefined, true);
   if (!tag) {
-    await api('/git/refs', 'POST', { ref: tagRef, sha: originalSha });
-    tag = await api(tagPath);
+    try {
+      await api('/git/refs', 'POST', { ref: tagRef, sha: originalSha });
+    } catch (error) {
+      // A concurrent run may have just created the exact same archival tag.
+      if (!(error instanceof Error) || error.message !== 'ARCHIVE_GITHUB_API_HTTP_422') {
+        throw error;
+      }
+    }
+    tag = await readTagWithRetry(tagPath);
   }
   if (tag.object?.sha !== originalSha || tag.object?.type !== 'commit') {
     throw new Error('ARCHIVE_TAG_NOT_IDENTICAL_' + name);
@@ -111,7 +126,16 @@ for (const name of candidates) {
     skipped.push({ name, reason: 'new_open_pr' });
     continue;
   }
-  await api('/git/refs/heads/' + encodePath(name), 'DELETE');
+  try {
+    await api('/git/refs/heads/' + encodePath(name), 'DELETE');
+  } catch (error) {
+    // Preserve the archived exact SHA and continue with independent branches.
+    if (!(error instanceof Error) || !error.message.startsWith('ARCHIVE_GITHUB_API_HTTP_')) {
+      throw error;
+    }
+    skipped.push({ name, reason: 'branch_delete_rejected_' + error.message });
+    continue;
+  }
   console.log('ARCHIVED_AND_REMOVED ' + name + ' ' + archiveName);
   archived.push(name);
 }
