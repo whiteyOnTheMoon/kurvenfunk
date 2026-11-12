@@ -58,13 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Print exact Prettier recovery-script formatting (temporary)
-        if: github.event_name == 'pull_request' && github.head_ref == 'fix/phase22-archive-cleanup-resume-20261112'
-        run: |
-          echo '__ARCHIVE_PRETTIER_START__'
-          pnpm exec prettier infrastructure/scripts/maintenance/archive-legacy-branches-20261112.mjs --log-level silent
-          echo '__ARCHIVE_PRETTIER_END__'
-
       - name: Check formatting
         run: pnpm format:check
 
