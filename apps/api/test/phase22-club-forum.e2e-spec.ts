@@ -264,15 +264,11 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .send({ active: false })
       .expect(200);
 
-    await request(app.getHttpServer())
-      .get('/api/v1/forums/categories/vereine')
-      .expect(404);
+    await request(app.getHttpServer()).get('/api/v1/forums/categories/vereine').expect(404);
     await request(app.getHttpServer())
       .get('/api/v1/forums/clubs/' + firstSlug)
       .expect(404);
-    const hidden = await request(app.getHttpServer())
-      .get('/api/v1/forums/categories')
-      .expect(200);
+    const hidden = await request(app.getHttpServer()).get('/api/v1/forums/categories').expect(200);
     const visibleCategorySlugs = dataOf<{ slug: string }[]>(hidden).map((item) => item.slug);
     expect(visibleCategorySlugs).not.toContain('vereine');
     expect(await database.forum.count({ where: { id: forums[0] } })).toBe(1);
