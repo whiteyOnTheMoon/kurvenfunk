@@ -9,7 +9,9 @@ if (
   !token ||
   !/^[0-9a-f]{40}$/i.test(expectedSha ?? '') ||
   process.env.GITHUB_REF !== 'refs/heads/develop'
-) throw new Error('ARCHIVE_CLEANUP_GUARD_FAILED');
+) {
+  throw new Error('ARCHIVE_CLEANUP_GUARD_FAILED');
+}
 
 const candidates = Object.freeze([
   'chore/phase21-cleanup-last-ambiguous-fixture',
@@ -34,12 +36,17 @@ const encodePath = (path) => path.split('/').map(encodeURIComponent).join('/');
 async function api(path, method = 'GET', body, optional404 = false) {
   const response = await fetch(apiBase + path, {
     method,
-    headers: {...headers, ...(body ? {'content-type':'application/json'} : {})},
-    ...(body ? {body: JSON.stringify(body)} : {}),
+    headers: {
+      ...headers,
+      ...(body ? { 'content-type': 'application/json' } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
     signal: AbortSignal.timeout(20000),
   });
   if (optional404 && response.status === 404) return null;
-  if (!response.ok) throw new Error('ARCHIVE_GITHUB_API_HTTP_' + response.status + '_METHOD_' + method);
+  if (!response.ok) {
+    throw new Error('ARCHIVE_GITHUB_API_HTTP_' + response.status);
+  }
   return response.status === 204 ? null : response.json();
 }
 async function allOpenPulls() {
@@ -58,24 +65,26 @@ async function assertDevelopPinned() {
 }
 await assertDevelopPinned();
 const openPulls = await allOpenPulls();
-const openRefs = new Set(openPulls
-  .filter(pr => pr.head.repo?.full_name === repo)
-  .map(pr => pr.head.ref));
+const openRefs = new Set(
+  openPulls
+    .filter((pr) => pr.head.repo?.full_name === repo)
+    .map((pr) => pr.head.ref),
+);
 const archived = [];
 const skipped = [];
 for (const name of candidates) {
   if (['develop', 'main'].includes(name) || openRefs.has(name)) {
-    skipped.push({name, reason:'protected_or_open'});
+    skipped.push({ name, reason: 'protected_or_open' });
     continue;
   }
   await assertDevelopPinned();
   const branch = await api('/branches/' + encodePath(name), 'GET', undefined, true);
   if (!branch) {
-    skipped.push({name, reason:'already_absent'});
+    skipped.push({ name, reason: 'already_absent' });
     continue;
   }
   if (branch.protected || !/^[0-9a-f]{40}$/i.test(branch.commit.sha)) {
-    skipped.push({name, reason:'protected_or_invalid'});
+    skipped.push({ name, reason: 'protected_or_invalid' });
     continue;
   }
   const originalSha = branch.commit.sha;
@@ -84,7 +93,7 @@ for (const name of candidates) {
   const tagPath = '/git/ref/tags/' + encodePath(archiveName);
   let tag = await api(tagPath, 'GET', undefined, true);
   if (!tag) {
-    await api('/git/refs', 'POST', {ref: tagRef, sha: originalSha});
+    await api('/git/refs', 'POST', { ref: tagRef, sha: originalSha });
     tag = await api(tagPath);
   }
   if (tag.object?.sha !== originalSha || tag.object?.type !== 'commit') {
@@ -94,21 +103,27 @@ for (const name of candidates) {
   await assertDevelopPinned();
   const fresh = await api('/branches/' + encodePath(name), 'GET', undefined, true);
   if (!fresh || fresh.protected || fresh.commit.sha !== originalSha) {
-    skipped.push({name, reason:'branch_changed'});
+    skipped.push({ name, reason: 'branch_changed' });
     continue;
   }
-  const openNow = await api('/pulls?state=open&per_page=100&head=' +
-    encodeURIComponent(repo.split('/')[0] + ':' + name));
+  const openNow = await api(
+    '/pulls?state=open&per_page=100&head=' +
+      encodeURIComponent(repo.split('/')[0] + ':' + name),
+  );
   if (openNow.length > 0) {
-    skipped.push({name, reason:'new_open_pr'});
+    skipped.push({ name, reason: 'new_open_pr' });
     continue;
   }
   await api('/git/refs/heads/' + encodePath(name), 'DELETE');
   console.log('ARCHIVED_AND_REMOVED ' + name + ' ' + archiveName);
   archived.push(name);
 }
-console.log('ARCHIVE_CLEANUP_RESULT ' + JSON.stringify({
-  candidates: candidates.length, removed: archived.length,
-  preserved: skipped,
-  archivePrefix: 'refs/tags/archive/branch-cleanup-20261112/',
-}));
+console.log(
+  'ARCHIVE_CLEANUP_RESULT ' +
+    JSON.stringify({
+      candidates: candidates.length,
+      removed: archived.length,
+      preserved: skipped,
+      archivePrefix: 'refs/tags/archive/branch-cleanup-20261112/',
+    }),
+);
