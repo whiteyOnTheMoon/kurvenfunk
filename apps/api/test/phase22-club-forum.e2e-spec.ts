@@ -273,9 +273,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const hidden = await request(app.getHttpServer())
       .get('/api/v1/forums/categories')
       .expect(200);
-    expect(
-      dataOf<{ slug: string }[]>(hidden).some((item) => item.slug === 'vereine'),
-    ).toBe(false);
+    const visibleCategorySlugs = dataOf<{ slug: string }[]>(hidden).map((item) => item.slug);
+    expect(visibleCategorySlugs).not.toContain('vereine');
     expect(await database.forum.count({ where: { id: forums[0] } })).toBe(1);
 
     await request(app.getHttpServer())
