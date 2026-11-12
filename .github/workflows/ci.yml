@@ -102,6 +102,7 @@ jobs:
           node --check infrastructure/scripts/verify/phase20-182-public-quotas.mjs
           node --check infrastructure/scripts/verify/phase20-182-public-edge.mjs
           node --check infrastructure/scripts/maintenance/prune-merged-branches.mjs
+          node --check infrastructure/scripts/maintenance/archive-legacy-branches-20261112.mjs
           bash -n infrastructure/scripts/verify/dev-phase0-21-data-audit.sh
           node --check infrastructure/scripts/verify/dev-phase0-21-data-audit.mjs
           node --test infrastructure/scripts/verify/phase0-21-data-audit.test.mjs
@@ -1469,6 +1470,41 @@ jobs:
       - name: Checkout exact tested commit
         uses: actions/checkout@v7
       - name: Delete only unchanged and merged PR source branches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+        run: node infrastructure/scripts/maintenance/prune-merged-branches.mjs
+
+  phase22-archive-branches:
+    name: Archive and prune 11 explicitly reviewed stale branches
+    needs:
+      - deploy-dev
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      contains(github.event.head_commit.message, '[phase22-archive-branches]') &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: phase22-archive-branches
+      cancel-in-progress: false
+    steps:
+      - name: Checkout exact CI-tested develop commit
+        uses: actions/checkout@v7
+      - name: Archive unchanged legacy branch tips as verified recovery tags, then delete
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+        run: node infrastructure/scripts/maintenance/archive-legacy-branches-20261112.mjs
+      - name: Prune unchanged fully merged PR branch tips (including cleanup PR)
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
