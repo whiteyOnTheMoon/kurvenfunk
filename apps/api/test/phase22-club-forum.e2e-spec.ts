@@ -253,6 +253,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       items.flatMap((category) => category.forums).some((item) => item.club.id === clubs[1]),
     ).toBe(false);
   });
+
   it('hides the club forum when its category is inactive and restores visibility when reactivated', async () => {
     const admin = await tokenFor(subjects.admin);
     expect(categoryId).toBeDefined();
@@ -272,7 +273,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const hidden = await request(app.getHttpServer())
       .get('/api/v1/forums/categories')
       .expect(200);
-    expect(dataOf<{ slug: string }[]>(hidden).some((item) => item.slug === 'vereine')).toBe(false);
+    expect(
+      dataOf<{ slug: string }[]>(hidden).some((item) => item.slug === 'vereine'),
+    ).toBe(false);
     expect(await database.forum.count({ where: { id: forums[0] } })).toBe(1);
 
     await request(app.getHttpServer())
@@ -310,5 +313,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       });
     }
   });
-
 });
