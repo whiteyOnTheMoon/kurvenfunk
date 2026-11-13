@@ -133,7 +133,8 @@ export function ThreadUnreadToggle({
       </span>
       {status !== null ? (
         <span>
-          Leseposition: {status.lastReadSequenceNumber
+          Leseposition:{' '}
+          {status.lastReadSequenceNumber
             ? `Beitrag #${status.lastReadSequenceNumber}`
             : 'noch keiner'}
         </span>
@@ -148,11 +149,13 @@ export function ThreadUnreadToggle({
             disabled={saving}
           >
             <option value="">Beitrag auswählen</option>
-            {posts.filter((post) => !post.deleted).map((post) => (
-              <option value={post.id} key={post.id}>
-                Beitrag #{post.sequenceNumber}
-              </option>
-            ))}
+            {posts
+              .filter((post) => !post.deleted)
+              .map((post) => (
+                <option value={post.id} key={post.id}>
+                  Beitrag #{post.sequenceNumber}
+                </option>
+              ))}
           </select>
           <button
             type="button"
