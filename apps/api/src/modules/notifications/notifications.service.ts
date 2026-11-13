@@ -99,7 +99,8 @@ export class NotificationsService implements OnModuleDestroy {
     // The same recipient/event never generates a second notification on retry.
     const dedupeKey = ['notification', command.userId, command.type, command.eventKey].join(':');
     try {
-      const notification = await this.database.notification.create({
+      const notification = await this.database.$transaction(async (tx) => {
+        const stored = await tx.notification.create({
         data: {
           userId: command.userId,
           type: command.type,
@@ -112,6 +113,9 @@ export class NotificationsService implements OnModuleDestroy {
           dedupeKey,
         },
         select: { id: true },
+        });
+        await tx.notificationOutbox.create({ data: { notificationId: stored.id } });
+        return stored;
       });
       return { status: 'CREATED', id: notification.id };
     } catch (error) {
