@@ -11,6 +11,7 @@ export const PERMISSIONS = {
   THREAD_CREATE: 'thread.create',
   THREAD_REPLY: 'thread.reply',
   THREAD_SUBSCRIBE: 'thread.subscribe',
+  THREAD_READ_STATE: 'thread.read-state',
   THREAD_LOCK: 'thread.lock',
 
   ARTICLE_CREATE: 'article.create',
@@ -51,6 +52,7 @@ export const COMMUNITY_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.THREAD_CREATE,
   PERMISSIONS.THREAD_REPLY,
   PERMISSIONS.THREAD_SUBSCRIBE,
+  PERMISSIONS.THREAD_READ_STATE,
 ];
 
 const MODERATION_PERMISSIONS: readonly Permission[] = [

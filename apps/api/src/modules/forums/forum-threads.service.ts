@@ -249,6 +249,63 @@ export class ForumThreadsService implements OnModuleDestroy {
     return { subscribed: false };
   }
 
+  /** Private status only: never expose users' reading habits in public responses. */
+  async getThreadUnreadStatus(forumSlug: string, threadSlugValue: string, userId: string) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    const [thread, state] = await Promise.all([
+      this.database.thread.findUniqueOrThrow({
+        where: { id: threadId },
+        select: { lastPostSequenceNumber: true },
+      }),
+      this.database.threadReadState.findUnique({
+        where: { userId_threadId: { userId, threadId } },
+        select: { lastReadSequenceNumber: true },
+      }),
+    ]);
+    const lastReadSequenceNumber = state?.lastReadSequenceNumber ?? 0;
+    return {
+      unread: thread.lastPostSequenceNumber > lastReadSequenceNumber,
+      lastReadSequenceNumber,
+      latestSequenceNumber: thread.lastPostSequenceNumber,
+    };
+  }
+
+  /**
+   * Explicitly mark the currently known thread as read. Atomic GREATEST prevents
+   * older concurrent requests from moving a user's read state backwards.
+   * Precise per-post read position is reserved for phase 22.217.
+   */
+  async markThreadRead(forumSlug: string, threadSlugValue: string, userId: string) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    const thread = await this.database.thread.findUniqueOrThrow({
+      where: { id: threadId },
+      select: { lastPostSequenceNumber: true },
+    });
+    const latestSequenceNumber = thread.lastPostSequenceNumber;
+    const rows = await this.database.$queryRaw<{ lastReadSequenceNumber: number }[]>`
+      INSERT INTO "ThreadReadState"
+        ("id", "userId", "threadId", "lastReadSequenceNumber", "lastReadAt", "createdAt", "updatedAt")
+      VALUES (
+        CAST(${randomUUID()} AS UUID), CAST(${userId} AS UUID), CAST(${threadId} AS UUID),
+        ${latestSequenceNumber}, NOW(), NOW(), NOW()
+      )
+      ON CONFLICT ("userId", "threadId") DO UPDATE SET
+        "lastReadSequenceNumber" = GREATEST(
+          "ThreadReadState"."lastReadSequenceNumber",
+          EXCLUDED."lastReadSequenceNumber"
+        ),
+        "lastReadAt" = NOW(),
+        "updatedAt" = NOW()
+      RETURNING "lastReadSequenceNumber"
+    `;
+    const lastReadSequenceNumber = rows[0].lastReadSequenceNumber;
+    return {
+      unread: latestSequenceNumber > lastReadSequenceNumber,
+      lastReadSequenceNumber,
+      latestSequenceNumber,
+    };
+  }
+
   /**
    * Atomically claim the next sequence number before inserting a post.
    * The conditional increment holds a row lock until the post and

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './forum-overview.module.css';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
+import { ThreadUnreadToggle } from './thread-unread-toggle';
 
 interface PublicPost {
   id: string;
@@ -214,6 +215,13 @@ export function ClubThreadDetail({
             apiUrl={apiUrl}
             forumSlug={detail.thread.forum.slug}
             threadSlug={detail.thread.slug}
+          />
+          <ThreadUnreadToggle
+            key={detail.thread.id + '-unread'}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+            revision={revision}
           />
           <h2>Beiträge</h2>
           {detail.posts.length === 0 ? (

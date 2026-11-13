@@ -1104,4 +1104,119 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     await request(app.getHttpServer()).delete(target).set('Authorization', auth).expect(200);
     expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
   });
+  it('22.216 unread state is private, explicit, idempotent and monotone', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true, lastPostSequenceNumber: true },
+    });
+    const base = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const target = base + '/unread';
+    const firstUser = users.get(subjects.replyA)!;
+    const [authA, authB] = await Promise.all([
+      tokenFor(subjects.replyA).then((t) => 'Bearer ' + t),
+      tokenFor(subjects.replyB).then((t) => 'Bearer ' + t),
+    ]);
+    await request(app.getHttpServer()).get(target).expect(401);
+    await request(app.getHttpServer()).put(target).expect(401);
+    await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
+      .expect(403);
+
+    const before = dataOf<{
+      unread: boolean;
+      lastReadSequenceNumber: number;
+      latestSequenceNumber: number;
+    }>(await request(app.getHttpServer()).get(target).set('Authorization', authA).expect(200));
+    expect(before).toEqual({
+      unread: true,
+      lastReadSequenceNumber: 0,
+      latestSequenceNumber: thread.lastPostSequenceNumber,
+    });
+    expect(
+      dataOf<{ unread: boolean }>(
+        await request(app.getHttpServer()).get(target).set('Authorization', authB).expect(200),
+      ).unread,
+    ).toBe(true);
+
+    const writes = await Promise.all([
+      request(app.getHttpServer()).put(target).set('Authorization', authA),
+      request(app.getHttpServer()).put(target).set('Authorization', authA),
+    ]);
+    expect(writes.map((item) => item.status)).toEqual([200, 200]);
+    expect(writes.every((item) => dataOf<{ unread: boolean }>(item).unread === false)).toBe(true);
+    expect(
+      await database.threadReadState.count({
+        where: { userId: firstUser, threadId: threads[0] },
+      }),
+    ).toBe(1);
+    expect(
+      dataOf<{ unread: boolean }>(
+        await request(app.getHttpServer()).get(target).set('Authorization', authB).expect(200),
+      ).unread,
+    ).toBe(true);
+    const publicResponse = await request(app.getHttpServer()).get(base).expect(200);
+    expect(JSON.stringify(dataOf<unknown>(publicResponse))).not.toContain('lastReadSequenceNumber');
+
+    await database.thread.update({
+      where: { id: threads[0] },
+      data: { lastPostSequenceNumber: { increment: 1 } },
+    });
+    try {
+      const unread = dataOf<{ unread: boolean; latestSequenceNumber: number }>(
+        await request(app.getHttpServer()).get(target).set('Authorization', authA).expect(200),
+      );
+      expect(unread.unread).toBe(true);
+      expect(unread.latestSequenceNumber).toBe(thread.lastPostSequenceNumber + 1);
+      const marked = dataOf<{ unread: boolean; lastReadSequenceNumber: number }>(
+        await request(app.getHttpServer()).put(target).set('Authorization', authA).expect(200),
+      );
+      expect(marked.unread).toBe(false);
+      expect(marked.lastReadSequenceNumber).toBe(thread.lastPostSequenceNumber + 1);
+    } finally {
+      await database.thread.update({
+        where: { id: threads[0] },
+        data: { lastPostSequenceNumber: thread.lastPostSequenceNumber },
+      });
+    }
+    expect(
+      (
+        await database.threadReadState.findUniqueOrThrow({
+          where: { userId_threadId: { userId: firstUser, threadId: threads[0] } },
+        })
+      ).lastReadSequenceNumber,
+    ).toBe(thread.lastPostSequenceNumber + 1);
+    await database.threadReadState.deleteMany({ where: { threadId: threads[0] } });
+  });
+
+  it('22.216 hides unread state for archived threads and inactive categories', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/unread';
+    const auth = 'Bearer ' + (await tokenFor(subjects.replyC));
+    await database.thread.update({
+      where: { id: threads[0] },
+      data: { status: 'ARCHIVED' },
+    });
+    try {
+      await request(app.getHttpServer()).get(target).set('Authorization', auth).expect(404);
+      await request(app.getHttpServer()).put(target).set('Authorization', auth).expect(404);
+    } finally {
+      await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+    }
+    await database.forumCategory.update({
+      where: { id: categoryId! },
+      data: { active: false },
+    });
+    try {
+      await request(app.getHttpServer()).get(target).set('Authorization', auth).expect(404);
+      await request(app.getHttpServer()).put(target).set('Authorization', auth).expect(404);
+    } finally {
+      await database.forumCategory.update({ where: { id: categoryId! }, data: { active: true } });
+    }
+    expect(await database.threadReadState.count({ where: { threadId: threads[0] } })).toBe(0);
+  });
 });

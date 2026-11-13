@@ -72,6 +72,34 @@ export class ForumThreadsController {
     );
   }
 
+  @Get(':threadSlug/unread')
+  @RequirePermissions(PERMISSIONS.THREAD_READ_STATE)
+  getUnreadStatus(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.getThreadUnreadStatus(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+    );
+  }
+
+  @Put(':threadSlug/unread')
+  @RequirePermissions(PERMISSIONS.THREAD_READ_STATE)
+  markRead(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.markThreadRead(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+    );
+  }
+
   @Post(':threadSlug/posts')
   @RequirePermissions(PERMISSIONS.THREAD_REPLY)
   replyToThread(
