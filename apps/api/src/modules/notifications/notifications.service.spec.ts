@@ -10,6 +10,8 @@ import { NotificationsService } from './notifications.service';
 
 const database = {
   notification: { create: jest.fn(), findUnique: jest.fn() },
+  notificationOutbox: { create: jest.fn() },
+  $transaction: jest.fn(),
   $disconnect: jest.fn(),
 };
 jest.mock('@kurvenfunk/database', () => ({ createPrismaClient: () => database }));
@@ -78,6 +80,10 @@ describe('Phase 23.224 internal NotificationsService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     database.notification.create.mockResolvedValue({ id: notificationId });
+    database.notificationOutbox.create.mockResolvedValue({ notificationId });
+    database.$transaction.mockImplementation((fn: (db: typeof database) => unknown) =>
+      Promise.resolve(fn(database)),
+    );
     service = new NotificationsService();
   });
 
@@ -100,6 +106,10 @@ describe('Phase 23.224 internal NotificationsService', () => {
       },
       select: { id: true },
     });
+    expect(database.notificationOutbox.create).toHaveBeenCalledWith({
+      data: { notificationId },
+    });
+    expect(database.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it('does not persist self-notifications', async () => {
@@ -165,6 +175,13 @@ describe('Phase 23.224 internal NotificationsService', () => {
       status: 'ALREADY_EXISTS',
       id: notificationId,
     });
+  });
+
+  it('rolls back notification creation when the durable outbox write fails', async () => {
+    database.notificationOutbox.create.mockRejectedValue(new Error('postgres unavailable'));
+    await expect(service.persist(command)).rejects.toThrow('postgres unavailable');
+    expect(database.$transaction).toHaveBeenCalledTimes(1);
+    expect(database.notificationOutbox.create).toHaveBeenCalledTimes(1);
   });
 
   it('does not mask contradictory event key reuse or unrelated database failures', async () => {

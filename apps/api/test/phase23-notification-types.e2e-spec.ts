@@ -74,6 +74,12 @@ describe('Phase 23.224 – isolated notification taxonomy and durable event dedu
     await database.notification.update({ where: { id: initial.id }, data: { readAt } });
     expect(await service.persist(command)).toEqual({ status: 'ALREADY_EXISTS', id: initial.id });
     const stored = await database.notification.findUniqueOrThrow({ where: { id: initial.id } });
+    const pending = await database.notificationOutbox.findUniqueOrThrow({
+      where: { notificationId: initial.id },
+    });
+    expect(pending.processedAt).toBeNull();
+    expect(pending.attemptCount).toBe(0);
+
     expect(stored.readAt).toEqual(readAt);
     expect(stored.userId).toBe(recipientId);
     expect(stored.title).toBe('Neue Antwort');
@@ -93,6 +99,10 @@ describe('Phase 23.224 – isolated notification taxonomy and durable event dedu
     const attempts = await Promise.all([service.persist(command), service.persist(command)]);
     expect(attempts.map((x) => x.status).sort()).toEqual(['ALREADY_EXISTS', 'CREATED']);
     expect(attempts[0].id).toBe(attempts[1].id);
+    expect(await database.notificationOutbox.count({
+      where: { notificationId: attempts[0].id! },
+    })).toBe(1);
+
     expect(
       await database.notification.count({
         where: { userId: recipientId, type: 'THREAD_REPLY' },
