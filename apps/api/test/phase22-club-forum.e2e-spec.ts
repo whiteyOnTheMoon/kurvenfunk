@@ -27,6 +27,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
   };
   const clubs: string[] = [];
   const forums: string[] = [];
+  const threads: string[] = [];
   let categoryId: string | undefined;
   const firstSlug = 'p210-existing-' + marker;
   const secondSlug = 'p210-new-' + marker;
@@ -103,6 +104,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       if (app) await app.close();
       if (database) {
         // Clean only this suite's records, and only in disposable local E2E PostgreSQL.
+        if (threads.length) {
+          await database.thread.updateMany({
+            where: { id: { in: threads } },
+            data: { lastPostId: null },
+          });
+          await database.post.deleteMany({ where: { threadId: { in: threads } } });
+          await database.thread.deleteMany({ where: { id: { in: threads } } });
+        }
         await database.auditLog.deleteMany({
           where: {
             targetType: 'SYSTEM',
@@ -305,6 +314,111 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await database.forum.update({
         where: { id: forums[0] },
         data: { active: true },
+      });
+    }
+  });
+
+  it('22.211 reads a genuine empty thread list and hides unknown forums', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads')
+      .expect(200);
+    expect(dataOf<{ items: unknown[]; hasMore: boolean }>(response)).toEqual({
+      items: [],
+      hasMore: false,
+    });
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-unknown-forum/threads')
+      .expect(404);
+  });
+
+  it('22.211 enforces auth, LIMITED status, onboarding and request validation', async () => {
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads';
+    const body = { title: 'Gespräch über unseren Verein', body: 'Sachlicher Testbeitrag.' };
+    await request(app.getHttpServer()).post(target).send(body).expect(401);
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
+      .send(body)
+      .expect(403);
+
+    const adminId = users.get(subjects.admin)!;
+    await database.user.update({
+      where: { id: adminId },
+      data: { onboardingCompleted: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.admin)))
+        .send(body)
+        .expect(403);
+    } finally {
+      await database.user.update({
+        where: { id: adminId },
+        data: { onboardingCompleted: true },
+      });
+    }
+
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.admin)))
+      .send({ title: 'Kurz', body: 'Testbeitrag' })
+      .expect(400);
+    expect(await database.thread.count({ where: { forumId: forums[0] } })).toBe(0);
+  });
+
+  it('22.211 creates a thread and the first post atomically, visible in the forum', async () => {
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads';
+    const body = 'Sachlicher Eröffnungsbeitrag aus dem isolierten Test ' + marker;
+    const response = await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.admin)))
+      .send({ title: 'Vereinsdiskussion zum Saisonstart', body })
+      .expect(201);
+    const thread = dataOf<{
+      id: string;
+      slug: string;
+      forumId: string;
+      postCount: number;
+    }>(response);
+    threads.push(thread.id);
+    expect(thread.forumId).toBe(forums[0]);
+    expect(thread.postCount).toBe(1);
+    expect(thread.slug).toMatch(/^vereinsdiskussion-zum-saisonstart-/u);
+
+    const firstPost = await database.post.findFirst({
+      where: { threadId: thread.id, sequenceNumber: 1 },
+    });
+    expect(firstPost?.authorId).toBe(users.get(subjects.admin));
+    expect(firstPost?.content).toBe(body);
+    const stored = await database.thread.findUnique({ where: { id: thread.id } });
+    expect(stored?.lastPostId).toBe(firstPost?.id);
+    expect(stored?.lastPostSequenceNumber).toBe(1);
+
+    const list = await request(app.getHttpServer()).get(target).expect(200);
+    const items = dataOf<{ items: { id: string }[]; hasMore: boolean }>(list);
+    expect(items.hasMore).toBe(false);
+    expect(items.items.map((item) => item.id)).toContain(thread.id);
+  });
+
+  it('22.211 rejects thread creation in a read-only forum without new records', async () => {
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads';
+    const before = await database.thread.count({ where: { forumId: forums[0] } });
+    await database.forum.update({
+      where: { id: forums[0] },
+      data: { threadCreationEnabled: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.moderator)))
+        .send({ title: 'Kein neues Thema erlaubt', body: 'Noch ein isolierter Testbeitrag.' })
+        .expect(409);
+      expect(await database.thread.count({ where: { forumId: forums[0] } })).toBe(before);
+    } finally {
+      await database.forum.update({
+        where: { id: forums[0] },
+        data: { threadCreationEnabled: true },
       });
     }
   });
