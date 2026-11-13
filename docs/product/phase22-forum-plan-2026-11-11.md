@@ -8,7 +8,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | --- | --- | --- | --- |
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
-| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: API und Web-Composer technisch in DEV integriert, Push-CI #43343696724 PASS**; **212: öffentliche Detail-/Postansicht in Arbeit**; 213 ausstehend |
+| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: Antworten in Arbeit, Abnahme offen** |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | Ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
@@ -68,6 +68,15 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Im Vereinsforum führen erst jetzt tatsächlich vorhandene Thread-Slugs zu `/forum/verein/:slug/thema/:threadSlug`; die mobile Ansicht zeigt Beiträge als **escaped Text** (kein HTML/Markdown-Rendering), passende Lade-/404-/Fehlerzustände und einen Hinweis, wenn weitere Beiträge folgen.
 - Die isolierten PostgreSQL/Redis-HTTP-E2E-Tests prüfen echte Post-Inhalte, Redaction, Sichtbarkeit, 404 bei deaktivierten Kategorien und die Begrenzung. Ein zusätzlicher **rein lesender** DEV-Smoketest prüft unbekanntes Thema = 404 und die Next.js-Route = 200 ohne Seeding; ein positiver Test mit realem aktiven Verein erfordert nach wie vor echte DEV-Daten und manuelle Browserabnahme.
 - Der erste Slice ist **nicht abgeschlossen**, solange PR-CI mit Web-Docker-Build und die anschließende Merge-Push-/DEV-CI nicht beide vollständig grün sind. Schreibrechte und Antworten folgen gesondert in 22.213.
+
+## 22.213 – Antworten und Beitragsbezüge (in Arbeit)
+
+- `POST /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/posts` verlangt `thread.reply`, ACTIVE-Account und abgeschlossenes Onboarding. Das gemeinsame Zod-Schema nimmt einen nichtleeren Beitrag mit höchstens 5.000 Zeichen und optional eine gültige `parentPostId` im gleichen, nicht gelöschten Thread an. Die bestehende Redis-Spam-/Duplicate-/Linkbegrenzung gilt auch für Forumsantworten.
+- Nur **öffentliche OPEN-Themen** sind beschreibbar. LOCKED liefert 409, ARCHIVED/MERGED oder unsichtbare Foren, Vereine und Kategorien liefern 404. Eine abgeschaltete `threadCreationEnabled`-Option verbietet neue Themen, nicht automatisch Antworten auf vorhandene offene Themen.
+- Ein bedingter `Thread.updateMany`-Vergleich auf `lastPostSequenceNumber` reserviert die nächste Nummer inklusive `postCount+1` innerhalb derselben Datenbanktransaktion. Erst dann wird der Post angelegt und `lastPostId/lastPostAt` gesetzt. Bei Konkurrenz wird begrenzt erneut versucht, statt Nummern zu duplizieren. Fehler rollen die komplette Transaktion zurück und geben eine reservierte Spam-Schutzsperre nach Möglichkeit wieder frei.
+- Die Thread-Detailseite bekommt einen Reply-Dialog für angemeldete ACTIVE-Mitglieder mit abgeschlossenem Onboarding; eigene Antworten auf echte, nicht gelöschte Beiträge können über `parentPostId` verknüpft werden. Gesperrte Themen zeigen keine Eingabemaske; nach bestätigter Erstellung wird die öffentliche Liste aktualisiert.
+- **Wichtig:** Die Übersicht bleibt bis Aufgabe 214 auf **30 Posts** begrenzt und darf keine neue Antwort als dort sichtbar versprechen, wenn weitere Seiten fehlen. Auch gelöschte Beiträge bleiben öffentlich redigiert. Keine autonomen DEV-Testposts und keine STAGING-/PROD-Mutation.
+- Isolierte API-HTTP-E2E prüft Berechtigungen (401/403), Onboarding, Validierung (400), Atomarität und Sequenzen, gleichzeitige Autoren, Elternbezüge sowie abgewiesene Writes. DEV prüft ausschließlich den anonymen, fail-closed-Schreibschutz ohne echte Datenänderungen. **Erst vollständig grüne PR-CI plus Merge-Push-/DEV-CI erlauben technische Abnahme.**
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 

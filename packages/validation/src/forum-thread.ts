@@ -11,3 +11,12 @@ export const createForumThreadSchema = z
   .strict();
 
 export type CreateForumThreadInput = z.infer<typeof createForumThreadSchema>;
+
+export const createForumReplySchema = z
+  .object({
+    body: z.string().trim().min(1).max(FORUM_THREAD_BODY_MAX_LENGTH),
+    parentPostId: z.string().uuid().optional(),
+  })
+  .strict();
+
+export type CreateForumReplyInput = z.infer<typeof createForumReplySchema>;

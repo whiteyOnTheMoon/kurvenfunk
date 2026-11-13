@@ -51,7 +51,9 @@ export {
   FORUM_THREAD_TITLE_MAX_LENGTH,
   FORUM_THREAD_BODY_MAX_LENGTH,
   createForumThreadSchema,
+  createForumReplySchema,
   type CreateForumThreadInput,
+  type CreateForumReplyInput,
 } from './forum-thread.js';
 export {
   createTagSchema,

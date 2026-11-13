@@ -7,12 +7,28 @@ import {
   NotFoundException,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import type { CreateForumThreadInput } from '@kurvenfunk/validation';
+import type { CreateForumReplyInput, CreateForumThreadInput } from '@kurvenfunk/validation';
 
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 
 const THREAD_PREVIEW_LIMIT = 20;
 const POST_DETAIL_LIMIT = 30;
+
+const MAX_REPLY_CONFLICT_RETRIES = 5;
+
+class RetryThreadReplyTransaction extends Error {}
+
+function retryableThreadConflict(error: unknown): boolean {
+  if (error instanceof RetryThreadReplyTransaction) return true;
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034';
+}
+
+function missingThread(): NotFoundException {
+  return new NotFoundException({
+    code: 'THREAD_NOT_FOUND',
+    message: 'Dieses Diskussionsthema ist nicht verfügbar.',
+  });
+}
 
 const publicThreadSelect = {
   id: true,
@@ -146,6 +162,121 @@ export class ForumThreadsService implements OnModuleDestroy {
       })),
       hasMorePosts: rows.length > POST_DETAIL_LIMIT,
     };
+  }
+
+  /**
+   * Atomically claim the next sequence number before inserting a post.
+   * The conditional increment holds a row lock until the post and
+   * lastPost metadata have committed, preventing concurrent duplicates.
+   */
+  async replyToThread(
+    forumSlug: string,
+    threadSlugValue: string,
+    authorId: string,
+    input: CreateForumReplyInput,
+  ) {
+    const reservation = await this.spamProtection.reserve(authorId, input.body);
+
+    try {
+      for (let attempt = 0; attempt < MAX_REPLY_CONFLICT_RETRIES; attempt++) {
+        try {
+          return await this.database.$transaction(async (tx) => {
+            const thread = await tx.thread.findFirst({
+              where: {
+                slug: threadSlugValue,
+                status: { in: ['OPEN', 'LOCKED'] },
+                mergedIntoThreadId: null,
+                forum: { is: visibleForumWhere(forumSlug) },
+              },
+              select: { id: true, status: true, lastPostSequenceNumber: true },
+            });
+            if (!thread) throw missingThread();
+            if (thread.status !== 'OPEN') {
+              throw new ConflictException({
+                code: 'THREAD_LOCKED',
+                message: 'Dieses Thema ist für Antworten geschlossen.',
+              });
+            }
+
+            if (input.parentPostId) {
+              const parent = await tx.post.findFirst({
+                where: {
+                  id: input.parentPostId,
+                  threadId: thread.id,
+                  deletedAt: null,
+                },
+                select: { id: true },
+              });
+              if (!parent) {
+                throw new ConflictException({
+                  code: 'PARENT_POST_UNAVAILABLE',
+                  message: 'Der referenzierte Beitrag ist nicht verfügbar.',
+                });
+              }
+            }
+
+            const claimed = await tx.thread.updateMany({
+              where: {
+                id: thread.id,
+                status: 'OPEN',
+                mergedIntoThreadId: null,
+                lastPostSequenceNumber: thread.lastPostSequenceNumber,
+                forum: { is: visibleForumWhere(forumSlug) },
+              },
+              data: {
+                lastPostSequenceNumber: { increment: 1 },
+                postCount: { increment: 1 },
+              },
+            });
+            if (claimed.count !== 1) throw new RetryThreadReplyTransaction();
+
+            const post = await tx.post.create({
+              data: {
+                threadId: thread.id,
+                authorId,
+                parentPostId: input.parentPostId ?? null,
+                sequenceNumber: thread.lastPostSequenceNumber + 1,
+                content: input.body,
+              },
+              select: {
+                id: true,
+                threadId: true,
+                parentPostId: true,
+                sequenceNumber: true,
+                content: true,
+                createdAt: true,
+                author: { select: { id: true, nickname: true } },
+              },
+            });
+
+            await tx.thread.update({
+              where: { id: thread.id },
+              data: {
+                lastPostId: post.id,
+                lastPostAt: post.createdAt,
+              },
+            });
+
+            return post;
+          });
+        } catch (error) {
+          if (retryableThreadConflict(error)) continue;
+          throw error;
+        }
+      }
+
+      throw new ConflictException({
+        code: 'THREAD_REPLY_CONFLICT',
+        message: 'Die Diskussion wurde gleichzeitig aktualisiert. Bitte erneut versuchen.',
+      });
+    } catch (error) {
+      try {
+        await this.spamProtection.release(reservation);
+      } catch {
+        // Keep the original transaction or authorization error.
+      }
+      throw error;
+    }
   }
 
   /** Thread and opening post are committed together or not at all. */

@@ -234,6 +234,34 @@
   font-style: italic;
 }
 
+.threadInlineReply {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--kf-link);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.threadReplyContext {
+  margin: 0 0 16px;
+  color: var(--kf-text-muted);
+}
+
+.threadReplyContext button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--kf-link);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .intro,
   .categoryHeader,
