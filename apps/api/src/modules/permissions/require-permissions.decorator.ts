@@ -19,7 +19,8 @@ export function RequirePermissions(...permissions: Permission[]) {
   // Moderator-only thread pin actions must also respect completed onboarding.
   // Do not add them to COMMUNITY_PERMISSIONS: that would grant pin access to USER.
   const requiresOnboarding = permissions.some(
-    (permission) => COMMUNITY_PERMISSIONS.includes(permission) || permission === PERMISSIONS.THREAD_PIN,
+    (permission) =>
+      COMMUNITY_PERMISSIONS.includes(permission) || permission === PERMISSIONS.THREAD_PIN,
   );
 
   return applyDecorators(
