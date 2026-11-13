@@ -16,11 +16,13 @@ export function RequirePermissions(...permissions: Permission[]) {
     throw new Error('At least one permission is required');
   }
 
-  // Moderator-only thread pin actions must also respect completed onboarding.
-  // Do not add them to COMMUNITY_PERMISSIONS: that would grant pin access to USER.
+  // Moderator-only thread moderation also requires completed onboarding.
+  // Never add these to COMMUNITY_PERMISSIONS: ordinary users must not moderate.
   const requiresOnboarding = permissions.some(
     (permission) =>
-      COMMUNITY_PERMISSIONS.includes(permission) || permission === PERMISSIONS.THREAD_PIN,
+      COMMUNITY_PERMISSIONS.includes(permission) ||
+      permission === PERMISSIONS.THREAD_PIN ||
+      permission === PERMISSIONS.THREAD_LOCK,
   );
 
   return applyDecorators(

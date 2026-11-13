@@ -24,3 +24,9 @@ export type CreateForumReplyInput = z.infer<typeof createForumReplySchema>;
 export const setForumReadPositionSchema = z.object({ postId: z.string().uuid() }).strict();
 
 export type SetForumReadPositionInput = z.infer<typeof setForumReadPositionSchema>;
+
+export const lockForumThreadSchema = z
+  .object({ reason: z.string().trim().min(5).max(500).optional() })
+  .strict();
+
+export type LockForumThreadInput = z.infer<typeof lockForumThreadSchema>;

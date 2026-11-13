@@ -10,7 +10,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: DEV-CI #43375847270 PASS**; **217: DEV-CI #43380284008 PASS** |
-| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: in Arbeit**; 219–221 ausstehend |
+| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: DEV-CI #43389281899 PASS**; **219: in Arbeit**; 220–221 ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
 | 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
 
@@ -117,6 +117,14 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Ausschließlich öffentlich sichtbare OPEN/LOCKED-Themen, keine archivierten, gemergten oder inaktiven Kategorien/Foren/Vereine; 404 schützt verborgene Themen. Identische Wiederholung und parallele identische Writes sind erfolgreich, jedoch ohne zweite Mutation oder zweiten Audit-Eintrag. Die Änderung und das FORUM-THREAD-Audit mit Actor/JWT-User-ID, Vorher-/Nachher-Zustand laufen **in einer Transaktion**.
 - Vorhandene öffentliche keyset-sortierte Thread-Liste verwendet `pinnedAt DESC NULLS LAST`; List- und Detailansicht zeigen angepinnte Themen, Moderator:innen können im Detail explizit anpinnen/lösen.
 - Isolierte PostgreSQL-/Redis-/HTTP-E2E prüfen 401/403, Onboarding, sichtbare und versteckte Threads, idempotente parallele Writes, Audit, Sortierung und LOCKED-Zustand. DEV ausschließlich untrusted/tokenloses PUT + DELETE über Loopback mit erwartetem 503 fail-closed; **keine DEV-Mutation**. Reale authentifizierte Tunnel-/Browser-/Mobilabnahme bleibt offen.
+
+## 22.219 – Themen sperren und entsperren (Moderation)
+
+- Vorhandene `Thread.status` (OPEN/LOCKED), `lockedAt`, `lockedByUserId`, `lockReason` sowie `AuditLog`-Aktionen `THREAD_LOCKED`/`THREAD_UNLOCKED` werden wiederverwendet; **keine Migration**.
+- `PUT /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/lock` mit streng validiertem optionalem `{reason}` (5–500 Zeichen) sperrt OPEN; `DELETE .../lock` hebt LOCKED auf und leert die Sperrmetadaten. `thread.lock` nur für MODERATOR, ADMIN und SUPERADMIN, mit ACTIVE, abgeschlossenem Onboarding und JWT-Aktoridentität; USER, TRUSTED_USER, EDITOR und LIMITED sind nicht berechtigt.
+- Nur öffentlich sichtbare OPEN/LOCKED-Themen werden verändert; MERGED/ARCHIVED, inaktive Kategorien/Foren/Vereine bleiben 404. Idempotente Wiederholungen und parallele identische Requests ändern keinen zweiten Zustand und erzeugen keinen zweiten Audit. Statuswechsel und Audit mit vorherigem/nachherigem Zustand liegen in **einer Transaktion**.
+- Die bestehende Antworttransaktion prüft `status=OPEN` beim atomaren Sequenz-/Beitragsschreiben. Nach einem bestätigten Lock akzeptiert die API keine neuen Antworten (409). Die Detailseite zeigt den Sperrstatus, blendet die Antwortfunktion aus und bietet Moderatoren einen expliziten Sperren-/Entsperren-Schalter mit optionaler Begründung. Öffentliche Antworten enthalten keine personenbezogenen Lock- oder Audit-Details.
+- Isolierte PostgreSQL-/Redis-/HTTP-E2E prüfen Auth, Onboarding, Eingabevalidierung, Parallelität, Audit, Antwortsperre und verborgene Threads. DEV testet ausschließlich tokenlose Loopback-PUT-/DELETE-Anfragen mit erwartetem 503 fail-closed, ohne DEV-Schreibzugriffe. Echte manuelle Moderator-/Browser-/Mobil-/Tunnelabnahme bleibt offen.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 

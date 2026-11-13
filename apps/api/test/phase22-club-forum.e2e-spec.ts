@@ -1465,4 +1465,190 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await database.auditLog.deleteMany({ where: auditWhere });
     }
   });
+
+  it('22.219 locks and unlocks with strict moderator audit, privacy and reply protection', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true, postCount: true, lastPostSequenceNumber: true },
+    });
+    const base = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const url = base + '/lock';
+    const moderatorId = users.get(subjects.moderator)!;
+    const moderator = 'Bearer ' + (await tokenFor(subjects.moderator));
+    const admin = 'Bearer ' + (await tokenFor(subjects.admin));
+    const member = 'Bearer ' + (await tokenFor(subjects.replyA));
+    const limited = 'Bearer ' + (await tokenFor(subjects.limited));
+    const auditWhere = {
+      targetType: 'THREAD',
+      targetId: threads[0],
+      action: { in: ['THREAD_LOCKED', 'THREAD_UNLOCKED'] },
+    } satisfies Prisma.AuditLogWhereInput;
+
+    try {
+      await request(app.getHttpServer()).put(url).send({}).expect(401);
+      await request(app.getHttpServer()).delete(url).expect(401);
+      for (const auth of [member, limited]) {
+        await request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', auth)
+          .send({})
+          .expect(403);
+        await request(app.getHttpServer()).delete(url).set('Authorization', auth).expect(403);
+      }
+      await database.user.update({
+        where: { id: moderatorId },
+        data: { onboardingCompleted: false },
+      });
+      try {
+        await request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', moderator)
+          .send({})
+          .expect(403);
+      } finally {
+        await database.user.update({
+          where: { id: moderatorId },
+          data: { onboardingCompleted: true },
+        });
+      }
+      for (const body of [{ reason: '' }, { reason: 'bad' }, { reason: 'Good reason', actorUserId: moderatorId }]) {
+        await request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', moderator)
+          .send(body)
+          .expect(400);
+      }
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(0);
+
+      const reason = 'Wiederholte Regelverletzungen im Thema';
+      const writes = await Promise.all([
+        request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', moderator)
+          .send({ reason }),
+        request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', moderator)
+          .send({ reason }),
+      ]);
+      expect(writes.map((item) => item.status)).toEqual([200, 200]);
+      expect(writes.every((item) => dataOf<{ locked: boolean }>(item).locked)).toBe(true);
+      const locked = await database.thread.findUniqueOrThrow({
+        where: { id: threads[0] },
+        select: {
+          status: true,
+          lockedAt: true,
+          lockedByUserId: true,
+          lockReason: true,
+          postCount: true,
+          lastPostSequenceNumber: true,
+        },
+      });
+      expect(locked).toMatchObject({
+        status: 'LOCKED',
+        lockedByUserId: moderatorId,
+        lockReason: reason,
+        postCount: thread.postCount,
+        lastPostSequenceNumber: thread.lastPostSequenceNumber,
+      });
+      expect(locked.lockedAt).not.toBeNull();
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
+      expect(await database.auditLog.findFirst({ where: auditWhere })).toMatchObject({
+        action: 'THREAD_LOCKED',
+        actorUserId: moderatorId,
+        category: 'FORUM',
+        reason,
+      });
+
+      const publicDetail = dataOf<{ thread: { status: string } }>(
+        await request(app.getHttpServer()).get(base).expect(200),
+      );
+      expect(publicDetail.thread.status).toBe('LOCKED');
+      expect(JSON.stringify(publicDetail)).not.toContain(reason);
+      expect(JSON.stringify(publicDetail)).not.toContain(moderatorId);
+      await request(app.getHttpServer())
+        .post(base + '/posts')
+        .set('Authorization', member)
+        .send({ body: 'Eine gesperrte Diskussion bekommt keine weitere Antwort.' })
+        .expect(409);
+      expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(
+        thread.postCount,
+      );
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
+
+      const unlocks = await Promise.all([
+        request(app.getHttpServer()).delete(url).set('Authorization', admin),
+        request(app.getHttpServer()).delete(url).set('Authorization', admin),
+      ]);
+      expect(unlocks.map((item) => item.status)).toEqual([200, 200]);
+      expect(unlocks.every((item) => !dataOf<{ locked: boolean }>(item).locked)).toBe(true);
+      const opened = await database.thread.findUniqueOrThrow({
+        where: { id: threads[0] },
+        select: { status: true, lockedAt: true, lockedByUserId: true, lockReason: true },
+      });
+      expect(opened).toEqual({
+        status: 'OPEN',
+        lockedAt: null,
+        lockedByUserId: null,
+        lockReason: null,
+      });
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(2);
+
+      for (const hiddenStatus of ['ARCHIVED', 'MERGED'] as const) {
+        await database.thread.update({
+          where: { id: threads[0] },
+          data: { status: hiddenStatus },
+        });
+        try {
+          await request(app.getHttpServer())
+            .put(url)
+            .set('Authorization', moderator)
+            .send({})
+            .expect(404);
+          await request(app.getHttpServer())
+            .delete(url)
+            .set('Authorization', moderator)
+            .expect(404);
+        } finally {
+          await database.thread.update({
+            where: { id: threads[0] },
+            data: { status: 'OPEN' },
+          });
+        }
+      }
+      await database.forumCategory.update({
+        where: { id: categoryId! },
+        data: { active: false },
+      });
+      try {
+        await request(app.getHttpServer())
+          .put(url)
+          .set('Authorization', moderator)
+          .send({})
+          .expect(404);
+        await request(app.getHttpServer())
+          .delete(url)
+          .set('Authorization', moderator)
+          .expect(404);
+      } finally {
+        await database.forumCategory.update({
+          where: { id: categoryId! },
+          data: { active: true },
+        });
+      }
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(2);
+    } finally {
+      await database.thread.update({
+        where: { id: threads[0] },
+        data: {
+          status: 'OPEN',
+          lockedAt: null,
+          lockedByUserId: null,
+          lockReason: null,
+        },
+      });
+      await database.auditLog.deleteMany({ where: auditWhere });
+    }
+  });
+
 });

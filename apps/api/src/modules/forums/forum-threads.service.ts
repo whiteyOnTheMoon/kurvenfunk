@@ -280,6 +280,95 @@ export class ForumThreadsService implements OnModuleDestroy {
     });
   }
 
+  /**
+   * Moderator-only OPEN <-> LOCKED transition; atomic audit and conditional
+   * update lock the same thread row that reply creation conditionally updates.
+   * No state mutation or duplicate audit on an idempotent repeat.
+   */
+  async setThreadLocked(
+    forumSlug: string,
+    threadSlugValue: string,
+    actorUserId: string,
+    locked: boolean,
+    reason?: string,
+  ) {
+    return this.database.$transaction(async (tx) => {
+      const where: Prisma.ThreadWhereInput = {
+        slug: threadSlugValue,
+        status: { in: ['OPEN', 'LOCKED'] },
+        mergedIntoThreadId: null,
+        forum: { is: visibleForumWhere(forumSlug) },
+      };
+      const before = await tx.thread.findFirst({
+        where,
+        select: {
+          id: true,
+          status: true,
+          lockedAt: true,
+          lockedByUserId: true,
+          lockReason: true,
+        },
+      });
+      if (!before) throw missingThread();
+      const status = locked ? 'LOCKED' : 'OPEN';
+      if (before.status === status) {
+        return { locked, status, lockedAt: before.lockedAt };
+      }
+
+      const lockedAt = locked ? new Date() : null;
+      const updated = await tx.thread.updateMany({
+        where: { ...where, id: before.id, status: locked ? 'OPEN' : 'LOCKED' },
+        data: {
+          status,
+          lockedAt,
+          lockedByUserId: locked ? actorUserId : null,
+          lockReason: locked ? (reason ?? null) : null,
+        },
+      });
+      if (updated.count === 0) {
+        const current = await tx.thread.findFirst({
+          where: { ...where, id: before.id },
+          select: { status: true, lockedAt: true },
+        });
+        if (!current) throw missingThread();
+        return {
+          locked: current.status === 'LOCKED',
+          status: current.status,
+          lockedAt: current.lockedAt,
+        };
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId,
+          action: locked ? 'THREAD_LOCKED' : 'THREAD_UNLOCKED',
+          category: 'FORUM',
+          targetType: 'THREAD',
+          targetId: before.id,
+          reason: locked ? (reason ?? null) : null,
+          metadata: {
+            forumSlug,
+            threadSlug: threadSlugValue,
+            before: {
+              status: before.status,
+              lockedAt: before.lockedAt?.toISOString() ?? null,
+              lockedByUserId: before.lockedByUserId,
+              lockReason: before.lockReason,
+            },
+            after: {
+              status,
+              lockedAt: lockedAt?.toISOString() ?? null,
+              lockedByUserId: locked ? actorUserId : null,
+              lockReason: locked ? (reason ?? null) : null,
+            },
+          },
+        },
+      });
+      return { locked, status, lockedAt };
+    });
+  }
+
   /** Resolve only a public OPEN/LOCKED, non-merged thread; never reveal hidden IDs. */
   private async visibleSubscriptionThreadId(forumSlug: string, threadSlugValue: string) {
     const thread = await this.database.thread.findFirst({
