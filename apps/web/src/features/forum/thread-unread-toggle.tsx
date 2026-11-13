@@ -10,6 +10,7 @@ interface UnreadState {
   unread: boolean;
   lastReadSequenceNumber: number;
   latestSequenceNumber: number;
+  lastReadPostId?: string | null;
 }
 
 function parseStatus(payload: unknown): UnreadState {
@@ -28,16 +29,19 @@ export function ThreadUnreadToggle({
   forumSlug,
   threadSlug,
   revision,
+  posts,
 }: {
   apiUrl: string;
   forumSlug: string;
   threadSlug: string;
   revision: number;
+  posts: { id: string; sequenceNumber: number; deleted: boolean }[];
 }) {
   const { authenticated, initialized, sessionRecovering, token, user } = useAuth();
   const [state, setState] = useState<{ token: string; status: UnreadState } | null>(null);
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [chosenPostId, setChosenPostId] = useState('');
   const allowed =
     initialized &&
     !sessionRecovering &&
@@ -87,6 +91,29 @@ export function ThreadUnreadToggle({
     }
   }
 
+  async function setReadPosition() {
+    if (!allowed || !token || !chosenPostId || saving) return;
+    setSaving(true);
+    setError(false);
+    try {
+      const response = await fetch(endpoint.replace(/\\/unread$/u, '/read-position'), {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId: chosenPostId }),
+      });
+      if (!response.ok) throw new Error('READ_POSITION_WRITE_FAILED');
+      setState({ token, status: parseStatus(await response.json()) });
+      setChosenPostId('');
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!initialized || sessionRecovering) return null;
   if (!authenticated || !token || !user)
     return (
@@ -104,6 +131,38 @@ export function ThreadUnreadToggle({
             ? 'Dieses Thema enthält ungelesene Beiträge.'
             : 'Alle bekannten Beiträge gelesen.'}
       </span>
+      {status !== null ? (
+        <span>
+          Leseposition: {status.lastReadSequenceNumber
+            ? `Beitrag #${status.lastReadSequenceNumber}`
+            : 'noch keiner'}
+        </span>
+      ) : null}
+      {status && posts.some((post) => !post.deleted) ? (
+        <>
+          <label htmlFor="thread-read-position">Zuletzt gelesener Beitrag</label>
+          <select
+            id="thread-read-position"
+            value={chosenPostId}
+            onChange={(event) => setChosenPostId(event.target.value)}
+            disabled={saving}
+          >
+            <option value="">Beitrag auswählen</option>
+            {posts.filter((post) => !post.deleted).map((post) => (
+              <option value={post.id} key={post.id}>
+                Beitrag #{post.sequenceNumber}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={saving || !chosenPostId}
+            onClick={() => void setReadPosition()}
+          >
+            {saving ? 'Speichert …' : 'Leseposition speichern'}
+          </button>
+        </>
+      ) : null}
       {status?.unread ? (
         <button type="button" disabled={saving} onClick={() => void markRead()}>
           {saving ? 'Wird markiert …' : 'Als gelesen markieren'}

@@ -310,6 +310,17 @@
   cursor: pointer;
 }
 
+.unreadControls select {
+  padding: 10px;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  color: var(--kf-text);
+  background: var(--kf-surface);
+  font: inherit;
+}
+
 .unreadControls button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

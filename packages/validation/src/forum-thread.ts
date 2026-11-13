@@ -20,3 +20,9 @@ export const createForumReplySchema = z
   .strict();
 
 export type CreateForumReplyInput = z.infer<typeof createForumReplySchema>;
+
+export const setForumReadPositionSchema = z
+  .object({ postId: z.string().uuid() })
+  .strict();
+
+export type SetForumReadPositionInput = z.infer<typeof setForumReadPositionSchema>;

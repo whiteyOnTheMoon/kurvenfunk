@@ -1219,4 +1219,109 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     }
     expect(await database.threadReadState.count({ where: { threadId: threads[0] } })).toBe(0);
   });
+
+  it('22.217 validates positions, user separation and monotonic concurrent writes', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const base = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const target = base + '/read-position';
+    const authA = 'Bearer ' + (await tokenFor(subjects.replyA));
+    const authB = 'Bearer ' + (await tokenFor(subjects.replyB));
+    const posts = await database.post.findMany({
+      where: { threadId: threads[0], deletedAt: null },
+      orderBy: { sequenceNumber: 'asc' },
+      select: { id: true, sequenceNumber: true },
+    });
+    expect(posts.length).toBeGreaterThan(1);
+    const first = posts[0];
+    const last = posts[posts.length - 1];
+    const firstUser = users.get(subjects.replyA)!;
+    await database.threadReadState.deleteMany({ where: { threadId: threads[0] } });
+
+    await request(app.getHttpServer()).put(target).send({ postId: first.id }).expect(401);
+    await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
+      .send({ postId: first.id })
+      .expect(403);
+    for (const body of [{}, { postId: 'not-a-uuid' }, { postId: first.id, userId: firstUser }]) {
+      await request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', authA)
+        .send(body)
+        .expect(400);
+    }
+    await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', authA)
+      .send({ postId: randomUUID() })
+      .expect(404);
+
+    const firstResponse = await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', authA)
+      .send({ postId: first.id })
+      .expect(200);
+    expect(dataOf<{ lastReadPostId: string; lastReadSequenceNumber: number }>(
+      firstResponse,
+    )).toMatchObject({
+      lastReadPostId: first.id,
+      lastReadSequenceNumber: first.sequenceNumber,
+    });
+    const parallel = await Promise.all([
+      request(app.getHttpServer()).put(target).set('Authorization', authA).send({ postId: first.id }),
+      request(app.getHttpServer()).put(target).set('Authorization', authA).send({ postId: last.id }),
+    ]);
+    expect(parallel.map((item) => item.status)).toEqual([200, 200]);
+    await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', authA)
+      .send({ postId: first.id })
+      .expect(200);
+    const position = await database.threadReadState.findUniqueOrThrow({
+      where: { userId_threadId: { userId: firstUser, threadId: threads[0] } },
+    });
+    expect(position.lastReadPostId).toBe(last.id);
+    expect(position.lastReadSequenceNumber).toBe(last.sequenceNumber);
+    expect(dataOf<{ lastReadPostId: string }>(
+      await request(app.getHttpServer())
+        .get(base + '/unread')
+        .set('Authorization', authA)
+        .expect(200),
+    ).lastReadPostId).toBe(last.id);
+    expect(dataOf<{ lastReadPostId: string | null }>(
+      await request(app.getHttpServer())
+        .get(base + '/unread')
+        .set('Authorization', authB)
+        .expect(200),
+    ).lastReadPostId).toBeNull();
+    const publicDetail = await request(app.getHttpServer()).get(base).expect(200);
+    expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('lastReadPostId');
+
+    await database.post.update({ where: { id: first.id }, data: { deletedAt: new Date() } });
+    try {
+      await request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', authB)
+        .send({ postId: first.id })
+        .expect(404);
+    } finally {
+      await database.post.update({ where: { id: first.id }, data: { deletedAt: null } });
+    }
+    const other = await database.post.findFirst({
+      where: { threadId: { not: threads[0] } },
+      select: { id: true },
+    });
+    if (other) {
+      await request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', authB)
+        .send({ postId: other.id })
+        .expect(404);
+    }
+    await database.threadReadState.deleteMany({ where: { threadId: threads[0] } });
+  });
+
 });

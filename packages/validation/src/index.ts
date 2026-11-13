@@ -52,6 +52,8 @@ export {
   FORUM_THREAD_BODY_MAX_LENGTH,
   createForumThreadSchema,
   createForumReplySchema,
+  setForumReadPositionSchema,
+  type SetForumReadPositionInput,
   type CreateForumThreadInput,
   type CreateForumReplyInput,
 } from './forum-thread.js';

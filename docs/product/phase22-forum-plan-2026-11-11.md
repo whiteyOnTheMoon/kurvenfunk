@@ -103,6 +103,13 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Nur sichtbare OPEN/LOCKED-Themen; versteckte/archivierte/gemergte Themen 404. Das UI zeigt privat den Ungelesen-Status und bietet einen expliziten Knopf. **Kein automatisches Markieren bei Seitenaufruf**; 22.217 behandelt genaue Lesepositionen pro Beitrag.
 - Isolierte lokale PostgreSQL/Redis-E2E prüfen Auth, Nutzertrennung, Idempotenz, neue Beiträge und 404; DEV prüft nur den tokenlosen PUT-Guard (503) ohne jegliche echte Datenmutation. Manuelle positive Tunnel-/Browserabnahme bleibt offen.
 
+## 22.217 – Exakte persönliche Leseposition (erster Slice)
+
+- Bestehendes `ThreadReadState.lastReadPostId` ergänzt die Sequenz aus 22.216, ohne Migration. Privates `PUT /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/read-position` akzeptiert ausschließlich `{postId: UUID}` eines nicht gelöschten Beitrags aus demselben sichtbaren OPEN/LOCKED-Thema. Authentifizierung, ACTIVE, Onboarding und `thread.read-state`; die Nutzer-ID stammt aus dem Token.
+- Atomarer PostgreSQL-UPSERT mit `GREATEST` hält Sequenz und referenzierte Post-ID auch bei parallelen/älteren Requests konsistent. Die private GET-/unread-Antwort enthält `lastReadPostId`, während öffentliche Antworten unverändert bleiben. Markierung aller aktuellen Beiträge aus 22.216 wird nicht zurückgesetzt.
+- Im Web können angemeldete Mitglieder ausschließlich einen bereits geladenen, nicht gelöschten Beitrag bewusst als zuletzt gelesen speichern. Kein automatisches Tracking beim Scrollen oder Laden, keine erfundenen oder verborgenen Beiträge.
+- Isolierte PostgreSQL-/Redis-HTTP-E2E prüfen Auth/Validierung/Privatsphäre/Löschung/Monotonie. Das DEV-Gate prüft nur einen tokenlosen, untrusted PUT => 503 fail-closed. Keine echten DEV-Testlesestände, keine STAGING-/PROD-Änderungen. Positive Account-/Browser-/Mobil-/Tunnelabnahme offen.
+
 ### DEV-IP-Schutz beim read-only Abnahmetest
 
 Bei aktivierter `IP_RATE_LIMIT_ENABLED`-Konfiguration werden schreibende Forum-Routen schon **vor** der Authentifizierung über den globalen IP-Rate-Limit-Guard geprüft. Ein anonymer, direkt an den lokalen API-Port gerichteter POST besitzt **keinen vertrauenswürdigen Cloudflare-Tunnel-Socket-Peer** und muss deshalb sicher mit **HTTP 503** abgewiesen werden. Der DEV-Live-Test erwartet ausdrücklich diese Sperre und sendet keine gefälschten IP-Header. Dies bestätigt **keine** Admin-RBAC-Abnahme über den echten Tunnel.
