@@ -93,9 +93,11 @@ describe('Phase 23.224 – isolated notification taxonomy and durable event dedu
     const attempts = await Promise.all([service.persist(command), service.persist(command)]);
     expect(attempts.map((x) => x.status).sort()).toEqual(['ALREADY_EXISTS', 'CREATED']);
     expect(attempts[0].id).toBe(attempts[1].id);
-    expect(await database.notification.count({
-      where: { userId: recipientId, type: 'THREAD_REPLY' },
-    })).toBe(1);
+    expect(
+      await database.notification.count({
+        where: { userId: recipientId, type: 'THREAD_REPLY' },
+      }),
+    ).toBe(1);
   });
 
   it('keeps mandatory moderation notifications free of internal actor/metadata', async () => {
@@ -118,14 +120,16 @@ describe('Phase 23.224 – isolated notification taxonomy and durable event dedu
 
   it('does not create a notification for the replying actor', async () => {
     const before = await database.notification.count({ where: { userId: actorId } });
-    expect(await service.persist({
-      userId: actorId,
-      type: 'COMMENT_REPLY',
-      sourceType: 'COMMENT',
-      sourceId: randomUUID(),
-      actorUserId: actorId,
-      eventKey: 'self-' + marker,
-    })).toEqual({ status: 'SKIPPED_SELF', id: null });
+    expect(
+      await service.persist({
+        userId: actorId,
+        type: 'COMMENT_REPLY',
+        sourceType: 'COMMENT',
+        sourceId: randomUUID(),
+        actorUserId: actorId,
+        eventKey: 'self-' + marker,
+      }),
+    ).toEqual({ status: 'SKIPPED_SELF', id: null });
     expect(await database.notification.count({ where: { userId: actorId } })).toBe(before);
   });
 });

@@ -18,13 +18,26 @@ jest.mock('@kurvenfunk/database', () => ({ createPrismaClient: () => database })
 describe('Phase 23.224 notification taxonomy', () => {
   it('enumerates only the existing notification/source types', () => {
     expect(NOTIFICATION_TYPES).toEqual([
-      'COMMENT_REPLY', 'THREAD_REPLY', 'YELLOW_CARD', 'BLUE_CARD', 'RED_CARD',
-      'LIMITED', 'BAN', 'APPEAL', 'SYSTEM',
+      'COMMENT_REPLY',
+      'THREAD_REPLY',
+      'YELLOW_CARD',
+      'BLUE_CARD',
+      'RED_CARD',
+      'LIMITED',
+      'BAN',
+      'APPEAL',
+      'SYSTEM',
     ]);
     expect(new Set(NOTIFICATION_TYPES).size).toBe(NOTIFICATION_TYPES.length);
     expect(Object.keys(NOTIFICATION_TYPE_POLICIES).sort()).toEqual([...NOTIFICATION_TYPES].sort());
     expect(NOTIFICATION_SOURCE_TYPES).toEqual([
-      'COMMENT', 'POST', 'THREAD', 'MODERATION_CARD', 'SANCTION', 'APPEAL', 'SYSTEM',
+      'COMMENT',
+      'POST',
+      'THREAD',
+      'MODERATION_CARD',
+      'SANCTION',
+      'APPEAL',
+      'SYSTEM',
     ]);
     expect(isNotificationKind('BAN')).toBe(true);
     expect(isNotificationKind('__proto__')).toBe(false);
@@ -71,14 +84,18 @@ describe('Phase 23.224 internal NotificationsService', () => {
 
   it('writes only static templates and a recipient/event-scoped dedupe key', async () => {
     await expect(service.persist(command)).resolves.toEqual({
-      status: 'CREATED', id: notificationId,
+      status: 'CREATED',
+      id: notificationId,
     });
     expect(database.notification.create).toHaveBeenCalledWith({
       data: {
-        userId, type: 'COMMENT_REPLY',
+        userId,
+        type: 'COMMENT_REPLY',
         title: NOTIFICATION_TYPE_POLICIES.COMMENT_REPLY.title,
         body: NOTIFICATION_TYPE_POLICIES.COMMENT_REPLY.body,
-        sourceType: 'COMMENT', sourceId, actorUserId,
+        sourceType: 'COMMENT',
+        sourceId,
+        actorUserId,
         url: '/artikel/spielbericht#diskussion',
         dedupeKey: ['notification', userId, 'COMMENT_REPLY', 'reply-event-001'].join(':'),
       },
@@ -88,7 +105,8 @@ describe('Phase 23.224 internal NotificationsService', () => {
 
   it('does not persist self-notifications', async () => {
     expect(await service.persist({ ...command, actorUserId: userId })).toEqual({
-      status: 'SKIPPED_SELF', id: null,
+      status: 'SKIPPED_SELF',
+      id: null,
     });
     expect(database.notification.create).not.toHaveBeenCalled();
   });
@@ -121,8 +139,12 @@ describe('Phase 23.224 internal NotificationsService', () => {
   it('allows source-free SYSTEM messages but not unrelated source links', async () => {
     await expect(
       service.persist({
-        ...command, type: 'SYSTEM', sourceType: null, sourceId: null,
-        actorUserId: null, url: null,
+        ...command,
+        type: 'SYSTEM',
+        sourceType: null,
+        sourceId: null,
+        actorUserId: null,
+        url: null,
       }),
     ).resolves.toMatchObject({ status: 'CREATED' });
     await expect(
@@ -133,19 +155,28 @@ describe('Phase 23.224 internal NotificationsService', () => {
   it('makes a matching unique-event retry idempotent', async () => {
     database.notification.create.mockRejectedValue({ code: 'P2002' });
     database.notification.findUnique.mockResolvedValue({
-      id: notificationId, userId, type: command.type,
-      sourceType: command.sourceType, sourceId, actorUserId,
+      id: notificationId,
+      userId,
+      type: command.type,
+      sourceType: command.sourceType,
+      sourceId,
+      actorUserId,
     });
     await expect(service.persist(command)).resolves.toEqual({
-      status: 'ALREADY_EXISTS', id: notificationId,
+      status: 'ALREADY_EXISTS',
+      id: notificationId,
     });
   });
 
   it('does not mask contradictory event key reuse or unrelated database failures', async () => {
     database.notification.create.mockRejectedValue({ code: 'P2002' });
     database.notification.findUnique.mockResolvedValue({
-      id: notificationId, userId, type: 'COMMENT_REPLY',
-      sourceType: 'POST', sourceId, actorUserId,
+      id: notificationId,
+      userId,
+      type: 'COMMENT_REPLY',
+      sourceType: 'POST',
+      sourceId,
+      actorUserId,
     });
     await expect(service.persist(command)).rejects.toBeInstanceOf(ConflictException);
     database.notification.create.mockRejectedValue(new Error('database unavailable'));

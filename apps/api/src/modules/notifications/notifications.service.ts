@@ -12,8 +12,7 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EVENT_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,119}$/;
 
 export interface PersistNotificationCommand {
@@ -27,8 +26,7 @@ export interface PersistNotificationCommand {
 }
 
 export type PersistNotificationResult =
-  | { status: 'CREATED' | 'ALREADY_EXISTS'; id: string }
-  | { status: 'SKIPPED_SELF'; id: null };
+  { status: 'CREATED' | 'ALREADY_EXISTS'; id: string } | { status: 'SKIPPED_SELF'; id: null };
 
 function invalid(code: string): BadRequestException {
   return new BadRequestException({
