@@ -298,7 +298,7 @@ export class ForumThreadsService implements OnModuleDestroy {
         "updatedAt" = NOW()
       RETURNING "lastReadSequenceNumber"
     `;
-    const lastReadSequenceNumber = rows[0]!.lastReadSequenceNumber;
+    const lastReadSequenceNumber = rows[0].lastReadSequenceNumber;
     return {
       unread: latestSequenceNumber > lastReadSequenceNumber,
       lastReadSequenceNumber,
