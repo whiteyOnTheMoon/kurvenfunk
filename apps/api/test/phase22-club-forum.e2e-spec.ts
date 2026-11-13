@@ -422,4 +422,125 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       });
     }
   });
+
+  it('22.212 serves a public thread detail with its actual first post', async () => {
+    const thread = await database.thread.findUnique({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    expect(thread).not.toBeNull();
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread!.slug)
+      .expect(200);
+    const detail = dataOf<{
+      thread: { id: string; title: string; forum: { slug: string } };
+      posts: { sequenceNumber: number; content: string | null; deleted: boolean }[];
+      hasMorePosts: boolean;
+    }>(response);
+    expect(detail.thread.id).toBe(threads[0]);
+    expect(detail.thread.forum.slug).toBe('verein-' + firstSlug);
+    expect(detail.posts).toHaveLength(1);
+    expect(detail.posts[0]?.sequenceNumber).toBe(1);
+    expect(detail.posts[0]?.content).toContain('Sachlicher Eröffnungsbeitrag');
+    expect(detail.posts[0]?.deleted).toBe(false);
+    expect(detail.hasMorePosts).toBe(false);
+  });
+
+  it('22.212 does not leak deleted post text or its author in the public API', async () => {
+    const firstPost = await database.post.findFirstOrThrow({
+      where: { threadId: threads[0], sequenceNumber: 1 },
+      select: { id: true, content: true },
+    });
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    await database.post.update({
+      where: { id: firstPost.id },
+      data: { deletedAt: new Date() },
+    });
+    try {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
+        .expect(200);
+      const detail = dataOf<{
+        posts: {
+          deleted: boolean;
+          content: string | null;
+          author: unknown;
+          editedAt: string | null;
+        }[];
+      }>(response);
+      expect(detail.posts[0]).toMatchObject({
+        deleted: true,
+        content: null,
+        author: null,
+        editedAt: null,
+      });
+      expect(JSON.stringify(detail.posts)).not.toContain(firstPost.content);
+      expect(JSON.stringify(detail.posts)).not.toContain(users.get(subjects.admin));
+    } finally {
+      await database.post.update({ where: { id: firstPost.id }, data: { deletedAt: null } });
+    }
+  });
+
+  it('22.212 hides missing, archived and hidden-category thread details', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/not-a-real-thread')
+      .expect(404);
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-does-not-exist/threads/' + thread.slug)
+      .expect(404);
+
+    await database.thread.update({ where: { id: threads[0] }, data: { status: 'ARCHIVED' } });
+    try {
+      await request(app.getHttpServer()).get(target).expect(404);
+    } finally {
+      await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+    }
+
+    await database.forumCategory.update({
+      where: { id: categoryId! },
+      data: { active: false },
+    });
+    try {
+      await request(app.getHttpServer()).get(target).expect(404);
+    } finally {
+      await database.forumCategory.update({
+        where: { id: categoryId! },
+        data: { active: true },
+      });
+    }
+  });
+
+  it('22.212 bounds public posts and exposes an honest hasMorePosts marker', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    await database.post.createMany({
+      data: Array.from({ length: 31 }, (_, index) => ({
+        threadId: threads[0],
+        authorId: users.get(subjects.moderator)!,
+        sequenceNumber: index + 2,
+        content: 'Disposable post ' + (index + 2) + ' ' + marker,
+      })),
+    });
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
+      .expect(200);
+    const detail = dataOf<{
+      posts: { sequenceNumber: number }[];
+      hasMorePosts: boolean;
+    }>(response);
+    expect(detail.posts).toHaveLength(30);
+    expect(detail.posts[0]?.sequenceNumber).toBe(1);
+    expect(detail.posts[29]?.sequenceNumber).toBe(30);
+    expect(detail.hasMorePosts).toBe(true);
+  });
 });
