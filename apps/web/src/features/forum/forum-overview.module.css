@@ -262,6 +262,35 @@
   text-decoration: underline;
 }
 
+.paginationControls {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--kf-border);
+}
+
+.paginationControls p {
+  margin: 0;
+  color: var(--kf-error, #b42318);
+}
+
+.paginationControls button {
+  padding: 12px 20px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  color: var(--kf-link);
+  font: inherit;
+  font-weight: var(--kf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.paginationControls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 @media (max-width: 640px) {
   .intro,
   .categoryHeader,
@@ -269,6 +298,7 @@
   .threadComposer,
   .threadDetail h2,
   .threadPost,
+  .paginationControls,
   .empty {
     padding: 20px;
   }
