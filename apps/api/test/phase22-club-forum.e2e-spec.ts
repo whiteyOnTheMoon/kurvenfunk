@@ -1564,7 +1564,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       expect(JSON.stringify(publicDetail)).not.toContain(reason);
       await request(app.getHttpServer())
         .post(base + '/posts')
-        .set('Authorization', member)
+        .set('Authorization', moderator)
         .send({ body: 'Eine gesperrte Diskussion bekommt keine weitere Antwort.' })
         .expect(409);
       expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(postRowsBefore);
