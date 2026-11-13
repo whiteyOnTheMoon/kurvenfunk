@@ -87,7 +87,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       const user = await database.user.create({
         data: {
           keycloakSubject: member.subject,
-          nickname: 'p210-' + marker + '-' + member.role + '-' + member.status,
+          nickname: member.subject,
           status: member.status,
           onboardingCompleted: true,
           roleAssignments: { create: { role: member.role } },
