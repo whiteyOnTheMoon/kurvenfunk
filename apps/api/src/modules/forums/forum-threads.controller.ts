@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
-import { createForumThreadSchema, type CreateForumThreadInput } from '@kurvenfunk/validation';
+import {
+  createForumReplySchema,
+  createForumThreadSchema,
+  type CreateForumReplyInput,
+  type CreateForumThreadInput,
+} from '@kurvenfunk/validation';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import type { AuthenticatedRequest } from '../auth/auth.types';
@@ -19,6 +24,22 @@ export class ForumThreadsController {
   @Get(':threadSlug')
   findPublicThread(@Param('forumSlug') forumSlug: string, @Param('threadSlug') threadSlug: string) {
     return this.threadsService.findPublicThread(forumSlug, threadSlug);
+  }
+
+  @Post(':threadSlug/posts')
+  @RequirePermissions(PERMISSIONS.THREAD_REPLY)
+  replyToThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(createForumReplySchema)) input: CreateForumReplyInput,
+  ) {
+    return this.threadsService.replyToThread(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      input,
+    );
   }
 
   @Post()
