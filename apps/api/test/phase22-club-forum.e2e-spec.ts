@@ -1264,9 +1264,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .set('Authorization', authA)
       .send({ postId: first.id })
       .expect(200);
-    expect(dataOf<{ lastReadPostId: string; lastReadSequenceNumber: number }>(
-      firstResponse,
-    )).toMatchObject({
+    expect(
+      dataOf<{ lastReadPostId: string; lastReadSequenceNumber: number }>(firstResponse),
+    ).toMatchObject({
       lastReadPostId: first.id,
       lastReadSequenceNumber: first.sequenceNumber,
     });
@@ -1285,18 +1285,22 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     });
     expect(position.lastReadPostId).toBe(last.id);
     expect(position.lastReadSequenceNumber).toBe(last.sequenceNumber);
-    expect(dataOf<{ lastReadPostId: string }>(
-      await request(app.getHttpServer())
-        .get(base + '/unread')
-        .set('Authorization', authA)
-        .expect(200),
-    ).lastReadPostId).toBe(last.id);
-    expect(dataOf<{ lastReadPostId: string | null }>(
-      await request(app.getHttpServer())
-        .get(base + '/unread')
-        .set('Authorization', authB)
-        .expect(200),
-    ).lastReadPostId).toBeNull();
+    expect(
+      dataOf<{ lastReadPostId: string }>(
+        await request(app.getHttpServer())
+          .get(base + '/unread')
+          .set('Authorization', authA)
+          .expect(200),
+      ).lastReadPostId,
+    ).toBe(last.id);
+    expect(
+      dataOf<{ lastReadPostId: string | null }>(
+        await request(app.getHttpServer())
+          .get(base + '/unread')
+          .set('Authorization', authB)
+          .expect(200),
+      ).lastReadPostId,
+    ).toBeNull();
     const publicDetail = await request(app.getHttpServer()).get(base).expect(200);
     expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('lastReadPostId');
 
@@ -1323,5 +1327,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     }
     await database.threadReadState.deleteMany({ where: { threadId: threads[0] } });
   });
-
 });
