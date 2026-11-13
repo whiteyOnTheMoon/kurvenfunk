@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
-import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 import { AuthModule } from '../auth/auth.module';
+import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 import { UsersModule } from '../users/users.module';
 import { ForumThreadsController } from './forum-threads.controller';
 import { ForumThreadsService } from './forum-threads.service';
