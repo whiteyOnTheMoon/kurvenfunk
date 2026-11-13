@@ -5,11 +5,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { validateEnvironment } from './config/env.validation';
 import { DatabaseService } from './database/database.service';
 import { NewsImportSchedulerService } from './jobs/news-import-scheduler.service';
+import { NotificationOutboxDispatcher } from './jobs/notification-outbox-dispatcher.service';
 import { SportsImportQueueService } from './jobs/sports-import-queue.service';
 import { SportsImportSchedulerService } from './jobs/sports-import-scheduler.service';
 import { ScheduledPublishingJobService } from './jobs/scheduled-publishing-job.service';
 import { TestJobService } from './jobs/test-job.service';
 import { NewsImportProcessor } from './processors/news-import.processor';
+import { NotificationsProcessor } from './processors/notifications.processor';
 import { SportsImportProcessor } from './processors/sports-import.processor';
 import { ScheduledPublishingProcessor } from './processors/scheduled-publishing.processor';
 import { TestProcessor } from './processors/test.processor';
@@ -82,6 +84,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     OtsNewsProvider,
     OtsNewsNormalizer,
     NewsImportSchedulerService,
+    NotificationOutboxDispatcher,
     SportsImportQueueService,
     SportsImportSchedulerService,
     SportsImportStore,
@@ -102,6 +105,7 @@ import { ScheduledPublishingService } from './services/scheduled-publishing.serv
     ScheduledPublishingService,
     SanctionExpirationService,
     NewsImportProcessor,
+    NotificationsProcessor,
     ScheduledPublishingProcessor,
     ScheduledPublishingJobService,
     TestProcessor,
