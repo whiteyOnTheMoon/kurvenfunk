@@ -11,6 +11,7 @@ interface ThreadSummary {
   slug: string;
   status: 'OPEN' | 'LOCKED';
   postCount: number;
+  pinnedAt: string | null;
   author: { id: string; nickname: string | null };
 }
 
@@ -29,6 +30,7 @@ function isThreadSummary(value: unknown): value is ThreadSummary {
     typeof row.slug === 'string' &&
     (row.status === 'OPEN' || row.status === 'LOCKED') &&
     typeof row.postCount === 'number' &&
+    (row.pinnedAt === null || typeof row.pinnedAt === 'string') &&
     typeof row.author?.id === 'string'
   );
 }
@@ -169,6 +171,7 @@ export function ClubForumThreads({
               {thread.author.nickname ?? 'Mitglied'}
               {' · '}
               {thread.postCount} {thread.postCount === 1 ? 'Beitrag' : 'Beiträge'}
+              {thread.pinnedAt ? ' · Angepinnt' : null}
               {thread.status === 'LOCKED' ? ' · Geschlossen' : null}
             </span>
           </li>

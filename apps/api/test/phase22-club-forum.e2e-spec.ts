@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { createPrismaClient, type DatabaseClient } from '@kurvenfunk/database';
+import { createPrismaClient, type DatabaseClient, type Prisma } from '@kurvenfunk/database';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { exportJWK, generateKeyPair, SignJWT, type KeyLike } from 'jose';
@@ -1333,5 +1333,132 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         .expect(404);
     }
     await database.threadReadState.deleteMany({ where: { threadId: threads[0] } });
+  });
+
+  it('22.218 permits only moderators to pin and unpin visible threads, once per state transition', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const base = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const target = base + '/pin';
+    const modId = users.get(subjects.moderator)!;
+    const mod = 'Bearer ' + (await tokenFor(subjects.moderator));
+    const admin = 'Bearer ' + (await tokenFor(subjects.admin));
+    const member = 'Bearer ' + (await tokenFor(subjects.replyA));
+    const limited = 'Bearer ' + (await tokenFor(subjects.limited));
+    const auditWhere = {
+      targetType: 'THREAD',
+      targetId: threads[0],
+      action: { in: ['THREAD_PINNED', 'THREAD_UNPINNED'] },
+    } satisfies Prisma.AuditLogWhereInput;
+    try {
+      await request(app.getHttpServer()).put(target).expect(401);
+      await request(app.getHttpServer()).delete(target).expect(401);
+      for (const auth of [member, limited]) {
+        await request(app.getHttpServer()).put(target).set('Authorization', auth).expect(403);
+        await request(app.getHttpServer()).delete(target).set('Authorization', auth).expect(403);
+      }
+      await database.user.update({
+        where: { id: modId },
+        data: { onboardingCompleted: false },
+      });
+      try {
+        await request(app.getHttpServer()).put(target).set('Authorization', mod).expect(403);
+      } finally {
+        await database.user.update({
+          where: { id: modId },
+          data: { onboardingCompleted: true },
+        });
+      }
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(0);
+
+      const writes = await Promise.all([
+        request(app.getHttpServer()).put(target).set('Authorization', mod),
+        request(app.getHttpServer()).put(target).set('Authorization', mod),
+      ]);
+      expect(writes.map((item) => item.status)).toEqual([200, 200]);
+      expect(writes.every((item) => dataOf<{ pinned: boolean }>(item).pinned)).toBe(true);
+      const pinned = await database.thread.findUniqueOrThrow({
+        where: { id: threads[0] },
+        select: { pinnedAt: true, pinnedByUserId: true },
+      });
+      expect(pinned.pinnedAt).not.toBeNull();
+      expect(pinned.pinnedByUserId).toBe(modId);
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
+      expect(await database.auditLog.findFirst({ where: auditWhere })).toMatchObject({
+        actorUserId: modId,
+        action: 'THREAD_PINNED',
+        category: 'FORUM',
+      });
+
+      const list = dataOf<{ items: { id: string; pinnedAt: string | null }[] }>(
+        await request(app.getHttpServer())
+          .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads')
+          .expect(200),
+      );
+      expect(list.items[0].id).toBe(threads[0]);
+      expect(list.items[0].pinnedAt).toBeTruthy();
+      const detail = dataOf<{ thread: { pinnedAt: string | null } }>(
+        await request(app.getHttpServer()).get(base).expect(200),
+      );
+      expect(detail.thread.pinnedAt).toBeTruthy();
+
+      const unpins = await Promise.all([
+        request(app.getHttpServer()).delete(target).set('Authorization', admin),
+        request(app.getHttpServer()).delete(target).set('Authorization', admin),
+      ]);
+      expect(unpins.map((item) => item.status)).toEqual([200, 200]);
+      expect(unpins.every((item) => !dataOf<{ pinned: boolean }>(item).pinned)).toBe(true);
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(2);
+      const after = await database.thread.findUniqueOrThrow({
+        where: { id: threads[0] },
+        select: { pinnedAt: true, pinnedByUserId: true },
+      });
+      expect(after).toEqual({ pinnedAt: null, pinnedByUserId: null });
+
+      await database.thread.update({ where: { id: threads[0] }, data: { status: 'LOCKED' } });
+      try {
+        await request(app.getHttpServer()).put(target).set('Authorization', mod).expect(200);
+        await request(app.getHttpServer()).delete(target).set('Authorization', mod).expect(200);
+      } finally {
+        await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+      }
+      for (const hiddenStatus of ['ARCHIVED', 'MERGED'] as const) {
+        await database.thread.update({
+          where: { id: threads[0] },
+          data: { status: hiddenStatus },
+        });
+        try {
+          await request(app.getHttpServer()).put(target).set('Authorization', mod).expect(404);
+          await request(app.getHttpServer()).delete(target).set('Authorization', mod).expect(404);
+        } finally {
+          await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+        }
+      }
+      await database.forumCategory.update({
+        where: { id: categoryId! },
+        data: { active: false },
+      });
+      try {
+        await request(app.getHttpServer()).put(target).set('Authorization', mod).expect(404);
+        await request(app.getHttpServer()).delete(target).set('Authorization', mod).expect(404);
+      } finally {
+        await database.forumCategory.update({
+          where: { id: categoryId! },
+          data: { active: true },
+        });
+      }
+      expect((await database.thread.findUniqueOrThrow({
+        where: { id: threads[0] },
+        select: { pinnedAt: true },
+      })).pinnedAt).toBeNull();
+    } finally {
+      await database.thread.update({
+        where: { id: threads[0] },
+        data: { pinnedAt: null, pinnedByUserId: null, status: 'OPEN' },
+      });
+      await database.auditLog.deleteMany({ where: auditWhere });
+    }
   });
 });

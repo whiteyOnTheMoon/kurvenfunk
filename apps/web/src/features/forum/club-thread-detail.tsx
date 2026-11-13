@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
+import { ThreadPinToggle } from './thread-pin-toggle';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
 import { ThreadUnreadToggle } from './thread-unread-toggle';
@@ -25,6 +26,7 @@ interface PublicThreadDetail {
     slug: string;
     status: 'OPEN' | 'LOCKED';
     postCount: number;
+    pinnedAt: string | null;
     forum: {
       name: string;
       slug: string;
@@ -44,6 +46,7 @@ function isPublicThreadDetail(value: unknown): value is PublicThreadDetail {
     typeof thread?.id === 'string' &&
     typeof thread.title === 'string' &&
     typeof thread.slug === 'string' &&
+    (thread.pinnedAt === null || typeof thread.pinnedAt === 'string') &&
     (thread.status === 'OPEN' || thread.status === 'LOCKED') &&
     typeof thread.forum?.slug === 'string' &&
     Array.isArray(detail.posts) &&
@@ -191,6 +194,7 @@ export function ClubThreadDetail({
         {detail ? (
           <p>
             {detail.thread.forum.name}
+            {detail.thread.pinnedAt ? ' · Angepinnt' : ''}
             {detail.thread.status === 'LOCKED' ? ' · Geschlossen' : ''}
           </p>
         ) : (
@@ -210,6 +214,14 @@ export function ClubThreadDetail({
         </p>
       ) : (
         <section className={styles.threadDetail} aria-label="Beiträge">
+          <ThreadPinToggle
+            key={detail.thread.id + '-pin'}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+            pinnedAt={detail.thread.pinnedAt}
+            onChanged={() => setRevision((value) => value + 1)}
+          />
           <ThreadSubscriptionToggle
             key={detail.thread.id}
             apiUrl={apiUrl}
