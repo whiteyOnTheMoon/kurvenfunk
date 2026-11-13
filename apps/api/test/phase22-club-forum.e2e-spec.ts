@@ -2077,7 +2077,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       });
 
       const originalCanonical = dataOf<{ threadId: string }>(
-        await request(app.getHttpServer()).get(childUrl + '/merge-target').expect(200),
+        await request(app.getHttpServer())
+          .get(childUrl + '/merge-target')
+          .expect(200),
       );
       expect(originalCanonical.threadId).toBe(sourceId);
 
@@ -2207,10 +2209,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         pinnedAt: null,
         lockedAt: null,
       });
-      expect((await database.thread.findUniqueOrThrow({
-        where: { id: childId },
-        select: { mergedIntoThreadId: true },
-      })).mergedIntoThreadId).toBe(targetId);
+      expect(
+        (
+          await database.thread.findUniqueOrThrow({
+            where: { id: childId },
+            select: { mergedIntoThreadId: true },
+          })
+        ).mergedIntoThreadId,
+      ).toBe(targetId);
 
       const destination = await database.thread.findUniqueOrThrow({
         where: { id: targetId },
@@ -2247,7 +2253,11 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
           threadSlug: string;
           forumSlug: string;
           clubSlug: string | null;
-        }>(await request(app.getHttpServer()).get(oldUrl + '/merge-target').expect(200));
+        }>(
+          await request(app.getHttpServer())
+            .get(oldUrl + '/merge-target')
+            .expect(200),
+        );
         expect(redirect).toMatchObject({
           threadId: targetId,
           threadSlug: targetSlug,
@@ -2264,40 +2274,60 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         content: null,
       });
 
-      expect(await database.threadSubscription.count({
-        where: { threadId: sourceId },
-      })).toBe(0);
-      expect(await database.threadSubscription.count({
-        where: { threadId: targetId },
-      })).toBe(2);
-      expect(dataOf<{ subscribed: boolean }>(
-        await request(app.getHttpServer())
-          .get(targetUrl + '/subscription')
-          .set('Authorization', moderator)
-          .expect(200),
-      ).subscribed).toBe(true);
-      expect((await database.threadReadState.findUniqueOrThrow({
-        where: { userId_threadId: { userId: adminId, threadId: targetId } },
-      })).lastReadSequenceNumber).toBe(1);
-      expect(await database.threadReadState.findUnique({
-        where: { userId_threadId: { userId: moderatorId, threadId: targetId } },
-      })).toBeNull();
-      expect((await database.threadReadState.findUniqueOrThrow({
-        where: { userId_threadId: { userId: moderatorId, threadId: sourceId } },
-      })).lastReadPostId).toBe(reply.id);
-      expect(dataOf<{ unread: boolean }>(
-        await request(app.getHttpServer())
-          .get(targetUrl + '/unread')
-          .set('Authorization', admin)
-          .expect(200),
-      ).unread).toBe(true);
+      expect(
+        await database.threadSubscription.count({
+          where: { threadId: sourceId },
+        }),
+      ).toBe(0);
+      expect(
+        await database.threadSubscription.count({
+          where: { threadId: targetId },
+        }),
+      ).toBe(2);
+      expect(
+        dataOf<{ subscribed: boolean }>(
+          await request(app.getHttpServer())
+            .get(targetUrl + '/subscription')
+            .set('Authorization', moderator)
+            .expect(200),
+        ).subscribed,
+      ).toBe(true);
+      expect(
+        (
+          await database.threadReadState.findUniqueOrThrow({
+            where: { userId_threadId: { userId: adminId, threadId: targetId } },
+          })
+        ).lastReadSequenceNumber,
+      ).toBe(1);
+      expect(
+        await database.threadReadState.findUnique({
+          where: { userId_threadId: { userId: moderatorId, threadId: targetId } },
+        }),
+      ).toBeNull();
+      expect(
+        (
+          await database.threadReadState.findUniqueOrThrow({
+            where: { userId_threadId: { userId: moderatorId, threadId: sourceId } },
+          })
+        ).lastReadPostId,
+      ).toBe(reply.id);
+      expect(
+        dataOf<{ unread: boolean }>(
+          await request(app.getHttpServer())
+            .get(targetUrl + '/unread')
+            .set('Authorization', admin)
+            .expect(200),
+        ).unread,
+      ).toBe(true);
 
       await database.thread.update({
         where: { id: targetId },
         data: { status: 'ARCHIVED' },
       });
       try {
-        await request(app.getHttpServer()).get(sourceUrl + '/merge-target').expect(404);
+        await request(app.getHttpServer())
+          .get(sourceUrl + '/merge-target')
+          .expect(404);
       } finally {
         await database.thread.update({
           where: { id: targetId },
@@ -2329,5 +2359,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       });
     }
   });
-
 });

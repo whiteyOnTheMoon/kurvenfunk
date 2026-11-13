@@ -126,9 +126,11 @@ export function ClubThreadDetail({
           });
           if (merged.ok) {
             const payload: unknown = await merged.json();
-            const target = (payload as {
-              data?: { threadSlug?: unknown; clubSlug?: unknown };
-            }).data;
+            const target = (
+              payload as {
+                data?: { threadSlug?: unknown; clubSlug?: unknown };
+              }
+            ).data;
             if (
               typeof target?.threadSlug === 'string' &&
               typeof target.clubSlug === 'string' &&

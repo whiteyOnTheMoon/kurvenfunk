@@ -685,9 +685,7 @@ export class ForumThreadsService implements OnModuleDestroy {
         data: {
           postCount: { increment: movedPostCount },
           lastPostSequenceNumber: { increment: sourceSequenceLength },
-          ...(lastSourcePost
-            ? { lastPostId: lastSourcePost.id, lastPostAt: new Date() }
-            : {}),
+          ...(lastSourcePost ? { lastPostId: lastSourcePost.id, lastPostAt: new Date() } : {}),
         },
       });
 

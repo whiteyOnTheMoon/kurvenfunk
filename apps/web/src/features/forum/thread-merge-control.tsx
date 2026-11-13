@@ -31,9 +31,7 @@ function parseTargets(value: unknown): {
         typeof (row as Partial<MergeTarget>).slug !== 'string',
     ) ||
     typeof result.hasMore !== 'boolean' ||
-    (result.hasMore
-      ? typeof result.nextCursor !== 'string'
-      : result.nextCursor !== null)
+    (result.hasMore ? typeof result.nextCursor !== 'string' : result.nextCursor !== null)
   ) {
     throw new Error('INVALID_MERGE_PAGE');
   }
@@ -155,9 +153,11 @@ export function ThreadMergeControl({
       });
       if (!response.ok) throw new Error('MERGE_THREAD_REQUEST_FAILED');
       const payload: unknown = await response.json();
-      const merged = (payload as {
-        data?: { target?: { id?: unknown; slug?: unknown; forumSlug?: unknown } };
-      }).data;
+      const merged = (
+        payload as {
+          data?: { target?: { id?: unknown; slug?: unknown; forumSlug?: unknown } };
+        }
+      ).data;
       if (
         merged?.target?.id !== target.id ||
         merged.target.slug !== target.slug ||
