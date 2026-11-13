@@ -23,6 +23,15 @@ export * from './news-provider.js';
 
 export * from './news-normalization.js';
 
+export {
+  isNotificationKind,
+  NOTIFICATION_SOURCE_TYPES,
+  NOTIFICATION_TYPE_POLICIES,
+  NOTIFICATION_TYPES,
+} from './notification.js';
+
+export type { NotificationKind, NotificationSourceKind } from './notification.js';
+
 export * from './sports-provider.js';
 
 export {
