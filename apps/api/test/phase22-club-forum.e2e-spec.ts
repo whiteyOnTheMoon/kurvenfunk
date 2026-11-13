@@ -805,10 +805,21 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       },
     });
     const next = dataOf<{
-      posts: { id: string; content: string | null; author: unknown; deleted: boolean; sequenceNumber: number }[];
+      posts: {
+        id: string;
+        content: string | null;
+        author: unknown;
+        deleted: boolean;
+        sequenceNumber: number;
+      }[];
       hasMorePosts: boolean;
       nextPostCursor: string | null;
-    }>(await request(app.getHttpServer()).get(target).query({ cursor: first.nextPostCursor }).expect(200));
+    }>(
+      await request(app.getHttpServer())
+        .get(target)
+        .query({ cursor: first.nextPostCursor })
+        .expect(200),
+    );
     expect(next.posts[0]?.sequenceNumber).toBe(31);
     expect(next.posts[next.posts.length - 1]?.sequenceNumber).toBe(latestSequence + 1);
     expect(next.hasMorePosts).toBe(false);
@@ -868,7 +879,12 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       items: { id: string }[];
       hasMore: boolean;
       nextCursor: string | null;
-    }>(await request(app.getHttpServer()).get(target).query({ cursor: first.nextCursor }).expect(200));
+    }>(
+      await request(app.getHttpServer())
+        .get(target)
+        .query({ cursor: first.nextCursor })
+        .expect(200),
+    );
     expect(second.items).toHaveLength(6);
     expect(second.hasMore).toBe(false);
     expect(second.nextCursor).toBeNull();
@@ -884,7 +900,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await request(app.getHttpServer()).get(list).expect(200),
     );
     const otherForum = '/api/v1/forums/by-slug/verein-' + secondSlug + '/threads';
-    await request(app.getHttpServer()).get(otherForum).query({ cursor: first.nextCursor }).expect(400);
+    await request(app.getHttpServer())
+      .get(otherForum)
+      .query({ cursor: first.nextCursor })
+      .expect(400);
     for (const bad of ['!!', 'e30', 'a'.repeat(1100)]) {
       await request(app.getHttpServer()).get(list).query({ cursor: bad }).expect(400);
     }
@@ -898,7 +917,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await request(app.getHttpServer()).get(detail).expect(200),
     );
     await request(app.getHttpServer()).get(detail).query({ cursor: first.nextCursor }).expect(400);
-    await request(app.getHttpServer()).get(list).query({ cursor: postPage.nextPostCursor }).expect(400);
+    await request(app.getHttpServer())
+      .get(list)
+      .query({ cursor: postPage.nextPostCursor })
+      .expect(400);
     const extra = 'p214-0-' + marker;
     await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + extra)
