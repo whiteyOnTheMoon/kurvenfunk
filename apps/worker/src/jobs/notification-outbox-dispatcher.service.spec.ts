@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Jest mock calls are dynamic. */
-import { NOTIFICATION_DISPATCH_JOB_NAME } from '@kurvenfunk/types';
+import { NOTIFICATION_DISPATCH_JOB_NAME, type NotificationDispatchJobPayload } from '@kurvenfunk/types';
 import type { Queue } from 'bullmq';
 
 import type { DatabaseService } from '../database/database.service';
@@ -17,7 +16,7 @@ describe('Phase 23.225 – durable outbox dispatcher', () => {
   const queue = { add: jest.fn() };
   const service = new NotificationOutboxDispatcher(
     { client: db } as unknown as DatabaseService,
-    queue as unknown as Queue,
+    queue as unknown as Queue<NotificationDispatchJobPayload>,
   );
 
   beforeEach(() => {
