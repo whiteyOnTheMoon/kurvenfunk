@@ -61,7 +61,8 @@ export class ForumPostReportsService implements OnModuleDestroy {
       // the duplicate check. No migration or global locking is required.
       // A void-returning SELECT cannot be decoded by PrismaPg. Project the
       // volatile lock expression as a supported boolean instead.
-      await tx.$queryRaw<{ held: boolean }[]>`SELECT pg_advisory_xact_lock(hashtextextended(${`forum-post-report:${command.reporterId}:${command.postId}`}, 0)) IS NOT NULL AS held`;
+      const lockKey = `forum-post-report:${command.reporterId}:${command.postId}`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0)) IS NOT NULL AS held`;
 
       const post = await tx.post.findFirst({
         where: {
