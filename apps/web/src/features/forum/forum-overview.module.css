@@ -340,6 +340,18 @@
   border-bottom: 1px solid var(--kf-border);
 }
 
+.pinControls select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+  font: inherit;
+}
+
 .pinControls input {
   box-sizing: border-box;
   display: block;

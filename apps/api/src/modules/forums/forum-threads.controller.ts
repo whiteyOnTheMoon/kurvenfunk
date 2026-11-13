@@ -4,6 +4,8 @@ import {
   createForumThreadSchema,
   setForumReadPositionSchema,
   lockForumThreadSchema,
+  moveForumThreadSchema,
+  type MoveForumThreadInput,
   type LockForumThreadInput,
   type SetForumReadPositionInput,
   type CreateForumReplyInput,
@@ -179,6 +181,22 @@ export class ForumThreadsController {
       threadSlug,
       request.user!.kurvenfunkUserId,
       false,
+    );
+  }
+
+  @Put(':threadSlug/move')
+  @RequirePermissions(PERMISSIONS.THREAD_MOVE)
+  moveThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(moveForumThreadSchema)) input: MoveForumThreadInput,
+  ) {
+    return this.threadsService.moveThread(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      input,
     );
   }
 

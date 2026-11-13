@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
 import { ThreadLockToggle } from './thread-lock-toggle';
+import { ThreadMoveControl } from './thread-move-control';
 import { ThreadPinToggle } from './thread-pin-toggle';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
@@ -215,6 +216,12 @@ export function ClubThreadDetail({
         </p>
       ) : (
         <section className={styles.threadDetail} aria-label="Beiträge">
+          <ThreadMoveControl
+            key={detail.thread.id + '-move'}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+          />
           <ThreadLockToggle
             key={detail.thread.id + '-lock'}
             apiUrl={apiUrl}

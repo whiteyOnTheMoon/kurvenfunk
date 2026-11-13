@@ -7,7 +7,7 @@ import {
   NotFoundException,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import type { CreateForumReplyInput, CreateForumThreadInput } from '@kurvenfunk/validation';
+import type { CreateForumReplyInput, CreateForumThreadInput, MoveForumThreadInput } from '@kurvenfunk/validation';
 
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 import {
@@ -367,6 +367,119 @@ export class ForumThreadsService implements OnModuleDestroy {
       });
       return { locked, status, lockedAt };
     });
+  }
+
+  /**
+   * Relocate a visible topic without rewriting thread identity or its posts,
+   * subscriptions and personal read states. A conditional source-forum update
+   * and audit are committed atomically; the destination's pin is not inherited.
+   * The old scoped URL intentionally becomes 404 after a successful move.
+   */
+  async moveThread(
+    sourceForumSlug: string,
+    threadSlugValue: string,
+    actorUserId: string,
+    input: MoveForumThreadInput,
+  ) {
+    try {
+      return await this.database.$transaction(async (tx) => {
+        const sourceWhere: Prisma.ThreadWhereInput = {
+          slug: threadSlugValue,
+          status: { in: ['OPEN', 'LOCKED'] },
+          mergedIntoThreadId: null,
+          forum: { is: visibleForumWhere(sourceForumSlug) },
+        };
+        const source = await tx.thread.findFirst({
+          where: sourceWhere,
+          select: {
+            id: true,
+            forumId: true,
+            status: true,
+            pinnedAt: true,
+            pinnedByUserId: true,
+          },
+        });
+        if (!source) throw missingThread();
+
+        const target = await tx.forum.findFirst({
+          where: {
+            id: input.targetForumId,
+            active: true,
+            category: { active: true },
+            OR: [{ clubId: null }, { club: { is: { active: true } } }],
+          },
+          select: {
+            id: true,
+            slug: true,
+            club: { select: { slug: true } },
+          },
+        });
+        if (!target) {
+          throw new NotFoundException({
+            code: 'TARGET_FORUM_NOT_FOUND',
+            message: 'Das Zielforum ist nicht verfügbar.',
+          });
+        }
+        const forum = { id: target.id, slug: target.slug, club: target.club };
+        if (source.forumId === target.id) {
+          return { moved: false, threadId: source.id, threadSlug: threadSlugValue, forum };
+        }
+
+        const changed = await tx.thread.updateMany({
+          where: {
+            ...sourceWhere,
+            id: source.id,
+            forumId: source.forumId,
+          },
+          data: {
+            forumId: target.id,
+            pinnedAt: null,
+            pinnedByUserId: null,
+          },
+        });
+        if (changed.count !== 1) throw missingThread();
+
+        await tx.auditLog.create({
+          data: {
+            actorType: 'USER',
+            actorUserId,
+            action: 'THREAD_MOVED',
+            category: 'FORUM',
+            targetType: 'THREAD',
+            targetId: source.id,
+            reason: input.reason ?? null,
+            metadata: {
+              threadSlug: threadSlugValue,
+              sourceForumId: source.forumId,
+              sourceForumSlug,
+              targetForumId: target.id,
+              targetForumSlug: target.slug,
+              before: {
+                status: source.status,
+                forumId: source.forumId,
+                pinnedAt: source.pinnedAt?.toISOString() ?? null,
+                pinnedByUserId: source.pinnedByUserId,
+              },
+              after: {
+                status: source.status,
+                forumId: target.id,
+                pinnedAt: null,
+                pinnedByUserId: null,
+              },
+            },
+          },
+        });
+        return { moved: true, threadId: source.id, threadSlug: threadSlugValue, forum };
+      });
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
+        throw new ConflictException({
+          code: 'THREAD_SLUG_CONFLICT',
+          message: 'Im Zielforum existiert bereits ein Thema mit diesem Slug.',
+        });
+      }
+      throw error;
+    }
   }
 
   /** Resolve only a public OPEN/LOCKED, non-merged thread; never reveal hidden IDs. */

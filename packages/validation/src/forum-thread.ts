@@ -30,3 +30,12 @@ export const lockForumThreadSchema = z
   .strict();
 
 export type LockForumThreadInput = z.infer<typeof lockForumThreadSchema>;
+
+export const moveForumThreadSchema = z
+  .object({
+    targetForumId: z.string().uuid(),
+    reason: z.string().trim().min(5).max(500).optional(),
+  })
+  .strict();
+
+export type MoveForumThreadInput = z.infer<typeof moveForumThreadSchema>;
