@@ -101,18 +101,18 @@ export class NotificationsService implements OnModuleDestroy {
     try {
       const notification = await this.database.$transaction(async (tx) => {
         const stored = await tx.notification.create({
-        data: {
-          userId: command.userId,
-          type: command.type,
-          title: policy.title,
-          body: policy.body,
-          url: command.url ?? null,
-          sourceType: command.sourceType,
-          sourceId: command.sourceId,
-          actorUserId: command.actorUserId ?? null,
-          dedupeKey,
-        },
-        select: { id: true },
+          data: {
+            userId: command.userId,
+            type: command.type,
+            title: policy.title,
+            body: policy.body,
+            url: command.url ?? null,
+            sourceType: command.sourceType,
+            sourceId: command.sourceId,
+            actorUserId: command.actorUserId ?? null,
+            dedupeKey,
+          },
+          select: { id: true },
         });
         await tx.notificationOutbox.create({ data: { notificationId: stored.id } });
         return stored;

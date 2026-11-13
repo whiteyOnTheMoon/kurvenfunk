@@ -99,9 +99,11 @@ describe('Phase 23.224 – isolated notification taxonomy and durable event dedu
     const attempts = await Promise.all([service.persist(command), service.persist(command)]);
     expect(attempts.map((x) => x.status).sort()).toEqual(['ALREADY_EXISTS', 'CREATED']);
     expect(attempts[0].id).toBe(attempts[1].id);
-    expect(await database.notificationOutbox.count({
-      where: { notificationId: attempts[0].id! },
-    })).toBe(1);
+    expect(
+      await database.notificationOutbox.count({
+        where: { notificationId: attempts[0].id! },
+      }),
+    ).toBe(1);
 
     expect(
       await database.notification.count({

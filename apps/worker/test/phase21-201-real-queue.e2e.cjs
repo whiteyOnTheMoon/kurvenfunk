@@ -30,8 +30,7 @@ async function main() {
   const [
     { createPrismaClient },
     { QUEUE_NAMES, FAKE_SPORTS_SCOPE, SPORTS_IMPORT_JOB_NAME, NOTIFICATION_DISPATCH_JOB_NAME },
-  ] =
-    await Promise.all([import('@kurvenfunk/database'), import('@kurvenfunk/types')]);
+  ] = await Promise.all([import('@kurvenfunk/database'), import('@kurvenfunk/types')]);
   const { SportsImportQueueService } = require('../dist/jobs/sports-import-queue.service.js');
   const db = createPrismaClient();
   const connection = {

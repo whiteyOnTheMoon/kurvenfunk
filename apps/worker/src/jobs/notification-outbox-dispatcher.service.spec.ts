@@ -83,9 +83,13 @@ describe('Phase 23.225 – durable outbox dispatcher', () => {
 
   it('never marks a row processed merely because BullMQ accepted the job', async () => {
     await service.dispatchDue(now);
-    const writes = db.notificationOutbox.updateMany.mock.calls as Array<[{
-      data: { processedAt?: Date };
-    }]>;
+    const writes = db.notificationOutbox.updateMany.mock.calls as Array<
+      [
+        {
+          data: { processedAt?: Date };
+        },
+      ]
+    >;
     for (const [write] of writes) {
       expect(write.data.processedAt).toBeUndefined();
     }

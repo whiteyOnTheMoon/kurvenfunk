@@ -20,7 +20,6 @@ export interface NotificationDispatchJobPayload {
   notificationId: string;
 }
 
-
 import type { SportsProviderResource } from './sports-provider.js';
 
 export const SPORTS_IMPORT_JOB_NAME = 'fetch-provider' as const;
