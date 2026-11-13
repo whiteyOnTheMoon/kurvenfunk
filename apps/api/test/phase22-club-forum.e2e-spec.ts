@@ -1473,6 +1473,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     });
     const base = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
     const url = base + '/lock';
+    const postRowsBefore = await database.post.count({ where: { threadId: threads[0] } });
     const moderatorId = users.get(subjects.moderator)!;
     const moderator = 'Bearer ' + (await tokenFor(subjects.moderator));
     const admin = 'Bearer ' + (await tokenFor(subjects.admin));
@@ -1558,14 +1559,15 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         await request(app.getHttpServer()).get(base).expect(200),
       );
       expect(publicDetail.thread.status).toBe('LOCKED');
+      expect(JSON.stringify(publicDetail)).not.toContain('lockedByUserId');
+      expect(JSON.stringify(publicDetail)).not.toContain('lockReason');
       expect(JSON.stringify(publicDetail)).not.toContain(reason);
-      expect(JSON.stringify(publicDetail)).not.toContain(moderatorId);
       await request(app.getHttpServer())
         .post(base + '/posts')
         .set('Authorization', member)
         .send({ body: 'Eine gesperrte Diskussion bekommt keine weitere Antwort.' })
         .expect(409);
-      expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(thread.postCount);
+      expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(postRowsBefore);
       expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
 
       const unlocks = await Promise.all([
