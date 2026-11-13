@@ -64,8 +64,7 @@ export function parseThreadPageCursor(value: unknown, forumSlug: string): Thread
   const raw = decodedCursor(value);
   if (!raw) return null;
   if (
-    Object.keys(raw).sort().join(',') !==
-      'createdAt,forumSlug,id,lastPostAt,pinnedAt,version' ||
+    Object.keys(raw).sort().join(',') !== 'createdAt,forumSlug,id,lastPostAt,pinnedAt,version' ||
     raw.version !== 1 ||
     raw.forumSlug !== forumSlug ||
     typeof raw.id !== 'string' ||
@@ -97,10 +96,7 @@ export function parsePostPageCursor(value: unknown, threadId: string): PostPageC
 
 function afterTimestampAndId(cursor: ThreadPageCursor): Prisma.ThreadWhereInput[] {
   const createdAt = new Date(cursor.createdAt);
-  return [
-    { createdAt: { lt: createdAt } },
-    { createdAt, id: { gt: cursor.id } },
-  ];
+  return [{ createdAt: { lt: createdAt } }, { createdAt, id: { gt: cursor.id } }];
 }
 
 function afterLastPost(cursor: ThreadPageCursor): Prisma.ThreadWhereInput[] {
@@ -109,11 +105,7 @@ function afterLastPost(cursor: ThreadPageCursor): Prisma.ThreadWhereInput[] {
     return [{ lastPostAt: null, OR: tie }];
   }
   const lastPostAt = new Date(cursor.lastPostAt);
-  return [
-    { lastPostAt: { lt: lastPostAt } },
-    { lastPostAt: null },
-    { lastPostAt, OR: tie },
-  ];
+  return [{ lastPostAt: { lt: lastPostAt } }, { lastPostAt: null }, { lastPostAt, OR: tie }];
 }
 
 /** Strict keyset for: pinnedAt DESC NULLS LAST, lastPostAt DESC NULLS LAST,
@@ -125,10 +117,6 @@ export function threadKeysetAfter(cursor: ThreadPageCursor): Prisma.ThreadWhereI
   }
   const pinnedAt = new Date(cursor.pinnedAt);
   return {
-    OR: [
-      { pinnedAt: { lt: pinnedAt } },
-      { pinnedAt: null },
-      { pinnedAt, OR: afterLast },
-    ],
+    OR: [{ pinnedAt: { lt: pinnedAt } }, { pinnedAt: null }, { pinnedAt, OR: afterLast }],
   };
 }
