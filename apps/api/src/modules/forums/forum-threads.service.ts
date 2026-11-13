@@ -207,6 +207,48 @@ export class ForumThreadsService implements OnModuleDestroy {
     };
   }
 
+  /** Resolve only a public OPEN/LOCKED, non-merged thread; never reveal hidden IDs. */
+  private async visibleSubscriptionThreadId(forumSlug: string, threadSlugValue: string) {
+    const thread = await this.database.thread.findFirst({
+      where: {
+        slug: threadSlugValue,
+        status: { in: ['OPEN', 'LOCKED'] },
+        mergedIntoThreadId: null,
+        forum: { is: visibleForumWhere(forumSlug) },
+      },
+      select: { id: true },
+    });
+    if (!thread) throw missingThread();
+    return thread.id;
+  }
+
+  /** Personal state is never included in the public thread detail response. */
+  async getThreadSubscription(forumSlug: string, threadSlugValue: string, userId: string) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    const subscription = await this.database.threadSubscription.findUnique({
+      where: { userId_threadId: { userId, threadId } },
+      select: { id: true },
+    });
+    return { subscribed: subscription !== null };
+  }
+
+  /** Database uniqueness + ON CONFLICT DO NOTHING make concurrent PUT requests idempotent. */
+  async subscribeToThread(forumSlug: string, threadSlugValue: string, userId: string) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    await this.database.threadSubscription.createMany({
+      data: [{ userId, threadId }],
+      skipDuplicates: true,
+    });
+    return { subscribed: true };
+  }
+
+  /** A second DELETE is a success and never affects another user's subscription. */
+  async unsubscribeFromThread(forumSlug: string, threadSlugValue: string, userId: string) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    await this.database.threadSubscription.deleteMany({ where: { userId, threadId } });
+    return { subscribed: false };
+  }
+
   /**
    * Atomically claim the next sequence number before inserting a post.
    * The conditional increment holds a row lock until the post and
