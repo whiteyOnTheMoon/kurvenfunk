@@ -451,7 +451,7 @@ jobs:
           pnpm --filter worker exec node test/phase21-201-real-queue.e2e.cjs
 
   docker-worker-build:
-    name: Worker Docker build (Prisma schema)
+    name: Docker builds (worker, migrations, web)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -464,6 +464,14 @@ jobs:
         run: docker build --file apps/worker/Dockerfile --tag kurvenfunk-worker:ci .
       - name: Build Prisma migration image
         run: docker build --file infrastructure/docker/migrate/Dockerfile --tag kurvenfunk-migrate:ci .
+      - name: Build real web Docker image with fresh workspace exports
+        run: |
+          docker build \
+            --file infrastructure/docker/web/Dockerfile \
+            --build-arg WEB_URL=https://ci.kurvenfunk.invalid \
+            --build-arg API_URL=https://api-ci.kurvenfunk.invalid \
+            --build-arg AUTH_URL=https://auth-ci.kurvenfunk.invalid \
+            --tag kurvenfunk-web:ci .
 
   e2e-isolated:
     name: Isolated API HTTP E2E (PostgreSQL, Redis, signed JWT)
