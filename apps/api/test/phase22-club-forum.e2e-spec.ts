@@ -1131,6 +1131,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     expect(before).toEqual({
       unread: true,
       lastReadSequenceNumber: 0,
+      lastReadPostId: null,
       latestSequenceNumber: thread.lastPostSequenceNumber,
     });
     expect(
