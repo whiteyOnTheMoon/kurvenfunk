@@ -166,16 +166,18 @@ export function ThreadMoveControl({
         onChange={(event) => setReason(event.target.value)}
         disabled={saving}
       />
-      <button type="button" disabled={!target || saving || invalidReason} onClick={() => void move()}>
+      <button
+        type="button"
+        disabled={!target || saving || invalidReason}
+        onClick={() => void move()}
+      >
         {saving ? 'Wird verschoben …' : 'Thema verschieben'}
       </button>
       {loading ? <span role="status">Zielforen werden geladen …</span> : null}
       {!loading && !targetsError && targets.length === 0 ? (
         <span>Kein anderes öffentliches Vereinsforum verfügbar.</span>
       ) : null}
-      {invalidReason ? (
-        <p role="alert">Eine Begründung muss mindestens 5 Zeichen haben.</p>
-      ) : null}
+      {invalidReason ? <p role="alert">Eine Begründung muss mindestens 5 Zeichen haben.</p> : null}
       {targetsError ? <p role="alert">Zielforen sind derzeit nicht verfügbar.</p> : null}
       {error ? <p role="alert">Das Thema konnte nicht verschoben werden.</p> : null}
     </div>
