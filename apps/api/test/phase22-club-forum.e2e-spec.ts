@@ -330,9 +330,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const response = await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads')
       .expect(200);
-    expect(dataOf<{ items: unknown[]; hasMore: boolean }>(response)).toEqual({
+    expect(dataOf<{ items: unknown[]; hasMore: boolean; nextCursor: string | null }>(response)).toEqual({
       items: [],
       hasMore: false,
+      nextCursor: null,
     });
     await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-unknown-forum/threads')
@@ -899,10 +900,20 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const first = dataOf<{ nextCursor: string }>(
       await request(app.getHttpServer()).get(list).expect(200),
     );
+    // An invisible forum must remain 404 even if a foreign cursor was supplied.
     const otherForum = '/api/v1/forums/by-slug/verein-' + secondSlug + '/threads';
     await request(app.getHttpServer())
       .get(otherForum)
       .query({ cursor: first.nextCursor })
+      .expect(404);
+    // On a visible forum, a forged cursor scoped to another forum is invalid (400).
+    const foreign = JSON.parse(Buffer.from(first.nextCursor, 'base64url').toString('utf8')) as {
+      forumSlug: string;
+    };
+    foreign.forumSlug = 'verein-' + secondSlug;
+    await request(app.getHttpServer())
+      .get(list)
+      .query({ cursor: Buffer.from(JSON.stringify(foreign)).toString('base64url') })
       .expect(400);
     for (const bad of ['!!', 'e30', 'a'.repeat(1100)]) {
       await request(app.getHttpServer()).get(list).query({ cursor: bad }).expect(400);
