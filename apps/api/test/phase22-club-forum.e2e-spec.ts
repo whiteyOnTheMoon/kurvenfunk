@@ -1005,7 +1005,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       expect(dataOf<{ subscribed: boolean }>(result).subscribed).toBe(true);
     }
     expect(
-      await database.threadSubscription.count({ where: { threadId: threads[0], userId: firstUser } }),
+      await database.threadSubscription.count({
+        where: { threadId: threads[0], userId: firstUser },
+      }),
     ).toBe(1);
 
     const privateState = await request(app.getHttpServer())
@@ -1013,10 +1015,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .set('Authorization', authB)
       .expect(200);
     expect(dataOf<{ subscribed: boolean }>(privateState)).toEqual({ subscribed: false });
-    await request(app.getHttpServer())
-      .put(target)
-      .set('Authorization', authB)
-      .expect(200);
+    await request(app.getHttpServer()).put(target).set('Authorization', authB).expect(200);
 
     const publicDetail = await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
@@ -1033,10 +1032,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       expect(dataOf<{ subscribed: boolean }>(response)).toEqual({ subscribed: false });
     }
     expect(
-      await database.threadSubscription.count({ where: { threadId: threads[0], userId: firstUser } }),
+      await database.threadSubscription.count({
+        where: { threadId: threads[0], userId: firstUser },
+      }),
     ).toBe(0);
     expect(
-      await database.threadSubscription.count({ where: { threadId: threads[0], userId: secondUser } }),
+      await database.threadSubscription.count({
+        where: { threadId: threads[0], userId: secondUser },
+      }),
     ).toBe(1);
     await request(app.getHttpServer()).delete(target).set('Authorization', authB).expect(200);
     expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
@@ -1098,5 +1101,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     await request(app.getHttpServer()).delete(target).set('Authorization', auth).expect(200);
     expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
   });
-
 });
