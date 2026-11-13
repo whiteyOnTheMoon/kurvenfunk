@@ -33,6 +33,8 @@ ENV WEB_URL=$WEB_URL
 ENV API_URL=$API_URL
 ENV AUTH_URL=$AUTH_URL
 
+# Shared workspace build outputs are not guaranteed to be current in a clean Docker context.
+RUN pnpm --filter @kurvenfunk/validation build
 RUN pnpm --filter web build
 
 
