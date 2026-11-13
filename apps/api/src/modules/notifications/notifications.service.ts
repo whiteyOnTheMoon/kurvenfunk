@@ -41,8 +41,13 @@ function isUuid(value: unknown): value is string {
 
 function safeInternalUrl(value: unknown): value is string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 512) return false;
-  if (!value.startsWith('/') || value.startsWith('//') || /[\\\s\x00-\x1f\x7f]/.test(value)) {
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
     return false;
+  }
+  if (/\s/.test(value)) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 32 || code === 127) return false;
   }
   try {
     return new URL(value, 'https://kurvenfunk.invalid').origin === 'https://kurvenfunk.invalid';

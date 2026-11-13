@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Jest mock matchers are dynamic. */
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import {
   isNotificationKind,
