@@ -5,6 +5,8 @@ import type { Job } from 'bullmq';
 import type { DatabaseService } from '../database/database.service';
 import { NotificationsProcessor } from './notifications.processor';
 
+jest.mock('@kurvenfunk/database', () => ({ createPrismaClient: jest.fn() }));
+
 describe('Phase 23.225 – idempotent notification queue consumer', () => {
   const notificationId = '11111111-1111-4111-8111-111111111111';
   const db = { notificationOutbox: { updateMany: jest.fn() } };

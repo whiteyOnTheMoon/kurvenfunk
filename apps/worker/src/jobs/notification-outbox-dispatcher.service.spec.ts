@@ -7,6 +7,8 @@ import type { Queue } from 'bullmq';
 import type { DatabaseService } from '../database/database.service';
 import { NotificationOutboxDispatcher } from './notification-outbox-dispatcher.service';
 
+jest.mock('@kurvenfunk/database', () => ({ createPrismaClient: jest.fn() }));
+
 describe('Phase 23.225 – durable outbox dispatcher', () => {
   const notificationId = '11111111-1111-4111-8111-111111111111';
   const now = new Date('2026-11-13T23:00:00.000Z');
