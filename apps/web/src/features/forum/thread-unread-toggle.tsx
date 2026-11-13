@@ -96,7 +96,7 @@ export function ThreadUnreadToggle({
     setSaving(true);
     setError(false);
     try {
-      const response = await fetch(endpoint.replace(/\\/unread$/u, '/read-position'), {
+      const response = await fetch(endpoint.slice(0, -'/unread'.length) + '/read-position', {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
