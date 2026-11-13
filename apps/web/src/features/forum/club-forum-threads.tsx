@@ -68,10 +68,18 @@ export function ClubForumThreads({ apiUrl, forumSlug }: { apiUrl: string; forumS
   }, [apiUrl, forumSlug]);
 
   if (loading) {
-    return <p className={styles.empty} role="status">Diskussionen werden geladen …</p>;
+    return (
+      <p className={styles.empty} role="status">
+        Diskussionen werden geladen …
+      </p>
+    );
   }
   if (error) {
-    return <p className={styles.empty} role="alert">Diskussionen sind derzeit nicht erreichbar.</p>;
+    return (
+      <p className={styles.empty} role="alert">
+        Diskussionen sind derzeit nicht erreichbar.
+      </p>
+    );
   }
   if (threads.length === 0) {
     return <p className={styles.empty}>Hier gibt es noch keine Diskussionsthemen.</p>;
