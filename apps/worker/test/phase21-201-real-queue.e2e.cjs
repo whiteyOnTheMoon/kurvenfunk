@@ -4,7 +4,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const { spawn } = require('node:child_process');
 const { setTimeout: sleep } = require('node:timers/promises');
 const path = require('node:path');
@@ -27,8 +27,10 @@ async function main() {
   assert.equal(process.env.REDIS_HOST, '127.0.0.1');
   assert.equal(process.env.REDIS_PORT, '56379');
 
-  const [{ createPrismaClient }, { QUEUE_NAMES, FAKE_SPORTS_SCOPE, SPORTS_IMPORT_JOB_NAME }] =
-    await Promise.all([import('@kurvenfunk/database'), import('@kurvenfunk/types')]);
+  const [
+    { createPrismaClient },
+    { QUEUE_NAMES, FAKE_SPORTS_SCOPE, SPORTS_IMPORT_JOB_NAME, NOTIFICATION_DISPATCH_JOB_NAME },
+  ] = await Promise.all([import('@kurvenfunk/database'), import('@kurvenfunk/types')]);
   const { SportsImportQueueService } = require('../dist/jobs/sports-import-queue.service.js');
   const db = createPrismaClient();
   const connection = {
@@ -40,6 +42,9 @@ async function main() {
   const queue = new Queue(QUEUE_NAMES.SPORTS_IMPORT, { connection });
   const events = new QueueEvents(QUEUE_NAMES.SPORTS_IMPORT, { connection });
   const deadLetters = new Queue(QUEUE_NAMES.SPORTS_IMPORT_DEAD_LETTER, { connection });
+  const notificationsQueue = new Queue(QUEUE_NAMES.NOTIFICATIONS, { connection });
+  const notificationUsers = [];
+  let notificationId = null;
   const config = {
     get: (key, fallback) =>
       key === 'NODE_ENV' ? 'test' : key === 'SPORTS_FAKE_PROVIDER_ENABLED' ? true : fallback,
@@ -148,6 +153,60 @@ async function main() {
     assert.equal(letter.data.attemptsMade, 3);
     assert.equal((await queue.getJob(badId)).attemptsMade, 3);
     assert.deepEqual(await counts(), baseline);
+
+    // Phase 23.225: the real Nest worker consumes a durable, isolated
+    // PostgreSQL event without emailing users or touching the DEV database.
+    const recipient = await db.user.create({
+      data: { keycloakSubject: 'p225-queue-ci-' + randomUUID() },
+      select: { id: true },
+    });
+    notificationUsers.push(recipient.id);
+    const event = await db.$transaction(async (tx) => {
+      const stored = await tx.notification.create({
+        data: {
+          userId: recipient.id,
+          type: 'SYSTEM',
+          title: 'Isolated queue handshake',
+          body: 'Only CI disposable data',
+          dedupeKey: 'p225-ci-' + randomUUID(),
+        },
+        select: { id: true },
+      });
+      await tx.notificationOutbox.create({ data: { notificationId: stored.id } });
+      return stored;
+    });
+    notificationId = event.id;
+
+    const delivered = await until(
+      async () => {
+        const row = await db.notificationOutbox.findUnique({
+          where: { notificationId },
+          select: { processedAt: true, attemptCount: true },
+        });
+        return row?.processedAt ? row : null;
+      },
+      'NOTIFICATION_OUTBOX_CONSUMED_BY_REAL_WORKER',
+      90_000,
+    );
+    assert.ok(delivered.attemptCount >= 1, 'PostgreSQL dispatcher must claim the event');
+
+    const jobId = 'notification_' + notificationId.replaceAll('-', '');
+    // A second queue delivery must not overwrite the durable first receipt.
+    const timestamp = delivered.processedAt.getTime();
+    const repeated = await notificationsQueue.add(
+      NOTIFICATION_DISPATCH_JOB_NAME,
+      { notificationId },
+      { jobId, attempts: 3, removeOnComplete: true, removeOnFail: true },
+    );
+    assert.equal(repeated.id, jobId);
+    await until(async () => !(await notificationsQueue.getJob(jobId)), 'REPEATED_DELIVERY_DONE');
+    const after = await db.notificationOutbox.findUniqueOrThrow({
+      where: { notificationId },
+    });
+    assert.equal(after.processedAt.getTime(), timestamp);
+    assert.equal(await db.notification.count({ where: { id: notificationId } }), 1);
+    console.log('PHASE 23.225 REAL NOTIFICATION OUTBOX QUEUE: PASS');
+
     console.log('PHASE 21.201 REAL QUEUE E2E: PASS');
     console.log(
       'PostgreSQL: 4 successful staged feeds (16 records); real Redis deduplication: PASS',
@@ -162,6 +221,17 @@ async function main() {
     console.error('Worker last output:', output.replace(/sports_ci_only/g, '[REDACTED]'));
     process.exitCode = 1;
   } finally {
+    // Cleanup only the disposable Phase 23 CI fixture, also on test failure.
+    try {
+      if (notificationId) {
+        await db.notification.deleteMany({ where: { id: notificationId } });
+      }
+      if (notificationUsers.length > 0) {
+        await db.user.deleteMany({ where: { id: { in: notificationUsers } } });
+      }
+    } catch {
+      process.exitCode = 1;
+    }
     child.kill('SIGTERM');
     await Promise.race([new Promise((resolve) => child.once('exit', resolve)), sleep(8_000)]);
     if (child.exitCode === null) child.kill('SIGKILL');
@@ -169,6 +239,7 @@ async function main() {
       events.close(),
       queue.close(),
       deadLetters.close(),
+      notificationsQueue.close(),
       db.$disconnect(),
     ]);
   }

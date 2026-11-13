@@ -13,6 +13,12 @@ export const QUEUE_NAMES = {
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
+/** Phase 23.225: queue payload contains only an immutable PostgreSQL UUID. */
+export const NOTIFICATION_DISPATCH_JOB_NAME = 'process-notification-outbox' as const;
+
+export interface NotificationDispatchJobPayload {
+  notificationId: string;
+}
 
 import type { SportsProviderResource } from './sports-provider.js';
 

@@ -6,8 +6,8 @@ Stand: 13.11.2026. Nur DEV und isolierte CI. **Phase 22 bleibt technisch abgesch
 
 | Aufgabe | Inhalt | Stand |
 | --- | --- | --- |
-| 224 | Notification Types | Erster interner Backend-Slice in Arbeit; PR-/DEV-CI ausstehend |
-| 225 | Notification Queue | Offen: persistenter Outbox-/Retry-/Queue-Consumer-Vertrag |
+| 224 | Notification Types | PR #187 gemergt, DEV-CI #43519283165 PASS; keine manuellen Producer aktiv |
+| 225 | Notification Queue | Implementierung in PR; PR-/DEV-CI und reale Ausfallsimulation ausstehend |
 | 226 | In-App Notifications | Offen: private Listen-API, Paging, Zähler und Web-Center |
 | 227 | Read/Unread | Offen: atomare und empfängergebundene Lesemarkierung |
 | 228 | E-Mail Notifications | Offen: async Versand, Templates, Opt-outs, Retries und Anbieterabnahme |
@@ -24,6 +24,15 @@ Stand: 13.11.2026. Nur DEV und isolierte CI. **Phase 22 bleibt technisch abgesch
 - **Tests:** Unit-Tests prüfen Typen, Pflichtnachrichten, statische Vorlagen, Validierung, externe URLs, Selbstbenachrichtigungen und Deduplizierung. Isolierte PostgreSQL/Redis-E2E prüfen tatsächliche DB-Enums, parallele Deduplizierung, Lesestandschutz und sichere Moderationsnachrichten.
 - **Noch nicht aktiv:** Keine Produzenten in Kommentar-/Foren-/Moderationsdiensten, kein Queue-Versand, keine E-Mails, keine öffentlichen Leserechte/API, keine Benachrichtigungs-UI. Diese Aufgaben werden bewusst getrennt in 225–229 integriert.
 
+## 23.225 – PostgreSQL-Outbox und BullMQ-Worker
+
+- **Atomare Ursprungsdaten:** `NotificationsService.persist()` erzeugt `Notification` und genau einen `NotificationOutbox`-Datensatz in derselben PostgreSQL-Transaktion. Ein Fehler beim Outbox-Schreiben rollt die neue Benachrichtigung zurück. Bestehender `dedupeKey` schützt Wiederholungen.
+- **Dauerhafter Übergang:** Neue Outbox-Tabelle mit FK/Cascade, einmaliger `notificationId`, `attemptCount`, `nextAttemptAt`, `processedAt` und neutralem `lastErrorCode`. Keine Backfills oder Demo-Records.
+- **Recovery-Dispatcher:** Beim Workerstart und alle 30 Sekunden höchstens 25 offene Einträge. PostgreSQL-CAS mit `processedAt IS NULL` und `nextAttemptAt <= now` reserviert gegen konkurrierende Worker; 60 Sekunden später wird ein nicht bestätigter Claim wieder fällig, auch wenn zwischen DB und Redis ein Prozess abstürzt. Redis-Ausfälle vernichten keine offenen Einträge.
+- **Minimale Queue-Payload:** BullMQ `notifications` erhält nur die Notification-UUID, nie Text, User-ID, Token oder Moderationsnotizen. Deterministische Job-ID; drei interne BullMQ-Versuche mit Backoff, danach Wiederaufnahme aus PostgreSQL ohne dauerhaft blockierende Redis-Duplikat-ID.
+- **Idempotenter Consumer:** Jobname, UUID, ID und Payload werden validiert. Er markiert ausschließlich `NotificationOutbox.processedAt`, nicht `Notification.readAt` oder irgendeine E-Mail-Zustellung. Bereits bestätigte/verwaiste Jobs verändern keine Nutzerobjekte.
+- **Grenzen:** In 225 gibt es weiterhin keine aktivierten Domain-Producer, öffentliche Notification-API oder E-Mail-/Push-Zustellung. Ein eigener Dead-Letter- und Zustellvertrag für echte E-Mails gehört zu 228; Redis-Ausfälle werden hier bewusst unbefristet wiederholt, nicht terminal dead-lettered.
+- **Tests:** Atomarer Rollback, konkurrierende Reservierungen, sichere Payload, Redis-Fehlercodes, Wiederholung, reales PostgreSQL/Redis/Nest-Worker-Acknowledgment in isolierter CI. Auf DEV ausschließlich ein lesender Schema-Gate ohne Testdaten, Logs mit Nutzer-IDs oder mutierende Queue-Tests. Keine STAGING-/PROD-Änderung.
 ## Nachweis- und Sicherheitsgrenzen
 
 Alle Testkonten/Notification-Einträge existieren ausschließlich in einer ausdrücklich überprüften wegwerfbaren E2E-PostgreSQL-Datenbank; kein DEV-Seeding und keine E-Mails. Vollständig grüne PR-CI einschließlich isolierter E2E und Docker vor Merge; danach exakten Merge-Push-/DEV-CI-Abschluss kontrollieren. Keine Änderungen an STAGING/PROD.

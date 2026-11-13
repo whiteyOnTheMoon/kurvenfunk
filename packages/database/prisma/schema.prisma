@@ -1257,6 +1257,7 @@ model Notification {
 
   user      User  @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  outbox    NotificationOutbox?
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
@@ -1264,6 +1265,23 @@ model Notification {
   @@index([sourceType, sourceId])
   @@index([actorUserId])
   @@index([expiresAt])
+}
+
+// Durable queue handoff: PostgreSQL is authoritative even when Redis is down.
+// processedAt means the queue consumer acknowledged this event, not email sent.
+model NotificationOutbox {
+  id             String   @id @default(uuid()) @db.Uuid
+  notificationId String   @unique @db.Uuid
+  attemptCount    Int      @default(0)
+  nextAttemptAt   DateTime @default(now())
+  lastErrorCode   String?
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([processedAt, nextAttemptAt])
 }
 
 model NotificationPreference {
