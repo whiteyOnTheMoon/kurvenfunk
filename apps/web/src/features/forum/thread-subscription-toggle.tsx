@@ -49,7 +49,8 @@ export function ThreadSubscriptionToggle({
         const payload: unknown = await response.json();
         const data = (payload as { data?: { subscribed?: unknown } }).data;
         if (typeof data?.subscribed !== 'boolean') throw new Error('SUBSCRIPTION_INVALID');
-        if (!controller.signal.aborted) setSubscription({ token: token!, subscribed: data.subscribed });
+        if (!controller.signal.aborted)
+          setSubscription({ token: token!, subscribed: data.subscribed });
       } catch {
         if (!controller.signal.aborted) setFailedToken(token!);
       }
