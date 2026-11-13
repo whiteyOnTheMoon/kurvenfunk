@@ -526,14 +526,13 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     }
   });
 
-
   it('22.213 rejects anonymous, LIMITED, unfinished onboarding and invalid reply bodies', async () => {
     const thread = await database.thread.findUniqueOrThrow({
       where: { id: threads[0] },
       select: { slug: true },
     });
-    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
-      thread.slug + '/posts';
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts';
     await request(app.getHttpServer()).post(target).send({ body: 'No auth' }).expect(401);
     await request(app.getHttpServer())
       .post(target)
@@ -575,8 +574,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       where: { id: threads[0] },
       select: { slug: true },
     });
-    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
-      thread.slug + '/posts';
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts';
     const response = await request(app.getHttpServer())
       .post(target)
       .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
@@ -598,8 +597,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
       .expect(200);
     expect(
-      dataOf<{ posts: { id: string; sequenceNumber: number }[] }>(detail).posts
-        .some((item) => item.id === post.id && item.sequenceNumber === 2),
+      dataOf<{ posts: { id: string; sequenceNumber: number }[] }>(detail).posts.some(
+        (item) => item.id === post.id && item.sequenceNumber === 2,
+      ),
     ).toBe(true);
   });
 
@@ -628,8 +628,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       where: { id: threads[0] },
       select: { slug: true },
     });
-    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
-      thread.slug + '/posts';
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts';
     const baseline = await database.thread.findUniqueOrThrow({
       where: { id: threads[0] },
       select: { postCount: true, lastPostSequenceNumber: true },
@@ -670,19 +670,16 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       select: { postCount: true, lastPostSequenceNumber: true },
     });
     expect(current).toEqual(baseline);
-    expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(
-      baseline.postCount,
-    );
+    expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(baseline.postCount);
   });
-
 
   it('22.213 prevents writes to archived, merged and hidden-category topics', async () => {
     const thread = await database.thread.findUniqueOrThrow({
       where: { id: threads[0] },
       select: { slug: true },
     });
-    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
-      thread.slug + '/posts';
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts';
     const auth = 'Bearer ' + (await tokenFor(subjects.replyC));
     const before = await database.post.count({ where: { threadId: threads[0] } });
 
@@ -724,12 +721,9 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       where: { id: threads[0] },
       select: { slug: true },
     });
-    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
-      thread.slug + '/posts';
-    const tokens = await Promise.all([
-      tokenFor(subjects.replyC),
-      tokenFor(subjects.replyD),
-    ]);
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts';
+    const tokens = await Promise.all([tokenFor(subjects.replyC), tokenFor(subjects.replyD)]);
     const results = await Promise.all(
       tokens.map((token, index) =>
         request(app.getHttpServer())
@@ -739,9 +733,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       ),
     );
     expect(results.map((result) => result.status).sort()).toEqual([201, 201]);
-    const created = results.map((result) =>
-      dataOf<{ id: string; sequenceNumber: number }>(result),
-    );
+    const created = results.map((result) => dataOf<{ id: string; sequenceNumber: number }>(result));
     expect(created.map((item) => item.sequenceNumber).sort((a, b) => a - b)).toEqual([4, 5]);
     const stored = await database.thread.findUniqueOrThrow({ where: { id: threads[0] } });
     expect(stored.postCount).toBe(5);
