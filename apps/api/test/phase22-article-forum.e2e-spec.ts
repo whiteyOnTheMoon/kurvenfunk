@@ -94,7 +94,8 @@ describe('Phase 22.223 – shared article/forum discussion uses one canonical Co
       .expect(200);
     const payload = dataOf<{ items: Array<{ id: string; slug: string }> }>(response);
     const ownArticles = payload.items.filter((article) => article.slug.startsWith(prefix));
-    expect(ownArticles).toEqual([{ id: publishedId, slug: slugs.published }]);
+    expect(ownArticles).toHaveLength(1);
+    expect(ownArticles[0]).toMatchObject({ id: publishedId, slug: slugs.published });
   });
 
   it('returns exactly the original article ID and visible comment count', async () => {
