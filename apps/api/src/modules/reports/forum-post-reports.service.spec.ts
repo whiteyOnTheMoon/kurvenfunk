@@ -147,7 +147,11 @@ describe('Phase 22.222 ForumPostReportsService', () => {
   });
 
   it('removes a post once and audits the moderator action atomically', async () => {
-    const result = await service.removePost({ postId, moderatorId, reason: 'Verstoß gegen Regeln' });
+    const result = await service.removePost({
+      postId,
+      moderatorId,
+      reason: 'Verstoß gegen Regeln',
+    });
     expect(result).toEqual({ postId, removed: true });
     expect(database.post.updateMany).toHaveBeenCalledWith({
       where: { id: postId, deletedAt: null },
@@ -165,9 +169,11 @@ describe('Phase 22.222 ForumPostReportsService', () => {
 
   it('does not issue a second removal audit on concurrent loser', async () => {
     database.post.updateMany.mockResolvedValue({ count: 0 });
-    expect(await service.removePost({ postId, moderatorId, reason: 'Regelverstoß' })).toMatchObject({
-      removed: false,
-    });
+    expect(await service.removePost({ postId, moderatorId, reason: 'Regelverstoß' })).toMatchObject(
+      {
+        removed: false,
+      },
+    );
     expect(database.auditLog.create).not.toHaveBeenCalled();
   });
 

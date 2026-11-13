@@ -89,7 +89,9 @@ export function ForumPostReportButton({
     <div className={styles.postReport}>
       {state === 'reported' || state === 'duplicate' ? (
         <span role="status">
-          {state === 'reported' ? 'Deine Meldung wurde übermittelt.' : 'Du hast diesen Beitrag bereits gemeldet.'}
+          {state === 'reported'
+            ? 'Deine Meldung wurde übermittelt.'
+            : 'Du hast diesen Beitrag bereits gemeldet.'}
         </span>
       ) : (
         <>

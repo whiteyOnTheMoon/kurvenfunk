@@ -72,9 +72,7 @@ function ReportReview({
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(
-          kind === 'remove'
-            ? { reason: note.trim() }
-            : { resolution, moderatorNote: note.trim() },
+          kind === 'remove' ? { reason: note.trim() } : { resolution, moderatorNote: note.trim() },
         ),
       });
       if (!response.ok) throw new Error('MODERATION_WRITE_FAILED');
@@ -94,10 +92,9 @@ function ReportReview({
     }
   }
 
-  const link =
-    post?.thread.forum.club?.slug
-      ? `/forum/verein/${encodeURIComponent(post.thread.forum.club.slug)}/thema/${encodeURIComponent(post.thread.slug)}`
-      : null;
+  const link = post?.thread.forum.club?.slug
+    ? `/forum/verein/${encodeURIComponent(post.thread.forum.club.slug)}/thema/${encodeURIComponent(post.thread.slug)}`
+    : null;
 
   return (
     <article className={styles.threadPost}>
@@ -114,7 +111,11 @@ function ReportReview({
       ) : (
         <p className={styles.threadPostBody}>{post?.content ?? 'Beitrag nicht verfügbar.'}</p>
       )}
-      {link ? <p><Link href={link}>Zum Thema</Link></p> : null}
+      {link ? (
+        <p>
+          <Link href={link}>Zum Thema</Link>
+        </p>
+      ) : null}
       <div className={styles.threadForm}>
         <label htmlFor={'forum-review-note-' + report.id}>Moderationsnotiz (intern)</label>
         <textarea
@@ -150,9 +151,7 @@ function ReportReview({
         <select
           id={'forum-review-decision-' + report.id}
           value={resolution}
-          onChange={(event) =>
-            setResolution(event.target.value as (typeof resolutions)[number][0])
-          }
+          onChange={(event) => setResolution(event.target.value as (typeof resolutions)[number][0])}
           disabled={saving}
         >
           {resolutions.map(([value, label]) => (
@@ -226,25 +225,31 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
       <header className={styles.intro}>
         <p className={styles.eyebrow}>Forum-Moderation</p>
         <h1>Offene Beitragsmeldungen</h1>
-        <p>Geschützte Warteschlange für gemeldete Forenbeiträge. Entscheidungen werden auditiert.</p>
+        <p>
+          Geschützte Warteschlange für gemeldete Forenbeiträge. Entscheidungen werden auditiert.
+        </p>
       </header>
       <section className={styles.threadDetail} aria-label="Moderationsmeldungen">
         {loading ? <p className={styles.status}>Meldungen werden geladen …</p> : null}
         {error ? (
-          <p role="alert" className={styles.status}>Meldungen konnten nicht geladen werden.</p>
+          <p role="alert" className={styles.status}>
+            Meldungen konnten nicht geladen werden.
+          </p>
         ) : null}
         {!loading && !error && items.length === 0 ? (
           <p className={styles.empty}>Keine offenen Forenmeldungen.</p>
         ) : null}
-        {!loading && !error && items.map((item) => (
-          <ReportReview
-            key={item.id}
-            report={item}
-            token={token}
-            apiUrl={apiUrl}
-            reload={() => setRevision((value) => value + 1)}
-          />
-        ))}
+        {!loading &&
+          !error &&
+          items.map((item) => (
+            <ReportReview
+              key={item.id}
+              report={item}
+              token={token}
+              apiUrl={apiUrl}
+              reload={() => setRevision((value) => value + 1)}
+            />
+          ))}
       </section>
     </main>
   );

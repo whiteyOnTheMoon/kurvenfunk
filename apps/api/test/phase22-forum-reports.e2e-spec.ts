@@ -160,7 +160,9 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
       if (app) await app.close();
       if (database) {
         // All mutations belong exclusively to this disposable E2E database.
-        await database.moderationReport.deleteMany({ where: { postId: { in: [postId, secondPostId] } } });
+        await database.moderationReport.deleteMany({
+          where: { postId: { in: [postId, secondPostId] } },
+        });
         await database.auditLog.deleteMany({
           where: {
             OR: [
@@ -193,38 +195,54 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
   });
 
   it('refuses anonymous reporting and moderator queue access to members', async () => {
-    await request(app.getHttpServer()).post(target + '/posts/' + postId + '/reports')
-      .send({ reason: 'SPAM' }).expect(401);
+    await request(app.getHttpServer())
+      .post(target + '/posts/' + postId + '/reports')
+      .send({ reason: 'SPAM' })
+      .expect(401);
     await request(app.getHttpServer()).get(queue).expect(401);
-    await request(app.getHttpServer()).get(queue)
-      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.reporter))).expect(403);
-    await request(app.getHttpServer()).post('/api/v1/moderation/forum-posts/' + postId + '/remove')
+    await request(app.getHttpServer())
+      .get(queue)
       .set('Authorization', 'Bearer ' + (await tokenFor(subjects.reporter)))
-      .send({ reason: 'Regelwidrig' }).expect(403);
+      .expect(403);
+    await request(app.getHttpServer())
+      .post('/api/v1/moderation/forum-posts/' + postId + '/remove')
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.reporter)))
+      .send({ reason: 'Regelwidrig' })
+      .expect(403);
   });
 
   it('validates reason, own-post protection and public scope', async () => {
     const reporter = await tokenFor(subjects.reporter);
     const author = await tokenFor(subjects.author);
     const route = target + '/posts/' + postId + '/reports';
-    await request(app.getHttpServer()).post(route)
+    await request(app.getHttpServer())
+      .post(route)
       .set('Authorization', 'Bearer ' + reporter)
-      .send({ reason: 'INVALID' }).expect(400);
-    await request(app.getHttpServer()).post(route)
+      .send({ reason: 'INVALID' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(route)
       .set('Authorization', 'Bearer ' + reporter)
-      .send({ reason: 'SPAM', details: '   ' }).expect(400);
-    await request(app.getHttpServer()).post(route)
+      .send({ reason: 'SPAM', details: '   ' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(route)
       .set('Authorization', 'Bearer ' + author)
-      .send({ reason: 'SPAM' }).expect(403);
-    await request(app.getHttpServer()).post(target + '/posts/' + randomUUID() + '/reports')
+      .send({ reason: 'SPAM' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .post(target + '/posts/' + randomUUID() + '/reports')
       .set('Authorization', 'Bearer ' + reporter)
-      .send({ reason: 'SPAM' }).expect(404);
+      .send({ reason: 'SPAM' })
+      .expect(404);
 
     await database.forumCategory.update({ where: { id: categoryId }, data: { active: false } });
     try {
-      await request(app.getHttpServer()).post(route)
+      await request(app.getHttpServer())
+        .post(route)
         .set('Authorization', 'Bearer ' + reporter)
-        .send({ reason: 'SPAM' }).expect(404);
+        .send({ reason: 'SPAM' })
+        .expect(404);
     } finally {
       await database.forumCategory.update({ where: { id: categoryId }, data: { active: true } });
     }
@@ -234,8 +252,12 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
     const token = await tokenFor(subjects.reporter);
     const route = target + '/posts/' + postId + '/reports';
     const results = await Promise.all(
-      [0, 1].map(() => request(app.getHttpServer()).post(route)
-        .set('Authorization', 'Bearer ' + token).send({ reason: 'SPAM' })),
+      [0, 1].map(() =>
+        request(app.getHttpServer())
+          .post(route)
+          .set('Authorization', 'Bearer ' + token)
+          .send({ reason: 'SPAM' }),
+      ),
     );
     expect(results.map((response) => response.status).sort()).toEqual([201, 409]);
     const reports = await database.moderationReport.findMany({
@@ -245,18 +267,29 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
     expect(reports[0]?.targetType).toBe('FORUM_POST');
     expect(reports[0]?.reportedUserId).toBe(users.get(subjects.author));
 
-    await request(app.getHttpServer()).post(route)
-      .set('Authorization', 'Bearer ' + token).send({ reason: 'PRIVACY' }).expect(409);
+    await request(app.getHttpServer())
+      .post(route)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ reason: 'PRIVACY' })
+      .expect(409);
   });
 
   it('allows LIMITED user reports and lists only private, pending forum reports', async () => {
     const token = await tokenFor(subjects.limited);
-    await request(app.getHttpServer()).post(target + '/posts/' + secondPostId + '/reports')
-      .set('Authorization', 'Bearer ' + token).send({ reason: 'PRIVACY' }).expect(201);
+    await request(app.getHttpServer())
+      .post(target + '/posts/' + secondPostId + '/reports')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ reason: 'PRIVACY' })
+      .expect(201);
     const moderator = await tokenFor(subjects.moderator);
-    const queueResponse = await request(app.getHttpServer()).get(queue)
-      .set('Authorization', 'Bearer ' + moderator).expect(200);
-    const items = dataOf<Array<{ postId: string; reason: string; post: { content: string | null } }>>(queueResponse);
+    const queueResponse = await request(app.getHttpServer())
+      .get(queue)
+      .set('Authorization', 'Bearer ' + moderator)
+      .expect(200);
+    const items =
+      dataOf<Array<{ postId: string; reason: string; post: { content: string | null } }>>(
+        queueResponse,
+      );
     expect(items.map((row) => row.postId).sort()).toEqual([postId, secondPostId].sort());
     expect(items[0]?.post.content).toBeTruthy();
     expect(JSON.stringify(items)).not.toContain(subjects.reporter);
@@ -269,43 +302,60 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
       select: { id: true },
     });
     const decision = queue + '/' + report.id + '/resolve';
-    await request(app.getHttpServer()).post(decision).set('Authorization', 'Bearer ' + moderator)
+    await request(app.getHttpServer())
+      .post(decision)
+      .set('Authorization', 'Bearer ' + moderator)
       .send({ resolution: 'ACTION_TAKEN', moderatorNote: 'Beitrag wurde moderiert' })
       .expect(409);
 
     const removal = '/api/v1/moderation/forum-posts/' + postId + '/remove';
-    await request(app.getHttpServer()).post(removal)
+    await request(app.getHttpServer())
+      .post(removal)
       .set('Authorization', 'Bearer ' + moderator)
-      .send({ reason: 'Regelwidriger öffentlicher Beitrag' }).expect(201);
-    const second = await request(app.getHttpServer()).post(removal)
+      .send({ reason: 'Regelwidriger öffentlicher Beitrag' })
+      .expect(201);
+    const second = await request(app.getHttpServer())
+      .post(removal)
       .set('Authorization', 'Bearer ' + moderator)
-      .send({ reason: 'Bereits moderiert' }).expect(201);
+      .send({ reason: 'Bereits moderiert' })
+      .expect(201);
     expect(dataOf<{ removed: boolean }>(second).removed).toBe(false);
-    expect(await database.auditLog.count({
-      where: { action: 'POST_DELETED_BY_MODERATOR', targetId: postId },
-    })).toBe(1);
+    expect(
+      await database.auditLog.count({
+        where: { action: 'POST_DELETED_BY_MODERATOR', targetId: postId },
+      }),
+    ).toBe(1);
 
-    const publicThread = dataOf<{ posts: Array<{ id: string; content: string | null; author: unknown }> }>(
-      await request(app.getHttpServer()).get(target).expect(200),
-    );
+    const publicThread = dataOf<{
+      posts: Array<{ id: string; content: string | null; author: unknown }>;
+    }>(await request(app.getHttpServer()).get(target).expect(200));
     expect(publicThread.posts.find((post) => post.id === postId)).toMatchObject({
       content: null,
       author: null,
     });
     const pending = dataOf<Array<{ postId: string; post: { content: string | null } }>>(
-      await request(app.getHttpServer()).get(queue).set('Authorization', 'Bearer ' + moderator).expect(200),
+      await request(app.getHttpServer())
+        .get(queue)
+        .set('Authorization', 'Bearer ' + moderator)
+        .expect(200),
     );
     expect(pending.find((item) => item.postId === postId)?.post.content).toBeNull();
 
-    await request(app.getHttpServer()).post(decision).set('Authorization', 'Bearer ' + moderator)
+    await request(app.getHttpServer())
+      .post(decision)
+      .set('Authorization', 'Bearer ' + moderator)
       .send({ resolution: 'ACTION_TAKEN', moderatorNote: 'Der Beitrag wurde entfernt.' })
       .expect(201);
-    await request(app.getHttpServer()).post(decision).set('Authorization', 'Bearer ' + moderator)
+    await request(app.getHttpServer())
+      .post(decision)
+      .set('Authorization', 'Bearer ' + moderator)
       .send({ resolution: 'ACTION_TAKEN', moderatorNote: 'Erneuter Abschlussversuch' })
       .expect(409);
-    expect(await database.auditLog.count({
-      where: { action: 'MODERATION_REPORT_RESOLVED', moderationReportId: report.id },
-    })).toBe(1);
+    expect(
+      await database.auditLog.count({
+        where: { action: 'MODERATION_REPORT_RESOLVED', moderationReportId: report.id },
+      }),
+    ).toBe(1);
   });
 
   it('dismisses a separate report with an atomic moderation audit', async () => {
@@ -314,16 +364,21 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
       where: { postId: secondPostId, reporterId: users.get(subjects.limited) },
       select: { id: true },
     });
-    await request(app.getHttpServer()).post(queue + '/' + report.id + '/resolve')
+    await request(app.getHttpServer())
+      .post(queue + '/' + report.id + '/resolve')
       .set('Authorization', 'Bearer ' + moderator)
       .send({ resolution: 'NO_VIOLATION', moderatorNote: 'Kein Verstoß feststellbar.' })
       .expect(201);
-    expect(await database.auditLog.count({
-      where: { action: 'MODERATION_REPORT_DISMISSED', moderationReportId: report.id },
-    })).toBe(1);
+    expect(
+      await database.auditLog.count({
+        where: { action: 'MODERATION_REPORT_DISMISSED', moderationReportId: report.id },
+      }),
+    ).toBe(1);
     const pending = dataOf<Array<{ id: string }>>(
-      await request(app.getHttpServer()).get(queue)
-        .set('Authorization', 'Bearer ' + moderator).expect(200),
+      await request(app.getHttpServer())
+        .get(queue)
+        .set('Authorization', 'Bearer ' + moderator)
+        .expect(200),
     );
     expect(pending).toHaveLength(0);
   });
