@@ -178,11 +178,69 @@
   color: var(--kf-success, #027a48);
 }
 
+.threadDetail {
+  margin-top: 28px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  overflow: hidden;
+}
+
+.threadDetail h2 {
+  margin: 0;
+  padding: 24px;
+  border-bottom: 1px solid var(--kf-border);
+  font-size: 1.3rem;
+}
+
+.threadPostList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.threadPost {
+  padding: 24px;
+  border-bottom: 1px solid var(--kf-border);
+}
+
+.threadPost:last-child {
+  border-bottom: none;
+}
+
+.threadPostHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.threadPostHeader span,
+.threadPostDeleted {
+  color: var(--kf-text-muted);
+}
+
+.threadPostBody {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.threadPostDeleted {
+  margin: 0;
+  font-style: italic;
+}
+
 @media (max-width: 640px) {
   .intro,
   .categoryHeader,
   .forumItem,
   .threadComposer,
+  .threadDetail h2,
+  .threadPost,
   .empty {
     padding: 20px;
   }
