@@ -58,10 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Diagnose phase22.215 E2E Prettier diff (temporary)
-        run: |
-          pnpm exec prettier apps/api/test/phase22-club-forum.e2e-spec.ts | diff -u apps/api/test/phase22-club-forum.e2e-spec.ts - || true
-
       - name: Check formatting
         run: pnpm format:check
 

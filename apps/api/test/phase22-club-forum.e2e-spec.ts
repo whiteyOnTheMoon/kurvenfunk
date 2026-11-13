@@ -949,7 +949,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     await request(app.getHttpServer()).put(target).expect(401);
     await request(app.getHttpServer()).delete(target).expect(401);
     for (const method of ['get', 'put', 'delete'] as const) {
-      await request(app.getHttpServer())[method](target)
+      const client = request(app.getHttpServer());
+      await client[method](target)
         .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
         .expect(403);
     }
