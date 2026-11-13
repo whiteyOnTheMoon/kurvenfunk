@@ -54,6 +54,8 @@ export {
   createForumReplySchema,
   setForumReadPositionSchema,
   lockForumThreadSchema,
+  moveForumThreadSchema,
+  type MoveForumThreadInput,
   type LockForumThreadInput,
   type SetForumReadPositionInput,
   type CreateForumThreadInput,

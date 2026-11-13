@@ -22,7 +22,8 @@ export function RequirePermissions(...permissions: Permission[]) {
     (permission) =>
       COMMUNITY_PERMISSIONS.includes(permission) ||
       permission === PERMISSIONS.THREAD_PIN ||
-      permission === PERMISSIONS.THREAD_LOCK,
+      permission === PERMISSIONS.THREAD_LOCK ||
+      permission === PERMISSIONS.THREAD_MOVE,
   );
 
   return applyDecorators(

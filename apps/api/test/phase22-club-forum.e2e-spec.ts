@@ -1641,4 +1641,298 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await database.auditLog.deleteMany({ where: auditWhere });
     }
   });
+
+  it('22.220 moves visible threads atomically without rewriting posts, personal state or audit history', async () => {
+    const sourceThread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: {
+        id: true,
+        slug: true,
+        forumId: true,
+        status: true,
+        pinnedAt: true,
+        pinnedByUserId: true,
+        lastPostId: true,
+        lastPostSequenceNumber: true,
+      },
+    });
+    const source = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + sourceThread.slug;
+    const destination =
+      '/api/v1/forums/by-slug/verein-' + secondSlug + '/threads/' + sourceThread.slug;
+    const moveUrl = source + '/move';
+    const targetForum = forums[1];
+    const moderatorId = users.get(subjects.moderator)!;
+    const memberId = users.get(subjects.replyA)!;
+    const moderator = 'Bearer ' + (await tokenFor(subjects.moderator));
+    const admin = 'Bearer ' + (await tokenFor(subjects.admin));
+    const member = 'Bearer ' + (await tokenFor(subjects.replyA));
+    const limited = 'Bearer ' + (await tokenFor(subjects.limited));
+    const auditWhere = {
+      action: 'THREAD_MOVED',
+      targetType: 'THREAD',
+      targetId: sourceThread.id,
+    } satisfies Prisma.AuditLogWhereInput;
+    const originalClub = await database.club.findUniqueOrThrow({
+      where: { id: clubs[1] },
+      select: { active: true },
+    });
+    const originalTargetForum = await database.forum.findUniqueOrThrow({
+      where: { id: targetForum },
+      select: { active: true },
+    });
+    const firstPost = await database.post.findFirstOrThrow({
+      where: { threadId: sourceThread.id, deletedAt: null },
+      orderBy: { sequenceNumber: 'asc' },
+      select: { id: true, sequenceNumber: true },
+    });
+    const countBefore = await database.post.count({ where: { threadId: sourceThread.id } });
+    const duplicateId = randomUUID();
+
+    try {
+      // The second club is intentionally inactive in the earlier 22.210 test.
+      await request(app.getHttpServer())
+        .put(moveUrl)
+        .set('Authorization', moderator)
+        .send({ targetForumId: targetForum })
+        .expect(404);
+      await database.club.update({ where: { id: clubs[1] }, data: { active: true } });
+
+      await request(app.getHttpServer())
+        .put(moveUrl)
+        .send({ targetForumId: targetForum })
+        .expect(401);
+      for (const auth of [member, limited]) {
+        await request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', auth)
+          .send({ targetForumId: targetForum })
+          .expect(403);
+      }
+      await database.user.update({
+        where: { id: moderatorId },
+        data: { onboardingCompleted: false },
+      });
+      try {
+        await request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send({ targetForumId: targetForum })
+          .expect(403);
+      } finally {
+        await database.user.update({
+          where: { id: moderatorId },
+          data: { onboardingCompleted: true },
+        });
+      }
+
+      for (const { body, status } of [
+        { body: {}, status: 400 },
+        { body: { targetForumId: 'invalid' }, status: 400 },
+        { body: { targetForumId: randomUUID() }, status: 404 },
+        { body: { targetForumId: targetForum, reason: 'bad' }, status: 400 },
+        { body: { targetForumId: targetForum, actorUserId: moderatorId }, status: 400 },
+      ]) {
+        await request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send(body)
+          .expect(status);
+      }
+      await database.forum.update({
+        where: { id: targetForum },
+        data: { active: false },
+      });
+      try {
+        await request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send({ targetForumId: targetForum })
+          .expect(404);
+      } finally {
+        await database.forum.update({
+          where: { id: targetForum },
+          data: { active: true },
+        });
+      }
+
+      const unchanged = dataOf<{ moved: boolean; threadId: string }>(
+        await request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send({ targetForumId: forums[0] })
+          .expect(200),
+      );
+      expect(unchanged).toMatchObject({ moved: false, threadId: sourceThread.id });
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(0);
+
+      await database.thread.create({
+        data: {
+          id: duplicateId,
+          forumId: targetForum,
+          authorId: moderatorId,
+          title: 'Isolierter Slug-Konflikt',
+          slug: sourceThread.slug,
+        },
+      });
+      await request(app.getHttpServer())
+        .put(moveUrl)
+        .set('Authorization', moderator)
+        .send({ targetForumId: targetForum })
+        .expect(409);
+      expect(
+        (
+          await database.thread.findUniqueOrThrow({
+            where: { id: sourceThread.id },
+            select: { forumId: true },
+          })
+        ).forumId,
+      ).toBe(sourceThread.forumId);
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(0);
+      await database.thread.delete({ where: { id: duplicateId } });
+
+      await database.threadSubscription.create({
+        data: { userId: memberId, threadId: sourceThread.id },
+      });
+      await database.threadReadState.create({
+        data: {
+          userId: memberId,
+          threadId: sourceThread.id,
+          lastReadSequenceNumber: firstPost.sequenceNumber,
+          lastReadPostId: firstPost.id,
+        },
+      });
+      await database.thread.update({
+        where: { id: sourceThread.id },
+        data: { pinnedAt: new Date(), pinnedByUserId: moderatorId },
+      });
+
+      const moved = await Promise.all([
+        request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send({ targetForumId: targetForum, reason: 'Verschiebung ins passende Vereinsforum' }),
+        request(app.getHttpServer())
+          .put(moveUrl)
+          .set('Authorization', moderator)
+          .send({ targetForumId: targetForum, reason: 'Verschiebung ins passende Vereinsforum' }),
+      ]);
+      expect(moved.some((item) => item.status === 200)).toBe(true);
+      expect(moved.every((item) => item.status === 200 || item.status === 404)).toBe(true);
+      const success = dataOf<{
+        moved: boolean;
+        threadId: string;
+        threadSlug: string;
+        forum: { id: string; club: { slug: string } | null };
+      }>(moved.find((item) => item.status === 200)!);
+      expect(success).toMatchObject({
+        moved: true,
+        threadId: sourceThread.id,
+        threadSlug: sourceThread.slug,
+        forum: { id: targetForum, club: { slug: secondSlug } },
+      });
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
+
+      await request(app.getHttpServer()).get(source).expect(404);
+      await request(app.getHttpServer())
+        .put(moveUrl)
+        .set('Authorization', moderator)
+        .send({ targetForumId: targetForum })
+        .expect(404);
+      const publicTarget = dataOf<{
+        thread: { id: string; forumId: string; pinnedAt: string | null; status: string };
+        posts: { id: string }[];
+      }>(await request(app.getHttpServer()).get(destination).expect(200));
+      expect(publicTarget.thread).toMatchObject({
+        id: sourceThread.id,
+        forumId: targetForum,
+        pinnedAt: null,
+        status: sourceThread.status,
+      });
+      expect(publicTarget.posts.some((post) => post.id === firstPost.id)).toBe(true);
+      expect(await database.post.count({ where: { threadId: sourceThread.id } })).toBe(countBefore);
+
+      const movedThread = await database.thread.findUniqueOrThrow({
+        where: { id: sourceThread.id },
+        select: { lastPostId: true, lastPostSequenceNumber: true, pinnedByUserId: true },
+      });
+      expect(movedThread).toEqual({
+        lastPostId: sourceThread.lastPostId,
+        lastPostSequenceNumber: sourceThread.lastPostSequenceNumber,
+        pinnedByUserId: null,
+      });
+      expect(
+        dataOf<{ subscribed: boolean }>(
+          await request(app.getHttpServer())
+            .get(destination + '/subscription')
+            .set('Authorization', member)
+            .expect(200),
+        ).subscribed,
+      ).toBe(true);
+      expect(
+        dataOf<{ lastReadPostId: string | null }>(
+          await request(app.getHttpServer())
+            .get(destination + '/unread')
+            .set('Authorization', member)
+            .expect(200),
+        ).lastReadPostId,
+      ).toBe(firstPost.id);
+
+      const back = dataOf<{ moved: boolean; forum: { id: string } }>(
+        await request(app.getHttpServer())
+          .put(destination + '/move')
+          .set('Authorization', admin)
+          .send({ targetForumId: forums[0] })
+          .expect(200),
+      );
+      expect(back).toMatchObject({ moved: true, forum: { id: forums[0] } });
+      await request(app.getHttpServer()).get(source).expect(200);
+      await request(app.getHttpServer()).get(destination).expect(404);
+      expect(await database.auditLog.count({ where: auditWhere })).toBe(2);
+
+      for (const hiddenStatus of ['ARCHIVED', 'MERGED'] as const) {
+        await database.thread.update({
+          where: { id: sourceThread.id },
+          data: { status: hiddenStatus },
+        });
+        try {
+          await request(app.getHttpServer())
+            .put(moveUrl)
+            .set('Authorization', moderator)
+            .send({ targetForumId: targetForum })
+            .expect(404);
+        } finally {
+          await database.thread.update({
+            where: { id: sourceThread.id },
+            data: { status: sourceThread.status },
+          });
+        }
+      }
+    } finally {
+      await database.thread.update({
+        where: { id: sourceThread.id },
+        data: {
+          forumId: sourceThread.forumId,
+          status: sourceThread.status,
+          pinnedAt: sourceThread.pinnedAt,
+          pinnedByUserId: sourceThread.pinnedByUserId,
+        },
+      });
+      await database.thread.deleteMany({ where: { id: duplicateId } });
+      await database.auditLog.deleteMany({ where: auditWhere });
+      await database.threadSubscription.deleteMany({
+        where: { userId: memberId, threadId: sourceThread.id },
+      });
+      await database.threadReadState.deleteMany({
+        where: { userId: memberId, threadId: sourceThread.id },
+      });
+      await database.forum.update({
+        where: { id: targetForum },
+        data: { active: originalTargetForum.active },
+      });
+      await database.club.update({
+        where: { id: clubs[1] },
+        data: { active: originalClub.active },
+      });
+    }
+  });
 });
