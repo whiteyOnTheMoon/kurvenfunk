@@ -1271,8 +1271,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       lastReadSequenceNumber: first.sequenceNumber,
     });
     const parallel = await Promise.all([
-      request(app.getHttpServer()).put(target).set('Authorization', authA).send({ postId: first.id }),
-      request(app.getHttpServer()).put(target).set('Authorization', authA).send({ postId: last.id }),
+      request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', authA)
+        .send({ postId: first.id }),
+      request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', authA)
+        .send({ postId: last.id }),
     ]);
     expect(parallel.map((item) => item.status)).toEqual([200, 200]);
     await request(app.getHttpServer())
