@@ -48,6 +48,12 @@ export {
   type UpdateForumCategoryInput,
 } from './forum-category.js';
 export {
+  FORUM_THREAD_TITLE_MAX_LENGTH,
+  FORUM_THREAD_BODY_MAX_LENGTH,
+  createForumThreadSchema,
+  type CreateForumThreadInput,
+} from './forum-thread.js';
+export {
   createTagSchema,
   updateTagSchema,
   type CreateTagInput,
