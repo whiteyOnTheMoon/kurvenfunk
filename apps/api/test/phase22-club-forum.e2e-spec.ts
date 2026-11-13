@@ -1682,6 +1682,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     });
     const firstPost = await database.post.findFirstOrThrow({
       where: { threadId: sourceThread.id, deletedAt: null },
+      orderBy: { sequenceNumber: 'asc' },
       select: { id: true, sequenceNumber: true },
     });
     const countBefore = await database.post.count({ where: { threadId: sourceThread.id } });
@@ -1724,18 +1725,18 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         });
       }
 
-      for (const body of [
-        {},
-        { targetForumId: 'invalid' },
-        { targetForumId: randomUUID() },
-        { targetForumId: targetForum, reason: 'bad' },
-        { targetForumId: targetForum, actorUserId: moderatorId },
+      for (const { body, status } of [
+        { body: {}, status: 400 },
+        { body: { targetForumId: 'invalid' }, status: 400 },
+        { body: { targetForumId: randomUUID() }, status: 404 },
+        { body: { targetForumId: targetForum, reason: 'bad' }, status: 400 },
+        { body: { targetForumId: targetForum, actorUserId: moderatorId }, status: 400 },
       ]) {
         await request(app.getHttpServer())
           .put(moveUrl)
           .set('Authorization', moderator)
           .send(body)
-          .expect(body.targetForumId && body.targetForumId.length === 36 ? 404 : 400);
+          .expect(status);
       }
       await database.forum.update({
         where: { id: targetForum },
