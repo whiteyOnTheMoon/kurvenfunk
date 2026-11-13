@@ -330,11 +330,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     const response = await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads')
       .expect(200);
-    expect(dataOf<{ items: unknown[]; hasMore: boolean; nextCursor: string | null }>(response)).toEqual({
-      items: [],
-      hasMore: false,
-      nextCursor: null,
-    });
+    const empty = dataOf<{ items: unknown[]; hasMore: boolean; nextCursor: string | null }>(
+      response,
+    );
+    expect(empty).toEqual({ items: [], hasMore: false, nextCursor: null });
     await request(app.getHttpServer())
       .get('/api/v1/forums/by-slug/verein-unknown-forum/threads')
       .expect(404);
