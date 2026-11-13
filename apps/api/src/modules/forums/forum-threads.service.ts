@@ -10,9 +10,14 @@ import {
 import type { CreateForumReplyInput, CreateForumThreadInput } from '@kurvenfunk/validation';
 
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
-
-const THREAD_PREVIEW_LIMIT = 20;
-const POST_DETAIL_LIMIT = 30;
+import {
+  encodeForumCursor,
+  parsePostPageCursor,
+  parseThreadPageCursor,
+  POST_PAGE_SIZE,
+  THREAD_PAGE_SIZE,
+  threadKeysetAfter,
+} from './forum-pagination';
 
 const MAX_REPLY_CONFLICT_RETRIES = 5;
 
@@ -78,33 +83,49 @@ export class ForumThreadsService implements OnModuleDestroy {
 
   constructor(private readonly spamProtection: CommentSpamProtectionService) {}
 
-  /** Bounded public preview until cursor pagination is introduced in task 214. */
-  async listPublicThreads(forumSlug: string) {
+  /** Public, bounded keyset page. Ordering is deterministic even for timestamp ties. */
+  async listPublicThreads(forumSlug: string, rawCursor?: unknown) {
     const forum = await this.database.forum.findFirst({
       where: visibleForumWhere(forumSlug),
       select: { id: true },
     });
     if (!forum) throw missingForum();
+    const cursor = parseThreadPageCursor(rawCursor, forumSlug);
 
     const rows = await this.database.thread.findMany({
       where: {
         forumId: forum.id,
         status: { in: ['OPEN', 'LOCKED'] },
         mergedIntoThreadId: null,
+        ...(cursor ? { AND: [threadKeysetAfter(cursor)] } : {}),
       },
       orderBy: [{ pinnedAt: 'desc' }, { lastPostAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
-      take: THREAD_PREVIEW_LIMIT + 1,
+      take: THREAD_PAGE_SIZE + 1,
       select: publicThreadSelect,
     });
 
+    const items = rows.slice(0, THREAD_PAGE_SIZE);
+    const last = items.at(-1);
+    const hasMore = rows.length > THREAD_PAGE_SIZE;
+
     return {
-      items: rows.slice(0, THREAD_PREVIEW_LIMIT),
-      hasMore: rows.length > THREAD_PREVIEW_LIMIT,
+      items,
+      hasMore,
+      nextCursor: hasMore && last
+        ? encodeForumCursor({
+            version: 1,
+            forumSlug,
+            id: last.id,
+            pinnedAt: last.pinnedAt?.toISOString() ?? null,
+            lastPostAt: last.lastPostAt?.toISOString() ?? null,
+            createdAt: last.createdAt.toISOString(),
+          })
+        : null,
     };
   }
 
-  /** Public detail is bounded until phase 22.214 introduces post pagination. */
-  async findPublicThread(forumSlug: string, threadSlug: string) {
+  /** Public thread detail and bounded post page (deleted posts stay redacted). */
+  async findPublicThread(forumSlug: string, threadSlug: string, rawCursor?: unknown) {
     const thread = await this.database.thread.findFirst({
       where: {
         slug: threadSlug,
@@ -131,10 +152,14 @@ export class ForumThreadsService implements OnModuleDestroy {
       });
     }
 
+    const cursor = parsePostPageCursor(rawCursor, thread.id);
     const rows = await this.database.post.findMany({
-      where: { threadId: thread.id },
+      where: {
+        threadId: thread.id,
+        ...(cursor ? { sequenceNumber: { gt: cursor.sequenceNumber } } : {}),
+      },
       orderBy: [{ sequenceNumber: 'asc' }, { id: 'asc' }],
-      take: POST_DETAIL_LIMIT + 1,
+      take: POST_PAGE_SIZE + 1,
       select: {
         id: true,
         parentPostId: true,
@@ -147,9 +172,13 @@ export class ForumThreadsService implements OnModuleDestroy {
       },
     });
 
+    const page = rows.slice(0, POST_PAGE_SIZE);
+    const lastPost = page.at(-1);
+    const hasMorePosts = rows.length > POST_PAGE_SIZE;
+
     return {
       thread,
-      posts: rows.slice(0, POST_DETAIL_LIMIT).map((post) => ({
+      posts: page.map((post) => ({
         id: post.id,
         parentPostId: post.parentPostId,
         sequenceNumber: post.sequenceNumber,
@@ -160,7 +189,14 @@ export class ForumThreadsService implements OnModuleDestroy {
         content: post.deletedAt ? null : post.content,
         author: post.deletedAt ? null : post.author,
       })),
-      hasMorePosts: rows.length > POST_DETAIL_LIMIT,
+      hasMorePosts,
+      nextPostCursor: hasMorePosts && lastPost
+        ? encodeForumCursor({
+            version: 1,
+            threadId: thread.id,
+            sequenceNumber: lastPost.sequenceNumber,
+          })
+        : null,
     };
   }
 
