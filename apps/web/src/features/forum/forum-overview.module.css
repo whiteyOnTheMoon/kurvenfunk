@@ -457,3 +457,40 @@
     padding: 20px;
   }
 }
+
+.postReport {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.postReport > button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--kf-link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.postReport form {
+  width: min(100%, 520px);
+}
+
+.postReport select,
+.threadForm select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+  font: inherit;
+}
+
+.postReport p {
+  margin: 0;
+  color: var(--kf-error, #b42318);
+}

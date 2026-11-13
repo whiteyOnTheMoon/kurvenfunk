@@ -1,11 +1,6 @@
-import { AdminPlaceholder } from '../../../features/admin/admin-placeholder';
+import { ForumReportQueue } from '../../../features/forum/forum-report-queue';
+import { env } from '../../../lib/env';
 
 export default function AdminForumPage() {
-  return (
-    <AdminPlaceholder
-      eyebrow="Community"
-      title="Forum"
-      description="Foren, Kategorien und Communitystrukturen verwalten."
-    />
-  );
+  return <ForumReportQueue apiUrl={env.API_URL} />;
 }
