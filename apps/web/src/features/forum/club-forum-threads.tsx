@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
 
@@ -12,6 +12,12 @@ interface ThreadSummary {
   status: 'OPEN' | 'LOCKED';
   postCount: number;
   author: { id: string; nickname: string | null };
+}
+
+interface ThreadPage {
+  items: ThreadSummary[];
+  hasMore: boolean;
+  nextCursor: string | null;
 }
 
 function isThreadSummary(value: unknown): value is ThreadSummary {
@@ -27,6 +33,22 @@ function isThreadSummary(value: unknown): value is ThreadSummary {
   );
 }
 
+function parsePage(value: unknown): ThreadPage {
+  if (!value || typeof value !== 'object') throw new Error('INVALID_THREAD_PAGE');
+  const page = value as Partial<ThreadPage>;
+  if (
+    !Array.isArray(page.items) ||
+    !page.items.every(isThreadSummary) ||
+    typeof page.hasMore !== 'boolean' ||
+    (page.hasMore
+      ? typeof page.nextCursor !== 'string' || page.nextCursor.length === 0
+      : page.nextCursor !== null)
+  ) {
+    throw new Error('INVALID_THREAD_PAGE');
+  }
+  return page as ThreadPage;
+}
+
 export function ClubForumThreads({
   apiUrl,
   forumSlug,
@@ -39,36 +61,34 @@ export function ClubForumThreads({
   revision: number;
 }) {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
-  const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const [moreError, setMoreError] = useState(false);
+  const moreRequest = useRef<AbortController | null>(null);
+
+  const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads`;
 
   useEffect(() => {
     const controller = new AbortController();
+    moreRequest.current?.abort();
+
     async function load() {
       setLoading(true);
       setError(false);
+      setMoreError(false);
+      setLoadingMore(false);
       setThreads([]);
+      setNextCursor(null);
       try {
-        const response = await fetch(
-          `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads`,
-          { cache: 'no-store', signal: controller.signal },
-        );
+        const response = await fetch(endpoint, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error('FORUM_THREADS_REQUEST_FAILED');
         const payload: unknown = await response.json();
-        const result = payload as {
-          data?: { items?: unknown; hasMore?: unknown };
-        };
-        if (
-          !Array.isArray(result.data?.items) ||
-          !result.data.items.every(isThreadSummary) ||
-          typeof result.data.hasMore !== 'boolean'
-        ) {
-          throw new Error('FORUM_THREADS_RESPONSE_INVALID');
-        }
+        const page = parsePage((payload as { data?: unknown }).data);
         if (!controller.signal.aborted) {
-          setThreads(result.data.items);
-          setHasMore(result.data.hasMore);
+          setThreads(page.items);
+          setNextCursor(page.nextCursor);
         }
       } catch {
         if (!controller.signal.aborted) setError(true);
@@ -76,9 +96,44 @@ export function ClubForumThreads({
         if (!controller.signal.aborted) setLoading(false);
       }
     }
+
     void load();
-    return () => controller.abort();
-  }, [apiUrl, forumSlug, revision]);
+    return () => {
+      controller.abort();
+      moreRequest.current?.abort();
+    };
+  }, [endpoint, revision]);
+
+  async function loadMore() {
+    if (!nextCursor || loading || loadingMore) return;
+    const controller = new AbortController();
+    moreRequest.current = controller;
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      const response = await fetch(`${endpoint}?cursor=${encodeURIComponent(nextCursor)}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('FORUM_THREADS_PAGE_FAILED');
+      const payload: unknown = await response.json();
+      const page = parsePage((payload as { data?: unknown }).data);
+      if (!controller.signal.aborted) {
+        setThreads((previous) => {
+          const ids = new Set(previous.map((thread) => thread.id));
+          return [...previous, ...page.items.filter((thread) => !ids.has(thread.id))];
+        });
+        setNextCursor(page.nextCursor);
+      }
+    } catch {
+      if (!controller.signal.aborted) setMoreError(true);
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoadingMore(false);
+        moreRequest.current = null;
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -119,10 +174,15 @@ export function ClubForumThreads({
           </li>
         ))}
       </ul>
-      {hasMore ? (
-        <p className={styles.empty}>
-          Weitere Themen werden mit der vollständigen Thread-Paginierung verfügbar.
-        </p>
+      {nextCursor ? (
+        <div className={styles.paginationControls}>
+          {moreError ? (
+            <p role="alert">Weitere Themen konnten nicht geladen werden. Bitte erneut versuchen.</p>
+          ) : null}
+          <button type="button" disabled={loadingMore} onClick={() => void loadMore()}>
+            {loadingMore ? 'Weitere Themen werden geladen …' : 'Weitere Themen laden'}
+          </button>
+        </div>
       ) : null}
     </>
   );
