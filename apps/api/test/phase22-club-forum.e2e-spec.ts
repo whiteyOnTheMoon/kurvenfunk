@@ -771,4 +771,138 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     expect(detail.posts[29]?.sequenceNumber).toBe(30);
     expect(detail.hasMorePosts).toBe(true);
   });
+
+  it('22.214 paginates posts by unique sequence, including concurrent new posts and redaction', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const first = dataOf<{
+      posts: { id: string; sequenceNumber: number }[];
+      hasMorePosts: boolean;
+      nextPostCursor: string | null;
+    }>(await request(app.getHttpServer()).get(target).expect(200));
+    expect(first.posts).toHaveLength(30);
+    expect(first.posts.map((post) => post.sequenceNumber)).toEqual(
+      Array.from({ length: 30 }, (_, index) => index + 1),
+    );
+    expect(first.hasMorePosts).toBe(true);
+    expect(typeof first.nextPostCursor).toBe('string');
+
+    const last = await database.post.aggregate({
+      where: { threadId: threads[0] },
+      _max: { sequenceNumber: true },
+    });
+    const latestSequence = last._max.sequenceNumber!;
+    const created = await database.post.create({
+      data: {
+        threadId: threads[0],
+        authorId: users.get(subjects.admin)!,
+        sequenceNumber: latestSequence + 1,
+        content: 'New test-only post after the first page ' + marker,
+        deletedAt: new Date(),
+      },
+    });
+    const next = dataOf<{
+      posts: { id: string; content: string | null; author: unknown; deleted: boolean; sequenceNumber: number }[];
+      hasMorePosts: boolean;
+      nextPostCursor: string | null;
+    }>(await request(app.getHttpServer()).get(target).query({ cursor: first.nextPostCursor }).expect(200));
+    expect(next.posts[0]?.sequenceNumber).toBe(31);
+    expect(next.posts[next.posts.length - 1]?.sequenceNumber).toBe(latestSequence + 1);
+    expect(next.hasMorePosts).toBe(false);
+    expect(next.nextPostCursor).toBeNull();
+    expect(next.posts.some((post) => first.posts.some((item) => item.id === post.id))).toBe(false);
+    expect(next.posts.find((post) => post.id === created.id)).toMatchObject({
+      deleted: true,
+      content: null,
+      author: null,
+    });
+    expect(JSON.stringify(next)).not.toContain(created.content);
+  });
+
+  it('22.214 pages 20 threads with pinned ordering, stable boundaries and no duplicate IDs', async () => {
+    const createdAt = Date.now() - 24 * 60 * 60 * 1000;
+    const extras = Array.from({ length: 25 }, (_, index) => ({
+      id: randomUUID(),
+      forumId: forums[0],
+      authorId: users.get(subjects.admin)!,
+      title: 'Isoliertes Thema ' + index,
+      slug: 'p214-' + index + '-' + marker,
+      createdAt: new Date(createdAt - index * 60_000),
+      lastPostAt: index % 3 === 0 ? null : new Date(createdAt - index * 60_000),
+      pinnedAt: index < 2 ? new Date(createdAt + (2 - index) * 60_000) : null,
+    }));
+    await database.thread.createMany({ data: extras });
+    threads.push(...extras.map((row) => row.id));
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads';
+    const first = dataOf<{
+      items: { id: string }[];
+      hasMore: boolean;
+      nextCursor: string | null;
+    }>(await request(app.getHttpServer()).get(target).expect(200));
+    expect(first.items).toHaveLength(20);
+    expect(first.items[0]?.id).toBe(extras[0]?.id);
+    expect(first.items[1]?.id).toBe(extras[1]?.id);
+    expect(first.hasMore).toBe(true);
+    expect(typeof first.nextCursor).toBe('string');
+
+    // New top-of-list activity must not reappear in a later keyset page.
+    const newest = randomUUID();
+    await database.thread.create({
+      data: {
+        id: newest,
+        forumId: forums[0],
+        authorId: users.get(subjects.admin)!,
+        title: 'Noch ein neues Thema',
+        slug: 'p214-newest-' + marker,
+        createdAt: new Date(createdAt + 120_000),
+        lastPostAt: new Date(createdAt + 120_000),
+        pinnedAt: new Date(createdAt + 120_000),
+      },
+    });
+    threads.push(newest);
+
+    const second = dataOf<{
+      items: { id: string }[];
+      hasMore: boolean;
+      nextCursor: string | null;
+    }>(await request(app.getHttpServer()).get(target).query({ cursor: first.nextCursor }).expect(200));
+    expect(second.items).toHaveLength(6);
+    expect(second.hasMore).toBe(false);
+    expect(second.nextCursor).toBeNull();
+    const all = [...first.items.map((item) => item.id), ...second.items.map((item) => item.id)];
+    expect(new Set(all).size).toBe(26);
+    expect(all).not.toContain(newest);
+    expect(all).toContain(threads[0]);
+  });
+
+  it('22.214 rejects malformed and cross-scope cursors without disclosing forum content', async () => {
+    const list = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads';
+    const first = dataOf<{ nextCursor: string }>(
+      await request(app.getHttpServer()).get(list).expect(200),
+    );
+    const otherForum = '/api/v1/forums/by-slug/verein-' + secondSlug + '/threads';
+    await request(app.getHttpServer()).get(otherForum).query({ cursor: first.nextCursor }).expect(400);
+    for (const bad of ['!!', 'e30', 'a'.repeat(1100)]) {
+      await request(app.getHttpServer()).get(list).query({ cursor: bad }).expect(400);
+    }
+
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const detail = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug;
+    const postPage = dataOf<{ nextPostCursor: string }>(
+      await request(app.getHttpServer()).get(detail).expect(200),
+    );
+    await request(app.getHttpServer()).get(detail).query({ cursor: first.nextCursor }).expect(400);
+    await request(app.getHttpServer()).get(list).query({ cursor: postPage.nextPostCursor }).expect(400);
+    const extra = 'p214-0-' + marker;
+    await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + extra)
+      .query({ cursor: postPage.nextPostCursor })
+      .expect(400);
+  });
 });
