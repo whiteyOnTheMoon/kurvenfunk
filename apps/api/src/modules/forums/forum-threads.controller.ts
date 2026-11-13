@@ -118,6 +118,36 @@ export class ForumThreadsController {
     );
   }
 
+  @Put(':threadSlug/pin')
+  @RequirePermissions(PERMISSIONS.THREAD_PIN)
+  pinThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.setThreadPinned(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      true,
+    );
+  }
+
+  @Delete(':threadSlug/pin')
+  @RequirePermissions(PERMISSIONS.THREAD_PIN)
+  unpinThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.setThreadPinned(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      false,
+    );
+  }
+
   @Post(':threadSlug/posts')
   @RequirePermissions(PERMISSIONS.THREAD_REPLY)
   replyToThread(

@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   THREAD_SUBSCRIBE: 'thread.subscribe',
   THREAD_READ_STATE: 'thread.read-state',
   THREAD_LOCK: 'thread.lock',
+  THREAD_PIN: 'thread.pin',
 
   ARTICLE_CREATE: 'article.create',
   ARTICLE_PUBLISH: 'article.publish',
@@ -58,6 +59,7 @@ export const COMMUNITY_PERMISSIONS: readonly Permission[] = [
 const MODERATION_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.COMMENT_MODERATE,
   PERMISSIONS.THREAD_LOCK,
+  PERMISSIONS.THREAD_PIN,
   PERMISSIONS.USER_WARN,
   PERMISSIONS.USER_LIMIT,
 ];

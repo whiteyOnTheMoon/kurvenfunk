@@ -207,6 +207,79 @@ export class ForumThreadsService implements OnModuleDestroy {
     };
   }
 
+  /**
+   * Moderation-only pin/unpin. A conditional UPDATE and audit INSERT share
+   * one transaction, so repeated/concurrent same-state requests remain
+   * idempotent and never duplicate moderator audit events.
+   */
+  async setThreadPinned(
+    forumSlug: string,
+    threadSlugValue: string,
+    actorUserId: string,
+    pinned: boolean,
+  ) {
+    return this.database.$transaction(async (tx) => {
+      const where: Prisma.ThreadWhereInput = {
+        slug: threadSlugValue,
+        status: { in: ['OPEN', 'LOCKED'] },
+        mergedIntoThreadId: null,
+        forum: { is: visibleForumWhere(forumSlug) },
+      };
+      const before = await tx.thread.findFirst({
+        where,
+        select: { id: true, pinnedAt: true, pinnedByUserId: true },
+      });
+      if (!before) throw missingThread();
+      if ((before.pinnedAt !== null) === pinned) {
+        return { pinned, pinnedAt: before.pinnedAt };
+      }
+
+      const pinnedAt = pinned ? new Date() : null;
+      const updated = await tx.thread.updateMany({
+        where: {
+          ...where,
+          id: before.id,
+          pinnedAt: pinned ? null : { not: null },
+        },
+        data: { pinnedAt, pinnedByUserId: pinned ? actorUserId : null },
+      });
+
+      // Another moderator may have committed an equivalent operation first.
+      if (updated.count === 0) {
+        const current = await tx.thread.findFirst({
+          where: { ...where, id: before.id },
+          select: { pinnedAt: true },
+        });
+        if (!current) throw missingThread();
+        return { pinned: current.pinnedAt !== null, pinnedAt: current.pinnedAt };
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId,
+          action: pinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+          category: 'FORUM',
+          targetType: 'THREAD',
+          targetId: before.id,
+          metadata: {
+            forumSlug,
+            threadSlug: threadSlugValue,
+            before: {
+              pinnedAt: before.pinnedAt?.toISOString() ?? null,
+              pinnedByUserId: before.pinnedByUserId,
+            },
+            after: {
+              pinnedAt: pinnedAt?.toISOString() ?? null,
+              pinnedByUserId: pinned ? actorUserId : null,
+            },
+          },
+        },
+      });
+      return { pinned, pinnedAt };
+    });
+  }
+
   /** Resolve only a public OPEN/LOCKED, non-merged thread; never reveal hidden IDs. */
   private async visibleSubscriptionThreadId(forumSlug: string, threadSlugValue: string) {
     const thread = await this.database.thread.findFirst({

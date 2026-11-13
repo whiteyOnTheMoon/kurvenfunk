@@ -9,8 +9,8 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
-| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: persönlicher Ungelesen-Status in Arbeit**; 217 ausstehend |
-| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
+| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: DEV-CI #43375847270 PASS**; **217: DEV-CI #43380284008 PASS** |
+| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: in Arbeit**; 219–221 ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
 | 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
 
@@ -109,6 +109,14 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Atomarer PostgreSQL-UPSERT mit `GREATEST` hält Sequenz und referenzierte Post-ID auch bei parallelen/älteren Requests konsistent. Die private GET-/unread-Antwort enthält `lastReadPostId`, während öffentliche Antworten unverändert bleiben. Markierung aller aktuellen Beiträge aus 22.216 wird nicht zurückgesetzt.
 - Im Web können angemeldete Mitglieder ausschließlich einen bereits geladenen, nicht gelöschten Beitrag bewusst als zuletzt gelesen speichern. Kein automatisches Tracking beim Scrollen oder Laden, keine erfundenen oder verborgenen Beiträge.
 - Isolierte PostgreSQL-/Redis-HTTP-E2E prüfen Auth/Validierung/Privatsphäre/Löschung/Monotonie. Das DEV-Gate prüft nur einen tokenlosen, untrusted PUT => 503 fail-closed. Keine echten DEV-Testlesestände, keine STAGING-/PROD-Änderungen. Positive Account-/Browser-/Mobil-/Tunnelabnahme offen.
+
+## 22.218 – Themen anpinnen (Moderation)
+
+- Das vorhandene `Thread.pinnedAt` und `pinnedByUserId` samt `THREAD_PINNED`/`THREAD_UNPINNED` Audit-Aktionen wird wiederverwendet; **keine neue Migration**.
+- Moderationsrecht `thread.pin` wird nur an Moderator, Admin und Superadmin vergeben, nie an normalen USER/TRUSTED_USER. Beide Mutationen unter `PUT/DELETE /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/pin` verlangen gültige Identität, ACTIVE und abgeschlossenes Onboarding.
+- Ausschließlich öffentlich sichtbare OPEN/LOCKED-Themen, keine archivierten, gemergten oder inaktiven Kategorien/Foren/Vereine; 404 schützt verborgene Themen. Identische Wiederholung und parallele identische Writes sind erfolgreich, jedoch ohne zweite Mutation oder zweiten Audit-Eintrag. Die Änderung und das FORUM-THREAD-Audit mit Actor/JWT-User-ID, Vorher-/Nachher-Zustand laufen **in einer Transaktion**.
+- Vorhandene öffentliche keyset-sortierte Thread-Liste verwendet `pinnedAt DESC NULLS LAST`; List- und Detailansicht zeigen angepinnte Themen, Moderator:innen können im Detail explizit anpinnen/lösen.
+- Isolierte PostgreSQL-/Redis-/HTTP-E2E prüfen 401/403, Onboarding, sichtbare und versteckte Threads, idempotente parallele Writes, Audit, Sortierung und LOCKED-Zustand. DEV ausschließlich untrusted/tokenloses PUT + DELETE über Loopback mit erwartetem 503 fail-closed; **keine DEV-Mutation**. Reale authentifizierte Tunnel-/Browser-/Mobilabnahme bleibt offen.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 
