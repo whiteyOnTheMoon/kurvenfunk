@@ -11,7 +11,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: DEV-CI #43375847270 PASS**; **217: DEV-CI #43380284008 PASS** |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: DEV-CI #43389281899 PASS**; **219: DEV-CI #43393243928 PASS**; **220: DEV-CI #43404251216 PASS**; **221: in Arbeit** |
-| 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
+| 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | **Implementierung in PR #182; PR-/DEV-CI und manuelle Abnahme offen** |
 | 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
 
 ## 22.209 Vertrag
@@ -142,6 +142,17 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Bestehende **Ziel-Lesestände** werden bewusst nicht vorgerückt: neue angehängte Beiträge bleiben ungelesen. Frühere Quell-Lesestände verbleiben als private historische Datensätze, statt unbemerkt fremde Ziel-Beiträge als gelesen zu markieren.
 - Die normale öffentliche Detail-/Listen-API hält MERGED-Quellen versteckt (404). Ein separates `GET .../:threadSlug/merge-target` liefert ausschließlich bei einer sichtbaren MERGED-Quelle mit sichtbarem, aktivem kanonischem Ziel die öffentliche Zieladresse. Die Vereins-Detailseite leitet in diesem Fall auf das Ziel um; ein Moderator kann per begrenzter öffentlicher Themenpaginierung Zielthema und optionalen Grund auswählen und muss den irreversiblen Schritt explizit bestätigen.
 - Isolierte PostgreSQL-/Redis-/HTTP-E2E prüfen 401/403, Onboarding, strenge Validierung, Konflikte, unsichtbare Ziele, parallele Idempotenz, Audit, Sequenzen, Parent/Deleted-Redaktion, Abo-Deduplizierung, unveränderte Ziel-Lesestände und kanonische Weiterleitung. DEV ausschließlich tokenloses untrusted Loopback-PUT als negatives 503-Fail-Closed-Gate; keine echte DEV-Mutation oder Testdaten, keine STAGING-/PROD-Änderung. Reale authentifizierte Moderator-/Tunnel-/Browser-/Mobil-Abnahme bleibt offen.
+
+
+## 22.222 – Forenbeiträge melden und moderieren
+
+- Gemeldete Beiträge werden als `ModerationReport(targetType=FORUM_POST, postId)` im bestehenden Moderationsmodell gespeichert. Es gibt **keine weitere Tabelle oder Migration**; das Dashboard zählt dieselben offenen Fälle. Private Meldungen sind keine öffentliche Thread-Eigenschaft.
+- `POST /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/posts/:postId/reports` verlangt JWT und abgeschlossenes Onboarding; ACTIVE und LIMITED dürfen fremde sichtbare, nicht gelöschte Beiträge aus sichtbaren OPEN/LOCKED-Themen melden. BANNED und Selbstmeldungen werden blockiert; versteckte/archivierte/gemergte Quellen ergeben 404. Strikte Report-Gründe und optionale Details (max. 1000 Zeichen) folgen dem bestehenden Kommentar-Meldeschema.
+- Pro Nutzer/Beitrag ist nur eine Meldung zulässig, auch nach Abschluss der ersten Meldung. Da der Bestand keine Post-Reporter-Unique-Constraint hat, schützt ein transaktionaler PostgreSQL-Advisory-Lock vor gleichzeitigen doppelten Reports. Kein neuer Index und keine DEV-Datenmigration.
+- Moderation mit eigenem `forum-post.moderate`-Recht (nur ACTIVE MODERATOR/ADMIN/SUPERADMIN mit abgeschlossenem Onboarding): `GET /api/v1/moderation/forum-post-reports` zeigt höchstens 100 offene/in Prüfung befindliche Reports, nie Reporter-IDs. Bereits entfernte Posts bleiben auch im Queue-Payload redigiert.
+- `POST /api/v1/moderation/forum-posts/:id/remove` entfernt einen Post mit verpflichtendem Grund nur einmal (Post-ID bleibt erhalten, Inhalte werden öffentlich redigiert) und schreibt im gleichen Transaktionsblock einen `POST_DELETED_BY_MODERATOR`-Audit. `POST /api/v1/moderation/forum-post-reports/:id/resolve` schließt mit einer validierten Entscheidung und internem Moderatorvermerk atomar ab. `ACTION_TAKEN` verlangt einen nachgewiesenen Post-Entfernungs-Audit; parallele Abschlüsse erzeugen keine doppelten Einträge.
+- Die Vereinsforum-Detailseite bietet berechtigten angemeldeten Mitgliedern eine private Post-Meldemaske. Die bestehende `/admin/forum`-Ansicht enthält eine Moderatorwarteschlange mit expliziter Entfernungsbestätigung und anschließendem Report-Abschluss.
+- Isolierte HTTP/PostgreSQL/Redis-E2E prüfen Auth, Self-Report, Unsichtbarkeit, unzulässige Angaben, konkurrierende Meldungen, Schutz der Warteschlange, Löschredaktion, Audit und idempotente Moderation. **Kein STAGING/PROD**, kein DEV-Seeding; tatsächliche Account-/Moderator-/Tunnel-/Mobile-Abnahme bleibt separat offen.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 

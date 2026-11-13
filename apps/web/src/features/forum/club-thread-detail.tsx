@@ -9,6 +9,7 @@ import { ThreadLockToggle } from './thread-lock-toggle';
 import { ThreadMoveControl } from './thread-move-control';
 import { ThreadMergeControl } from './thread-merge-control';
 import { ThreadPinToggle } from './thread-pin-toggle';
+import { ForumPostReportButton } from './forum-post-report-button';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
 import { ThreadUnreadToggle } from './thread-unread-toggle';
@@ -319,6 +320,13 @@ export function ClubThreadDetail({
                   ) : (
                     <>
                       <p className={styles.threadPostBody}>{post.content}</p>
+                      <ForumPostReportButton
+                        apiUrl={apiUrl}
+                        forumSlug={detail.thread.forum.slug}
+                        threadSlug={detail.thread.slug}
+                        postId={post.id}
+                        authorId={post.author?.id ?? null}
+                      />
                       {detail.thread.status === 'OPEN' ? (
                         <button
                           type="button"

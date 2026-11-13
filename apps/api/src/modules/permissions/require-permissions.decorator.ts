@@ -24,7 +24,8 @@ export function RequirePermissions(...permissions: Permission[]) {
       permission === PERMISSIONS.THREAD_PIN ||
       permission === PERMISSIONS.THREAD_LOCK ||
       permission === PERMISSIONS.THREAD_MOVE ||
-      permission === PERMISSIONS.THREAD_MERGE,
+      permission === PERMISSIONS.THREAD_MERGE ||
+      permission === PERMISSIONS.FORUM_POST_MODERATE,
   );
 
   return applyDecorators(
