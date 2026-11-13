@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
 import { ThreadLockToggle } from './thread-lock-toggle';
 import { ThreadMoveControl } from './thread-move-control';
+import { ThreadMergeControl } from './thread-merge-control';
 import { ThreadPinToggle } from './thread-pin-toggle';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
@@ -87,6 +89,7 @@ export function ClubThreadDetail({
   clubSlug: string;
   threadSlug: string;
 }) {
+  const router = useRouter();
   const [detail, setDetail] = useState<PublicThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -115,6 +118,28 @@ export function ClubThreadDetail({
       try {
         const response = await fetch(endpoint, { cache: 'no-store', signal: controller.signal });
         if (response.status === 404) {
+          // A merged source exposes only a public canonical pointer. Hidden
+          // archives and invisible targets still behave like ordinary 404s.
+          const merged = await fetch(`${endpoint}/merge-target`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+          if (merged.ok) {
+            const payload: unknown = await merged.json();
+            const target = (payload as {
+              data?: { threadSlug?: unknown; clubSlug?: unknown };
+            }).data;
+            if (
+              typeof target?.threadSlug === 'string' &&
+              typeof target.clubSlug === 'string' &&
+              !controller.signal.aborted
+            ) {
+              router.replace(
+                `/forum/verein/${encodeURIComponent(target.clubSlug)}/thema/${encodeURIComponent(target.threadSlug)}`,
+              );
+              return;
+            }
+          }
           if (!controller.signal.aborted) setNotFound(true);
           return;
         }
@@ -141,7 +166,7 @@ export function ClubThreadDetail({
       controller.abort();
       moreRequest.current?.abort();
     };
-  }, [endpoint, clubSlug, threadSlug, revision]);
+  }, [endpoint, clubSlug, threadSlug, revision, router]);
 
   async function loadMorePosts() {
     if (!detail?.nextPostCursor || loadingMore) return;
@@ -216,6 +241,14 @@ export function ClubThreadDetail({
         </p>
       ) : (
         <section className={styles.threadDetail} aria-label="Beiträge">
+          <ThreadMergeControl
+            key={detail.thread.id + '-merge'}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+            threadId={detail.thread.id}
+            clubSlug={clubSlug}
+          />
           <ThreadMoveControl
             key={detail.thread.id + '-move'}
             apiUrl={apiUrl}

@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   THREAD_READ_STATE: 'thread.read-state',
   THREAD_LOCK: 'thread.lock',
   THREAD_MOVE: 'thread.move',
+  THREAD_MERGE: 'thread.merge',
   THREAD_PIN: 'thread.pin',
 
   ARTICLE_CREATE: 'article.create',
@@ -61,6 +62,7 @@ const MODERATION_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.COMMENT_MODERATE,
   PERMISSIONS.THREAD_LOCK,
   PERMISSIONS.THREAD_MOVE,
+  PERMISSIONS.THREAD_MERGE,
   PERMISSIONS.THREAD_PIN,
   PERMISSIONS.USER_WARN,
   PERMISSIONS.USER_LIMIT,

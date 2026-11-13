@@ -11,6 +11,7 @@ import type {
   CreateForumReplyInput,
   CreateForumThreadInput,
   MoveForumThreadInput,
+  MergeForumThreadInput,
 } from '@kurvenfunk/validation';
 
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
@@ -490,6 +491,272 @@ export class ForumThreadsService implements OnModuleDestroy {
       }
       throw error;
     }
+  }
+
+  /**
+   * A public, privacy-safe canonical location exists only while both source
+   * and destination forums are visible. Archived or unknown threads remain 404.
+   */
+  async findPublicMergeTarget(forumSlug: string, threadSlugValue: string) {
+    const source = await this.database.thread.findFirst({
+      where: {
+        slug: threadSlugValue,
+        status: 'MERGED',
+        mergedIntoThreadId: { not: null },
+        forum: { is: visibleForumWhere(forumSlug) },
+      },
+      select: { mergedIntoThreadId: true },
+    });
+    if (!source?.mergedIntoThreadId) throw missingThread();
+
+    const canonical = await this.database.thread.findFirst({
+      where: {
+        id: source.mergedIntoThreadId,
+        status: { in: ['OPEN', 'LOCKED'] },
+        mergedIntoThreadId: null,
+        forum: {
+          is: {
+            active: true,
+            category: { active: true },
+            OR: [{ clubId: null }, { club: { is: { active: true } } }],
+          },
+        },
+      },
+      select: {
+        id: true,
+        slug: true,
+        forum: {
+          select: {
+            slug: true,
+            club: { select: { slug: true } },
+          },
+        },
+      },
+    });
+    if (!canonical) throw missingThread();
+
+    return {
+      threadId: canonical.id,
+      threadSlug: canonical.slug,
+      forumSlug: canonical.forum.slug,
+      clubSlug: canonical.forum.club?.slug ?? null,
+    };
+  }
+
+  /**
+   * Merge inside one visible forum. Lock both thread rows in deterministic ID
+   * order before re-reading them, so concurrent replies and competing merges
+   * cannot interleave with sequence renumbering or metadata changes.
+   *
+   * Post IDs, author/parent links, reactions and moderation reports are kept.
+   * Existing target read states never advance automatically: otherwise
+   * appended source posts would incorrectly appear already read.
+   */
+  async mergeThread(
+    forumSlug: string,
+    sourceSlug: string,
+    actorUserId: string,
+    input: MergeForumThreadInput,
+  ) {
+    return this.database.$transaction(async (tx) => {
+      const sourceHint = await tx.thread.findFirst({
+        where: {
+          slug: sourceSlug,
+          status: { in: ['OPEN', 'LOCKED', 'MERGED'] },
+          forum: { is: visibleForumWhere(forumSlug) },
+        },
+        select: { id: true },
+      });
+      if (!sourceHint) throw missingThread();
+      if (sourceHint.id === input.targetThreadId) {
+        throw new ConflictException({
+          code: 'THREAD_MERGE_SAME_THREAD',
+          message: 'Ein Thema kann nicht mit sich selbst zusammengeführt werden.',
+        });
+      }
+
+      const ids = [sourceHint.id, input.targetThreadId].sort();
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Thread"
+        WHERE "id" IN (CAST(${ids[0]} AS UUID), CAST(${ids[1]} AS UUID))
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      if (locked.length !== 2) throw missingThread();
+
+      const source = await tx.thread.findFirst({
+        where: {
+          id: sourceHint.id,
+          forum: { is: visibleForumWhere(forumSlug) },
+        },
+        select: {
+          id: true,
+          forumId: true,
+          status: true,
+          mergedIntoThreadId: true,
+          pinnedAt: true,
+          pinnedByUserId: true,
+          lockedAt: true,
+          lockedByUserId: true,
+          lockReason: true,
+          postCount: true,
+          lastPostId: true,
+          lastPostAt: true,
+          lastPostSequenceNumber: true,
+        },
+      });
+      if (!source) throw missingThread();
+
+      const destination = await tx.thread.findFirst({
+        where: {
+          id: input.targetThreadId,
+          forumId: source.forumId,
+          status: { in: ['OPEN', 'LOCKED'] },
+          mergedIntoThreadId: null,
+          forum: { is: visibleForumWhere(forumSlug) },
+        },
+        select: {
+          id: true,
+          slug: true,
+          status: true,
+          postCount: true,
+          lastPostAt: true,
+          lastPostId: true,
+          lastPostSequenceNumber: true,
+        },
+      });
+      if (!destination) throw missingThread();
+
+      const canonical = {
+        id: destination.id,
+        slug: destination.slug,
+        forumSlug,
+      };
+      if (source.status === 'MERGED') {
+        if (source.mergedIntoThreadId !== destination.id) throw missingThread();
+        return { merged: false, sourceThreadId: source.id, target: canonical, movedPostCount: 0 };
+      }
+      if (source.status !== 'OPEN' && source.status !== 'LOCKED') throw missingThread();
+      const lastSourcePost = await tx.post.findFirst({
+        where: { threadId: source.id },
+        orderBy: [{ sequenceNumber: 'desc' }, { id: 'desc' }],
+        select: { id: true, sequenceNumber: true },
+      });
+      const sourceSequenceLength = lastSourcePost?.sequenceNumber ?? 0;
+      const movedPostCount = await tx.post.count({ where: { threadId: source.id } });
+      const sourceSubscribers = await tx.threadSubscription.findMany({
+        where: { threadId: source.id },
+        select: { userId: true },
+      });
+
+      // Release the source's last-post reference before changing post ownership.
+      await tx.thread.update({
+        where: { id: source.id },
+        data: {
+          status: 'MERGED',
+          mergedIntoThreadId: destination.id,
+          pinnedAt: null,
+          pinnedByUserId: null,
+          lockedAt: null,
+          lockedByUserId: null,
+          lockReason: null,
+          postCount: 0,
+          lastPostId: null,
+          lastPostAt: null,
+          lastPostSequenceNumber: 0,
+        },
+      });
+
+      // The target's row is locked, so its last sequence is stable. This
+      // preserves unique (threadId, sequenceNumber) without changing post IDs.
+      if (movedPostCount > 0) {
+        await tx.$executeRaw`
+          UPDATE "Post"
+          SET "threadId" = CAST(${destination.id} AS UUID),
+              "sequenceNumber" = "sequenceNumber" + ${destination.lastPostSequenceNumber},
+              "updatedAt" = NOW()
+          WHERE "threadId" = CAST(${source.id} AS UUID)
+        `;
+      }
+
+      await tx.thread.update({
+        where: { id: destination.id },
+        data: {
+          postCount: { increment: movedPostCount },
+          lastPostSequenceNumber: { increment: sourceSequenceLength },
+          ...(lastSourcePost
+            ? { lastPostId: lastSourcePost.id, lastPostAt: new Date() }
+            : {}),
+        },
+      });
+
+      // Make existing merged children point directly at the final canonical
+      // thread. Neither post IDs nor historical audit records are rewritten.
+      await tx.thread.updateMany({
+        where: { mergedIntoThreadId: source.id },
+        data: { mergedIntoThreadId: destination.id },
+      });
+
+      if (sourceSubscribers.length > 0) {
+        await tx.threadSubscription.createMany({
+          data: sourceSubscribers.map(({ userId }) => ({
+            userId,
+            threadId: destination.id,
+          })),
+          skipDuplicates: true,
+        });
+        await tx.threadSubscription.deleteMany({ where: { threadId: source.id } });
+      }
+
+      // Source read states remain private historical records. In particular
+      // they are NOT copied to the target, which could mark unread target
+      // posts as read. Existing target read states stay unchanged.
+      await tx.auditLog.create({
+        data: {
+          actorType: 'USER',
+          actorUserId,
+          action: 'THREAD_MERGED',
+          category: 'FORUM',
+          targetType: 'THREAD',
+          targetId: source.id,
+          reason: input.reason ?? null,
+          metadata: {
+            sourceThreadId: source.id,
+            sourceSlug,
+            targetThreadId: destination.id,
+            targetSlug: destination.slug,
+            forumSlug,
+            movedPostCount,
+            transferredSubscriptions: sourceSubscribers.length,
+            before: {
+              status: source.status,
+              mergedIntoThreadId: source.mergedIntoThreadId,
+              postCount: source.postCount,
+              lastPostSequenceNumber: source.lastPostSequenceNumber,
+              pinnedAt: source.pinnedAt?.toISOString() ?? null,
+              pinnedByUserId: source.pinnedByUserId,
+              lockedAt: source.lockedAt?.toISOString() ?? null,
+              lockedByUserId: source.lockedByUserId,
+              lockReason: source.lockReason,
+              targetPostCount: destination.postCount,
+              targetLastPostAt: destination.lastPostAt?.toISOString() ?? null,
+              targetLastPostId: destination.lastPostId,
+              targetLastPostSequenceNumber: destination.lastPostSequenceNumber,
+            },
+            after: {
+              status: 'MERGED',
+              mergedIntoThreadId: destination.id,
+              postCount: 0,
+              targetPostCount: destination.postCount + movedPostCount,
+              targetLastPostSequenceNumber:
+                destination.lastPostSequenceNumber + sourceSequenceLength,
+            },
+          },
+        },
+      });
+      return { merged: true, sourceThreadId: source.id, target: canonical, movedPostCount };
+    });
   }
 
   /** Resolve only a public OPEN/LOCKED, non-merged thread; never reveal hidden IDs. */
