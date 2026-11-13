@@ -476,11 +476,12 @@ export class ForumThreadsService implements OnModuleDestroy {
         return { moved: true, threadId: source.id, threadSlug: threadSlugValue, forum };
       });
     } catch (error) {
+      const candidate: unknown = error;
       if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2002'
+        typeof candidate === 'object' &&
+        candidate !== null &&
+        'code' in candidate &&
+        candidate.code === 'P2002'
       ) {
         throw new ConflictException({
           code: 'THREAD_SLUG_CONFLICT',
