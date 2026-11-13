@@ -17,10 +17,7 @@ export class ForumThreadsController {
   }
 
   @Get(':threadSlug')
-  findPublicThread(
-    @Param('forumSlug') forumSlug: string,
-    @Param('threadSlug') threadSlug: string,
-  ) {
+  findPublicThread(@Param('forumSlug') forumSlug: string, @Param('threadSlug') threadSlug: string) {
     return this.threadsService.findPublicThread(forumSlug, threadSlug);
   }
 
