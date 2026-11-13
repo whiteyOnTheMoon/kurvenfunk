@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CommentComposer } from './comment-composer';
+import { ArticleDiscussion } from './article-discussion';
 import { getArticleLeadMediaSrc } from './article-media';
 import type { ReactNode } from 'react';
 
@@ -317,18 +317,14 @@ export function ArticleDetail({ article, apiUrl }: { article: ArticleDetailData;
             </div>
           ) : null}
 
-          <section className={styles.discussion} id="diskussion">
-            <div>
-              <span className={styles.eyebrow}>Community</span>
-              <h2>Diskussion</h2>
-            </div>
-            <CommentComposer
-              key={`${apiUrl}:${article.id}`}
+          <div className={styles.discussion}>
+            <ArticleDiscussion
               apiUrl={apiUrl}
               articleId={article.id}
+              articleSlug={article.slug}
               initialCommentCount={article._count.comments}
             />
-          </section>
+          </div>
         </div>
 
         <aside className={styles.sidebar}>

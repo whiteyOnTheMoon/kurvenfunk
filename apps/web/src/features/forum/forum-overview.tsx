@@ -159,6 +159,16 @@ export function ForumOverview({ apiUrl, categorySlug }: ForumOverviewProps) {
         <p>Diskussionen rund um österreichischen Fußball – mit klaren Regeln und Moderation.</p>
       </header>
 
+      {!categorySlug ? (
+        <section className={styles.category} aria-label="Artikel-Diskussionen">
+          <div className={styles.categoryHeader}>
+            <h2><Link href="/forum/artikel">Artikel-Diskussionen</Link></h2>
+            <p>Gemeinsam zu veröffentlichten Artikeln diskutieren – dieselben Kommentare wie beim Artikel.</p>
+            <Link href="/forum/artikel">Aktuelle Artikel-Diskussionen ansehen</Link>
+          </div>
+        </section>
+      ) : null}
+
       {loading ? (
         <p className={styles.status} role="status">
           Foren werden geladen …
