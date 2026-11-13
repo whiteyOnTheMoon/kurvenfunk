@@ -1449,10 +1449,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
           data: { active: true },
         });
       }
-      expect((await database.thread.findUniqueOrThrow({
-        where: { id: threads[0] },
-        select: { pinnedAt: true },
-      })).pinnedAt).toBeNull();
+      expect(
+        (
+          await database.thread.findUniqueOrThrow({
+            where: { id: threads[0] },
+            select: { pinnedAt: true },
+          })
+        ).pinnedAt,
+      ).toBeNull();
     } finally {
       await database.thread.update({
         where: { id: threads[0] },
