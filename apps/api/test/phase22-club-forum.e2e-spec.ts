@@ -746,12 +746,17 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       where: { id: threads[0] },
       select: { slug: true },
     });
+    const latest = await database.post.aggregate({
+      where: { threadId: threads[0] },
+      _max: { sequenceNumber: true },
+    });
+    const firstNewSequence = (latest._max.sequenceNumber ?? 0) + 1;
     await database.post.createMany({
       data: Array.from({ length: 31 }, (_, index) => ({
         threadId: threads[0],
         authorId: users.get(subjects.moderator)!,
-        sequenceNumber: index + 2,
-        content: 'Disposable post ' + (index + 2) + ' ' + marker,
+        sequenceNumber: firstNewSequence + index,
+        content: 'Disposable post ' + (firstNewSequence + index) + ' ' + marker,
       })),
     });
     const response = await request(app.getHttpServer())
