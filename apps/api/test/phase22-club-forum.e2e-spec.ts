@@ -24,6 +24,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     admin: 'p210-admin-' + marker,
     moderator: 'p210-moderator-' + marker,
     limited: 'p210-limited-' + marker,
+    replyA: 'p213-reply-a-' + marker,
+    replyB: 'p213-reply-b-' + marker,
+    replyC: 'p213-reply-c-' + marker,
+    replyD: 'p213-reply-d-' + marker,
   };
   const clubs: string[] = [];
   const forums: string[] = [];
@@ -75,6 +79,10 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       { subject: subjects.admin, role: 'ADMIN', status: 'ACTIVE' },
       { subject: subjects.moderator, role: 'MODERATOR', status: 'ACTIVE' },
       { subject: subjects.limited, role: 'ADMIN', status: 'LIMITED' },
+      { subject: subjects.replyA, role: 'USER', status: 'ACTIVE' },
+      { subject: subjects.replyB, role: 'USER', status: 'ACTIVE' },
+      { subject: subjects.replyC, role: 'USER', status: 'ACTIVE' },
+      { subject: subjects.replyD, role: 'USER', status: 'ACTIVE' },
     ] as const) {
       const user = await database.user.create({
         data: {
@@ -516,6 +524,185 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         data: { active: true },
       });
     }
+  });
+
+
+  it('22.213 rejects anonymous, LIMITED, unfinished onboarding and invalid reply bodies', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
+      thread.slug + '/posts';
+    await request(app.getHttpServer()).post(target).send({ body: 'No auth' }).expect(401);
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
+      .send({ body: 'No permissions' })
+      .expect(403);
+    const userId = users.get(subjects.replyA)!;
+    await database.user.update({
+      where: { id: userId },
+      data: { onboardingCompleted: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
+        .send({ body: 'No onboarding' })
+        .expect(403);
+    } finally {
+      await database.user.update({
+        where: { id: userId },
+        data: { onboardingCompleted: true },
+      });
+    }
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
+      .send({ body: '   ' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
+      .send({ body: 'Hello', parentPostId: 'not-a-uuid' })
+      .expect(400);
+    expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(1);
+  });
+
+  it('22.213 atomically posts a reply and advances thread metadata exactly once', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
+      thread.slug + '/posts';
+    const response = await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
+      .send({ body: 'Eine echte isolierte Forumsantwort ' + marker })
+      .expect(201);
+    const post = dataOf<{
+      id: string;
+      sequenceNumber: number;
+      parentPostId: string | null;
+      content: string;
+    }>(response);
+    expect(post.sequenceNumber).toBe(2);
+    expect(post.parentPostId).toBeNull();
+    const stored = await database.thread.findUniqueOrThrow({ where: { id: threads[0] } });
+    expect(stored.postCount).toBe(2);
+    expect(stored.lastPostSequenceNumber).toBe(2);
+    expect(stored.lastPostId).toBe(post.id);
+    const detail = await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
+      .expect(200);
+    expect(
+      dataOf<{ posts: { id: string; sequenceNumber: number }[] }>(detail).posts
+        .some((item) => item.id === post.id && item.sequenceNumber === 2),
+    ).toBe(true);
+  });
+
+  it('22.213 supports replies to non-deleted posts in the same thread', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const original = await database.post.findFirstOrThrow({
+      where: { threadId: threads[0], sequenceNumber: 1 },
+      select: { id: true },
+    });
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/posts')
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyB)))
+      .send({ body: 'Bezug auf den ersten Beitrag ' + marker, parentPostId: original.id })
+      .expect(201);
+    expect(dataOf<{ sequenceNumber: number; parentPostId: string }>(response)).toMatchObject({
+      sequenceNumber: 3,
+      parentPostId: original.id,
+    });
+  });
+
+  it('22.213 rejects locked threads and inaccessible parents without partial writes', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
+      thread.slug + '/posts';
+    const baseline = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { postCount: true, lastPostSequenceNumber: true },
+    });
+    await database.thread.update({ where: { id: threads[0] }, data: { status: 'LOCKED' } });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyC)))
+        .send({ body: 'Gesperrter Thread ' + marker })
+        .expect(409);
+    } finally {
+      await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+    }
+    await request(app.getHttpServer())
+      .post(target)
+      .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyC)))
+      .send({ body: 'Ungültiger Elternbeitrag ' + marker, parentPostId: randomUUID() })
+      .expect(409);
+
+    const first = await database.post.findFirstOrThrow({
+      where: { threadId: threads[0], sequenceNumber: 1 },
+      select: { id: true },
+    });
+    await database.post.update({ where: { id: first.id }, data: { deletedAt: new Date() } });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyC)))
+        .send({ body: 'Gelöschter Elternbeitrag ' + marker, parentPostId: first.id })
+        .expect(409);
+    } finally {
+      await database.post.update({ where: { id: first.id }, data: { deletedAt: null } });
+    }
+
+    const current = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { postCount: true, lastPostSequenceNumber: true },
+    });
+    expect(current).toEqual(baseline);
+    expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(
+      baseline.postCount,
+    );
+  });
+
+  it('22.213 allocates different sequences for concurrent authors', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
+      thread.slug + '/posts';
+    const tokens = await Promise.all([
+      tokenFor(subjects.replyC),
+      tokenFor(subjects.replyD),
+    ]);
+    const results = await Promise.all(
+      tokens.map((token, index) =>
+        request(app.getHttpServer())
+          .post(target)
+          .set('Authorization', 'Bearer ' + token)
+          .send({ body: 'Parallele echte Forumsantwort ' + index + ' ' + marker }),
+      ),
+    );
+    expect(results.map((result) => result.status).sort()).toEqual([201, 201]);
+    const created = results.map((result) =>
+      dataOf<{ id: string; sequenceNumber: number }>(result),
+    );
+    expect(created.map((item) => item.sequenceNumber).sort((a, b) => a - b)).toEqual([4, 5]);
+    const stored = await database.thread.findUniqueOrThrow({ where: { id: threads[0] } });
+    expect(stored.postCount).toBe(5);
+    expect(stored.lastPostSequenceNumber).toBe(5);
+    expect(created.map((item) => item.id)).toContain(stored.lastPostId);
   });
 
   it('22.212 bounds public posts and exposes an honest hasMorePosts marker', async () => {
