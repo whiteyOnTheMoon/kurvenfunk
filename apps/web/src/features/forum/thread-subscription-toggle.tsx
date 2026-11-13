@@ -31,7 +31,7 @@ export function ThreadSubscriptionToggle({
     user?.status === 'ACTIVE' &&
     user.onboardingCompleted;
   const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads/${encodeURIComponent(threadSlug)}/subscription`;
-  const subscribed = subscription?.token === token ? subscription.subscribed : null;
+  const subscribed = subscription && subscription.token === token ? subscription.subscribed : null;
   const error = failedToken === token;
 
   useEffect(() => {
