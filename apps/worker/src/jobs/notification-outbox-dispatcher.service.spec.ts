@@ -1,4 +1,7 @@
-import { NOTIFICATION_DISPATCH_JOB_NAME, type NotificationDispatchJobPayload } from '@kurvenfunk/types';
+import {
+  NOTIFICATION_DISPATCH_JOB_NAME,
+  type NotificationDispatchJobPayload,
+} from '@kurvenfunk/types';
 import type { Queue } from 'bullmq';
 
 import type { DatabaseService } from '../database/database.service';

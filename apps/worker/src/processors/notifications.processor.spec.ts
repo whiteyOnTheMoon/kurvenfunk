@@ -22,12 +22,14 @@ describe('Phase 23.225 – idempotent notification queue consumer', () => {
 
   it('acknowledges a stored event without editing its notification or email state', async () => {
     await expect(processor.process(job)).resolves.toBeUndefined();
-    const calls = db.notificationOutbox.updateMany.mock.calls as Array<[
-      {
-        where: { notificationId: string; processedAt: null };
-        data: { processedAt: Date; lastErrorCode: null };
-      },
-    ]>;
+    const calls = db.notificationOutbox.updateMany.mock.calls as Array<
+      [
+        {
+          where: { notificationId: string; processedAt: null };
+          data: { processedAt: Date; lastErrorCode: null };
+        },
+      ]
+    >;
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0].where).toEqual({ notificationId, processedAt: null });
     expect(calls[0]?.[0].data.processedAt).toBeInstanceOf(Date);
