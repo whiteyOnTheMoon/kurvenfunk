@@ -9,7 +9,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
-| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Themen-Abonnements in Arbeit**; 216–217 ausstehend |
+| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: persönlicher Ungelesen-Status in Arbeit**; 217 ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
 | 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
@@ -95,6 +95,13 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - In der Vereinsforum-Thread-Detailseite zeigt ein authentifizierter Schalter den tatsächlichen Abo-Status und unterstützt Abo/Abbestellen samt Lade-/Fehlerzuständen. Kein öffentlicher Abo-Zähler und keine E-Mail-/Push-Versprechen.
 - Isolierte, kurzlebige PostgreSQL-/Redis-HTTP-E2E prüfen 401/403/Onboarding, getrennte Nutzerzustände, parallele und wiederholte PUTs, wiederholte DELETEs, den Abo-Status bei LOCKED sowie 404/Unveränderlichkeit bei verborgenen oder archivierten Themen. **Keine echten Test-Abos in DEV.**
 - DEV prüft auf dem unverändert getesteten Merge-SHA mit zwei **ungeauthentifizierten, fail-closed** Loopback-Requests die bestehende Netzwerkblockade für PUT und DELETE (503), ohne gültige Token und ohne DB-Mutation. Technische Abnahme erst nach vollständig grüner PR-CI samt echtem Web-Docker-Build **und** grünem Merge-Push-/DEV-Lauf. Positive manuelle Account-/Browser-/Mobilabnahmen bleiben offen.
+
+## 22.216 – Ungelesen-Status (erster Slice)
+
+- Das vorhandene `ThreadReadState`-Modell wird pro Nutzer/Thema wiederverwendet; keine Migration. Fehlender Lesestand = Sequenz 0. Ungelesen bedeutet `Thread.lastPostSequenceNumber > lastReadSequenceNumber`; öffentliches Thema und Thread-Liste bleiben frei von persönlichen Lesedaten.
+- Authentifizierte `GET/PUT /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug/unread` verlangen `thread.read-state`, ACTIVE und abgeschlossenes Onboarding. Die Nutzer-ID stammt ausschließlich aus dem JWT. GET ändert **nichts**; erst ein bewusstes PUT markiert alle zum Zeitpunkt der Operation bekannten Beiträge als gelesen. Ein SQL-UPSERT mit `GREATEST` hält den Zähler monoton bei konkurrierenden PUTs.
+- Nur sichtbare OPEN/LOCKED-Themen; versteckte/archivierte/gemergte Themen 404. Das UI zeigt privat den Ungelesen-Status und bietet einen expliziten Knopf. **Kein automatisches Markieren bei Seitenaufruf**; 22.217 behandelt genaue Lesepositionen pro Beitrag.
+- Isolierte lokale PostgreSQL/Redis-E2E prüfen Auth, Nutzertrennung, Idempotenz, neue Beiträge und 404; DEV prüft nur den tokenlosen PUT-Guard (503) ohne jegliche echte Datenmutation. Manuelle positive Tunnel-/Browserabnahme bleibt offen.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 

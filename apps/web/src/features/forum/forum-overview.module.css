@@ -291,6 +291,28 @@
   opacity: 0.6;
 }
 
+.unreadControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--kf-border);
+}
+
+.unreadControls button {
+  padding: 10px 16px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  color: var(--kf-link);
+  background: var(--kf-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.unreadControls button:disabled { opacity: 0.6; cursor: not-allowed; }
+.unreadControls p { flex-basis: 100%; margin: 0; color: var(--kf-error, #b42318); }
+
 .subscriptionControls {
   display: flex;
   align-items: center;
@@ -348,6 +370,7 @@
   .threadPost,
   .paginationControls,
   .subscriptionControls,
+  .unreadControls,
   .subscriptionHint,
   .empty {
     padding: 20px;
