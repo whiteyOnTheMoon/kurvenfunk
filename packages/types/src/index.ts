@@ -6,6 +6,7 @@ export {
   APPLICATION_QUEUE_NAMES,
   DEFAULT_JOB_OPTIONS,
   NEWS_IMPORT_RETRY_OPTIONS,
+  NOTIFICATION_DISPATCH_JOB_NAME,
   SPORTS_IMPORT_JOB_NAME,
   SPORTS_IMPORT_RETRY_OPTIONS,
   QUEUE_NAMES,
@@ -13,6 +14,7 @@ export {
 
 export type {
   NewsImportDeadLetterPayload,
+  NotificationDispatchJobPayload,
   NewsImportJobPayload,
   SportsImportDeadLetterPayload,
   SportsImportJobPayload,
