@@ -59,7 +59,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm format:check
+        run: |
+          pnpm format:check || {
+            for file in apps/api/test/phase22-club-forum.e2e-spec.ts apps/web/src/features/forum/thread-lock-toggle.tsx; do
+              pnpm exec prettier "$file" | diff -u "$file" - || true
+            done
+            exit 1
+          }
 
       - name: Validate DEV deploy script syntax
         run: |
