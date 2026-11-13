@@ -8,8 +8,8 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | --- | --- | --- | --- |
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
-| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: Antworten in Arbeit, Abnahme offen** |
-| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | Ausstehend |
+| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
+| 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Cursor-API, Nachladen und E2E in Arbeit**; 215–217 ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
 | 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
@@ -77,6 +77,15 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Die Thread-Detailseite bekommt einen Reply-Dialog für angemeldete ACTIVE-Mitglieder mit abgeschlossenem Onboarding; eigene Antworten auf echte, nicht gelöschte Beiträge können über `parentPostId` verknüpft werden. Gesperrte Themen zeigen keine Eingabemaske; nach bestätigter Erstellung wird die öffentliche Liste aktualisiert.
 - **Wichtig:** Die Übersicht bleibt bis Aufgabe 214 auf **30 Posts** begrenzt und darf keine neue Antwort als dort sichtbar versprechen, wenn weitere Seiten fehlen. Auch gelöschte Beiträge bleiben öffentlich redigiert. Keine autonomen DEV-Testposts und keine STAGING-/PROD-Mutation.
 - Isolierte API-HTTP-E2E prüft Berechtigungen (401/403), Onboarding, Validierung (400), Atomarität und Sequenzen, gleichzeitige Autoren, Elternbezüge sowie abgewiesene Writes. DEV prüft ausschließlich den anonymen, fail-closed-Schreibschutz ohne echte Datenänderungen. **Erst vollständig grüne PR-CI plus Merge-Push-/DEV-CI erlauben technische Abnahme.**
+
+## 22.214 – Sichere Cursor-Paginierung (in Arbeit)
+
+- `GET /api/v1/forums/by-slug/:forumSlug/threads?cursor=...` liefert 20 reale Themen je Seite, sortiert nach `pinnedAt DESC NULLS LAST`, `lastPostAt DESC NULLS LAST`, `createdAt DESC`, `id ASC`. `nextCursor` ist ein opaker, strikt validierter, an den Forum-Slug gebundener Cursor; `hasMore` bleibt aus Kompatibilitätsgründen vorhanden. Ein lexikografischer Keyset-Filter vermeidet instabiles Offset-Blättern, auch bei gleichen Zeitstempeln.
+- `GET /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug?cursor=...` liefert weiter höchstens 30 echte Beiträge je Seite. Der Cursor enthält die eindeutige `sequenceNumber` und wird an die konkrete Thread-ID gebunden. Neue Antworten erhalten weiter ihre Sequenznummer transaktionssicher durch 22.213. `nextPostCursor` ergänzt das bisherige `hasMorePosts`. Gelöschte Beiträge bleiben auf **jeder** Seite mit `content=null`, `author=null` und `editedAt=null` redigiert.
+- Fehlende Cursor sind die erste Seite; manipulierte, zu lange, nicht passende oder unvollständige Cursor führen zu 400, ohne eine fremde Diskussion freizugeben. Unsichtbare Foren und Threads bleiben 404. Cursor versprechen keinen unveränderlichen Snapshot bei nachträglichem Pin/Move/Lock/Schreiben; die Weboberfläche bietet eine Neuaktualisierung und dedupliziert angehängte Einträge.
+- Die Vereinsforum- und Thread-Detailansicht bieten echte, zugängliche **„Weitere Themen/Beiträge laden“**-Bedienelemente, Ladezustände und wiederholbare Fehlerbehandlung; bereits sichtbare Einträge bleiben bei einem fehlgeschlagenen Folgeaufruf erhalten.
+- Isolierte PostgreSQL-/Redis-HTTP-Tests prüfen 20/30-Seitengrenzen, Cursor-Ketten, Pin-Reihenfolge, neue Beiträge zwischen zwei Requests, Cross-Scope-/Manipulationsabwehr sowie Löschredaktion auf späteren Seiten. DEV erhält **nur negative read-only-HTTP-Smokes** (unbekannte Foren/Threads mit Cursor bleiben 404), keine Testbeiträge.
+- **Abnahme:** PR-CI inklusive API-E2E und Web-Docker-Build grün; danach separate Merge-Push-/DEV-CI vollständig grün. Keine STAGING-/PROD-Änderungen und kein automatisches Seeding. Positive reale Browser-/Accountabnahme bleibt getrennt ausstehend.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 
