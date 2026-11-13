@@ -73,6 +73,46 @@ export function buildKeycloakEmailConfig(values, target) {
     };
   }
 
+  if (values.MAIL_TRANSPORT === 'microsoft365') {
+    // Keycloak 26.2+ XOAUTH2: client credentials, no mailbox password.
+    // Exchange Application RBAC must restrict this app to the single mailbox.
+    if (from.toLowerCase() !== 'noreply@kurvenfunk.at') {
+      throw new Error('MAIL_M365_SENDER_INVALID');
+    }
+    if (values.MAIL_SMTP_PASSWORD || values.MAIL_SMTP_USERNAME) {
+      throw new Error('MAIL_M365_BASIC_AUTH_FORBIDDEN');
+    }
+    const tenantId = required(values.MAIL_M365_TENANT_ID, 'MAIL_M365_TENANT_ID_MISSING');
+    const clientId = required(values.MAIL_M365_CLIENT_ID, 'MAIL_M365_CLIENT_ID_MISSING');
+    const clientSecret = required(
+      values.MAIL_M365_CLIENT_SECRET,
+      'MAIL_M365_CLIENT_SECRET_MISSING',
+    );
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+    if (!uuidPattern.test(tenantId) || !uuidPattern.test(clientId)) {
+      throw new Error('MAIL_M365_ID_INVALID');
+    }
+    if (clientSecret.length < 16 || clientSecret.includes(' ')) {
+      throw new Error('MAIL_M365_CLIENT_SECRET_INVALID');
+    }
+    return {
+      smtpServer: {
+        ...common,
+        host: 'smtp.office365.com',
+        port: '587',
+        auth: 'true',
+        authType: 'token',
+        ssl: 'false',
+        starttls: 'true',
+        user: from,
+        authTokenUrl: 'https://login.microsoftonline.com/' + tenantId + '/oauth2/v2.0/token',
+        authTokenScope: 'https://outlook.office365.com/.default',
+        authTokenClientId: clientId,
+        authTokenClientSecret: clientSecret,
+      },
+    };
+  }
+
   if (values.MAIL_TRANSPORT !== 'smtp') {
     throw new Error('MAIL_PRODUCTION_PROVIDER_REQUIRED');
   }
@@ -113,7 +153,7 @@ export function auditKeycloakEmailConfig(realm, desired) {
   }
   const actual = realm.smtpServer;
   for (const [name, value] of Object.entries(desired.smtpServer)) {
-    if (name === 'password') continue; // Never read or print credentials.
+    if (name === 'password' || name === 'authTokenClientSecret') continue; // Never read or print credentials.
     if (String(actual[name] ?? '') !== String(value)) {
       throw new Error('MAIL_REALM_CONFIG_MISMATCH');
     }

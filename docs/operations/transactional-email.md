@@ -13,6 +13,15 @@ Keycloak 26.x. Keine zweite Passwort-/Reset-Verwaltung in NestJS.
 Authentifizierung und TLS/SSL. Die Konfiguration ist anbieterneutral.
 Kein eigener Mailserver, keine öffentlich erreichbare SMTP- oder Mailpit-UI.
 
+## Microsoft Exchange Online
+
+Für das eingerichtete Shared Mailbox `noreply@kurvenfunk.at` unterstützt
+Keycloak 26.6.3 direkt SMTP-XOAUTH2 (OAuth-Client-Credentials) ohne
+Postfachpasswort oder vorgeschalteten Adapter. Die private Konfiguration
+setzt `MAIL_TRANSPORT=microsoft365`. Exchange-Application-RBAC muss die
+Mailer-App **nur auf dieses eine Postfach** eingrenzen. Anleitung:
+[`microsoft365-keycloak-xoauth2.md`](microsoft365-keycloak-xoauth2.md).
+
 ## Vorbereitungs-Checkliste für echten Versand
 
 1. Bei einem Transaktionsmail-Anbieter (zum Beispiel Brevo oder Resend) ein
