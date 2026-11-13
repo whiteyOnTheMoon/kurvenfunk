@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import styles from './forum-overview.module.css';
+import { ThreadReplyComposer } from './thread-reply-composer';
 
 interface PublicPost {
   id: string;
@@ -79,6 +80,11 @@ export function ClubThreadDetail({
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const [replyParent, setReplyParent] = useState<{
+    id: string;
+    sequenceNumber: number;
+  }>();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -117,7 +123,7 @@ export function ClubThreadDetail({
 
     void load();
     return () => controller.abort();
-  }, [apiUrl, clubSlug, threadSlug]);
+  }, [apiUrl, clubSlug, threadSlug, revision]);
 
   return (
     <main className={styles.page}>
@@ -172,7 +178,20 @@ export function ClubThreadDetail({
                   {post.deleted ? (
                     <p className={styles.threadPostDeleted}>Dieser Beitrag wurde entfernt.</p>
                   ) : (
-                    <p className={styles.threadPostBody}>{post.content}</p>
+                    <>
+                      <p className={styles.threadPostBody}>{post.content}</p>
+                      {detail.thread.status === 'OPEN' ? (
+                        <button
+                          type="button"
+                          className={styles.threadInlineReply}
+                          onClick={() =>
+                            setReplyParent({ id: post.id, sequenceNumber: post.sequenceNumber })
+                          }
+                        >
+                          Auf Beitrag #{post.sequenceNumber} antworten
+                        </button>
+                      ) : null}
+                    </>
                   )}
                 </li>
               ))}
@@ -181,8 +200,25 @@ export function ClubThreadDetail({
           {detail.hasMorePosts ? (
             <p className={styles.empty}>
               Weitere Beiträge sind vorhanden. Die vollständige Beitragsnavigation folgt.
+              Neue Antworten können deshalb noch außerhalb der sichtbaren Liste liegen.
             </p>
           ) : null}
+          {detail.thread.status === 'OPEN' ? (
+            <ThreadReplyComposer
+              apiUrl={apiUrl}
+              forumSlug={detail.thread.forum.slug}
+              threadSlug={detail.thread.slug}
+              parentPostId={replyParent?.id}
+              parentSequenceNumber={replyParent?.sequenceNumber}
+              onCancelParent={() => setReplyParent(undefined)}
+              onCreated={() => {
+                setReplyParent(undefined);
+                setRevision((value) => value + 1);
+              }}
+            />
+          ) : (
+            <p className={styles.empty}>Dieses Thema ist geschlossen. Antworten sind gesperrt.</p>
+          )}
         </section>
       )}
     </main>
