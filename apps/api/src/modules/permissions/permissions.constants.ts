@@ -16,6 +16,7 @@ export const PERMISSIONS = {
   THREAD_MOVE: 'thread.move',
   THREAD_MERGE: 'thread.merge',
   THREAD_PIN: 'thread.pin',
+  FORUM_POST_MODERATE: 'forum-post.moderate',
 
   ARTICLE_CREATE: 'article.create',
   ARTICLE_PUBLISH: 'article.publish',
@@ -64,6 +65,7 @@ const MODERATION_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.THREAD_MOVE,
   PERMISSIONS.THREAD_MERGE,
   PERMISSIONS.THREAD_PIN,
+  PERMISSIONS.FORUM_POST_MODERATE,
   PERMISSIONS.USER_WARN,
   PERMISSIONS.USER_LIMIT,
 ];
