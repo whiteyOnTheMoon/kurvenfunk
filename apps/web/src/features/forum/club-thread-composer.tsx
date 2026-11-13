@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
 import {
   createForumThreadSchema,
@@ -48,7 +49,7 @@ export function ClubThreadComposer({ apiUrl, forumSlug, onCreated }: ClubThreadC
   if (!authenticated || !user || !token) {
     return (
       <p className={styles.empty}>
-        <a href="/login">Melde dich an</a>, um ein neues Thema zu eröffnen.
+        <Link href="/login">Melde dich an</Link>, um ein neues Thema zu eröffnen.
       </p>
     );
   }
