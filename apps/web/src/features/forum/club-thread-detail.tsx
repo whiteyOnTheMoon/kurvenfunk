@@ -50,7 +50,9 @@ function isPublicThreadDetail(value: unknown): value is PublicThreadDetail {
         typeof entry.id === 'string' &&
         typeof entry.sequenceNumber === 'number' &&
         typeof entry.deleted === 'boolean' &&
-        (entry.deleted ? entry.content === null && entry.author === null : typeof entry.content === 'string')
+        (entry.deleted
+          ? entry.content === null && entry.author === null
+          : typeof entry.content === 'string')
       );
     }) &&
     typeof detail.hasMorePosts === 'boolean'
