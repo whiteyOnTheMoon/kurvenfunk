@@ -199,8 +199,8 @@ export function ClubThreadDetail({
           )}
           {detail.hasMorePosts ? (
             <p className={styles.empty}>
-              Weitere Beiträge sind vorhanden. Die vollständige Beitragsnavigation folgt.
-              Neue Antworten können deshalb noch außerhalb der sichtbaren Liste liegen.
+              Weitere Beiträge sind vorhanden. Die vollständige Beitragsnavigation folgt. Neue
+              Antworten können deshalb noch außerhalb der sichtbaren Liste liegen.
             </p>
           ) : null}
           {detail.thread.status === 'OPEN' ? (
