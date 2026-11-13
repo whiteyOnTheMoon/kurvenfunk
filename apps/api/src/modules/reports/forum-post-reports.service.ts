@@ -59,7 +59,9 @@ export class ForumPostReportsService implements OnModuleDestroy {
       // There is no unique (reporterId, postId) schema constraint. Serialize
       // competing submissions of exactly this pair within PostgreSQL before
       // the duplicate check. No migration or global locking is required.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`forum-post-report:${command.reporterId}:${command.postId}`}, 0))`;
+      // A void-returning SELECT cannot be decoded by PrismaPg. Project the
+      // volatile lock expression as a supported boolean instead.
+      await tx.$queryRaw<{ held: boolean }[]>`SELECT pg_advisory_xact_lock(hashtextextended(${`forum-post-report:${command.reporterId}:${command.postId}`}, 0)) IS NOT NULL AS held`;
 
       const post = await tx.post.findFirst({
         where: {
