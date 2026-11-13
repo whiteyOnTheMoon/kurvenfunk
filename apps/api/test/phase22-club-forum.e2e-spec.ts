@@ -949,8 +949,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     await request(app.getHttpServer()).put(target).expect(401);
     await request(app.getHttpServer()).delete(target).expect(401);
     for (const method of ['get', 'put', 'delete'] as const) {
-      await request(app.getHttpServer())
-        [method](target)
+      await request(app.getHttpServer())[method](target)
         .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
         .expect(403);
     }
@@ -1024,13 +1023,16 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('subscriptions');
     expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(2);
 
-    for (const index of [0, 1]) {
-      const response = await request(app.getHttpServer())
-        .delete(target)
-        .set('Authorization', authA)
-        .expect(200);
-      expect(dataOf<{ subscribed: boolean }>(response)).toEqual({ subscribed: false });
-    }
+    const firstDelete = await request(app.getHttpServer())
+      .delete(target)
+      .set('Authorization', authA)
+      .expect(200);
+    const repeatedDelete = await request(app.getHttpServer())
+      .delete(target)
+      .set('Authorization', authA)
+      .expect(200);
+    expect(dataOf<{ subscribed: boolean }>(firstDelete)).toEqual({ subscribed: false });
+    expect(dataOf<{ subscribed: boolean }>(repeatedDelete)).toEqual({ subscribed: false });
     expect(
       await database.threadSubscription.count({
         where: { threadId: threads[0], userId: firstUser },
