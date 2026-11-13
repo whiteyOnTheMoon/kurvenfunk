@@ -110,6 +110,7 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-startpage-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-209-forum-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-210-club-forums-readonly.sh
+          bash -n infrastructure/scripts/verify/dev-phase22-211-thread-create-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-212-threads-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-213-replies-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-214-pagination-readonly.sh
@@ -254,6 +255,16 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase22-210-club-forums-readonly.sh"
+
+      - name: Verify phase 22 thread creation guard over HTTP (read-only)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase22-211-thread-create-readonly.sh"
 
       - name: Verify phase 22 thread details over HTTP (read-only)
         env:

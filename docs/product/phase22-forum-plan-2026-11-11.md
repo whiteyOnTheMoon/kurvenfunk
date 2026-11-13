@@ -12,7 +12,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: DEV-CI #43375847270 PASS**; **217: DEV-CI #43380284008 PASS** |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: DEV-CI #43389281899 PASS**; **219: DEV-CI #43393243928 PASS**; **220: DEV-CI #43404251216 PASS**; **221: DEV-CI #43459497673 PASS** |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | **PRs #182/#183 gemergt; DEV-CI #43506305510 PASS; manuelle Abnahme offen** |
-| 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | **Implementierung in Arbeit – PR-/DEV-CI und manuelle Abnahme offen** |
+| 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | **PR #184 gemergt; DEV-CI #43510681534 PASS; manuelle Abnahme offen** |
 
 ## 22.209 Vertrag
 
@@ -169,12 +169,14 @@ Die isolierte API-HTTP-E2E-Abnahme mit deaktiviertem optionalen IP-Guard prüft 
 - Der Einstieg ist von `/forum`, der News-Übersicht und dem Artikel aus verlinkt; zur Vermeidung doppelter Suchmaschineneinträge ist die Forumsdetailansicht `noindex,follow`. Kein Live-Content wird dupliziert.
 - Web-Unit-Tests prüfen Parser, Cursor-Verhalten, Validierung, dedupliziertes Nachladen, dieselben Komponenten/IDs, veröffentlichte Artikelsichtbarkeit, 404 sowie responsive/fehlerhafte/leere Zustände. API-E2E prüfen den vorhandenen veröffentlichten Artikel-/Kommentarvertrag separat. PR-/DEV-CI und echte Account-/Tunnel-/Mobil-Abnahme sind getrennte Gates; kein STAGING-/PROD-Eingriff.
 
-## Abnahme-Gates (noch offen)
+## Gesamtphase 22 – technischer Stand und offene Fachabnahme
 
-1. PR-CI: Format, Lint, Prisma-Typen, Unit-Tests, Web-Build, API-/Worker-Integration.
-2. DEV-Deployment + schreibgeschützter `GET /forums/categories`-HTTP-Test muss ohne Kategorien `200` und `data=[]` ergeben; danach nach real administriertem Inhalt Sortierung und Inaktivität prüfen.
-3. Manueller mobiler/Browser-Zugang zu `/forum` und `/forum/kategorie/:slug`, inkl. Fehlerzuständen und Zugänglichkeit.
-4. Admin-Authentifizierungs-/Autorisierungs-Negativtests sowie Lebenszyklus-/Audit-Abnahme über echte DEV-Accounts.
-5. STAGING und PROD bleiben unverändert; separate Freigaben für deren Prüfung sind erforderlich.
+**Technische DEV-Basis (13.11.2026):** [CI #43510681534](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43510681534), Merge-Commit `f20a84803dccc566c7faf15880936c03cc4d2abd`, `completed/success` inklusive DEV-Deployment, 14 bestehenden Forum-Smokes und der DEV-APA-OTS-Abnahme. [PR-E2E #43509982567](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43509982567) bestätigt isoliert reale PostgreSQL-/Redis-/HTTP-Prüfungen der Phase-22-Funktionen.
 
-**Der technische Abschluss von 209 ersetzt keine Gesamtphasenabnahme 22 und schließt keinen der noch offenen 1–21-Abnahmepunkte.**
+**Offenes fachliches Gate:** Die DEV-Prüfung meldet `DEV_PHASE22_FORUM_CATEGORY_COUNT=0`. Das ist korrekt für den aktuellen Datenbestand, verhindert aber die tatsächliche Browser-/Moderator-Abnahme an sichtbaren echten Foreninhalten. Die vorhandenen Tests kontrollieren leere und negative HTTP-Zustände; sie ersetzen keine reale Rollen-, Browser- oder Audit-Abnahme. Kein automatisches Seeding, kein Verändern vorhandener Daten ohne ausdrückliche Freigabe.
+
+- [Abnahmematrix und einzeln referenzierte CI-/DEV-Belege](./phase22-acceptance-2026-11-13.md)
+- [GitHub #185 – offene reale Phase-22-Fachabnahme](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/185)
+- Bestehende Einzelgates [#160](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/160) (Vereinsforen) und [#169](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/169) (Thread-Erstellung/Browser) bleiben offen.
+
+**Freigaberegel:** Erst wenn echtes Admin-/Mitglieder-/Moderator-RBAC über den vertrauenswürdigen Ingress, Navigation, Desktop-/Mobile- und Accessibility-Prüfungen sowie Audit/Datenschutz im Ticket belegt sind, darf Phase 22 als *vollständig fachlich abgenommen* markiert werden. STAGING/PROD bleiben unverändert. Offene Abnahmen anderer Phasen werden davon nicht berührt.
