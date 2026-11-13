@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common';
 import {
   createForumReplySchema,
   createForumThreadSchema,
@@ -28,6 +28,48 @@ export class ForumThreadsController {
     @Query('cursor') cursor?: unknown,
   ) {
     return this.threadsService.findPublicThread(forumSlug, threadSlug, cursor);
+  }
+
+  @Get(':threadSlug/subscription')
+  @RequirePermissions(PERMISSIONS.THREAD_SUBSCRIBE)
+  getSubscription(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.getThreadSubscription(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+    );
+  }
+
+  @Put(':threadSlug/subscription')
+  @RequirePermissions(PERMISSIONS.THREAD_SUBSCRIBE)
+  subscribe(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.subscribeToThread(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+    );
+  }
+
+  @Delete(':threadSlug/subscription')
+  @RequirePermissions(PERMISSIONS.THREAD_SUBSCRIBE)
+  unsubscribe(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.unsubscribeFromThread(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+    );
   }
 
   @Post(':threadSlug/posts')
