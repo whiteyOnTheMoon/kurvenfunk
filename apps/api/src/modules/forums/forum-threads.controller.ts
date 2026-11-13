@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import {
   createForumReplySchema,
   createForumThreadSchema,
@@ -17,13 +17,17 @@ export class ForumThreadsController {
   constructor(private readonly threadsService: ForumThreadsService) {}
 
   @Get()
-  listPublicThreads(@Param('forumSlug') forumSlug: string) {
-    return this.threadsService.listPublicThreads(forumSlug);
+  listPublicThreads(@Param('forumSlug') forumSlug: string, @Query('cursor') cursor?: unknown) {
+    return this.threadsService.listPublicThreads(forumSlug, cursor);
   }
 
   @Get(':threadSlug')
-  findPublicThread(@Param('forumSlug') forumSlug: string, @Param('threadSlug') threadSlug: string) {
-    return this.threadsService.findPublicThread(forumSlug, threadSlug);
+  findPublicThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Query('cursor') cursor?: unknown,
+  ) {
+    return this.threadsService.findPublicThread(forumSlug, threadSlug, cursor);
   }
 
   @Post(':threadSlug/posts')
