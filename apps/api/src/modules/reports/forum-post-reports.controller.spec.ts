@@ -18,6 +18,7 @@ import { createCommentReportSchema } from './reports.controller';
 import { ForumPostReportsService } from './forum-post-reports.service';
 
 jest.mock('../auth/auth.guard', () => ({ AuthGuard: jest.fn() }));
+jest.mock('./reports.service', () => ({ ReportsService: jest.fn() }));
 jest.mock('./forum-post-reports.service', () => ({ ForumPostReportsService: jest.fn() }));
 
 describe('Phase 22.222 forum report routes', () => {
