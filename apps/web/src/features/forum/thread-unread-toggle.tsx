@@ -46,7 +46,7 @@ export function ThreadUnreadToggle({
     user?.status === 'ACTIVE' &&
     user.onboardingCompleted;
   const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads/${encodeURIComponent(threadSlug)}/unread`;
-  const status = state?.token === token ? state.status : null;
+  const status = state && state.token === token ? state.status : null;
 
   useEffect(() => {
     const controller = new AbortController();
