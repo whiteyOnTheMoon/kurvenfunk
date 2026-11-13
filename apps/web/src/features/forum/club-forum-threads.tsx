@@ -24,7 +24,15 @@ function isThreadSummary(value: unknown): value is ThreadSummary {
   );
 }
 
-export function ClubForumThreads({ apiUrl, forumSlug }: { apiUrl: string; forumSlug: string }) {
+export function ClubForumThreads({
+  apiUrl,
+  forumSlug,
+  revision,
+}: {
+  apiUrl: string;
+  forumSlug: string;
+  revision: number;
+}) {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,7 +73,7 @@ export function ClubForumThreads({ apiUrl, forumSlug }: { apiUrl: string; forumS
     }
     void load();
     return () => controller.abort();
-  }, [apiUrl, forumSlug]);
+  }, [apiUrl, forumSlug, revision]);
 
   if (loading) {
     return (

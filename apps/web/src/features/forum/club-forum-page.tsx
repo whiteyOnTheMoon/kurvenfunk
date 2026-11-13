@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { ClubForumThreads } from './club-forum-threads';
+import { ClubThreadComposer } from './club-thread-composer';
 import styles from './forum-overview.module.css';
 
 interface ClubForum {
@@ -31,6 +32,7 @@ function isClubForum(value: unknown): value is ClubForum {
 
 export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: string }) {
   const [forum, setForum] = useState<ClubForum | null>(null);
+  const [threadRevision, setThreadRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -106,7 +108,14 @@ export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: 
           {!forum.threadCreationEnabled ? (
             <p className={styles.empty}>Dieses Forum ist derzeit nur lesbar.</p>
           ) : null}
-          <ClubForumThreads apiUrl={apiUrl} forumSlug={forum.slug} />
+          {forum.threadCreationEnabled ? (
+            <ClubThreadComposer
+              apiUrl={apiUrl}
+              forumSlug={forum.slug}
+              onCreated={() => setThreadRevision((value) => value + 1)}
+            />
+          ) : null}
+          <ClubForumThreads apiUrl={apiUrl} forumSlug={forum.slug} revision={threadRevision} />
         </section>
       )}
     </div>
