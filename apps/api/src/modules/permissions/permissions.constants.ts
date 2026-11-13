@@ -10,6 +10,7 @@ export const PERMISSIONS = {
   FORUM_MANAGE: 'forum.manage',
   THREAD_CREATE: 'thread.create',
   THREAD_REPLY: 'thread.reply',
+  THREAD_SUBSCRIBE: 'thread.subscribe',
   THREAD_LOCK: 'thread.lock',
 
   ARTICLE_CREATE: 'article.create',
@@ -49,6 +50,7 @@ export const COMMUNITY_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.COMMENT_DELETE,
   PERMISSIONS.THREAD_CREATE,
   PERMISSIONS.THREAD_REPLY,
+  PERMISSIONS.THREAD_SUBSCRIBE,
 ];
 
 const MODERATION_PERMISSIONS: readonly Permission[] = [

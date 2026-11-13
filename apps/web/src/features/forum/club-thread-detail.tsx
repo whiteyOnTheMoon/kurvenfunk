@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
 import { ThreadReplyComposer } from './thread-reply-composer';
+import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
 
 interface PublicPost {
   id: string;
@@ -208,6 +209,12 @@ export function ClubThreadDetail({
         </p>
       ) : (
         <section className={styles.threadDetail} aria-label="Beiträge">
+          <ThreadSubscriptionToggle
+            key={detail.thread.id}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+          />
           <h2>Beiträge</h2>
           {detail.posts.length === 0 ? (
             <p className={styles.empty}>In dieser Diskussion sind keine Beiträge sichtbar.</p>
