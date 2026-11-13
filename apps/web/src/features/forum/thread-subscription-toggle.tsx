@@ -16,10 +16,12 @@ export function ThreadSubscriptionToggle({
   threadSlug: string;
 }) {
   const { authenticated, initialized, sessionRecovering, token, user } = useAuth();
-  const [subscribed, setSubscribed] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [subscription, setSubscription] = useState<{
+    token: string;
+    subscribed: boolean;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [failedToken, setFailedToken] = useState<string | null>(null);
 
   const canSubscribe =
     initialized &&
@@ -29,15 +31,14 @@ export function ThreadSubscriptionToggle({
     user?.status === 'ACTIVE' &&
     user.onboardingCompleted;
   const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads/${encodeURIComponent(threadSlug)}/subscription`;
+  const subscribed = subscription?.token === token ? subscription.subscribed : null;
+  const error = failedToken === token;
 
   useEffect(() => {
     const controller = new AbortController();
-    setSubscribed(null);
-    setError(false);
     if (!canSubscribe || !token) return () => controller.abort();
 
     async function load() {
-      setLoading(true);
       try {
         const response = await fetch(endpoint, {
           headers: { Authorization: `Bearer ${token}` },
@@ -48,11 +49,9 @@ export function ThreadSubscriptionToggle({
         const payload: unknown = await response.json();
         const data = (payload as { data?: { subscribed?: unknown } }).data;
         if (typeof data?.subscribed !== 'boolean') throw new Error('SUBSCRIPTION_INVALID');
-        if (!controller.signal.aborted) setSubscribed(data.subscribed);
+        if (!controller.signal.aborted) setSubscription({ token: token!, subscribed: data.subscribed });
       } catch {
-        if (!controller.signal.aborted) setError(true);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) setFailedToken(token!);
       }
     }
 
@@ -63,7 +62,7 @@ export function ThreadSubscriptionToggle({
   async function toggle() {
     if (!token || !canSubscribe || subscribed === null || saving) return;
     setSaving(true);
-    setError(false);
+    setFailedToken(null);
     try {
       const response = await fetch(endpoint, {
         method: subscribed ? 'DELETE' : 'PUT',
@@ -75,9 +74,9 @@ export function ThreadSubscriptionToggle({
       if (typeof data?.subscribed !== 'boolean' || data.subscribed === subscribed) {
         throw new Error('SUBSCRIPTION_INVALID');
       }
-      setSubscribed(data.subscribed);
+      setSubscription({ token, subscribed: data.subscribed });
     } catch {
-      setError(true);
+      setFailedToken(token);
     } finally {
       setSaving(false);
     }
@@ -106,12 +105,12 @@ export function ThreadSubscriptionToggle({
       <button
         type="button"
         aria-pressed={subscribed === true}
-        disabled={loading || saving || subscribed === null}
+        disabled={saving || subscribed === null}
         onClick={() => void toggle()}
       >
         {saving
           ? 'Abo wird aktualisiert …'
-          : loading || subscribed === null
+          : subscribed === null
             ? 'Abo-Status wird geladen …'
             : subscribed
               ? 'Themen-Abo beenden'
