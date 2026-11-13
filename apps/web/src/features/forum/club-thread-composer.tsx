@@ -57,8 +57,7 @@ export function ClubThreadComposer({ apiUrl, forumSlug, onCreated }: ClubThreadC
   if (user.status !== 'ACTIVE' || !user.onboardingCompleted) {
     return (
       <p className={styles.empty}>
-        Zum Eröffnen eines Themas benötigst du einen aktiven Account mit abgeschlossenem
-        Onboarding.
+        Zum Eröffnen eines Themas benötigst du einen aktiven Account mit abgeschlossenem Onboarding.
       </p>
     );
   }
@@ -91,8 +90,7 @@ export function ClubThreadComposer({ apiUrl, forumSlug, onCreated }: ClubThreadC
       );
       if (!response.ok) {
         const payload = (await response.json().catch(() => undefined)) as
-          | { code?: string; message?: string }
-          | undefined;
+          { code?: string; message?: string } | undefined;
         throw new Error(threadCreationError(payload?.code));
       }
       const payload = (await response.json()) as { data?: { id?: unknown } };
@@ -142,7 +140,11 @@ export function ClubThreadComposer({ apiUrl, forumSlug, onCreated }: ClubThreadC
           required
           disabled={submitting}
         />
-        {error ? <p role="alert" className={styles.threadError}>{error}</p> : null}
+        {error ? (
+          <p role="alert" className={styles.threadError}>
+            {error}
+          </p>
+        ) : null}
         {success ? (
           <p role="status" className={styles.threadSuccess}>
             Das Thema wurde veröffentlicht und ist in der Übersicht sichtbar.
