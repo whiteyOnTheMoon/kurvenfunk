@@ -116,16 +116,17 @@ export class ForumThreadsService implements OnModuleDestroy {
     return {
       items,
       hasMore,
-      nextCursor: hasMore && last
-        ? encodeForumCursor({
-            version: 1,
-            forumSlug,
-            id: last.id,
-            pinnedAt: last.pinnedAt?.toISOString() ?? null,
-            lastPostAt: last.lastPostAt?.toISOString() ?? null,
-            createdAt: last.createdAt.toISOString(),
-          })
-        : null,
+      nextCursor:
+        hasMore && last
+          ? encodeForumCursor({
+              version: 1,
+              forumSlug,
+              id: last.id,
+              pinnedAt: last.pinnedAt?.toISOString() ?? null,
+              lastPostAt: last.lastPostAt?.toISOString() ?? null,
+              createdAt: last.createdAt.toISOString(),
+            })
+          : null,
     };
   }
 
@@ -195,13 +196,14 @@ export class ForumThreadsService implements OnModuleDestroy {
         author: post.deletedAt ? null : post.author,
       })),
       hasMorePosts,
-      nextPostCursor: hasMorePosts && lastPost
-        ? encodeForumCursor({
-            version: 1,
-            threadId: thread.id,
-            sequenceNumber: lastPost.sequenceNumber,
-          })
-        : null,
+      nextPostCursor:
+        hasMorePosts && lastPost
+          ? encodeForumCursor({
+              version: 1,
+              threadId: thread.id,
+              sequenceNumber: lastPost.sequenceNumber,
+            })
+          : null,
     };
   }
 
