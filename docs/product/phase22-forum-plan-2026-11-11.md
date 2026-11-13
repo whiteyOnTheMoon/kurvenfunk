@@ -10,9 +10,9 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
 | 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: DEV Push-CI #43343696724 PASS**; **212: DEV Push-CI #43347049886 PASS**; **213: DEV Push-CI #43352933103 PASS**; echte Account-/Browserabnahme offen |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | **214: Push-/DEV-CI #43360546561 PASS**; **215: Push-/DEV-CI #43366935038 PASS**; **216: DEV-CI #43375847270 PASS**; **217: DEV-CI #43380284008 PASS** |
-| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: DEV-CI #43389281899 PASS**; **219: DEV-CI #43393243928 PASS**; **220: DEV-CI #43404251216 PASS**; **221: in Arbeit** |
-| 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | **Implementierung in PR #182; PR-/DEV-CI und manuelle Abnahme offen** |
-| 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | Ausstehend |
+| 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | **218: DEV-CI #43389281899 PASS**; **219: DEV-CI #43393243928 PASS**; **220: DEV-CI #43404251216 PASS**; **221: DEV-CI #43459497673 PASS** |
+| 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | **PRs #182/#183 gemergt; DEV-CI #43506305510 PASS; manuelle Abnahme offen** |
+| 223 | Artikel/Forum | Eine gemeinsame Diskussion, keine unabhängige Parallelcommunity | **Implementierung in Arbeit – PR-/DEV-CI und manuelle Abnahme offen** |
 
 ## 22.209 Vertrag
 
@@ -160,6 +160,14 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 Bei aktivierter `IP_RATE_LIMIT_ENABLED`-Konfiguration werden schreibende Forum-Routen schon **vor** der Authentifizierung über den globalen IP-Rate-Limit-Guard geprüft. Ein anonymer, direkt an den lokalen API-Port gerichteter POST besitzt **keinen vertrauenswürdigen Cloudflare-Tunnel-Socket-Peer** und muss deshalb sicher mit **HTTP 503** abgewiesen werden. Der DEV-Live-Test erwartet ausdrücklich diese Sperre und sendet keine gefälschten IP-Header. Dies bestätigt **keine** Admin-RBAC-Abnahme über den echten Tunnel.
 
 Die isolierte API-HTTP-E2E-Abnahme mit deaktiviertem optionalen IP-Guard prüft gesondert, dass anonyme Aufrufe **401**, Nicht-Admins **403** und berechtigte Admins erfolgreiche echte, idempotente PostgreSQL-Transaktionen erhalten. Der spätere reale Admin-/Tunnel-Flow und die mobile Fachabnahme bleiben eigene Gates.
+
+## 22.223 – Artikel und Forum: eine gemeinsame Diskussion
+
+- **Kanonisches Datenmodell:** Ein veröffentlichter Artikel besitzt genau die bestehende Diskussion in `Comment(articleId)`. Die Forum-Navigation zeigt **keine Kopie als `Thread`/`Post`** an; auch Antworten, Reaktionen, Reports, Moderationsmaßnahmen, Paginierung und Spam-Schutz bleiben unverändert an derselben Artikel-ID. Es gibt keine Datenmigration, kein automatisches Provisioning, keine zweite Moderatorwarteschlange und keine Demo-Daten.
+- **Forum-Entdeckung:** `/forum/artikel` liest ausschließlich `GET /api/v1/articles?limit=12` mit Cursor, `no-store`, konsequenter Payload-Validierung, leerem Zustand, Fehlern und mobiler Darstellung. Der existierende öffentliche Artikel-Endpoint liefert nur tatsächlich `PUBLISHED`-Artikel mit `publishedAt <= now` und `deletedAt = null`; Entwürfe, geplante, archivierte und entfernte Artikel sind daher nicht in der Übersicht.
+- **Gemeinsame Detailansicht:** `/forum/artikel/:slug` liest ausschließlich `GET /api/v1/articles/by-slug/:slug` (404 für unsichtbare/unveröffentlichte Artikel). Die Diskussionsansicht verwendet **exakt dieselbe `ArticleDiscussion`-Komponente und `CommentComposer(articleId)`** wie `/artikel/:slug#diskussion`. Schreiben/Antworten/Bewerten/Melden verlaufen nur über die bisherigen Artikelkommentar-APIs und die bestehenden Berechtigungen. Eine Route zeigt den Artikel, die andere bietet Forum-Navigation, aber beide zeigen dieselben Kommentar-IDs.
+- Der Einstieg ist von `/forum`, der News-Übersicht und dem Artikel aus verlinkt; zur Vermeidung doppelter Suchmaschineneinträge ist die Forumsdetailansicht `noindex,follow`. Kein Live-Content wird dupliziert.
+- Web-Unit-Tests prüfen Parser, Cursor-Verhalten, Validierung, dedupliziertes Nachladen, dieselben Komponenten/IDs, veröffentlichte Artikelsichtbarkeit, 404 sowie responsive/fehlerhafte/leere Zustände. API-E2E prüfen den vorhandenen veröffentlichten Artikel-/Kommentarvertrag separat. PR-/DEV-CI und echte Account-/Tunnel-/Mobil-Abnahme sind getrennte Gates; kein STAGING-/PROD-Eingriff.
 
 ## Abnahme-Gates (noch offen)
 
