@@ -5,6 +5,7 @@ import { OnboardingCompletedGuard } from '../auth/onboarding-completed.guard';
 
 import {
   COMMUNITY_PERMISSIONS,
+  PERMISSIONS,
   REQUIRED_PERMISSIONS_METADATA_KEY,
   type Permission,
 } from './permissions.constants';
@@ -15,8 +16,10 @@ export function RequirePermissions(...permissions: Permission[]) {
     throw new Error('At least one permission is required');
   }
 
-  const requiresOnboarding = permissions.some((permission) =>
-    COMMUNITY_PERMISSIONS.includes(permission),
+  // Moderator-only thread pin actions must also respect completed onboarding.
+  // Do not add them to COMMUNITY_PERMISSIONS: that would grant pin access to USER.
+  const requiresOnboarding = permissions.some(
+    (permission) => COMMUNITY_PERMISSIONS.includes(permission) || permission === PERMISSIONS.THREAD_PIN,
   );
 
   return applyDecorators(
