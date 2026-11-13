@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Diagnose final phase22.215 toggle Prettier diff (temporary)
+        run: |
+          pnpm exec prettier apps/web/src/features/forum/thread-subscription-toggle.tsx | diff -u apps/web/src/features/forum/thread-subscription-toggle.tsx - || true
+
       - name: Check formatting
         run: pnpm format:check
 
