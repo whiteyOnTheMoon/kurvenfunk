@@ -222,6 +222,11 @@ export function ClubThreadDetail({
             forumSlug={detail.thread.forum.slug}
             threadSlug={detail.thread.slug}
             revision={revision}
+            posts={detail.posts.map((post) => ({
+              id: post.id,
+              sequenceNumber: post.sequenceNumber,
+              deleted: post.deleted,
+            }))}
           />
           <h2>Beiträge</h2>
           {detail.posts.length === 0 ? (

@@ -259,13 +259,14 @@ export class ForumThreadsService implements OnModuleDestroy {
       }),
       this.database.threadReadState.findUnique({
         where: { userId_threadId: { userId, threadId } },
-        select: { lastReadSequenceNumber: true },
+        select: { lastReadSequenceNumber: true, lastReadPostId: true },
       }),
     ]);
     const lastReadSequenceNumber = state?.lastReadSequenceNumber ?? 0;
     return {
       unread: thread.lastPostSequenceNumber > lastReadSequenceNumber,
       lastReadSequenceNumber,
+      lastReadPostId: state?.lastReadPostId ?? null,
       latestSequenceNumber: thread.lastPostSequenceNumber,
     };
   }
@@ -303,6 +304,59 @@ export class ForumThreadsService implements OnModuleDestroy {
       unread: latestSequenceNumber > lastReadSequenceNumber,
       lastReadSequenceNumber,
       latestSequenceNumber,
+    };
+  }
+
+  /** Atomically set a precise post position without allowing backwards movement. */
+  async setThreadReadPosition(
+    forumSlug: string,
+    threadSlugValue: string,
+    userId: string,
+    postId: string,
+  ) {
+    const threadId = await this.visibleSubscriptionThreadId(forumSlug, threadSlugValue);
+    const post = await this.database.post.findFirst({
+      where: { id: postId, threadId, deletedAt: null },
+      select: { sequenceNumber: true },
+    });
+    if (!post) throw missingThread();
+
+    const rows = await this.database.$queryRaw<
+      { lastReadSequenceNumber: number; lastReadPostId: string | null }[]
+    >`
+      INSERT INTO "ThreadReadState"
+        ("id", "userId", "threadId", "lastReadPostId", "lastReadSequenceNumber",
+         "lastReadAt", "createdAt", "updatedAt")
+      VALUES (
+        CAST(${randomUUID()} AS UUID), CAST(${userId} AS UUID),
+        CAST(${threadId} AS UUID), CAST(${postId} AS UUID),
+        ${post.sequenceNumber}, NOW(), NOW(), NOW()
+      )
+      ON CONFLICT ("userId", "threadId") DO UPDATE SET
+        "lastReadPostId" = CASE
+          WHEN EXCLUDED."lastReadSequenceNumber" >= "ThreadReadState"."lastReadSequenceNumber"
+          THEN EXCLUDED."lastReadPostId"
+          ELSE "ThreadReadState"."lastReadPostId"
+        END,
+        "lastReadSequenceNumber" = GREATEST(
+          "ThreadReadState"."lastReadSequenceNumber",
+          EXCLUDED."lastReadSequenceNumber"
+        ),
+        "lastReadAt" = NOW(),
+        "updatedAt" = NOW()
+      RETURNING "lastReadSequenceNumber", "lastReadPostId"
+    `;
+
+    const latest = await this.database.thread.findUniqueOrThrow({
+      where: { id: threadId },
+      select: { lastPostSequenceNumber: true },
+    });
+    const lastReadSequenceNumber = rows[0].lastReadSequenceNumber;
+    return {
+      unread: latest.lastPostSequenceNumber > lastReadSequenceNumber,
+      lastReadSequenceNumber,
+      lastReadPostId: rows[0].lastReadPostId,
+      latestSequenceNumber: latest.lastPostSequenceNumber,
     };
   }
 

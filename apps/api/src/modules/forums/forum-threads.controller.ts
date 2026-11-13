@@ -2,6 +2,8 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@ne
 import {
   createForumReplySchema,
   createForumThreadSchema,
+  setForumReadPositionSchema,
+  type SetForumReadPositionInput,
   type CreateForumReplyInput,
   type CreateForumThreadInput,
 } from '@kurvenfunk/validation';
@@ -97,6 +99,22 @@ export class ForumThreadsController {
       forumSlug,
       threadSlug,
       request.user!.kurvenfunkUserId,
+    );
+  }
+
+  @Put(':threadSlug/read-position')
+  @RequirePermissions(PERMISSIONS.THREAD_READ_STATE)
+  setReadPosition(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(setForumReadPositionSchema)) input: SetForumReadPositionInput,
+  ) {
+    return this.threadsService.setThreadReadPosition(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      input.postId,
     );
   }
 
