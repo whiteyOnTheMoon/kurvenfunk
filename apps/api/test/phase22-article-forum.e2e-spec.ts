@@ -89,7 +89,9 @@ describe('Phase 22.223 – shared article/forum discussion uses one canonical Co
   });
 
   it('publishes only genuine visible articles through the forum discovery source', async () => {
-    const response = await request(app.getHttpServer()).get('/api/v1/articles?limit=100').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/articles?limit=100')
+      .expect(200);
     const payload = dataOf<{ items: Array<{ id: string; slug: string }> }>(response);
     const ownArticles = payload.items.filter((article) => article.slug.startsWith(prefix));
     expect(ownArticles).toEqual([{ id: publishedId, slug: slugs.published }]);
@@ -115,14 +117,20 @@ describe('Phase 22.223 – shared article/forum discussion uses one canonical Co
 
   it('never exposes drafts, scheduled, archived or deleted articles in the discussion route source', async () => {
     for (const slug of [slugs.draft, slugs.scheduled, slugs.archived, slugs.deleted]) {
-      await request(app.getHttpServer()).get('/api/v1/articles/by-slug/' + slug).expect(404);
+      await request(app.getHttpServer())
+        .get('/api/v1/articles/by-slug/' + slug)
+        .expect(404);
     }
   });
 
   it('does not create a parallel Thread/Post when resolving or reading an article discussion', async () => {
     const before = await Promise.all([database.thread.count(), database.post.count()]);
-    await request(app.getHttpServer()).get('/api/v1/articles/by-slug/' + slugs.published).expect(200);
-    await request(app.getHttpServer()).get('/api/v1/articles/' + publishedId + '/comments').expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/by-slug/' + slugs.published)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/' + publishedId + '/comments')
+      .expect(200);
     const after = await Promise.all([database.thread.count(), database.post.count()]);
     expect(after).toEqual(before);
   });
@@ -132,8 +140,12 @@ describe('Phase 22.223 – shared article/forum discussion uses one canonical Co
       where: { id: publishedId },
       data: { status: 'ARCHIVED', archivedAt: new Date() },
     });
-    await request(app.getHttpServer()).get('/api/v1/articles/by-slug/' + slugs.published).expect(404);
-    const response = await request(app.getHttpServer()).get('/api/v1/articles?limit=100').expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/articles/by-slug/' + slugs.published)
+      .expect(404);
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/articles?limit=100')
+      .expect(200);
     const payload = dataOf<{ items: Array<{ id: string }> }>(response);
     expect(payload.items.some((row) => row.id === publishedId)).toBe(false);
     expect(await database.comment.count({ where: { articleId: publishedId } })).toBe(1);

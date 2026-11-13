@@ -70,17 +70,23 @@ export function ArticleDiscussionDirectory({ apiUrl }: { apiUrl: string }) {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link href="/forum" className={styles.backLink}>Zum Forum</Link>
+        <Link href="/forum" className={styles.backLink}>
+          Zum Forum
+        </Link>
         <p className={styles.eyebrow}>Community · Artikel</p>
         <h1>Artikel-Diskussionen</h1>
         <p>
-          Diskutiere aktuelle Artikel zusammen mit allen, die direkt beim Artikel kommentieren.
-          Es gibt nur einen gemeinsamen Kommentarverlauf – keinen zweiten Forenthread.
+          Diskutiere aktuelle Artikel zusammen mit allen, die direkt beim Artikel kommentieren. Es
+          gibt nur einen gemeinsamen Kommentarverlauf – keinen zweiten Forenthread.
         </p>
       </header>
 
       <section aria-label="Veröffentlichte Artikel">
-        {loading ? <p role="status" className={styles.notice}>Artikel werden geladen …</p> : null}
+        {loading ? (
+          <p role="status" className={styles.notice}>
+            Artikel werden geladen …
+          </p>
+        ) : null}
         {error ? (
           <p role="alert" className={styles.notice}>
             Artikel-Diskussionen sind derzeit nicht erreichbar.
@@ -94,7 +100,8 @@ export function ArticleDiscussionDirectory({ apiUrl }: { apiUrl: string }) {
             {articles.map((article) => (
               <li key={article.id} className={styles.articleCard}>
                 <span className={styles.date}>
-                  Veröffentlicht am <time dateTime={article.publishedAt}>{publishedDate(article.publishedAt)}</time>
+                  Veröffentlicht am{' '}
+                  <time dateTime={article.publishedAt}>{publishedDate(article.publishedAt)}</time>
                 </span>
                 <h2>
                   <Link href={'/forum/artikel/' + encodeURIComponent(article.slug)}>
@@ -102,7 +109,10 @@ export function ArticleDiscussionDirectory({ apiUrl }: { apiUrl: string }) {
                   </Link>
                 </h2>
                 {article.lead ? <p>{article.lead}</p> : null}
-                <Link href={'/forum/artikel/' + encodeURIComponent(article.slug)} className={styles.discussLink}>
+                <Link
+                  href={'/forum/artikel/' + encodeURIComponent(article.slug)}
+                  className={styles.discussLink}
+                >
                   Zur gemeinsamen Diskussion
                 </Link>
               </li>

@@ -33,7 +33,11 @@ describe('22.223 published article discussion directory', () => {
     });
 
     const controller = new AbortController();
-    const first = await fetchArticleDiscussionPage('https://api.example.test/', undefined, controller.signal);
+    const first = await fetchArticleDiscussionPage(
+      'https://api.example.test/',
+      undefined,
+      controller.signal,
+    );
     const more = await fetchArticleDiscussionPage('https://api.example.test/', 'opaque:cursor');
 
     assert.deepEqual(first.items, [published]);
@@ -50,36 +54,47 @@ describe('22.223 published article discussion directory', () => {
 
   it('fails closed for network failures and invalid pages rather than inventing discussions', async (t) => {
     t.mock.method(globalThis, 'fetch', async () => ({ ok: false }));
-    await assert.rejects(fetchArticleDiscussionPage('https://api.example.test'), /ARTICLE_DISCUSSIONS_UNAVAILABLE/);
+    await assert.rejects(
+      fetchArticleDiscussionPage('https://api.example.test'),
+      /ARTICLE_DISCUSSIONS_UNAVAILABLE/,
+    );
     assert.throws(() => parseArticleDiscussionPage({}), /ARTICLE_DISCUSSIONS_INVALID/);
     assert.throws(
-      () => parseArticleDiscussionPage({
-        data: { items: [published], pagination: { hasNextPage: true, nextCursor: null } },
-      }),
+      () =>
+        parseArticleDiscussionPage({
+          data: { items: [published], pagination: { hasNextPage: true, nextCursor: null } },
+        }),
       /ARTICLE_DISCUSSIONS_INVALID/,
     );
     assert.throws(
-      () => parseArticleDiscussionPage({
-        data: {
-          items: [{ ...published, publishedAt: 'not-a-date' }],
-          pagination: { hasNextPage: false, nextCursor: null },
-        },
-      }),
+      () =>
+        parseArticleDiscussionPage({
+          data: {
+            items: [{ ...published, publishedAt: 'not-a-date' }],
+            pagination: { hasNextPage: false, nextCursor: null },
+          },
+        }),
       /ARTICLE_DISCUSSIONS_INVALID/,
     );
     assert.throws(
-      () => parseArticleDiscussionPage({
-        data: {
-          items: [{ ...published, title: '' }],
-          pagination: { hasNextPage: false, nextCursor: null },
-        },
-      }),
+      () =>
+        parseArticleDiscussionPage({
+          data: {
+            items: [{ ...published, title: '' }],
+            pagination: { hasNextPage: false, nextCursor: null },
+          },
+        }),
       /ARTICLE_DISCUSSIONS_INVALID/,
     );
   });
 
   it('merges cursor pages without duplicate article/discussion IDs', () => {
-    const second = { ...published, id: 'second', slug: 'zweiter-artikel', title: 'Zweiter Artikel' };
+    const second = {
+      ...published,
+      id: 'second',
+      slug: 'zweiter-artikel',
+      title: 'Zweiter Artikel',
+    };
     assert.deepEqual(
       mergeArticleDiscussionPages([published], [published, second, second]).map((row) => row.id),
       [published.id, 'second'],
@@ -89,14 +104,20 @@ describe('22.223 published article discussion directory', () => {
 
 describe('22.223 one canonical article comment discussion', () => {
   it('reads the unchanged article ID and visible comment count from published detail', () => {
-    assert.deepEqual(parseArticleDiscussionDetail({
-      data: { ...published, _count: { comments: 7 } },
-    }), { ...published, _count: { comments: 7 } });
+    assert.deepEqual(
+      parseArticleDiscussionDetail({
+        data: { ...published, _count: { comments: 7 } },
+      }),
+      { ...published, _count: { comments: 7 } },
+    );
   });
 
   it('rejects missing/invalid count and unpublished-style absent detail', () => {
     assert.throws(() => parseArticleDiscussionDetail({ data: null }), /ARTICLE_DISCUSSION_INVALID/);
-    assert.throws(() => parseArticleDiscussionDetail({ data: published }), /ARTICLE_DISCUSSION_INVALID/);
+    assert.throws(
+      () => parseArticleDiscussionDetail({ data: published }),
+      /ARTICLE_DISCUSSION_INVALID/,
+    );
     assert.throws(
       () => parseArticleDiscussionDetail({ data: { ...published, _count: { comments: -1 } } }),
       /ARTICLE_DISCUSSION_INVALID/,

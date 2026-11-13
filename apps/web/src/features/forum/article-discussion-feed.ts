@@ -74,10 +74,13 @@ export async function fetchArticleDiscussionPage(
 ): Promise<ArticleDiscussionPage> {
   const params = new URLSearchParams({ limit: '12' });
   if (cursor) params.set('cursor', cursor);
-  const response = await fetch(apiUrl.replace(/\/$/, '') + '/api/v1/articles?' + params.toString(), {
-    cache: 'no-store',
-    signal,
-  });
+  const response = await fetch(
+    apiUrl.replace(/\/$/, '') + '/api/v1/articles?' + params.toString(),
+    {
+      cache: 'no-store',
+      signal,
+    },
+  );
   if (!response.ok) throw new Error('ARTICLE_DISCUSSIONS_UNAVAILABLE');
   return parseArticleDiscussionPage(await response.json());
 }

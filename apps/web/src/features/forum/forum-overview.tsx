@@ -162,8 +162,13 @@ export function ForumOverview({ apiUrl, categorySlug }: ForumOverviewProps) {
       {!categorySlug ? (
         <section className={styles.category} aria-label="Artikel-Diskussionen">
           <div className={styles.categoryHeader}>
-            <h2><Link href="/forum/artikel">Artikel-Diskussionen</Link></h2>
-            <p>Gemeinsam zu veröffentlichten Artikeln diskutieren – dieselben Kommentare wie beim Artikel.</p>
+            <h2>
+              <Link href="/forum/artikel">Artikel-Diskussionen</Link>
+            </h2>
+            <p>
+              Gemeinsam zu veröffentlichten Artikeln diskutieren – dieselben Kommentare wie beim
+              Artikel.
+            </p>
             <Link href="/forum/artikel">Aktuelle Artikel-Diskussionen ansehen</Link>
           </div>
         </section>

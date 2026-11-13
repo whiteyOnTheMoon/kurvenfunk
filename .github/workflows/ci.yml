@@ -59,10 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: |
-          pnpm exec prettier --write apps/api/test/phase22-article-forum.e2e-spec.ts apps/web/src/features/articles/article-discussion.tsx apps/web/src/features/forum/article-discussion-directory.tsx apps/web/src/features/forum/article-discussion-feed.spec.mjs apps/web/src/features/forum/article-discussion-feed.ts apps/web/src/features/forum/article-discussion-navigation.spec.mjs apps/web/src/features/forum/forum-overview.tsx
-          git diff -- apps/api/test/phase22-article-forum.e2e-spec.ts apps/web/src/features/articles/article-discussion.tsx apps/web/src/features/forum/article-discussion-directory.tsx apps/web/src/features/forum/article-discussion-feed.spec.mjs apps/web/src/features/forum/article-discussion-feed.ts apps/web/src/features/forum/article-discussion-navigation.spec.mjs apps/web/src/features/forum/forum-overview.tsx
-          git diff --exit-code
+        run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |

@@ -29,7 +29,10 @@ describe('22.223 article/forum single-discussion integration', () => {
     assert.match(article, /articleId=\{article.id\}/);
     assert.match(detailPage, /articleId=\{article.id\}/);
     assert.match(detailPage, /<ArticleDiscussion/);
-    assert.doesNotMatch(detailPage + listingPage + directory, /createThread|createPost|\/threads\//);
+    assert.doesNotMatch(
+      detailPage + listingPage + directory,
+      /createThread|createPost|\/threads\//,
+    );
   });
 
   it('fails closed on hidden/unpublished article and does not leak SEO duplicates', () => {

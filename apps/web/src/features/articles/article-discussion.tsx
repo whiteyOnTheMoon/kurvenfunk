@@ -26,9 +26,7 @@ export function ArticleDiscussion({
       <header>
         <span className={styles.eyebrow}>Community</span>
         <h2>Diskussion</h2>
-        <p>
-          Alle Kommentare zu diesem Artikel stehen hier und im Forum in derselben Diskussion.
-        </p>
+        <p>Alle Kommentare zu diesem Artikel stehen hier und im Forum in derselben Diskussion.</p>
         {inForum ? (
           <Link href={'/artikel/' + encodeURIComponent(articleSlug) + '#diskussion'}>
             Zum Artikel
