@@ -340,6 +340,20 @@
   border-bottom: 1px solid var(--kf-border);
 }
 
+.pinControls input {
+  box-sizing: border-box;
+  display: block;
+  width: min(100%, 340px);
+  min-width: 0;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--kf-border);
+  border-radius: var(--kf-radius-lg);
+  background: var(--kf-surface);
+  color: var(--kf-text);
+  font: inherit;
+}
+
 .pinControls button {
   padding: 10px 16px;
   border: 1px solid var(--kf-border);

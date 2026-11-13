@@ -3,6 +3,8 @@ import {
   createForumReplySchema,
   createForumThreadSchema,
   setForumReadPositionSchema,
+  lockForumThreadSchema,
+  type LockForumThreadInput,
   type SetForumReadPositionInput,
   type CreateForumReplyInput,
   type CreateForumThreadInput,
@@ -141,6 +143,38 @@ export class ForumThreadsController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.threadsService.setThreadPinned(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      false,
+    );
+  }
+
+  @Put(':threadSlug/lock')
+  @RequirePermissions(PERMISSIONS.THREAD_LOCK)
+  lockThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(lockForumThreadSchema)) input: LockForumThreadInput,
+  ) {
+    return this.threadsService.setThreadLocked(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      true,
+      input.reason,
+    );
+  }
+
+  @Delete(':threadSlug/lock')
+  @RequirePermissions(PERMISSIONS.THREAD_LOCK)
+  unlockThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.threadsService.setThreadLocked(
       forumSlug,
       threadSlug,
       request.user!.kurvenfunkUserId,

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
+import { ThreadLockToggle } from './thread-lock-toggle';
 import { ThreadPinToggle } from './thread-pin-toggle';
 import { ThreadReplyComposer } from './thread-reply-composer';
 import { ThreadSubscriptionToggle } from './thread-subscription-toggle';
@@ -214,6 +215,17 @@ export function ClubThreadDetail({
         </p>
       ) : (
         <section className={styles.threadDetail} aria-label="Beiträge">
+          <ThreadLockToggle
+            key={detail.thread.id + '-lock'}
+            apiUrl={apiUrl}
+            forumSlug={detail.thread.forum.slug}
+            threadSlug={detail.thread.slug}
+            locked={detail.thread.status === 'LOCKED'}
+            onChanged={() => {
+              setReplyParent(undefined);
+              setRevision((value) => value + 1);
+            }}
+          />
           <ThreadPinToggle
             key={detail.thread.id + '-pin'}
             apiUrl={apiUrl}
