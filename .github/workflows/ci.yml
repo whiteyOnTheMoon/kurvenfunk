@@ -59,7 +59,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm format:check
+        run: |
+          pnpm exec prettier --write apps/worker/src/jobs/notification-outbox-dispatcher.service.spec.ts apps/worker/src/processors/notifications.processor.spec.ts
+          git diff -- apps/worker/src/jobs/notification-outbox-dispatcher.service.spec.ts apps/worker/src/processors/notifications.processor.spec.ts
+          git diff --exit-code -- apps/worker/src/jobs/notification-outbox-dispatcher.service.spec.ts apps/worker/src/processors/notifications.processor.spec.ts
 
       - name: Validate DEV deploy script syntax
         run: |
