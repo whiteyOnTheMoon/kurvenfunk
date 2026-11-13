@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import styles from './forum-overview.module.css';
 import { ThreadReplyComposer } from './thread-reply-composer';
@@ -31,6 +31,7 @@ interface PublicThreadDetail {
   };
   posts: PublicPost[];
   hasMorePosts: boolean;
+  nextPostCursor: string | null;
 }
 
 function isPublicThreadDetail(value: unknown): value is PublicThreadDetail {
@@ -56,7 +57,10 @@ function isPublicThreadDetail(value: unknown): value is PublicThreadDetail {
           : typeof entry.content === 'string')
       );
     }) &&
-    typeof detail.hasMorePosts === 'boolean'
+    typeof detail.hasMorePosts === 'boolean' &&
+    (detail.hasMorePosts
+      ? typeof detail.nextPostCursor === 'string' && detail.nextPostCursor.length > 0
+      : detail.nextPostCursor === null)
   );
 }
 
@@ -80,25 +84,29 @@ export function ClubThreadDetail({
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
+  const moreRequest = useRef<AbortController | null>(null);
   const [revision, setRevision] = useState(0);
   const [replyParent, setReplyParent] = useState<{
     id: string;
     sequenceNumber: number;
   }>();
 
+  const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent('verein-' + clubSlug)}/threads/${encodeURIComponent(threadSlug)}`;
+
   useEffect(() => {
     const controller = new AbortController();
+    moreRequest.current?.abort();
     async function load() {
       setLoading(true);
       setDetail(null);
       setNotFound(false);
       setError(false);
+      setMoreError(false);
+      setLoadingMore(false);
       try {
-        const forumSlug = 'verein-' + clubSlug;
-        const response = await fetch(
-          `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads/${encodeURIComponent(threadSlug)}`,
-          { cache: 'no-store', signal: controller.signal },
-        );
+        const response = await fetch(endpoint, { cache: 'no-store', signal: controller.signal });
         if (response.status === 404) {
           if (!controller.signal.aborted) setNotFound(true);
           return;
@@ -122,8 +130,53 @@ export function ClubThreadDetail({
     }
 
     void load();
-    return () => controller.abort();
-  }, [apiUrl, clubSlug, threadSlug, revision]);
+    return () => {
+      controller.abort();
+      moreRequest.current?.abort();
+    };
+  }, [endpoint, clubSlug, threadSlug, revision]);
+
+  async function loadMorePosts() {
+    if (!detail?.nextPostCursor || loadingMore) return;
+    const controller = new AbortController();
+    moreRequest.current = controller;
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      const response = await fetch(
+        `${endpoint}?cursor=${encodeURIComponent(detail.nextPostCursor)}`,
+        { cache: 'no-store', signal: controller.signal },
+      );
+      if (!response.ok) throw new Error('THREAD_POST_PAGE_FAILED');
+      const payload: unknown = await response.json();
+      const next = (payload as { data?: unknown }).data;
+      if (
+        !isPublicThreadDetail(next) ||
+        next.thread.id !== detail.thread.id ||
+        next.thread.slug !== threadSlug ||
+        next.thread.forum.club?.slug !== clubSlug
+      ) {
+        throw new Error('THREAD_POST_PAGE_INVALID');
+      }
+      if (!controller.signal.aborted) {
+        setDetail((previous) => {
+          if (!previous || previous.thread.id !== next.thread.id) return previous;
+          const ids = new Set(previous.posts.map((post) => post.id));
+          return {
+            ...next,
+            posts: [...previous.posts, ...next.posts.filter((post) => !ids.has(post.id))],
+          };
+        });
+      }
+    } catch {
+      if (!controller.signal.aborted) setMoreError(true);
+    } finally {
+      if (!controller.signal.aborted) {
+        moreRequest.current = null;
+        setLoadingMore(false);
+      }
+    }
+  }
 
   return (
     <main className={styles.page}>
@@ -197,11 +250,17 @@ export function ClubThreadDetail({
               ))}
             </ol>
           )}
-          {detail.hasMorePosts ? (
-            <p className={styles.empty}>
-              Weitere Beiträge sind vorhanden. Die vollständige Beitragsnavigation folgt. Neue
-              Antworten können deshalb noch außerhalb der sichtbaren Liste liegen.
-            </p>
+          {detail.nextPostCursor ? (
+            <div className={styles.paginationControls}>
+              {moreError ? (
+                <p role="alert">
+                  Weitere Beiträge konnten nicht geladen werden. Bitte erneut versuchen.
+                </p>
+              ) : null}
+              <button type="button" disabled={loadingMore} onClick={() => void loadMorePosts()}>
+                {loadingMore ? 'Weitere Beiträge werden geladen …' : 'Weitere Beiträge laden'}
+              </button>
+            </div>
           ) : null}
           {detail.thread.status === 'OPEN' ? (
             <ThreadReplyComposer
