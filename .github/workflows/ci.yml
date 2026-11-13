@@ -121,6 +121,7 @@ jobs:
           bash -n infrastructure/scripts/verify/dev-phase22-220-move-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-221-merge-readonly.sh
           bash -n infrastructure/scripts/verify/dev-phase22-222-reports-readonly.sh
+          bash -n infrastructure/scripts/verify/dev-phase22-223-article-forum-readonly.sh
           bash -n infrastructure/scripts/verify/dev-storage-cache-readonly.sh
           node --test infrastructure/scripts/verify/dev-storage-cache-readonly.test.mjs
           node --check infrastructure/scripts/verify/dev-minio-deep-readonly.mjs
@@ -363,6 +364,16 @@ jobs:
           set -Eeuo pipefail
           ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
             "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase22-222-reports-readonly.sh"
+
+      - name: Verify phase 22 shared article/forum discussion routes (read-only)
+        env:
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/kurvenfunk_dev -o BatchMode=yes "$SSH_USER@$SSH_HOST" \
+            "cd ~/www/kurvenfunk && EXPECTED_COMMIT='$EXPECTED_COMMIT' bash ./infrastructure/scripts/verify/dev-phase22-223-article-forum-readonly.sh"
 
       - name: Inspect DEV Phase 17 test account state (read-only)
         env:

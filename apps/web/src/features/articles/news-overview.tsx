@@ -91,6 +91,9 @@ function ArticleCard({ article }: { article: Article }) {
       <Link href={`/artikel/${article.slug}`} className={styles.readMore}>
         Weiterlesen →
       </Link>
+      <Link href={'/forum/artikel/' + encodeURIComponent(article.slug)} className={styles.readMore}>
+        Diskutieren
+      </Link>
     </article>
   );
 }
