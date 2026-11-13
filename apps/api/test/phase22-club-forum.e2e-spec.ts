@@ -1488,11 +1488,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await request(app.getHttpServer()).put(url).send({}).expect(401);
       await request(app.getHttpServer()).delete(url).expect(401);
       for (const auth of [member, limited]) {
-        await request(app.getHttpServer())
-          .put(url)
-          .set('Authorization', auth)
-          .send({})
-          .expect(403);
+        await request(app.getHttpServer()).put(url).set('Authorization', auth).send({}).expect(403);
         await request(app.getHttpServer()).delete(url).set('Authorization', auth).expect(403);
       }
       await database.user.update({
@@ -1511,7 +1507,11 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
           data: { onboardingCompleted: true },
         });
       }
-      for (const body of [{ reason: '' }, { reason: 'bad' }, { reason: 'Good reason', actorUserId: moderatorId }]) {
+      for (const body of [
+        { reason: '' },
+        { reason: 'bad' },
+        { reason: 'Good reason', actorUserId: moderatorId },
+      ]) {
         await request(app.getHttpServer())
           .put(url)
           .set('Authorization', moderator)
@@ -1522,14 +1522,8 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
 
       const reason = 'Wiederholte Regelverletzungen im Thema';
       const writes = await Promise.all([
-        request(app.getHttpServer())
-          .put(url)
-          .set('Authorization', moderator)
-          .send({ reason }),
-        request(app.getHttpServer())
-          .put(url)
-          .set('Authorization', moderator)
-          .send({ reason }),
+        request(app.getHttpServer()).put(url).set('Authorization', moderator).send({ reason }),
+        request(app.getHttpServer()).put(url).set('Authorization', moderator).send({ reason }),
       ]);
       expect(writes.map((item) => item.status)).toEqual([200, 200]);
       expect(writes.every((item) => dataOf<{ locked: boolean }>(item).locked)).toBe(true);
@@ -1571,9 +1565,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         .set('Authorization', member)
         .send({ body: 'Eine gesperrte Diskussion bekommt keine weitere Antwort.' })
         .expect(409);
-      expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(
-        thread.postCount,
-      );
+      expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(thread.postCount);
       expect(await database.auditLog.count({ where: auditWhere })).toBe(1);
 
       const unlocks = await Promise.all([
@@ -1626,10 +1618,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
           .set('Authorization', moderator)
           .send({})
           .expect(404);
-        await request(app.getHttpServer())
-          .delete(url)
-          .set('Authorization', moderator)
-          .expect(404);
+        await request(app.getHttpServer()).delete(url).set('Authorization', moderator).expect(404);
       } finally {
         await database.forumCategory.update({
           where: { id: categoryId! },
@@ -1650,5 +1639,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       await database.auditLog.deleteMany({ where: auditWhere });
     }
   });
-
 });
