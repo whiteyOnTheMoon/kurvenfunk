@@ -90,7 +90,9 @@ export function ThreadLockToggle({
       <span role="status">
         {locked ? 'Antworten sind derzeit gesperrt.' : 'Antworten sind erlaubt.'}
       </span>
-      {invalidReason ? <p role="alert">Ein Moderationsgrund muss mindestens 5 Zeichen haben.</p> : null}
+      {invalidReason ? (
+        <p role="alert">Ein Moderationsgrund muss mindestens 5 Zeichen haben.</p>
+      ) : null}
       {error ? (
         <p role="alert">Der Sperrstatus konnte nicht geändert werden. Bitte erneut versuchen.</p>
       ) : null}
