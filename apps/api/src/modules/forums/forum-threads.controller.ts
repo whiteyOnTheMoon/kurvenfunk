@@ -16,6 +16,11 @@ export class ForumThreadsController {
     return this.threadsService.listPublicThreads(forumSlug);
   }
 
+  @Get(':threadSlug')
+  findPublicThread(@Param('forumSlug') forumSlug: string, @Param('threadSlug') threadSlug: string) {
+    return this.threadsService.findPublicThread(forumSlug, threadSlug);
+  }
+
   @Post()
   @RequirePermissions(PERMISSIONS.THREAD_CREATE)
   createThread(

@@ -8,7 +8,7 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 | --- | --- | --- | --- |
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
 | 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
-| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: erster API-/Vereinsforum-UI-Slice in Arbeit; CI noch offen**; 212–213 ausstehend |
+| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: API und Web-Composer technisch in DEV integriert, Push-CI #43343696724 PASS**; **212: öffentliche Detail-/Postansicht in Arbeit**; 213 ausstehend |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | Ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
@@ -52,13 +52,22 @@ Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - Explizite DEV-Marker: Kategorien `200` mit gültiger `data`-Liste, unbekannte Kategorie `404`, Forum-Startseite `200`, unbekannter Verein `404`, nicht vertrauenswürdiger Schreibzugriff `503 fail-closed`, Vereinsseite `200`; `DEV_PHASE22_210_READONLY_RESULT=PASS`.
 - Der Deploy-Erfolg beweist **nicht** die noch ausstehende echte Tunnel-Admin-Provisionierung, Role-/Audit-Abnahme oder manuelle Desktop-/Mobilprüfung. Aufgabe 210 bleibt daher offen, Details in [Issue #160](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/160).
 
-## 22.211 – Threads (erster vertikaler Slice, noch nicht abgenommen)
+## 22.211 – Threads (technisch integriert, manuelle Abnahme offen)
 
 - `GET /api/v1/forums/by-slug/:forumSlug/threads` liefert eine öffentliche, maximal 20 Einträge umfassende Übersicht und `hasMore`. Öffentlich unsichtbare/inaktive Foren, Vereine oder Kategorien erhalten 404; nur offene/gesperrte, nicht gemergte Threads werden gezeigt. Die vollständige Cursor-Paginierung bleibt Aufgabe 214.
 - `POST /api/v1/forums/by-slug/:forumSlug/threads` verlangt ein authentifiziertes, aktives und vollständig onboardetes Mitglied mit `thread.create`; LIMITED/BANNED und anonyme Requests werden abgewiesen. Eingaben werden strikt validiert; eine deaktivierte Thread-Erstellung liefert 409.
 - Der erste Beitrag wird in derselben PostgreSQL-Transaktion wie der Thread angelegt; der Thread erhält `postCount=1`, `lastPostSequenceNumber=1`, `lastPostId` und `lastPostAt`. Die bestehende Redis-gestützte Spam-Schutzreservierung wird übernommen und bei Schreibfehlern freigegeben.
-- Auf der Vereinsforum-Seite werden ausschließlich tatsächlich vorhandene Threads als Übersicht gezeigt; keine erfundenen Inhalte, keine Links zu noch fehlenden Detailseiten. Ein nachgelagerter 22.211-Web-Slice ergänzt einen validierten Schreibdialog für ACTIVE/onboardete Mitglieder und aktualisiert die Übersicht nach erfolgreicher Erstellung. Thread-/Post-Detailansichten bleiben für 212/213 vorgesehen.
-- Isolierte HTTP-/DB-Tests verwenden nur kurzlebige lokale PostgreSQL-/Redis-Testumgebungen und räumen ihre Thread-/Post-Testdaten wieder weg; keinerlei Seeding in DEV. **Nicht als fertig markieren, bevor PR-CI und Merge-Push-/DEV-CI nachweislich grün sind.**
+- Auf der Vereinsforum-Seite werden ausschließlich tatsächlich vorhandene Threads als Übersicht gezeigt; keine erfundenen Inhalte. Der 22.211-Web-Slice ergänzt einen validierten Schreibdialog für ACTIVE/onboardete Mitglieder und aktualisiert die Übersicht nach erfolgreicher Erstellung. 22.212 ergänzt nachträglich Links auf echte, öffentliche Detailseiten; Antworten bleiben 213 vorbehalten.
+- Isolierte HTTP-/DB-Tests verwenden nur kurzlebige lokale PostgreSQL-/Redis-Testumgebungen und räumen ihre Thread-/Post-Testdaten wieder weg; keinerlei Seeding in DEV. **Nachweis 211:** [Merge-Push-/DEV-CI #43343696724](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43343696724) completed/success nach [Docker-Fix PR #171](https://github.com/whiteyOnTheMoon/kurvenfunk/pull/171). Manuelle Browser- und Accountabnahme weiter offen.
+
+## 22.212 – Thread-Detailseiten und Beiträge (read-only Slice)
+
+- `GET /api/v1/forums/by-slug/:forumSlug/threads/:threadSlug` liefert öffentliche Details nur für `OPEN`/`LOCKED`, nicht gemergte Threads in aktiven Foren und Kategorien bzw. für aktive Vereine. Nicht vorhandene, archivierte oder versteckte Themen liefern 404. Keine neuen DB-Tabellen oder Schreibzugriffe.
+- Das Ergebnis enthält Thread-Metadaten, die ersten **maximal 30** Posts in `sequenceNumber`-Reihenfolge und `hasMorePosts` als expliziten Hinweis auf weitere Beiträge. Cursor-/Sequenz-Paginierung bleibt Auftrag 214.
+- Beiträge mit `deletedAt` werden als gelöschte Platzhalter serialisiert. **Weder Inhalt noch Autorenidentität** oder Änderungsinformationen dürfen öffentlich ausgeliefert werden; auch spätere Replies dürfen diesen Schutz nicht aushebeln.
+- Im Vereinsforum führen erst jetzt tatsächlich vorhandene Thread-Slugs zu `/forum/verein/:slug/thema/:threadSlug`; die mobile Ansicht zeigt Beiträge als **escaped Text** (kein HTML/Markdown-Rendering), passende Lade-/404-/Fehlerzustände und einen Hinweis, wenn weitere Beiträge folgen.
+- Die isolierten PostgreSQL/Redis-HTTP-E2E-Tests prüfen echte Post-Inhalte, Redaction, Sichtbarkeit, 404 bei deaktivierten Kategorien und die Begrenzung. Ein zusätzlicher **rein lesender** DEV-Smoketest prüft unbekanntes Thema = 404 und die Next.js-Route = 200 ohne Seeding; ein positiver Test mit realem aktiven Verein erfordert nach wie vor echte DEV-Daten und manuelle Browserabnahme.
+- Der erste Slice ist **nicht abgeschlossen**, solange PR-CI mit Web-Docker-Build und die anschließende Merge-Push-/DEV-CI nicht beide vollständig grün sind. Schreibrechte und Antworten folgen gesondert in 22.213.
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 

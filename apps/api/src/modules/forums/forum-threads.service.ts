@@ -12,6 +12,7 @@ import type { CreateForumThreadInput } from '@kurvenfunk/validation';
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 
 const THREAD_PREVIEW_LIMIT = 20;
+const POST_DETAIL_LIMIT = 30;
 
 const publicThreadSelect = {
   id: true,
@@ -83,6 +84,67 @@ export class ForumThreadsService implements OnModuleDestroy {
     return {
       items: rows.slice(0, THREAD_PREVIEW_LIMIT),
       hasMore: rows.length > THREAD_PREVIEW_LIMIT,
+    };
+  }
+
+  /** Public detail is bounded until phase 22.214 introduces post pagination. */
+  async findPublicThread(forumSlug: string, threadSlug: string) {
+    const thread = await this.database.thread.findFirst({
+      where: {
+        slug: threadSlug,
+        status: { in: ['OPEN', 'LOCKED'] },
+        mergedIntoThreadId: null,
+        forum: { is: visibleForumWhere(forumSlug) },
+      },
+      select: {
+        ...publicThreadSelect,
+        forum: {
+          select: {
+            name: true,
+            slug: true,
+            club: { select: { name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    if (!thread) {
+      throw new NotFoundException({
+        code: 'THREAD_NOT_FOUND',
+        message: 'Dieses Diskussionsthema ist nicht verfügbar.',
+      });
+    }
+
+    const rows = await this.database.post.findMany({
+      where: { threadId: thread.id },
+      orderBy: [{ sequenceNumber: 'asc' }, { id: 'asc' }],
+      take: POST_DETAIL_LIMIT + 1,
+      select: {
+        id: true,
+        parentPostId: true,
+        sequenceNumber: true,
+        content: true,
+        createdAt: true,
+        editedAt: true,
+        deletedAt: true,
+        author: { select: { id: true, nickname: true } },
+      },
+    });
+
+    return {
+      thread,
+      posts: rows.slice(0, POST_DETAIL_LIMIT).map((post) => ({
+        id: post.id,
+        parentPostId: post.parentPostId,
+        sequenceNumber: post.sequenceNumber,
+        createdAt: post.createdAt,
+        editedAt: post.deletedAt ? null : post.editedAt,
+        deleted: post.deletedAt !== null,
+        // A deleted post must never leak its original text or author identity.
+        content: post.deletedAt ? null : post.content,
+        author: post.deletedAt ? null : post.author,
+      })),
+      hasMorePosts: rows.length > POST_DETAIL_LIMIT,
     };
   }
 

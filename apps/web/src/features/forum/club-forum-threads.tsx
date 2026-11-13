@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import styles from './forum-overview.module.css';
@@ -7,6 +8,7 @@ import styles from './forum-overview.module.css';
 interface ThreadSummary {
   id: string;
   title: string;
+  slug: string;
   status: 'OPEN' | 'LOCKED';
   postCount: number;
   author: { id: string; nickname: string | null };
@@ -18,6 +20,7 @@ function isThreadSummary(value: unknown): value is ThreadSummary {
   return (
     typeof row.id === 'string' &&
     typeof row.title === 'string' &&
+    typeof row.slug === 'string' &&
     (row.status === 'OPEN' || row.status === 'LOCKED') &&
     typeof row.postCount === 'number' &&
     typeof row.author?.id === 'string'
@@ -27,10 +30,12 @@ function isThreadSummary(value: unknown): value is ThreadSummary {
 export function ClubForumThreads({
   apiUrl,
   forumSlug,
+  clubSlug,
   revision,
 }: {
   apiUrl: string;
   forumSlug: string;
+  clubSlug: string;
   revision: number;
 }) {
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -98,7 +103,13 @@ export function ClubForumThreads({
       <ul className={styles.forumList}>
         {threads.map((thread) => (
           <li key={thread.id} className={styles.forumItem}>
-            <strong>{thread.title}</strong>
+            <strong>
+              <Link
+                href={`/forum/verein/${encodeURIComponent(clubSlug)}/thema/${encodeURIComponent(thread.slug)}`}
+              >
+                {thread.title}
+              </Link>
+            </strong>
             <span>
               {thread.author.nickname ?? 'Mitglied'}
               {' · '}
