@@ -7,7 +7,11 @@ import {
   NotFoundException,
   type OnModuleDestroy,
 } from '@nestjs/common';
-import type { CreateForumReplyInput, CreateForumThreadInput, MoveForumThreadInput } from '@kurvenfunk/validation';
+import type {
+  CreateForumReplyInput,
+  CreateForumThreadInput,
+  MoveForumThreadInput,
+} from '@kurvenfunk/validation';
 
 import { CommentSpamProtectionService } from '../comments/comment-spam-protection.service';
 import {
@@ -472,7 +476,12 @@ export class ForumThreadsService implements OnModuleDestroy {
         return { moved: true, threadId: source.id, threadSlug: threadSlugValue, forum };
       });
     } catch (error) {
-      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException({
           code: 'THREAD_SLUG_CONFLICT',
           message: 'Im Zielforum existiert bereits ein Thema mit diesem Slug.',
