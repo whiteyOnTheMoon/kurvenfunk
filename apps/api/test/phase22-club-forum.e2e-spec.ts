@@ -675,6 +675,50 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
     );
   });
 
+
+  it('22.213 prevents writes to archived, merged and hidden-category topics', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target = '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' +
+      thread.slug + '/posts';
+    const auth = 'Bearer ' + (await tokenFor(subjects.replyC));
+    const before = await database.post.count({ where: { threadId: threads[0] } });
+
+    for (const status of ['ARCHIVED', 'MERGED'] as const) {
+      await database.thread.update({ where: { id: threads[0] }, data: { status } });
+      try {
+        await request(app.getHttpServer())
+          .post(target)
+          .set('Authorization', auth)
+          .send({ body: 'Unsichtbarer Thread ' + status + ' ' + marker })
+          .expect(404);
+      } finally {
+        await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+      }
+    }
+
+    await database.forumCategory.update({
+      where: { id: categoryId! },
+      data: { active: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .post(target)
+        .set('Authorization', auth)
+        .send({ body: 'Unsichtbare Kategorie ' + marker })
+        .expect(404);
+    } finally {
+      await database.forumCategory.update({
+        where: { id: categoryId! },
+        data: { active: true },
+      });
+    }
+
+    expect(await database.post.count({ where: { threadId: threads[0] } })).toBe(before);
+  });
+
   it('22.213 allocates different sequences for concurrent authors', async () => {
     const thread = await database.thread.findUniqueOrThrow({
       where: { id: threads[0] },
