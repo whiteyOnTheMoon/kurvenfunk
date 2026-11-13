@@ -75,12 +75,7 @@ export class ForumThreadsService implements OnModuleDestroy {
         status: { in: ['OPEN', 'LOCKED'] },
         mergedIntoThreadId: null,
       },
-      orderBy: [
-        { pinnedAt: 'desc' },
-        { lastPostAt: 'desc' },
-        { createdAt: 'desc' },
-        { id: 'asc' },
-      ],
+      orderBy: [{ pinnedAt: 'desc' }, { lastPostAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
       take: THREAD_PREVIEW_LIMIT + 1,
       select: publicThreadSelect,
     });
