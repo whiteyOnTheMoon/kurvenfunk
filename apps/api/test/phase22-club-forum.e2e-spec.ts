@@ -1779,10 +1779,14 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         .set('Authorization', moderator)
         .send({ targetForumId: targetForum })
         .expect(409);
-      expect((await database.thread.findUniqueOrThrow({
-        where: { id: sourceThread.id },
-        select: { forumId: true },
-      })).forumId).toBe(sourceThread.forumId);
+      expect(
+        (
+          await database.thread.findUniqueOrThrow({
+            where: { id: sourceThread.id },
+            select: { forumId: true },
+          })
+        ).forumId,
+      ).toBe(sourceThread.forumId);
       expect(await database.auditLog.count({ where: auditWhere })).toBe(0);
       await database.thread.delete({ where: { id: duplicateId } });
 
@@ -1856,18 +1860,22 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
         lastPostSequenceNumber: sourceThread.lastPostSequenceNumber,
         pinnedByUserId: null,
       });
-      expect(dataOf<{ subscribed: boolean }>(
-        await request(app.getHttpServer())
-          .get(destination + '/subscription')
-          .set('Authorization', member)
-          .expect(200),
-      ).subscribed).toBe(true);
-      expect(dataOf<{ lastReadPostId: string | null }>(
-        await request(app.getHttpServer())
-          .get(destination + '/unread')
-          .set('Authorization', member)
-          .expect(200),
-      ).lastReadPostId).toBe(firstPost.id);
+      expect(
+        dataOf<{ subscribed: boolean }>(
+          await request(app.getHttpServer())
+            .get(destination + '/subscription')
+            .set('Authorization', member)
+            .expect(200),
+        ).subscribed,
+      ).toBe(true);
+      expect(
+        dataOf<{ lastReadPostId: string | null }>(
+          await request(app.getHttpServer())
+            .get(destination + '/unread')
+            .set('Authorization', member)
+            .expect(200),
+        ).lastReadPostId,
+      ).toBe(firstPost.id);
 
       const back = dataOf<{ moved: boolean; forum: { id: string } }>(
         await request(app.getHttpServer())
@@ -1927,5 +1935,4 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       });
     }
   });
-
 });
