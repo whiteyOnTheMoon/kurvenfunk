@@ -1022,7 +1022,7 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
       .expect(200);
     expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('subscribed');
-    expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain(firstUser);
+    expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('subscriptions');
     expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(2);
 
     for (const index of [0, 1]) {
