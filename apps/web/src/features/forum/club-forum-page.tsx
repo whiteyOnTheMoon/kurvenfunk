@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { ClubForumThreads } from './club-forum-threads';
 import styles from './forum-overview.module.css';
 
 interface ClubForum {
@@ -102,11 +103,10 @@ export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: 
               <Link href={`/vereine/${forum.club.slug}`}>Vereinsseite</Link>
             </p>
           </div>
-          <p className={styles.empty}>
-            {forum.threadCreationEnabled
-              ? 'Noch keine Diskussionsthemen vorhanden. Die Thread-Funktion wird in Phase 22.211 freigeschaltet.'
-              : 'Dieses Forum ist derzeit nur lesbar.'}
-          </p>
+          {!forum.threadCreationEnabled ? (
+            <p className={styles.empty}>Dieses Forum ist derzeit nur lesbar.</p>
+          ) : null}
+          <ClubForumThreads apiUrl={apiUrl} forumSlug={forum.slug} />
         </section>
       )}
     </div>
