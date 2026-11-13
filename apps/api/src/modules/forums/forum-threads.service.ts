@@ -99,7 +99,12 @@ export class ForumThreadsService implements OnModuleDestroy {
         mergedIntoThreadId: null,
         ...(cursor ? { AND: [threadKeysetAfter(cursor)] } : {}),
       },
-      orderBy: [{ pinnedAt: 'desc' }, { lastPostAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+      orderBy: [
+        { pinnedAt: { sort: 'desc', nulls: 'last' } },
+        { lastPostAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+        { id: 'asc' },
+      ],
       take: THREAD_PAGE_SIZE + 1,
       select: publicThreadSelect,
     });
