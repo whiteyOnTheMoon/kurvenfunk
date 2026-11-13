@@ -1,14 +1,14 @@
 # Phase 22 – Forum (Masterplan 209–223)
 
-Stand: 11.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem DEV-Datenreset und Startseitenfix. **Vorherige Abnahmen bleiben offen, wo sie nicht ausdrücklich nachgewiesen sind.**
+Stand: 13.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem DEV-Datenreset und Startseitenfix. **Vorherige Abnahmen bleiben offen, wo sie nicht ausdrücklich nachgewiesen sind.**
 
 ## Aufgaben und Umsetzungsslices
 
 | Masterplan | Inhalt | Vorgehen | Nachweisstatus |
 | --- | --- | --- | --- |
 | 209 | Forenkategorien | Öffentliche aktive Kategorien, sortierte Unterforen, schreibgeschützte Leerliste bei sauberer DEV-Datenbank; rollenbasierte Verwaltung mit Audit | **Technisch in DEV geprüft** – Actions #43032913255: API 200, 0 Kategorien, anonymes Admin-Gate 401, Web 200 |
-| 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code in `develop` integriert (PR #158/#159), PR-CI #43076528691 PASS; DEV-Endabnahme offen (Issue #160)** |
-| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | Ausstehend |
+| 210 | Vereinsforen | Clubs referenzieren, Vereinsforen bei kontrollierter realer Club-Verwaltung zuordnen, idempotent und ohne Fakedaten | **Code und automatisches DEV-Read-only-Gate PASS** – Push-CI #43332986378, echter Tunnel-Adminflow/Mobile noch offen (#160) |
+| 211–213 | Threads, Posts, Replies | Status-/Onboarding-Permissions, atomare Eröffnung mit erstem Beitrag, Thread-Grenzen für Antworten | **211: erster API-/Vereinsforum-UI-Slice in Arbeit; CI noch offen**; 212–213 ausstehend |
 | 214–217 | Paginierung, Abos, Ungelesen, Leseposition | Stabile Cursor/Sequenzen und persönliche Read-States | Ausstehend |
 | 218–221 | Pin, Lock, Move, Merge | Moderatorenrechte, Audits, konsistente kanonische Thread-Identitäten | Ausstehend |
 | 222 | Forum-Reports | Anschluss an bestehendes Report-/Moderationssystem | Ausstehend |
@@ -41,10 +41,24 @@ Stand: 11.11.2026. Entwicklungsbasis: `develop` nach erfolgreich verifiziertem D
 - [Erster DEV-Push-Lauf #43075157506](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43075157506): nach PR-#159-Befund Deploy und Startseiten-/Kategorienprüfungen erfolgreich, Task-210-HTTP-Smoke **fehlgeschlagen** wegen falscher erwarteter 401 bei nicht vertrauenswürdigem localhost-POST.
 - [PR #159](https://github.com/whiteyOnTheMoon/kurvenfunk/pull/159) **gemergt** (Merge `8495ccc1df00829fce100c7f82d3df0abd00dffe`): rein lesender DEV-Smoke akzeptiert den sicherheitskorrekten **503 fail-closed** statt 401. Keine Schutzumgehung, keine DB-Mutation.
 - [PR-CI #43076528691](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43076528691) für #159: **completed/success**.
-- **Noch kein unabhängig verifizierter Gesamt-PASS des DEV-Push-Laufs nach #159**; keine Aussage über bestandene reale Tunnel-Admin-RBAC- und Mobilbrowser-Abnahme.
+- **Dieser historische Stand wurde inzwischen durch den grünen Merge-Push-Lauf #43332986378 überholt.** Die reale Tunnel-Admin-RBAC- und Mobilbrowser-Abnahme bleibt weiterhin offen.
 - Alle fehlenden Nachweise werden in [Issue #160](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/160) einzeln geführt.
 
-**Abnahme 210 bleibt offen**, bis die vollständige DEV-Deployment-/HTTP-Prüfung, ein realer Admin-Provisionierungsflow über den vertrauenswürdigen Tunnel und mobile Browserprüfungen nachweisbar erfolgreich sind.
+**Abnahme 210 bleibt offen**, bis der reale Admin-Provisionierungsflow über den vertrauenswürdigen Tunnel und mobile Browserprüfungen nachweisbar erfolgreich sind; der DEV-Deployment-/HTTP-Gate-PASS ist inzwischen oben dokumentiert.
+
+### Nachgewiesener DEV-Push-Stand 13.11.2026
+
+- [Merge-Push-CI #43332986378](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/43332986378) für Merge `8cd22e929c8ae658ff17f982193006ac2c639ac1`: **completed/success**, einschließlich DEV-Deploy, Startseite, Forenkategorien und APA-OTS-Read-only-Prüfung.
+- Explizite DEV-Marker: Kategorien `200` mit gültiger `data`-Liste, unbekannte Kategorie `404`, Forum-Startseite `200`, unbekannter Verein `404`, nicht vertrauenswürdiger Schreibzugriff `503 fail-closed`, Vereinsseite `200`; `DEV_PHASE22_210_READONLY_RESULT=PASS`.
+- Der Deploy-Erfolg beweist **nicht** die noch ausstehende echte Tunnel-Admin-Provisionierung, Role-/Audit-Abnahme oder manuelle Desktop-/Mobilprüfung. Aufgabe 210 bleibt daher offen, Details in [Issue #160](https://github.com/whiteyOnTheMoon/kurvenfunk/issues/160).
+
+## 22.211 – Threads (erster vertikaler Slice, noch nicht abgenommen)
+
+- `GET /api/v1/forums/by-slug/:forumSlug/threads` liefert eine öffentliche, maximal 20 Einträge umfassende Übersicht und `hasMore`. Öffentlich unsichtbare/inaktive Foren, Vereine oder Kategorien erhalten 404; nur offene/gesperrte, nicht gemergte Threads werden gezeigt. Die vollständige Cursor-Paginierung bleibt Aufgabe 214.
+- `POST /api/v1/forums/by-slug/:forumSlug/threads` verlangt ein authentifiziertes, aktives und vollständig onboardetes Mitglied mit `thread.create`; LIMITED/BANNED und anonyme Requests werden abgewiesen. Eingaben werden strikt validiert; eine deaktivierte Thread-Erstellung liefert 409.
+- Der erste Beitrag wird in derselben PostgreSQL-Transaktion wie der Thread angelegt; der Thread erhält `postCount=1`, `lastPostSequenceNumber=1`, `lastPostId` und `lastPostAt`. Die bestehende Redis-gestützte Spam-Schutzreservierung wird übernommen und bei Schreibfehlern freigegeben.
+- Auf der Vereinsforum-Seite werden ausschließlich tatsächlich vorhandene Threads als Übersicht gezeigt; keine erfundenen Inhalte, keine Links zu noch fehlenden Detailseiten. Der vollständige Browser-Schreibdialog und Thread-/Post-Detailansichten bleiben für die folgenden Slices vorgesehen.
+- Isolierte HTTP-/DB-Tests verwenden nur kurzlebige lokale PostgreSQL-/Redis-Testumgebungen und räumen ihre Thread-/Post-Testdaten wieder weg; keinerlei Seeding in DEV. **Nicht als fertig markieren, bevor PR-CI und Merge-Push-/DEV-CI nachweislich grün sind.**
 
 ### DEV-IP-Schutz beim read-only Abnahmetest
 
