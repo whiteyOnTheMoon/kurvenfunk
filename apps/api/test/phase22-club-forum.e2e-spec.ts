@@ -937,4 +937,166 @@ describe('22.210 real club forum reconciliation – disposable PostgreSQL + HTTP
       .query({ cursor: postPage.nextPostCursor })
       .expect(400);
   });
+
+  it('22.215 guards subscription state and writes by authentication, role and onboarding', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/subscription';
+    await request(app.getHttpServer()).get(target).expect(401);
+    await request(app.getHttpServer()).put(target).expect(401);
+    await request(app.getHttpServer()).delete(target).expect(401);
+    for (const method of ['get', 'put', 'delete'] as const) {
+      await request(app.getHttpServer())
+        [method](target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.limited)))
+        .expect(403);
+    }
+
+    const userId = users.get(subjects.replyA)!;
+    await database.user.update({
+      where: { id: userId },
+      data: { onboardingCompleted: false },
+    });
+    try {
+      await request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', 'Bearer ' + (await tokenFor(subjects.replyA)))
+        .expect(403);
+    } finally {
+      await database.user.update({
+        where: { id: userId },
+        data: { onboardingCompleted: true },
+      });
+    }
+    expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
+  });
+
+  it('22.215 subscriptions are private, idempotent and safe under concurrent requests', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/subscription';
+    const firstUser = users.get(subjects.replyA)!;
+    const secondUser = users.get(subjects.replyB)!;
+    const [firstToken, secondToken] = await Promise.all([
+      tokenFor(subjects.replyA),
+      tokenFor(subjects.replyB),
+    ]);
+    const authA = 'Bearer ' + firstToken;
+    const authB = 'Bearer ' + secondToken;
+
+    const before = await request(app.getHttpServer())
+      .get(target)
+      .set('Authorization', authA)
+      .expect(200);
+    expect(dataOf<{ subscribed: boolean }>(before)).toEqual({ subscribed: false });
+
+    const puts = await Promise.all([
+      request(app.getHttpServer()).put(target).set('Authorization', authA),
+      request(app.getHttpServer()).put(target).set('Authorization', authA),
+    ]);
+    expect(puts.map((result) => result.status)).toEqual([200, 200]);
+    for (const result of puts) {
+      expect(dataOf<{ subscribed: boolean }>(result).subscribed).toBe(true);
+    }
+    expect(
+      await database.threadSubscription.count({ where: { threadId: threads[0], userId: firstUser } }),
+    ).toBe(1);
+
+    const privateState = await request(app.getHttpServer())
+      .get(target)
+      .set('Authorization', authB)
+      .expect(200);
+    expect(dataOf<{ subscribed: boolean }>(privateState)).toEqual({ subscribed: false });
+    await request(app.getHttpServer())
+      .put(target)
+      .set('Authorization', authB)
+      .expect(200);
+
+    const publicDetail = await request(app.getHttpServer())
+      .get('/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug)
+      .expect(200);
+    expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain('subscribed');
+    expect(JSON.stringify(dataOf<unknown>(publicDetail))).not.toContain(firstUser);
+    expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(2);
+
+    for (const index of [0, 1]) {
+      const response = await request(app.getHttpServer())
+        .delete(target)
+        .set('Authorization', authA)
+        .expect(200);
+      expect(dataOf<{ subscribed: boolean }>(response)).toEqual({ subscribed: false });
+    }
+    expect(
+      await database.threadSubscription.count({ where: { threadId: threads[0], userId: firstUser } }),
+    ).toBe(0);
+    expect(
+      await database.threadSubscription.count({ where: { threadId: threads[0], userId: secondUser } }),
+    ).toBe(1);
+    await request(app.getHttpServer()).delete(target).set('Authorization', authB).expect(200);
+    expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
+  });
+
+  it('22.215 keeps locked threads subscribable but hides archived, merged and hidden topics', async () => {
+    const thread = await database.thread.findUniqueOrThrow({
+      where: { id: threads[0] },
+      select: { slug: true },
+    });
+    const target =
+      '/api/v1/forums/by-slug/verein-' + firstSlug + '/threads/' + thread.slug + '/subscription';
+    const auth = 'Bearer ' + (await tokenFor(subjects.replyC));
+    const userId = users.get(subjects.replyC)!;
+    await database.thread.update({ where: { id: threads[0] }, data: { status: 'LOCKED' } });
+    try {
+      const response = await request(app.getHttpServer())
+        .put(target)
+        .set('Authorization', auth)
+        .expect(200);
+      expect(dataOf<{ subscribed: boolean }>(response)).toEqual({ subscribed: true });
+      expect(
+        dataOf<{ subscribed: boolean }>(
+          await request(app.getHttpServer()).get(target).set('Authorization', auth).expect(200),
+        ).subscribed,
+      ).toBe(true);
+    } finally {
+      await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+    }
+
+    for (const status of ['ARCHIVED', 'MERGED'] as const) {
+      await database.thread.update({ where: { id: threads[0] }, data: { status } });
+      try {
+        for (const method of ['get', 'put', 'delete'] as const) {
+          await request(app.getHttpServer())[method](target).set('Authorization', auth).expect(404);
+        }
+      } finally {
+        await database.thread.update({ where: { id: threads[0] }, data: { status: 'OPEN' } });
+      }
+    }
+
+    await database.forumCategory.update({
+      where: { id: categoryId! },
+      data: { active: false },
+    });
+    try {
+      for (const method of ['get', 'put', 'delete'] as const) {
+        await request(app.getHttpServer())[method](target).set('Authorization', auth).expect(404);
+      }
+    } finally {
+      await database.forumCategory.update({
+        where: { id: categoryId! },
+        data: { active: true },
+      });
+    }
+    expect(
+      await database.threadSubscription.count({ where: { threadId: threads[0], userId } }),
+    ).toBe(1);
+    await request(app.getHttpServer()).delete(target).set('Authorization', auth).expect(200);
+    expect(await database.threadSubscription.count({ where: { threadId: threads[0] } })).toBe(0);
+  });
+
 });
