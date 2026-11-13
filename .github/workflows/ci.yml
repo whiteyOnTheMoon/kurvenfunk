@@ -58,14 +58,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Diagnose phase22.212 Prettier diff (temporary)
-        run: |
-          for file in apps/api/src/modules/forums/forum-threads.controller.ts apps/web/src/features/forum/club-thread-detail.tsx; do
-            echo "DIFF_START=$file"
-            pnpm exec prettier "$file" | diff -u "$file" - || true
-            echo "DIFF_END=$file"
-          done
-
       - name: Check formatting
         run: pnpm format:check
 
