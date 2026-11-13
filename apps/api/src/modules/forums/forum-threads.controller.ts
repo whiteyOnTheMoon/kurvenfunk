@@ -5,6 +5,8 @@ import {
   setForumReadPositionSchema,
   lockForumThreadSchema,
   moveForumThreadSchema,
+  mergeForumThreadSchema,
+  type MergeForumThreadInput,
   type MoveForumThreadInput,
   type LockForumThreadInput,
   type SetForumReadPositionInput,
@@ -193,6 +195,30 @@ export class ForumThreadsController {
     @Body(new ZodValidationPipe(moveForumThreadSchema)) input: MoveForumThreadInput,
   ) {
     return this.threadsService.moveThread(
+      forumSlug,
+      threadSlug,
+      request.user!.kurvenfunkUserId,
+      input,
+    );
+  }
+
+  @Get(':threadSlug/merge-target')
+  findPublicMergeTarget(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+  ) {
+    return this.threadsService.findPublicMergeTarget(forumSlug, threadSlug);
+  }
+
+  @Put(':threadSlug/merge')
+  @RequirePermissions(PERMISSIONS.THREAD_MERGE)
+  mergeThread(
+    @Param('forumSlug') forumSlug: string,
+    @Param('threadSlug') threadSlug: string,
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(mergeForumThreadSchema)) input: MergeForumThreadInput,
+  ) {
+    return this.threadsService.mergeThread(
       forumSlug,
       threadSlug,
       request.user!.kurvenfunkUserId,

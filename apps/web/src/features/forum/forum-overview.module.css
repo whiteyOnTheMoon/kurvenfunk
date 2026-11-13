@@ -366,6 +366,12 @@
   font: inherit;
 }
 
+.pinControls input[type='checkbox'] {
+  width: auto;
+  margin: 0 8px 0 0;
+  padding: 0;
+}
+
 .pinControls button {
   padding: 10px 16px;
   border: 1px solid var(--kf-border);

@@ -39,3 +39,12 @@ export const moveForumThreadSchema = z
   .strict();
 
 export type MoveForumThreadInput = z.infer<typeof moveForumThreadSchema>;
+
+export const mergeForumThreadSchema = z
+  .object({
+    targetThreadId: z.string().uuid(),
+    reason: z.string().trim().min(5).max(500).optional(),
+  })
+  .strict();
+
+export type MergeForumThreadInput = z.infer<typeof mergeForumThreadSchema>;
