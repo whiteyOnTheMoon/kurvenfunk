@@ -160,16 +160,22 @@ describe('Phase 22.222 – isolated forum report lifecycle HTTP/PostgreSQL', () 
       if (app) await app.close();
       if (database) {
         // All mutations belong exclusively to this disposable E2E database.
-        await database.moderationReport.deleteMany({
-          where: { postId: { in: [postId, secondPostId] } },
-        });
+        const reportIds = (
+          await database.moderationReport.findMany({
+            where: { postId: { in: [postId, secondPostId] } },
+            select: { id: true },
+          })
+        ).map((report) => report.id);
         await database.auditLog.deleteMany({
           where: {
             OR: [
               { targetId: { in: [postId, secondPostId] } },
-              { targetType: 'MODERATION_REPORT', moderationReportId: { not: null } },
+              { targetType: 'MODERATION_REPORT', targetId: { in: reportIds } },
             ],
           },
+        });
+        await database.moderationReport.deleteMany({
+          where: { postId: { in: [postId, secondPostId] } },
         });
         if (threadId) {
           await database.thread.update({ where: { id: threadId }, data: { lastPostId: null } });
