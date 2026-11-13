@@ -115,11 +115,7 @@ export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: 
               onCreated={() => setThreadRevision((value) => value + 1)}
             />
           ) : null}
-          <ClubForumThreads
-            apiUrl={apiUrl}
-            forumSlug={forum.slug}
-            revision={threadRevision}
-          />
+          <ClubForumThreads apiUrl={apiUrl} forumSlug={forum.slug} revision={threadRevision} />
         </section>
       )}
     </div>
