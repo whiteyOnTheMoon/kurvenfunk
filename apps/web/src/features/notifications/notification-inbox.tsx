@@ -65,7 +65,8 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
       fetchUnreadCount(apiUrl, token, abort.signal),
     ])
       .then(([page, unreadCount]) => {
-        if (!abort.signal.aborted) setSnapshot({ token, filter, generation: refresh, page, unreadCount });
+        if (!abort.signal.aborted)
+          setSnapshot({ token, filter, generation: refresh, page, unreadCount });
       })
       .catch(() => {
         if (!abort.signal.aborted) setFailedFor({ token, filter, generation: refresh });

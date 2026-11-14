@@ -59,10 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: |
-          pnpm exec prettier --write apps/web/src/features/notifications/notification-inbox.tsx
-          git diff -- apps/web/src/features/notifications/notification-inbox.tsx
-          git diff --exit-code -- apps/web/src/features/notifications/notification-inbox.tsx
+        run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |
