@@ -7,11 +7,11 @@ import { NotificationInboxService } from './notification-inbox.service';
 /** The authenticated subject is the ONLY recipient identity accepted here. */
 @Controller('notifications')
 @UseGuards(AuthGuard)
-@Header('Cache-Control', 'private, no-store')
 export class NotificationsController {
   constructor(private readonly inbox: NotificationInboxService) {}
 
   @Get()
+  @Header('Cache-Control', 'private, no-store')
   list(
     @Req() request: AuthenticatedRequest,
     @Query('cursor') cursor?: unknown,
@@ -22,6 +22,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @Header('Cache-Control', 'private, no-store')
   unreadCount(@Req() request: AuthenticatedRequest) {
     return this.inbox.countUnreadForUser(request.user!.kurvenfunkUserId);
   }
