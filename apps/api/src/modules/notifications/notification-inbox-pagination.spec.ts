@@ -29,15 +29,30 @@ describe('23.226 private notification cursor and bounded request validation', ()
       '###',
       'a'.repeat(257),
       Buffer.from('{}').toString('base64url'),
-      Buffer.from(JSON.stringify({
-        version: 1, id: 'not-a-uuid', createdAt: cursor.createdAt.toISOString(), filter: 'unread',
-      })).toString('base64url'),
-      Buffer.from(JSON.stringify({
-        version: 1, id: cursor.id, createdAt: '2026-13-99T18:00:00.000Z', filter: 'unread',
-      })).toString('base64url'),
-      Buffer.from(JSON.stringify({
-        version: 2, id: cursor.id, createdAt: cursor.createdAt.toISOString(), filter: 'unread',
-      })).toString('base64url'),
+      Buffer.from(
+        JSON.stringify({
+          version: 1,
+          id: 'not-a-uuid',
+          createdAt: cursor.createdAt.toISOString(),
+          filter: 'unread',
+        }),
+      ).toString('base64url'),
+      Buffer.from(
+        JSON.stringify({
+          version: 1,
+          id: cursor.id,
+          createdAt: '2026-13-99T18:00:00.000Z',
+          filter: 'unread',
+        }),
+      ).toString('base64url'),
+      Buffer.from(
+        JSON.stringify({
+          version: 2,
+          id: cursor.id,
+          createdAt: cursor.createdAt.toISOString(),
+          filter: 'unread',
+        }),
+      ).toString('base64url'),
     ];
     for (const value of invalid) {
       expect(() => parseNotificationCursor(value, value === encoded ? 'all' : 'unread')).toThrow(

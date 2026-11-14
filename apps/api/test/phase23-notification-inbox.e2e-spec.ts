@@ -201,7 +201,13 @@ describe('Phase 23.226 – authenticated recipient-only inbox HTTP with disposab
       expect(result.items.every((row) => row.url === '/forum')).toBe(true);
       for (const item of result.items) {
         expect(Object.keys(item).sort()).toEqual([
-          'body', 'createdAt', 'id', 'readAt', 'title', 'type', 'url',
+          'body',
+          'createdAt',
+          'id',
+          'readAt',
+          'title',
+          'type',
+          'url',
         ]);
         expect(JSON.stringify(item)).not.toContain(privateMetadata);
         seen.push(item.id);
@@ -267,7 +273,11 @@ describe('Phase 23.226 – authenticated recipient-only inbox HTTP with disposab
   it('rejects malformed cursor, unknown filter and unbounded limit before database lookup', async () => {
     const token = await tokenFor(subjects.first);
     for (const input of [
-      '?limit=0', '?limit=51', '?limit=1000', '?filter=archived', '?cursor=invalid',
+      '?limit=0',
+      '?limit=51',
+      '?limit=1000',
+      '?filter=archived',
+      '?cursor=invalid',
       '?filter=unread&cursor=AA',
     ]) {
       await request(app.getHttpServer())

@@ -87,9 +87,7 @@ export function parseInboxPage(payload: unknown): InboxPage {
   const data = (payload as { data?: unknown }).data;
   if (!data || typeof data !== 'object') throw new Error('NOTIFICATION_RESPONSE_INVALID');
   const page = data as { items?: unknown; pagination?: unknown };
-  const pagination = page.pagination as
-    | { hasNextPage?: unknown; nextCursor?: unknown }
-    | undefined;
+  const pagination = page.pagination as { hasNextPage?: unknown; nextCursor?: unknown } | undefined;
   if (
     !Array.isArray(page.items) ||
     page.items.length > 50 ||

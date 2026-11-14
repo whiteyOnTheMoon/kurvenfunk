@@ -8,8 +8,7 @@ export interface NotificationPageCursor {
   filter: NotificationFilter;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const MAX_CURSOR_LENGTH = 256;
 const DEFAULT_PAGE_SIZE = 20;
@@ -30,11 +29,7 @@ export function parseNotificationFilter(raw: unknown): NotificationFilter {
 
 export function parseNotificationLimit(raw: unknown): number {
   if (raw === undefined) return DEFAULT_PAGE_SIZE;
-  if (
-    typeof raw !== 'string' ||
-    !/^[1-9]\d{0,1}$/.test(raw) ||
-    Number(raw) > MAX_PAGE_SIZE
-  ) {
+  if (typeof raw !== 'string' || !/^[1-9]\d{0,1}$/.test(raw) || Number(raw) > MAX_PAGE_SIZE) {
     throw invalid('NOTIFICATION_LIMIT_INVALID');
   }
   return Number(raw);

@@ -66,7 +66,8 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
       loadingMore ||
       !visible.page.pagination.hasNextPage ||
       !visible.page.pagination.nextCursor
-    ) return;
+    )
+      return;
     const cursor = visible.page.pagination.nextCursor;
     const ownerToken = token;
     const ownerFilter = filter;
@@ -102,18 +103,35 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
       </header>
 
       {!initialized || sessionRecovering ? (
-        <p role="status" className={styles.status}>Dein Anmeldestatus wird geprüft …</p>
+        <p role="status" className={styles.status}>
+          Dein Anmeldestatus wird geprüft …
+        </p>
       ) : !authenticated || !token ? (
         <section className={styles.panel}>
           <h2>Anmeldung erforderlich</h2>
-          <p>Benachrichtigungen sind privat. <Link href="/login">Melde dich an</Link>, um deine Nachrichten zu sehen.</p>
+          <p>
+            Benachrichtigungen sind privat. <Link href="/login">Melde dich an</Link>, um deine
+            Nachrichten zu sehen.
+          </p>
         </section>
       ) : (
         <section className={styles.panel} aria-label="Meine Benachrichtigungen">
           <div className={styles.toolbar}>
             <div className={styles.filters} role="group" aria-label="Benachrichtigungen filtern">
-              <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Alle</button>
-              <button type="button" aria-pressed={filter === 'unread'} onClick={() => setFilter('unread')}>Ungelesen</button>
+              <button
+                type="button"
+                aria-pressed={filter === 'all'}
+                onClick={() => setFilter('all')}
+              >
+                Alle
+              </button>
+              <button
+                type="button"
+                aria-pressed={filter === 'unread'}
+                onClick={() => setFilter('unread')}
+              >
+                Ungelesen
+              </button>
             </div>
             {visible ? (
               <span className={styles.count} role="status">
@@ -127,14 +145,20 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
           {failed ? (
             <div className={styles.error} role="alert">
               Benachrichtigungen konnten nicht geladen werden.
-              <button type="button" onClick={() => setRefresh((value) => value + 1)} disabled={loading}>
+              <button
+                type="button"
+                onClick={() => setRefresh((value) => value + 1)}
+                disabled={loading}
+              >
                 Erneut versuchen
               </button>
             </div>
           ) : null}
 
           {loading && !visible ? (
-            <p className={styles.status} role="status">Benachrichtigungen werden geladen …</p>
+            <p className={styles.status} role="status">
+              Benachrichtigungen werden geladen …
+            </p>
           ) : visible && visible.page.items.length === 0 ? (
             <p className={styles.status}>
               {filter === 'unread'
@@ -148,7 +172,9 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
                   <li key={item.id} className={item.readAt ? styles.item : styles.unreadItem}>
                     <div className={styles.itemHeader}>
                       <strong>{item.title}</strong>
-                      {item.readAt === null ? <span className={styles.unreadTag}>Ungelesen</span> : null}
+                      {item.readAt === null ? (
+                        <span className={styles.unreadTag}>Ungelesen</span>
+                      ) : null}
                     </div>
                     <p>{item.body}</p>
                     <div className={styles.itemFooter}>
@@ -177,8 +203,8 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
           ) : null}
 
           <p className={styles.hint}>
-            Benachrichtigungen werden beim Öffnen noch nicht als gelesen markiert.
-            Die Lesefunktion folgt in Phase 23.227.
+            Benachrichtigungen werden beim Öffnen noch nicht als gelesen markiert. Die Lesefunktion
+            folgt in Phase 23.227.
           </p>
         </section>
       )}

@@ -59,10 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/notifications/notification-inbox-pagination.spec.ts apps/api/src/modules/notifications/notification-inbox-pagination.ts apps/api/src/modules/notifications/notification-inbox.service.ts apps/api/test/phase23-notification-inbox.e2e-spec.ts apps/web/src/features/notifications/notification-inbox-feed.spec.mjs apps/web/src/features/notifications/notification-inbox-feed.ts apps/web/src/features/notifications/notification-inbox.tsx
-          git diff -- apps/api/src/modules/notifications/notification-inbox-pagination.spec.ts apps/api/src/modules/notifications/notification-inbox-pagination.ts apps/api/src/modules/notifications/notification-inbox.service.ts apps/api/test/phase23-notification-inbox.e2e-spec.ts apps/web/src/features/notifications/notification-inbox-feed.spec.mjs apps/web/src/features/notifications/notification-inbox-feed.ts apps/web/src/features/notifications/notification-inbox.tsx
-          git diff --exit-code -- apps/api/src/modules/notifications/notification-inbox-pagination.spec.ts apps/api/src/modules/notifications/notification-inbox-pagination.ts apps/api/src/modules/notifications/notification-inbox.service.ts apps/api/test/phase23-notification-inbox.e2e-spec.ts apps/web/src/features/notifications/notification-inbox-feed.spec.mjs apps/web/src/features/notifications/notification-inbox-feed.ts apps/web/src/features/notifications/notification-inbox.tsx
+        run: pnpm format:check
 
       - name: Validate DEV deploy script syntax
         run: |

@@ -12,7 +12,10 @@ import {
 export class NotificationInboxService implements OnModuleDestroy {
   private readonly database: DatabaseClient = createPrismaClient();
 
-  async listForUser(userId: string, input: { cursor?: unknown; limit?: unknown; filter?: unknown }) {
+  async listForUser(
+    userId: string,
+    input: { cursor?: unknown; limit?: unknown; filter?: unknown },
+  ) {
     const filter = parseNotificationFilter(input.filter);
     const limit = parseNotificationLimit(input.limit);
     const cursor = parseNotificationCursor(input.cursor, filter);
