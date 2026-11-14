@@ -46,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <AuthProvider apiUrl={env.API_URL} authUrl={env.AUTH_URL}>
           <PersonalizedClubTheme apiUrl={env.API_URL} />
           <OnboardingGate>
-            <RouteShell>{children}</RouteShell>
+            <RouteShell apiUrl={env.API_URL}>{children}</RouteShell>
           </OnboardingGate>
         </AuthProvider>
       </body>
