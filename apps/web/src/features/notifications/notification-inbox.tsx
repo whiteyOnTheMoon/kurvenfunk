@@ -16,6 +16,7 @@ import styles from './notification-inbox.module.css';
 interface InboxSnapshot {
   token: string;
   filter: InboxFilter;
+  generation: number;
   page: InboxPage;
   unreadCount: number;
 }
@@ -24,37 +25,50 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
   const { authenticated, initialized, sessionRecovering, token } = useAuth();
   const [filter, setFilter] = useState<InboxFilter>('all');
   const [snapshot, setSnapshot] = useState<InboxSnapshot | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [loadingMoreFor, setLoadingMoreFor] = useState<{
+    token: string;
+    filter: InboxFilter;
+    generation: number;
+  } | null>(null);
+  const [failedFor, setFailedFor] = useState<{
+    token: string;
+    filter: InboxFilter;
+    generation: number;
+  } | null>(null);
 
   const signedIn = initialized && authenticated && !sessionRecovering && !!token;
   const visible =
-    signedIn && snapshot?.token === token && snapshot.filter === filter ? snapshot : null;
+    signedIn &&
+    snapshot?.token === token &&
+    snapshot.filter === filter &&
+    snapshot.generation === refresh
+      ? snapshot
+      : null;
+  const failed =
+    signedIn &&
+    failedFor?.token === token &&
+    failedFor.filter === filter &&
+    failedFor.generation === refresh;
+  const loadingMore =
+    signedIn &&
+    loadingMoreFor?.token === token &&
+    loadingMoreFor.filter === filter &&
+    loadingMoreFor.generation === refresh;
+  const loading = signedIn && !visible && !failed;
 
   useEffect(() => {
     const abort = new AbortController();
-    setSnapshot(null);
-    setFailed(false);
-    setLoadingMore(false);
-    if (!signedIn || !token) {
-      setLoading(false);
-      return () => abort.abort();
-    }
-    setLoading(true);
+    if (!signedIn || !token) return () => abort.abort();
     Promise.all([
       fetchInboxPage(apiUrl, token, filter, undefined, abort.signal),
       fetchUnreadCount(apiUrl, token, abort.signal),
     ])
       .then(([page, unreadCount]) => {
-        if (!abort.signal.aborted) setSnapshot({ token, filter, page, unreadCount });
+        if (!abort.signal.aborted) setSnapshot({ token, filter, generation: refresh, page, unreadCount });
       })
       .catch(() => {
-        if (!abort.signal.aborted) setFailed(true);
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setLoading(false);
+        if (!abort.signal.aborted) setFailedFor({ token, filter, generation: refresh });
       });
     return () => abort.abort();
   }, [apiUrl, signedIn, token, filter, refresh]);
@@ -71,12 +85,18 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
     const cursor = visible.page.pagination.nextCursor;
     const ownerToken = token;
     const ownerFilter = filter;
-    setLoadingMore(true);
-    setFailed(false);
+    const ownerGeneration = refresh;
+    setLoadingMoreFor({ token: ownerToken, filter: ownerFilter, generation: ownerGeneration });
+    setFailedFor(null);
     try {
       const next = await fetchInboxPage(apiUrl, ownerToken, ownerFilter, cursor);
       setSnapshot((current) => {
-        if (!current || current.token !== ownerToken || current.filter !== ownerFilter) {
+        if (
+          !current ||
+          current.token !== ownerToken ||
+          current.filter !== ownerFilter ||
+          current.generation !== ownerGeneration
+        ) {
           return current;
         }
         return {
@@ -88,9 +108,15 @@ export function NotificationInbox({ apiUrl }: { apiUrl: string }) {
         };
       });
     } catch {
-      setFailed(true);
+      setFailedFor({ token: ownerToken, filter: ownerFilter, generation: ownerGeneration });
     } finally {
-      setLoadingMore(false);
+      setLoadingMoreFor((current) =>
+        current?.token === ownerToken &&
+        current.filter === ownerFilter &&
+        current.generation === ownerGeneration
+          ? null
+          : current,
+      );
     }
   }
 

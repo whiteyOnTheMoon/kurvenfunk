@@ -15,7 +15,6 @@ export function NotificationBell({ apiUrl }: { apiUrl: string }) {
 
   useEffect(() => {
     const abort = new AbortController();
-    setResult(null);
     if (enabled && token) {
       void fetchUnreadCount(apiUrl, token, abort.signal)
         .then((count) => {
