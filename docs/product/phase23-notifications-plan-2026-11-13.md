@@ -7,8 +7,8 @@ Stand: 13.11.2026. Nur DEV und isolierte CI. **Phase 22 bleibt technisch abgesch
 | Aufgabe | Inhalt | Stand |
 | --- | --- | --- |
 | 224 | Notification Types | PR #187 gemergt, DEV-CI #43519283165 PASS; keine manuellen Producer aktiv |
-| 225 | Notification Queue | Implementierung in PR; PR-/DEV-CI und reale Ausfallsimulation ausstehend |
-| 226 | In-App Notifications | Offen: private Listen-API, Paging, Zähler und Web-Center |
+| 225 | Notification Queue | PR #188 gemergt; PR-CI #43523858245 PASS, DEV-CI #43524486565 PASS; Redis-Ausfallpfad durch Unit-Test simuliert, keine DEV-Störung |
+| 226 | In-App Notifications | Implementierung in PR; PR-CI, DEV-CI und manuelle Browserabnahme ausstehend |
 | 227 | Read/Unread | Offen: atomare und empfängergebundene Lesemarkierung |
 | 228 | E-Mail Notifications | Offen: async Versand, Templates, Opt-outs, Retries und Anbieterabnahme |
 | 229 | Notification Preferences | Offen: sichere Kanalpräferenzen mit verpflichtenden Moderationsnachrichten |
@@ -33,6 +33,15 @@ Stand: 13.11.2026. Nur DEV und isolierte CI. **Phase 22 bleibt technisch abgesch
 - **Idempotenter Consumer:** Jobname, UUID, ID und Payload werden validiert. Er markiert ausschließlich `NotificationOutbox.processedAt`, nicht `Notification.readAt` oder irgendeine E-Mail-Zustellung. Bereits bestätigte/verwaiste Jobs verändern keine Nutzerobjekte.
 - **Grenzen:** In 225 gibt es weiterhin keine aktivierten Domain-Producer, öffentliche Notification-API oder E-Mail-/Push-Zustellung. Ein eigener Dead-Letter- und Zustellvertrag für echte E-Mails gehört zu 228; Redis-Ausfälle werden hier bewusst unbefristet wiederholt, nicht terminal dead-lettered.
 - **Tests:** Atomarer Rollback, konkurrierende Reservierungen, sichere Payload, Redis-Fehlercodes, Wiederholung, reales PostgreSQL/Redis/Nest-Worker-Acknowledgment in isolierter CI. Auf DEV ausschließlich ein lesender Schema-Gate ohne Testdaten, Logs mit Nutzer-IDs oder mutierende Queue-Tests. Keine STAGING-/PROD-Änderung.
+## 23.226 – Private In-App-Anzeige und Read-only-API
+
+- **Keine öffentliche Inbox:** `GET /api/v1/notifications` und `GET /api/v1/notifications/unread-count` tragen jeweils `AuthGuard` und `Cache-Control: private, no-store`. Der Empfänger ist ausschließlich `request.user.kurvenfunkUserId` aus einem verifizierten Keycloak-JWT. `userId` aus Query/URL wird nie ausgewertet; auch Administratoren haben hier keinen Querschnittszugriff.
+- **Minimalprojektion:** Nur `id`, `type`, `title`, `body`, validierte interne Ziel-URL, `createdAt`, `readAt`; keine `actorUserId`, `metadata`, `sourceId`, Queue-Outbox, Dedupe-, Sicherheits- oder Moderatornotizen. `BANNED` bleibt durch AccountStatusGuard ausgeschlossen; `LIMITED` darf eigene wichtige Mitteilungen lesen.
+- **Stabile Pagination:** höchstens 50 Elemente, Standard 20; Opaque-Cursor mit Datum + UUID und an den gewählten Filter gebunden, `createdAt DESC, id DESC` zur stabilen Seek-Pagination. Abgelaufene Einträge bleiben im Datenspeicher, sind aber von Inbox und Zähler ausgeschlossen. `filter=unread` und separater `unread-count` sind ausschließlich lesend.
+- **Web:** private `/benachrichtigungen`-Seite, responsive Listenansicht, Alle/Ungelesen-Filter, Nachladen, Fehler-/Leerzustand und Header-Bell mit begrenztem Ungelesen-Badge. URL-Ziele werden vor dem Rendern gegen externe Schemes, `//`, Backslashes und Steuerzeichen abgesichert. Die UI enthält keine Bearer-Tokens in URLs, Logs oder LocalStorage; Daten werden bei Tokenwechsel/Logout nicht angezeigt.
+- **Keine impliziten Writes:** Das Öffnen/Anklicken von Benachrichtigungen setzt `readAt` nicht; Lesebestätigung folgt in 23.227. Domain-Producer sind weiterhin nicht angeschlossen; bis dahin sind echte Accounts ohne bestehende Nachrichten leer. Es wird weder DEV gesät noch eine E-Mail verschickt.
+- **Automatisierte Abnahme:** Parser-/Sicherheits-Web-Tests, API-Cursor-Unit-Tests und echte isolierte PostgreSQL/Redis + signierte JWT HTTP-E2E für 401/403, Zweitaccount-Isolation, Limit/Seek-Paging, abgelaufene Zeilen, korrekte Lesezahlen und Nichtoffenlegung von Moderationsdaten. DEV-Gate prüft ausschließlich öffentliche Browser-Shell und negativ unautorisierte HTTP-Anfragen.
+- **Offene reale Fachabnahme:** Interaktiver Desktop-/Mobile-Browsertest mit freigegebenen echten DEV-Accounts, nicht im PR fingiert. Keine STAGING-/PROD-Änderung.
 ## Nachweis- und Sicherheitsgrenzen
 
 Alle Testkonten/Notification-Einträge existieren ausschließlich in einer ausdrücklich überprüften wegwerfbaren E2E-PostgreSQL-Datenbank; kein DEV-Seeding und keine E-Mails. Vollständig grüne PR-CI einschließlich isolierter E2E und Docker vor Merge; danach exakten Merge-Push-/DEV-CI-Abschluss kontrollieren. Keine Änderungen an STAGING/PROD.

@@ -5,12 +5,12 @@ import type { ReactNode } from 'react';
 
 import { AppShell } from './app-shell';
 
-export function RouteShell({ children }: { children: ReactNode }) {
+export function RouteShell({ children, apiUrl }: { children: ReactNode; apiUrl: string }) {
   const pathname = usePathname();
 
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return children;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return <AppShell apiUrl={apiUrl}>{children}</AppShell>;
 }

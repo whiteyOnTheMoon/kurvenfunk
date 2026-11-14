@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../features/auth/auth-provider';
 import { getAdminMenuDestination } from '../../features/admin/admin-access';
+import { NotificationBell } from '../../features/notifications/notification-bell';
 import styles from './app-shell.module.css';
 
 const navigationItems = [
@@ -113,6 +114,10 @@ function UserMenu() {
           Einstellungen
         </Link>
 
+        <Link href="/benachrichtigungen" className={styles.userMenuItem} onClick={closeMenu}>
+          Benachrichtigungen
+        </Link>
+
         {adminDestination ? (
           <Link href={adminDestination} className={styles.userMenuItem} onClick={closeMenu}>
             Admin-Bereich
@@ -134,7 +139,7 @@ function UserMenu() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, apiUrl }: { children: React.ReactNode; apiUrl: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -172,6 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Navigation />
 
           <div className={styles.headerActions}>
+            <NotificationBell apiUrl={apiUrl} />
             <UserMenu />
 
             <button
