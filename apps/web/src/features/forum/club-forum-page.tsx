@@ -43,6 +43,7 @@ export function ClubForumPage({ apiUrl, clubSlug }: { apiUrl: string; clubSlug: 
       setLoading(true);
       setError(false);
       setNotFound(false);
+      setForum(null);
       try {
         const response = await fetch(
           `${apiUrl}/api/v1/forums/clubs/${encodeURIComponent(clubSlug)}`,
