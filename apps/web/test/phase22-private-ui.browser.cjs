@@ -217,6 +217,17 @@ async function main() {
       const measure = await page.evaluate(() => ({
         viewport: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
+        wideScrollContainers: [...document.querySelectorAll('*')]
+          .filter((element) => element.scrollWidth > element.clientWidth + 2)
+          .map((element) => ({
+            element: element.tagName.toLowerCase(),
+            className: typeof element.className === 'string' ? element.className : '',
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+            overflowX: getComputedStyle(element).overflowX,
+            text: (element.textContent || '').slice(0, 100),
+          }))
+          .slice(0, 12),
         outliers: [...document.querySelectorAll('*')]
           .map((element) => {
             const bounds = element.getBoundingClientRect();
