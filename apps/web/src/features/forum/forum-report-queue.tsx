@@ -201,8 +201,8 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
   const items = current?.items ?? [];
 
   useEffect(() => {
-    const key = requestKey;
-    if (!canModerate || !token || !key) return;
+    if (!canModerate || !token || !requestKey) return;
+    const key: string = requestKey;
     const controller = new AbortController();
     async function load() {
       try {
