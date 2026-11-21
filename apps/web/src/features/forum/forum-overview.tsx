@@ -117,6 +117,7 @@ export function ForumOverview({ apiUrl, categorySlug }: ForumOverviewProps) {
     async function load() {
       setLoading(true);
       setError(false);
+      setCategories([]);
       try {
         const endpoint = categorySlug
           ? `/api/v1/forums/categories/${encodeURIComponent(categorySlug)}`
@@ -125,6 +126,8 @@ export function ForumOverview({ apiUrl, categorySlug }: ForumOverviewProps) {
           cache: 'no-store',
           signal: controller.signal,
         });
+        // An unknown category is a valid missing-resource state, not an API outage.
+        if (categorySlug && response.status === 404) return;
         if (!response.ok) throw new Error('FORUM_CATEGORY_REQUEST_FAILED');
         const result = (await response.json()) as ApiResponse<ForumCategory[] | ForumCategory>;
         const items = categorySlug ? [result.data] : result.data;
@@ -183,7 +186,7 @@ export function ForumOverview({ apiUrl, categorySlug }: ForumOverviewProps) {
           Die Forenübersicht ist derzeit nicht erreichbar. Bitte versuche es später erneut.
         </p>
       ) : categories.length === 0 ? (
-        <p className={styles.status}>
+        <p className={styles.status} role="status">
           {categorySlug
             ? 'Diese Forenkategorie ist nicht verfügbar.'
             : 'Das Forum wird eingerichtet. Noch keine freigegebenen Forenkategorien vorhanden.'}
