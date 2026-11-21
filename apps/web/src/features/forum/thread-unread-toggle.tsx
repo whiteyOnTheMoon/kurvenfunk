@@ -59,8 +59,8 @@ export function ThreadUnreadToggle({
 
   useEffect(() => {
     const controller = new AbortController();
-    const key = requestKey;
-    if (!allowed || !token || !key) return () => controller.abort();
+    if (!allowed || !token || !requestKey) return () => controller.abort();
+    const key: string = requestKey;
     async function fetchStatus() {
       try {
         const response = await fetch(endpoint, {
