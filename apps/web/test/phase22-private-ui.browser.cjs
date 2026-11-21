@@ -213,10 +213,27 @@ async function main() {
       await page.evaluate((value) => window.__phase22SwitchAuth(value), next);
     }
     async function noOverflow(page, width) {
-      assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-        true,
-        'No horizontal overflow at ' + width + 'px',
+      const measure = await page.evaluate(() => ({
+        viewport: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        outliers: [...document.querySelectorAll('*')]
+          .map((element) => {
+            const bounds = element.getBoundingClientRect();
+            return {
+              element: element.tagName.toLowerCase(),
+              className: typeof element.className === 'string' ? element.className : '',
+              text: (element.textContent || '').slice(0, 60),
+              left: Math.round(bounds.left),
+              right: Math.round(bounds.right),
+              width: Math.round(bounds.width),
+            };
+          })
+          .filter((element) => element.right > window.innerWidth + 1 || element.left < -1)
+          .slice(0, 12),
+      }));
+      assert.ok(
+        measure.documentWidth <= measure.viewport,
+        'No horizontal overflow at ' + width + 'px: ' + JSON.stringify(measure),
       );
     }
 
