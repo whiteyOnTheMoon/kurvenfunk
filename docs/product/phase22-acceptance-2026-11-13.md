@@ -78,3 +78,32 @@ Chromium-Test mit isolierten Fixtures bestätigt **keinen** echten Keycloak-Logi
 keine Moderationsoperation, keinen vertrauenswürdigen Tunnel und keine
 Live-Mobilabnahme. Die offenen Einzeltests in #160, #169 und #185 bleiben offen.
 Keine automatische Testdatenanlage, keine STAGING-/PROD-Änderung.
+
+## Ergänzung 21.11.2026 – kontoübergreifende UI-Isolation (215–217, 222)
+
+- **Technischer Anlass:** Die Moderationsmeldungs-Warteschlange hielt bisher eine
+  ungebundene lokale Ergebnisliste vor. Nach einem direkten Wechsel zwischen zwei
+  berechtigten Moderatoren konnte die alte Liste bis zur nächsten Antwort sichtbar
+  bleiben. Die Leseposition übernahm die Auswahl eines anderen Kontos im Formular.
+- **Schutz:** Die Queue-Darstellung wird beim Rendern explizit an Benutzer-ID,
+  Bearer-Token und Reload-Revision gebunden; keine Anzeige von vorherigen
+  Moderationsmeldungen nach Rollen-, Konto- oder Tokenwechsel, auch nicht
+  während eines ausstehenden GET. Fetch-Abbrüche bleiben erhalten.
+- **Lesestand:** Geladene Position, Fehlermeldung und ausgewählte Post-ID sind
+  an Benutzer-ID, Token und Thread-Revision gebunden. Keine Übernahme eines
+  vorausgewählten Beitrags bei einem Konto- oder Tokenwechsel.
+- **Browser-Nachweis:** Neuer isolierter realer Chromium-Test
+  `apps/web/test/phase22-private-ui.browser.cjs` mit echten React-Komponenten:
+  Moderator A und B mit absichtlich verzögerter zweiter Antwort; normale
+  Mitglieder, eingeschränkte Moderatoren und Logout; Leseposition von Konto A
+  darf bei Konto B weder erscheinen noch vorausgewählt sein. Ausschließlich
+  GET-Requests an lokalen Fixture-Server, keine echten Tokens, keine DEV-Writes.
+  Das PR-Workflow-Gate `phase22-forum-browser.yml` führt beide Chromium-Suiten aus.
+- **Verifikation:** Erfolgreiche neue PR-CI, Merge-Push-/DEV-CI und isolierte
+  Chromium-Jobs erst nach tatsächlichem Lauf bestätigen. Alle echten
+  Account-/Tunnel-/Moderations-/Mobil-Abnahmen in #185 bleiben offen.
+
+Der unmittelbar davor gemergte PR #190 ist laut
+[Merge-/DEV-CI #44947422211](https://github.com/whiteyOnTheMoon/kurvenfunk/actions/runs/44947422211)
+`completed/success`: 15/15 Phase-22-Read-only-Gates PASS, DEV-Kategorien
+weiterhin **0**. Keine Seed-Daten angelegt; STAGING/PROD unverändert.
