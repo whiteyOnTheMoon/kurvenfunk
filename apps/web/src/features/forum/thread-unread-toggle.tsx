@@ -59,7 +59,8 @@ export function ThreadUnreadToggle({
 
   useEffect(() => {
     const controller = new AbortController();
-    if (!allowed || !token || !requestKey) return () => controller.abort();
+    const key = requestKey;
+    if (!allowed || !token || !key) return () => controller.abort();
     async function fetchStatus() {
       try {
         const response = await fetch(endpoint, {
@@ -69,7 +70,7 @@ export function ThreadUnreadToggle({
         });
         if (!response.ok) throw new Error('UNREAD_FETCH_FAILED');
         const parsed = parseStatus(await response.json());
-        if (!controller.signal.aborted) setState({ key: requestKey, status: parsed });
+        if (!controller.signal.aborted) setState({ key, status: parsed });
       } catch {
         if (!controller.signal.aborted) setFailedKey(requestKey);
       }
