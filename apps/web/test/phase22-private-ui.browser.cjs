@@ -25,8 +25,8 @@ async function main() {
     "import { ThreadUnreadToggle } from './src/features/forum/thread-unread-toggle';",
     "const mode = new URLSearchParams(window.location.search).get('view');",
     "createRoot(document.getElementById('root')).render(mode === 'queue'",
-    "  ? <ForumReportQueue apiUrl={window.location.origin} />",
-    "  : <ThreadUnreadToggle apiUrl={window.location.origin}",
+    '  ? <ForumReportQueue apiUrl={window.location.origin} />',
+    '  : <ThreadUnreadToggle apiUrl={window.location.origin}',
     "      forumSlug='verein-sv-test' threadSlug='thema-a' revision={0}",
     "      posts={[{ id: 'post-1', sequenceNumber: 1, deleted: false },",
     "        { id: 'post-2', sequenceNumber: 2, deleted: false }]} />);",
@@ -125,12 +125,12 @@ async function main() {
     }
     if (path.startsWith('/api/v1/')) {
       requests.push({ method: req.method, path, token: req.headers.authorization });
-      const owner = req.headers.authorization === 'Bearer token-a' ? 'A' : 'B';
+      const owner = req.headers.authorization === '***' ? 'A' : 'B';
       const send = (code, payload) => {
         res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(payload));
       };
-      if (!['Bearer token-a', 'Bearer token-b'].includes(req.headers.authorization)) {
+      if (!['***', '***'].includes(req.headers.authorization)) {
         return send(401, { error: 'UNAUTHORIZED' });
       }
       if (path === '/api/v1/moderation/forum-post-reports') {
@@ -141,14 +141,15 @@ async function main() {
       if (path === '/api/v1/forums/by-slug/verein-sv-test/threads/thema-a/unread') {
         if (owner === 'B') {
           return setTimeout(
-            () => send(200, {
-              data: {
-                unread: true,
-                lastReadSequenceNumber: 0,
-                latestSequenceNumber: 2,
-                lastReadPostId: null,
-              },
-            }),
+            () =>
+              send(200, {
+                data: {
+                  unread: true,
+                  lastReadSequenceNumber: 0,
+                  latestSequenceNumber: 2,
+                  lastReadPostId: null,
+                },
+              }),
             500,
           );
         }
@@ -255,9 +256,15 @@ async function main() {
       assert.equal(await queue.getByText('Vertraulicher Moderationsinhalt B').count(), 0);
 
       await switchAuth(queue, auth('B', 'MODERATOR', 'LIMITED'));
-      assert.equal(await queue.getByText('Für diesen Bereich fehlen die Berechtigungen.').count(), 1);
+      assert.equal(
+        await queue.getByText('Für diesen Bereich fehlen die Berechtigungen.').count(),
+        1,
+      );
       await switchAuth(queue, anonymous);
-      assert.equal(await queue.getByRole('heading', { name: 'Offene Beitragsmeldungen' }).count(), 0);
+      assert.equal(
+        await queue.getByRole('heading', { name: 'Offene Beitragsmeldungen' }).count(),
+        0,
+      );
       assert.deepEqual(queueErrors, []);
     } finally {
       await queue.close();
@@ -276,7 +283,10 @@ async function main() {
       assert.equal(await unread.getByText('Leseposition: Beitrag #1').count(), 0);
       await unread.getByText('Leseposition: noch keiner').waitFor();
       assert.equal(await unread.getByLabel('Zuletzt gelesener Beitrag').inputValue(), '');
-      assert.equal(await unread.getByRole('button', { name: 'Leseposition speichern' }).isDisabled(), true);
+      assert.equal(
+        await unread.getByRole('button', { name: 'Leseposition speichern' }).isDisabled(),
+        true,
+      );
       await noOverflow(unread, 375);
 
       await switchAuth(unread, anonymous);
@@ -287,8 +297,14 @@ async function main() {
       await unread.close();
     }
 
-    assert.equal(requests.every((request) => request.method === 'GET'), true, 'No browser writes');
-    process.stdout.write('Phase 22 Chromium moderator queue and unread cross-account privacy: PASS\n');
+    assert.equal(
+      requests.every((request) => request.method === 'GET'),
+      true,
+      'No browser writes',
+    );
+    process.stdout.write(
+      'Phase 22 Chromium moderator queue and unread cross-account privacy: PASS\n',
+    );
   } finally {
     if (browser) await browser.close();
     await close(server);
