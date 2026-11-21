@@ -185,14 +185,14 @@ async function main() {
     await verify('empty', '/', 320, async (page) => {
       await page.getByRole('status').getByText(/Noch keine freigegebenen Forenkategorien/).waitFor();
       assert.equal(await page.getByRole('heading', { name: 'Forum' }).count(), 1);
-      const link = page.getByRole('link', { name: 'Artikel-Diskussionen' });
+      const link = page.getByRole('link', { name: 'Artikel-Diskussionen', exact: true });
       assert.equal(await link.getAttribute('href'), '/forum/artikel');
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('href')), '/forum/artikel');
     });
 
     await verify('category', '/?slug=wien', 375, async (page) => {
-      await page.getByRole('heading', { name: 'Wiener Vereine' }).waitFor();
+      await page.getByRole('heading', { name: 'Wiener Vereine', level: 1 }).waitFor();
       assert.equal(await page.getByRole('link', { name: 'SV Test' }).getAttribute('href'), '/forum/verein/sv-test');
       assert.equal(await page.getByText('Aktuell nur lesbar').count(), 1);
     });
