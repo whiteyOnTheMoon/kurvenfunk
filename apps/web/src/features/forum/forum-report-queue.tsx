@@ -201,7 +201,8 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
   const items = current?.items ?? [];
 
   useEffect(() => {
-    if (!canModerate || !token || !requestKey) return;
+    const key = requestKey;
+    if (!canModerate || !token || !key) return;
     const controller = new AbortController();
     async function load() {
       try {
@@ -215,11 +216,11 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
         const data = (payload as { data?: unknown }).data;
         if (!Array.isArray(data)) throw new Error('QUEUE_INVALID');
         if (!controller.signal.aborted) {
-          setResult({ key: requestKey, items: data as ReportItem[], error: false });
+          setResult({ key, items: data as ReportItem[], error: false });
         }
       } catch {
         if (!controller.signal.aborted) {
-          setResult({ key: requestKey, items: [], error: true });
+          setResult({ key, items: [], error: true });
         }
       }
     }
