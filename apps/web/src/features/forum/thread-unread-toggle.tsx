@@ -38,10 +38,10 @@ export function ThreadUnreadToggle({
   posts: { id: string; sequenceNumber: number; deleted: boolean }[];
 }) {
   const { authenticated, initialized, sessionRecovering, token, user } = useAuth();
-  const [state, setState] = useState<{ token: string; status: UnreadState } | null>(null);
-  const [error, setError] = useState(false);
+  const [state, setState] = useState<{ key: string; status: UnreadState } | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [chosenPostId, setChosenPostId] = useState('');
+  const [chosenPost, setChosenPost] = useState<{ key: string; postId: string } | null>(null);
   const allowed =
     initialized &&
     !sessionRecovering &&
@@ -50,11 +50,17 @@ export function ThreadUnreadToggle({
     user?.status === 'ACTIVE' &&
     user.onboardingCompleted;
   const endpoint = `${apiUrl}/api/v1/forums/by-slug/${encodeURIComponent(forumSlug)}/threads/${encodeURIComponent(threadSlug)}/unread`;
-  const status = state && state.token === token ? state.status : null;
+  // A user switch, token renewal or new thread revision must not inherit old
+  // account state, form selections or error messages, even for a single render.
+  const requestKey = allowed && user && token ? `${user.id}:${token}:${revision}` : null;
+  const status = state?.key === requestKey ? state.status : null;
+  const chosenPostId = chosenPost?.key === requestKey ? chosenPost.postId : '';
+  const error = failedKey === requestKey;
 
   useEffect(() => {
     const controller = new AbortController();
-    if (!allowed || !token) return () => controller.abort();
+    if (!allowed || !token || !requestKey) return () => controller.abort();
+    const key: string = requestKey;
     async function fetchStatus() {
       try {
         const response = await fetch(endpoint, {
@@ -64,37 +70,37 @@ export function ThreadUnreadToggle({
         });
         if (!response.ok) throw new Error('UNREAD_FETCH_FAILED');
         const parsed = parseStatus(await response.json());
-        if (!controller.signal.aborted) setState({ token: token!, status: parsed });
+        if (!controller.signal.aborted) setState({ key, status: parsed });
       } catch {
-        if (!controller.signal.aborted) setError(true);
+        if (!controller.signal.aborted) setFailedKey(requestKey);
       }
     }
     void fetchStatus();
     return () => controller.abort();
-  }, [allowed, endpoint, token, revision]);
+  }, [allowed, endpoint, requestKey, token]);
 
   async function markRead() {
-    if (!allowed || !token || !status?.unread || saving) return;
+    if (!allowed || !token || !requestKey || !status?.unread || saving) return;
     setSaving(true);
-    setError(false);
+    setFailedKey(null);
     try {
       const response = await fetch(endpoint, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('UNREAD_WRITE_FAILED');
-      setState({ token, status: parseStatus(await response.json()) });
+      setState({ key: requestKey, status: parseStatus(await response.json()) });
     } catch {
-      setError(true);
+      setFailedKey(requestKey);
     } finally {
       setSaving(false);
     }
   }
 
   async function setReadPosition() {
-    if (!allowed || !token || !chosenPostId || saving) return;
+    if (!allowed || !token || !requestKey || !chosenPostId || saving) return;
     setSaving(true);
-    setError(false);
+    setFailedKey(null);
     try {
       const response = await fetch(endpoint.slice(0, -'/unread'.length) + '/read-position', {
         method: 'PUT',
@@ -105,10 +111,10 @@ export function ThreadUnreadToggle({
         body: JSON.stringify({ postId: chosenPostId }),
       });
       if (!response.ok) throw new Error('READ_POSITION_WRITE_FAILED');
-      setState({ token, status: parseStatus(await response.json()) });
-      setChosenPostId('');
+      setState({ key: requestKey, status: parseStatus(await response.json()) });
+      setChosenPost(null);
     } catch {
-      setError(true);
+      setFailedKey(requestKey);
     } finally {
       setSaving(false);
     }
@@ -145,7 +151,9 @@ export function ThreadUnreadToggle({
           <select
             id="thread-read-position"
             value={chosenPostId}
-            onChange={(event) => setChosenPostId(event.target.value)}
+            onChange={(event) =>
+              requestKey && setChosenPost({ key: requestKey, postId: event.target.value })
+            }
             disabled={saving}
           >
             <option value="">Beitrag auswählen</option>

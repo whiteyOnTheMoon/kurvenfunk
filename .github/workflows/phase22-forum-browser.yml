@@ -8,6 +8,7 @@ on:
       - 'apps/web/src/app/forum/**'
       - 'apps/web/src/app/layout.tsx'
       - 'apps/web/test/phase22-forum-browser.cjs'
+      - 'apps/web/test/phase22-private-ui.browser.cjs'
       - '.github/workflows/phase22-forum-browser.yml'
 permissions:
   contents: read
@@ -32,3 +33,7 @@ jobs:
         env:
           PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
         run: node apps/web/test/phase22-forum-browser.cjs
+      - name: Check moderator queue and private read state across account changes
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/phase22-private-ui.browser.cjs

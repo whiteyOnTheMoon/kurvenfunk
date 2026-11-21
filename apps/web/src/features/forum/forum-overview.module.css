@@ -24,6 +24,8 @@
   font-size: clamp(2.2rem, 7vw, 3.5rem);
   letter-spacing: -0.05em;
   line-height: 1.1;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .intro > p:last-child {
@@ -131,6 +133,8 @@
 }
 
 .threadForm label {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: var(--kf-font-weight-semibold);
 }
 
