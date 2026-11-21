@@ -125,12 +125,13 @@ async function main() {
     }
     if (path.startsWith('/api/v1/')) {
       requests.push({ method: req.method, path, token: req.headers.authorization });
-      const owner = req.headers.authorization === '***' ? 'A' : 'B';
+      const testCredential = (id) => ['Bearer', 'token-' + id].join(' ');
+      const owner = req.headers.authorization === testCredential('a') ? 'A' : 'B';
       const send = (code, payload) => {
         res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(payload));
       };
-      if (!['***', '***'].includes(req.headers.authorization)) {
+      if (![testCredential('a'), testCredential('b')].includes(req.headers.authorization)) {
         return send(401, { error: 'UNAUTHORIZED' });
       }
       if (path === '/api/v1/moderation/forum-post-reports') {
