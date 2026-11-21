@@ -1,0 +1,34 @@
+name: Phase 22 forum and article Chromium regression
+on:
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'apps/web/src/features/forum/**'
+      - 'apps/web/src/app/forum/**'
+      - 'apps/web/src/app/layout.tsx'
+      - 'apps/web/test/phase22-forum-browser.cjs'
+      - '.github/workflows/phase22-forum-browser.yml'
+permissions:
+  contents: read
+jobs:
+  forum-browser:
+    name: Isolated real Chromium (no DEV writes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Install isolated Playwright Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
+          node "$RUNNER_TEMP/kurvenfunk-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Check real forum and article UI in Chromium at mobile/desktop widths
+        env:
+          PLAYWRIGHT_MODULE_DIR: ${{ runner.temp }}/kurvenfunk-browser/node_modules
+        run: node apps/web/test/phase22-forum-browser.cjs
