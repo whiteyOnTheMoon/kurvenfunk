@@ -176,9 +176,13 @@ function ReportReview({
 
 export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
   const { authenticated, initialized, sessionRecovering, token, user } = useAuth();
-  const [items, setItems] = useState<ReportItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // Never render results fetched for a different identity, token or queue revision.
+  // Effects run after render, so clearing stale items only inside an effect is insufficient.
+  const [result, setResult] = useState<{
+    key: string;
+    items: ReportItem[];
+    error: boolean;
+  } | null>(null);
   const [revision, setRevision] = useState(0);
 
   const canModerate =
@@ -190,12 +194,16 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
     user.onboardingCompleted &&
     user.roles.some((role) => role === 'MODERATOR' || role === 'ADMIN' || role === 'SUPERADMIN');
 
+  const requestKey = canModerate && user && token ? `${user.id}:${token}:${revision}` : null;
+  const current = result?.key === requestKey ? result : null;
+  const loading = current === null;
+  const error = current?.error ?? false;
+  const items = current?.items ?? [];
+
   useEffect(() => {
-    if (!canModerate || !token) return;
+    if (!canModerate || !token || !requestKey) return;
     const controller = new AbortController();
     async function load() {
-      setLoading(true);
-      setError(false);
       try {
         const response = await fetch(`${apiUrl}/api/v1/moderation/forum-post-reports`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -206,16 +214,18 @@ export function ForumReportQueue({ apiUrl }: { apiUrl: string }) {
         const payload: unknown = await response.json();
         const data = (payload as { data?: unknown }).data;
         if (!Array.isArray(data)) throw new Error('QUEUE_INVALID');
-        if (!controller.signal.aborted) setItems(data as ReportItem[]);
+        if (!controller.signal.aborted) {
+          setResult({ key: requestKey, items: data as ReportItem[], error: false });
+        }
       } catch {
-        if (!controller.signal.aborted) setError(true);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setResult({ key: requestKey, items: [], error: true });
+        }
       }
     }
     void load();
     return () => controller.abort();
-  }, [apiUrl, canModerate, token, revision]);
+  }, [apiUrl, canModerate, requestKey, token]);
 
   if (!initialized || sessionRecovering) return <p>Moderationsberechtigung wird geprüft …</p>;
   if (!canModerate || !token) return <p>Für diesen Bereich fehlen die Berechtigungen.</p>;
