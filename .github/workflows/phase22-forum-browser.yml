@@ -25,11 +25,6 @@ jobs:
           cache: true
           install: false
       - run: pnpm install --frozen-lockfile
-      - name: Temporary Prettier output for exact CI style correction
-        run: |
-          echo 'PHASE22_PRETTIER_START_20261121'
-          pnpm exec prettier apps/web/test/phase22-private-ui.browser.cjs
-          echo 'PHASE22_PRETTIER_END_20261121'
       - name: Install isolated Playwright Chromium
         run: |
           npm install --prefix "$RUNNER_TEMP/kurvenfunk-browser" --no-save --ignore-scripts playwright@1.55.1 esbuild@0.25.12
