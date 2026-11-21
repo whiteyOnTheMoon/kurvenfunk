@@ -35,7 +35,7 @@ async function main() {
     "const view = params.get('view');",
     "createRoot(document.getElementById('root')).render(",
     "  view === 'articles' ? <ArticleDiscussionDirectory apiUrl={window.location.origin} />",
-    "    : <ForumOverview apiUrl={window.location.origin} categorySlug={slug || undefined} />",
+    '    : <ForumOverview apiUrl={window.location.origin} categorySlug={slug || undefined} />',
     ');',
   ].join('\n');
 
@@ -184,28 +184,43 @@ async function main() {
     }
 
     await verify('empty', '/', 320, async (page) => {
-      await page.getByRole('status').getByText(/Noch keine freigegebenen Forenkategorien/).waitFor();
+      await page
+        .getByRole('status')
+        .getByText(/Noch keine freigegebenen Forenkategorien/)
+        .waitFor();
       assert.equal(await page.getByRole('heading', { name: 'Forum' }).count(), 1);
       const link = page.getByRole('link', { name: 'Artikel-Diskussionen', exact: true });
       assert.equal(await link.getAttribute('href'), '/forum/artikel');
       await page.keyboard.press('Tab');
-      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('href')), '/forum/artikel');
+      assert.equal(
+        await page.evaluate(() => document.activeElement?.getAttribute('href')),
+        '/forum/artikel',
+      );
     });
 
     await verify('category', '/?slug=wien', 375, async (page) => {
       await page.getByRole('heading', { name: 'Wiener Vereine', level: 1 }).waitFor();
-      assert.equal(await page.getByRole('link', { name: 'SV Test' }).getAttribute('href'), '/forum/verein/sv-test');
+      assert.equal(
+        await page.getByRole('link', { name: 'SV Test' }).getAttribute('href'),
+        '/forum/verein/sv-test',
+      );
       assert.equal(await page.getByText('Aktuell nur lesbar').count(), 1);
     });
 
     await verify('category-404', '/?slug=missing', 375, async (page) => {
-      await page.getByRole('status').getByText('Diese Forenkategorie ist nicht verfügbar.').waitFor();
+      await page
+        .getByRole('status')
+        .getByText('Diese Forenkategorie ist nicht verfügbar.')
+        .waitFor();
       assert.equal(await page.getByRole('alert').count(), 0);
       assert.equal(await page.getByRole('link', { name: 'SV Test' }).count(), 0);
     });
 
     await verify('api-error', '/', 1280, async (page) => {
-      await page.getByRole('alert').getByText(/Forenübersicht ist derzeit nicht erreichbar/).waitFor();
+      await page
+        .getByRole('alert')
+        .getByText(/Forenübersicht ist derzeit nicht erreichbar/)
+        .waitFor();
       assert.equal(await page.getByRole('link', { name: 'SV Test' }).count(), 0);
     });
 
@@ -215,18 +230,30 @@ async function main() {
     });
 
     await verify('article-error', '/?view=articles', 375, async (page) => {
-      await page.getByRole('alert').getByText(/Artikel-Diskussionen sind derzeit nicht erreichbar/).waitFor();
+      await page
+        .getByRole('alert')
+        .getByText(/Artikel-Diskussionen sind derzeit nicht erreichbar/)
+        .waitFor();
     });
 
     await verify('article-filled', '/?view=articles', 375, async (page) => {
       const link = page.getByRole('link', { name: article.title });
       await link.waitFor();
       assert.equal(await link.getAttribute('href'), '/forum/artikel/ein-testartikel');
-      assert.equal(await page.getByRole('link', { name: 'Zur gemeinsamen Diskussion' }).getAttribute('href'), '/forum/artikel/ein-testartikel');
+      assert.equal(
+        await page.getByRole('link', { name: 'Zur gemeinsamen Diskussion' }).getAttribute('href'),
+        '/forum/artikel/ein-testartikel',
+      );
     });
 
-    assert.equal(requests.every(({ method }) => method === 'GET'), true, 'No test writes');
-    process.stdout.write('Phase 22 isolated Chromium forum/article empty, 404, error and 320–1280px: PASS\n');
+    assert.equal(
+      requests.every(({ method }) => method === 'GET'),
+      true,
+      'No test writes',
+    );
+    process.stdout.write(
+      'Phase 22 isolated Chromium forum/article empty, 404, error and 320–1280px: PASS\n',
+    );
   } finally {
     if (browser) await browser.close();
     await close(server);
