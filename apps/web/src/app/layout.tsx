@@ -38,7 +38,7 @@ const defaultKurvenfunkThemeStyle = clubThemeToCssProperties(
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
-      lang="en"
+      lang="de-AT"
       className={`${geistSans.variable} ${geistMono.variable}`}
       style={defaultKurvenfunkThemeStyle}
     >

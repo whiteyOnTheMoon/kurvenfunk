@@ -4,6 +4,8 @@ import { describe, it } from 'node:test';
 
 const overview = readFileSync(new URL('./forum-overview.tsx', import.meta.url), 'utf8');
 const moduleCss = readFileSync(new URL('./forum-overview.module.css', import.meta.url), 'utf8');
+const club = readFileSync(new URL('./club-forum-page.tsx', import.meta.url), 'utf8');
+const layout = readFileSync(new URL('../../app/layout.tsx', import.meta.url), 'utf8');
 
 describe('Phase 22.209 forum navigation', () => {
   it('fetches only real public categories from the API', () => {
@@ -21,5 +23,15 @@ describe('Phase 22.209 forum navigation', () => {
   it('supports smaller screens and category detail URLs', () => {
     assert.match(moduleCss, /@media \(max-width: 640px\)/);
     assert.match(overview, /\/forum\/kategorie\//);
+  });
+  it('separates a missing category from an API outage and clears stale club details', () => {
+    assert.match(overview, /categorySlug && response.status === 404/);
+    assert.match(overview, /setCategories\(\[\]\)/);
+    assert.match(overview, /className=\{styles.status\} role="status"/);
+    assert.match(club, /setForum\(null\)/);
+  });
+
+  it('declares the correct document language for assistive technology', () => {
+    assert.match(layout, /lang="de-AT"/);
   });
 });

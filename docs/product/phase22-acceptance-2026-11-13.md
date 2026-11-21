@@ -46,3 +46,35 @@ Stand: **13.11.2026**. Technische Basis: `develop` bei `f20a84803dccc566c7faf158
 ## Grenzen
 
 Nur DEV und isolierte CI-Testdatenbanken; STAGING/PROD unverändert. Die Abnahme älterer Phasen bleibt unabhängig offen.
+
+## Ergänzung 21.11.2026 – isolierte UI-/Barrierefreiheits-Regressionsprüfung
+
+**Weiterhin kein Phase-22-Fach-Sign-off.** Die auf `develop` nach Phase 22 integrierte
+Notification-Arbeit der Phase 23 ändert nichts an den noch offenen echten DEV-Gates.
+Die zuletzt belegte DEV-Kategorieanzahl ist **0**; es wurden keine Foren, Accounts,
+Artikel, Threads oder Demo-/Seed-Daten für die Prüfung eingerichtet.
+
+Dieser Ergänzungs-PR führt ausschließlich technische Schutzmaßnahmen ein:
+
+- `apps/web/test/phase22-forum-browser.cjs`: echter isolierter Chromium-Test der
+  React-Komponenten und Forum-CSS bei 320, 375 und 1280 Pixeln, inklusive
+  leeren Kategorien/Artikeln, Kategorie-404, API-Fehlern, real gerenderten Links,
+  tastaturbasierter Navigation und horizontalem Overflow. Testdaten werden
+  ausschließlich in einem lokalen Test-HTTP-Server bereitgestellt; die Prüfung
+  tätigt nur GET-Anfragen und berührt DEV nicht.
+- `.github/workflows/phase22-forum-browser.yml`: dedizierter PR-CI-Job
+  auf `develop` für diese Chromium-Suite, unabhängig von echten Accounts.
+- `ForumOverview`: echte Kategorie-404 als nicht vorhandene Kategorie statt
+  allgemeinem API-Fehler, mit klarer Statusmeldung; beim Nachladen keine
+  alte Kategorieliste weiterzeigen.
+- `ClubForumPage`: vorherige Vereinsdaten beim Nachladen verwerfen.
+  Seiten-Layout mit `lang="de-AT"` für deutschsprachige Screenreader.
+- Die vorhandenen quellcodebasierten Unit-Tests sichern diese Regressionen
+  zusätzlich ab.
+
+**Nachweisstatus:** Erst nach erfolgreicher PR-CI und separater Prüfung des
+Merge-Push-/DEV-Gates als technisch bestätigt markieren. Selbst ein grüner
+Chromium-Test mit isolierten Fixtures bestätigt **keinen** echten Keycloak-Login,
+keine Moderationsoperation, keinen vertrauenswürdigen Tunnel und keine
+Live-Mobilabnahme. Die offenen Einzeltests in #160, #169 und #185 bleiben offen.
+Keine automatische Testdatenanlage, keine STAGING-/PROD-Änderung.
